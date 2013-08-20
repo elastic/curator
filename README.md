@@ -4,11 +4,11 @@ Need to delete old data in logstash/elasticsearch? This is the tool for you!
 
 ## Usage
 
-See `python logstash\_index\_cleaner.py --help` for specifics, but here's an example:
+See `python logstash_index_cleaner.py --help` for specifics, but here's an example:
 
 Keep 14 days of logs in elasticsearch:
 
-    python logstash\_index\_cleaner.py --host my-elasticsearch -d 14
+    python logstash_index_cleaner.py --host my-elasticsearch -d 14
 
 ## Contributing
 
