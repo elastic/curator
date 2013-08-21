@@ -154,7 +154,7 @@ def main():
         print 'Deleting hourly indices older than {0} hours.'.format(arguments.hours_to_keep)
         expired_indices = find_expired_indices(connection, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
     if arguments.disk_space_to_keep:
-        print 'Let\'s keep disk usage lower than {} GB.'.format(arguments.disk_space_to_keep)
+        print 'Let\'s keep disk usage lower than {0} GB.'.format(arguments.disk_space_to_keep)
         expired_indices = find_overusage_indices(connection, arguments.disk_space_to_keep, arguments.separator, arguments.prefix)
         
     print ''
