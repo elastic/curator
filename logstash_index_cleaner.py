@@ -78,7 +78,7 @@ def find_expired_indices(connection, days_to_keep=None, hours_to_keep=None, sepa
             print >> out, 'Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name)
             continue
         
-        unprefixed_index_name = index_name[len(prefix):]
+        unprefixed_index_name = index_name[len(prefix)+1:]
         
         # find the timestamp parts (i.e ['2011', '01', '05'] from '2011.01.05') using the configured separator
         parts = unprefixed_index_name.split(separator)
