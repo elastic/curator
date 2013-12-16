@@ -22,7 +22,7 @@ import argparse
 from datetime import timedelta
 
 import pyes
-from pyes.exceptions import ElasticSearchException, ClusterBlockException
+from pyes.exceptions import ElasticSearchException, ClusterBlockException, NoServerAvailable
 
 __version__ = '0.1.2'
 
@@ -76,7 +76,7 @@ def find_expired_indices(connection, logger, days_to_keep=None, hours_to_keep=No
 
     try:
         sorted_indices = sorted(set(connection.get_indices().keys()))
-    except (ElasticSearchException, ClusterBlockException) as e:
+    except (NoServerAvailable, ElasticSearchException, ClusterBlockException) as e:
         logger.exception(e)
         sys.exit(1)
 
@@ -130,8 +130,8 @@ def find_overusage_indices(connection, logger, disk_space_to_keep, separator='.'
 
     try:
         sorted_indices = reversed(sorted(set(connection.get_indices().keys())))
-    except (ElasticSearchException, ClusterBlockException) as e:
-        log.exception(e)
+    except (NoServerAvailable, ElasticSearchException, ClusterBlockException) as e:
+        logger.exception(e)
         sys.exit(1)
 
     for index_name in sorted_indices:
