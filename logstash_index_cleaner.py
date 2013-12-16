@@ -74,7 +74,13 @@ def find_expired_indices(connection, logger, days_to_keep=None, hours_to_keep=No
     days_cutoff = utc_now_time - days_to_keep * 24 * 60 * 60 if days_to_keep is not None else None
     hours_cutoff = utc_now_time - hours_to_keep * 60 * 60 if hours_to_keep is not None else None
 
-    for index_name in sorted(set(connection.get_indices().keys())):
+    try:
+        sorted_indices = sorted(set(connection.get_indices().keys()))
+    except (ElasticSearchException, ClusterBlockException) as e:
+        logger.exception(e)
+        sys.exit(1)
+
+    for index_name in sorted_indices:
         if not index_name.startswith(prefix):
             logger.info('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
             continue
@@ -122,7 +128,13 @@ def find_overusage_indices(connection, logger, disk_space_to_keep, separator='.'
     disk_usage = 0.0
     disk_limit = disk_space_to_keep * 2**30
 
-    for index_name in reversed(sorted(set(connection.get_indices().keys()))):
+    try:
+        sorted_indices = reversed(sorted(set(connection.get_indices().keys())))
+    except (ElasticSearchException, ClusterBlockException) as e:
+        log.exception(e)
+        sys.exit(1)
+
+    for index_name in sorted_indices:
 
         if not index_name.startswith(prefix):
             logger.info('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
