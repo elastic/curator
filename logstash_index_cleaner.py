@@ -140,13 +140,13 @@ def find_overusage_indices(connection, logger, disk_space_to_keep, separator='.'
             logger.info('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
             continue
 
-    index_size = connection.status(index_name).get('indices').get(index_name).get('index').get('primary_size_in_bytes')
-    disk_usage += index_size
+        index_size = connection.status(index_name).get('indices').get(index_name).get('index').get('primary_size_in_bytes')
+        disk_usage += index_size
 
-    if disk_usage > disk_limit:
-        yield index_name, 0
-    else:
-        logger.info('keeping {0}, disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
+        if disk_usage > disk_limit:
+            yield index_name, 0
+        else:
+            logger.info('keeping {0}, disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
 
 
 def main():
