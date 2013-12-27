@@ -8,7 +8,7 @@
 #
 # Requires python and the following dependencies (all pip/easy_installable):
 #
-# pyes (python elasticsearch bindings, which might need simplejson)
+# elasticsearch (official Elasticsearch Python API, http://www.elasticsearch.org/guide/en/elasticsearch/client/python-api/current/index.html)
 # argparse (built-in in python2.7 and higher, python 2.6 and lower will have to easy_install it)
 #
 # TODO: Unit tests. The code is somewhat broken up into logical parts that may be tested separately.
@@ -21,11 +21,10 @@ import logging
 import argparse
 from datetime import timedelta
 
-import pyes
-from pyes.exceptions import ElasticSearchException, ClusterBlockException, NoServerAvailable
+import elasticsearch
+from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
-__version__ = '0.1.2'
-
+__version__ = '0.2.0'
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
@@ -43,9 +42,10 @@ def make_parser():
     parser.add_argument('-H', '--hours-to-keep', action='store', help='Number of hours to keep.', type=int)
     parser.add_argument('-d', '--days-to-keep', action='store', help='Number of days to keep.', type=int)
     parser.add_argument('-g', '--disk-space-to-keep', action='store', help='Disk space to keep (GB).', type=float)
-    parser.add_argument('-l', '--level', action='store', help='Log level (default: info, levels: info, debug, error)', default='info')
 
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=False)
+    parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=False)
+    parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str, default=None)
 
     return parser
 
@@ -63,7 +63,7 @@ def get_index_epoch(index_timestamp, separator='.'):
     return time.mktime([int(part) for part in year_month_day_optionalhour] + [0, 0, 0, 0, 0])
 
 
-def find_expired_indices(connection, logger, days_to_keep=None, hours_to_keep=None, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
+def find_expired_indices(IndicesClient, logger, days_to_keep=None, hours_to_keep=None, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
     """ Generator that yields expired indices.
 
     :return: Yields tuples on the format ``(index_name, expired_by)`` where index_name
@@ -75,14 +75,14 @@ def find_expired_indices(connection, logger, days_to_keep=None, hours_to_keep=No
     hours_cutoff = utc_now_time - hours_to_keep * 60 * 60 if hours_to_keep is not None else None
 
     try:
-        sorted_indices = sorted(set(connection.get_indices().keys()))
-    except (NoServerAvailable, ElasticSearchException, ClusterBlockException) as e:
+        sorted_indices = sorted(set(IndicesClient.get_settings().keys()))
+    except (ImproperlyConfigured, ElasticsearchException, exception) as e:
         logger.exception(e)
         sys.exit(1)
 
     for index_name in sorted_indices:
         if not index_name.startswith(prefix):
-            logger.info('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
+            logger.debug('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
             continue
 
         unprefixed_index_name = index_name[len(prefix)+1:]
@@ -104,7 +104,7 @@ def find_expired_indices(connection, logger, days_to_keep=None, hours_to_keep=No
         # but the cutoff might be none, if the current index only has three parts (year.month.day) and we're only
         # removing hourly indices:
         if cutoff is None:
-            logger.info('Skipping {0} because it is of a type (hourly or daily) that I\'m not asked to delete.'.format(index_name))
+            logger.debug('Skipping {0} because it is of a type (hourly or daily) that I\'m not asked to delete.'.format(index_name))
             continue
 
         index_epoch = get_index_epoch(unprefixed_index_name)
@@ -117,7 +117,7 @@ def find_expired_indices(connection, logger, days_to_keep=None, hours_to_keep=No
             logger.info('{0} is {1} above the cutoff.'.format(index_name, timedelta(seconds=index_epoch-cutoff)))
 
 
-def find_overusage_indices(connection, logger, disk_space_to_keep, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
+def find_overusage_indices(IndicesClient, logger, disk_space_to_keep, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
     """ Generator that yields over usage indices.
 
     :return: Yields tuples on the format ``(index_name, 0)`` where index_name
@@ -129,18 +129,18 @@ def find_overusage_indices(connection, logger, disk_space_to_keep, separator='.'
     disk_limit = disk_space_to_keep * 2**30
 
     try:
-        sorted_indices = reversed(sorted(set(connection.get_indices().keys())))
-    except (NoServerAvailable, ElasticSearchException, ClusterBlockException) as e:
+        sorted_indices = reversed(sorted(set(IndicesClient.get_settings().keys())))
+    except (ImproperlyConfigured, ElasticsearchException, exception) as e:
         logger.exception(e)
         sys.exit(1)
 
     for index_name in sorted_indices:
 
         if not index_name.startswith(prefix):
-            logger.info('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
+            logger.debug('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
             continue
 
-        index_size = connection.status(index_name).get('indices').get(index_name).get('index').get('primary_size_in_bytes')
+        index_size = IndicesClient.status(index_name)['indices'][index_name]['index']['primary_size_in_bytes']
         disk_usage += index_size
 
         if disk_usage > disk_limit:
@@ -150,38 +150,43 @@ def find_overusage_indices(connection, logger, disk_space_to_keep, separator='.'
 
 
 def main():
-    levels = {
-      'info': logging.INFO,
-      'debug': logging.DEBUG,
-      'error': logging.ERROR
-    }
-
     start = time.time()
 
     parser = make_parser()
     arguments = parser.parse_args()
 
-    logging.basicConfig(level=levels[arguments.level])
+    log_file = arguments.log_file if arguments.log_file else 'STDERR'
+
+    # Setup logging
+    logging.basicConfig(level=logging.DEBUG if arguments.debug else logging.INFO,
+                        format='%(asctime)s %(levelname)-9s %(funcName)20s:%(lineno)-4d %(message)s',
+                        datefmt="%Y-%m-%dT%H:%M:%S%z",
+                        stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
+    logging.info("Job starting...")
     logger = logging.getLogger(__name__)
+
+    # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
+    h = logging.NullHandler()
+    logging.getLogger('elasticsearch.trace').addHandler(h)
 
     if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep:
         logger.error('Invalid arguments: You must specify either the number of hours, the number of days to keep or the maximum disk space to use')
         parser.print_help()
         return
 
-    connection = pyes.ES('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
+    client = elasticsearch.Elasticsearch('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
+    IndicesClient = elasticsearch.client.IndicesClient(client)
 
     if arguments.days_to_keep:
         logger.info('Deleting daily indices older than {0} days.'.format(arguments.days_to_keep))
-        expired_indices = find_expired_indices(connection, logger, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
+        expired_indices = find_expired_indices(IndicesClient, logger, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
     if arguments.hours_to_keep:
         logger.info('Deleting hourly indices older than {0} hours.'.format(arguments.hours_to_keep))
-        expired_indices = find_expired_indices(connection, logger, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
+        expired_indices = find_expired_indices(IndicesClient, logger, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
     if arguments.disk_space_to_keep:
         logger.info('Let\'s keep disk usage lower than {0} GB.'.format(arguments.disk_space_to_keep))
-        expired_indices = find_overusage_indices(connection, logger, arguments.disk_space_to_keep, arguments.separator, arguments.prefix)
+        expired_indices = find_overusage_indices(IndicesClient, logger, arguments.disk_space_to_keep, arguments.separator, arguments.prefix)
 
-    logger.info('')
 
     for index_name, expired_by in expired_indices:
         expiration = timedelta(seconds=expired_by)
@@ -192,14 +197,13 @@ def main():
 
         logger.info('Deleting index {0} because it was {1} older than cutoff.'.format(index_name, expiration))
 
-        deletion = connection.delete_index_if_exists(index_name)
+        deletion = IndicesClient.delete(index_name)
         # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
         if deletion.get('ok'):
             logger.info('Successfully deleted index: {0}'.format(index_name))
         else:
-            logger.info('Error deleting index: {0}. ({1})'.format(index_name, deletion))
+            logger.error('Error deleting index: {0}. ({1})'.format(index_name, deletion))
 
-    logger.info('')
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 
 
