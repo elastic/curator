@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 #
 # Deletes all indices with a datestamp older than "days-to-keep" for daily
-# if you have hourly indices, it will delete all of those older than "hours-to-keep"
+# If you have hourly indices, it will delete all of those older than "hours-to-keep"
+#
+# Closes all indices with a datestamp older than "open_days" for daily
+# If you have hourly indices, it will close all of those older than "open_hours"
+#
+# Now permits deletion/closing based on size in GB with "disk-space-to-keep" and "open_space"
 #
 # This script presumes an index is named typically, e.g. logstash-YYYY.MM.DD
 # It will work with any name-YYYY.MM.DD or name-YYYY.MM.DD.HH type sequence
@@ -24,7 +29,7 @@ from datetime import timedelta, datetime
 import elasticsearch
 from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
@@ -39,6 +44,9 @@ def make_parser():
     parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped.', default='logstash-')
     parser.add_argument('-s', '--separator', help='Time unit separator', default='.')
 
+    parser.add_argument('--keep-open-hours', dest='open_hours', action='store', help='Number of hourly indices to keep open.', type=int)
+    parser.add_argument('--keep-open-days', dest='open_days', action='store', help='Number of daily indices to keep open.', type=int)
+    parser.add_argument('--keep-open-space', dest='open_space', action='store', help='Amount of indexed disk space to keep open(GB).', type=float)
     parser.add_argument('-H', '--hours-to-keep', action='store', help='Number of hours to keep.', type=int)
     parser.add_argument('-d', '--days-to-keep', action='store', help='Number of days to keep.', type=int)
     parser.add_argument('-g', '--disk-space-to-keep', action='store', help='Disk space to keep (GB).', type=float)
@@ -107,9 +115,9 @@ def find_expired_indices(IndicesClient, logger, days_to_keep=None, hours_to_keep
             cutoff = days_cutoff
 
         # but the cutoff might be none, if the current index only has three parts (year.month.day) and we're only
-        # removing hourly indices:
+        # counting hourly indices:
         if cutoff is None:
-            logger.debug('Skipping {0} because it is of a type (hourly or daily) that I\'m not asked to delete.'.format(index_name))
+            logger.debug('Skipping {0} because it is of a type (hourly or daily) that I\'m not asked to evaluate.'.format(index_name))
             continue
 
         index_epoch = get_index_epoch(unprefixed_index_name)
@@ -151,7 +159,7 @@ def find_overusage_indices(IndicesClient, logger, disk_space_to_keep, separator=
         if disk_usage > disk_limit:
             yield index_name, 0
         else:
-            logger.info('keeping {0}, disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
+            logger.info('skipping {0}, disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
 
 
 def main():
@@ -182,32 +190,69 @@ def main():
     client = elasticsearch.Elasticsearch('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
     IndicesClient = elasticsearch.client.IndicesClient(client)
 
+    d = {}
+    if arguments.open_hours:
+        e = { 'keepby':'time', 'unit':'hours', 'close':arguments.open_hours }
+        d = dict(d,**e)
+    if arguments.open_days:
+        e = { 'keepby':'time', 'unit':'days', 'close':arguments.open_days }
+        d = dict(d,**e)
+    if arguments.open_space:
+        e = { 'keepby':'space', 'unit':'GB', 'close':arguments.open_space }
+        d = dict(d,**e)
     if arguments.days_to_keep:
-        logger.info('Deleting daily indices older than {0} days.'.format(arguments.days_to_keep))
-        expired_indices = find_expired_indices(IndicesClient, logger, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
+        e = { 'keepby':'time', 'unit':'days', 'delete':arguments.days_to_keep }
+        d = dict(d,**e)
     if arguments.hours_to_keep:
-        logger.info('Deleting hourly indices older than {0} hours.'.format(arguments.hours_to_keep))
-        expired_indices = find_expired_indices(IndicesClient, logger, arguments.days_to_keep, arguments.hours_to_keep, arguments.separator, arguments.prefix)
+        e = { 'keepby':'time', 'unit':'hours', 'delete':arguments.hours_to_keep }
+        d = dict(d,**e)
     if arguments.disk_space_to_keep:
-        logger.info('Let\'s keep disk usage lower than {0} GB.'.format(arguments.disk_space_to_keep))
-        expired_indices = find_overusage_indices(IndicesClient, logger, arguments.disk_space_to_keep, arguments.separator, arguments.prefix)
+        e = { 'keepby':'space', 'unit':'GB', 'delete':arguments.disk_space_to_keep }
+        d = dict(d,**e)
 
+    operations = []
+    if 'close' in d.keys():
+        operations.append('close')
+    if 'delete' in d.keys():
+        operations.append('delete')
 
-    for index_name, expired_by in expired_indices:
-        expiration = timedelta(seconds=expired_by)
+    for operation in operations:
+        logger.info('Index {0} operations commencing...'.format(operation.upper()))
+        if operation == 'close':
+            verbed = 'closed'
+            gerund = 'Closing'
+        if operation == 'delete':
+            verbed = 'deleted'
+            gerund = 'Deleting'
+        if d['keepby'] == 'space':
+            expired_indices = find_overusage_indices(IndicesClient, logger, d[operation], arguments.separator, arguments.prefix)
+            logger.info('{0} indices by disk usage over {1} {2}.'.format(gerund, d[operation], d['unit']))
+        elif d['keepby'] == 'time':
+            logger.info('{0} indices older than {1} {2}.'.format(gerund, d[operation], d['unit']))
+            if d['unit'] == 'hours':
+                expired_indices = find_expired_indices(IndicesClient, logger, hours_to_keep=d[operation], separator=arguments.separator, prefix=arguments.prefix)
+            else: # Days to keep
+                expired_indices = find_expired_indices(IndicesClient, logger, days_to_keep=d[operation], separator=arguments.separator, prefix=arguments.prefix)
 
-        if arguments.dry_run:
-            logger.info('Would have attempted deleting index {0} because it is {1} older than the calculated cutoff.'.format(index_name, expiration))
-            continue
-
-        logger.info('Deleting index {0} because it was {1} older than cutoff.'.format(index_name, expiration))
-
-        deletion = IndicesClient.delete(index_name)
-        # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
-        if deletion.get('ok'):
-            logger.info('Successfully deleted index: {0}'.format(index_name))
-        else:
-            logger.error('Error deleting index: {0}. ({1})'.format(index_name, deletion))
+        for index_name, expired_by in expired_indices:
+            expiration = timedelta(seconds=expired_by)
+    
+            if arguments.dry_run:
+                logger.info('Would have attempted {0} index {1} because it is {2} older than the calculated cutoff.'.format(gerund.lower(), index_name, expiration))
+                continue
+    
+            logger.info('Attempting to {0} index {1} because it is {2} older than cutoff.'.format(operation, index_name, expiration))
+    
+            if operation == 'close':
+                do_operation = IndicesClient.close(index_name)
+            else: # delete is only other alternative
+                do_operation = IndicesClient.delete(index_name)
+            # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
+            if do_operation.get('ok'):
+                logger.info('{0}: Successfully {1}.'.format(index_name, verbed))
+            else:
+                logger.error('Error {0} index: {1}. ({2})'.format(gerund, index_name, do_operation))
+        logger.info('Index {0} operations completed.'.format(operation.upper()))
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 
