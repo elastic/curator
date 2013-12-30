@@ -19,7 +19,7 @@ import sys
 import time
 import logging
 import argparse
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import elasticsearch
 from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
@@ -57,10 +57,15 @@ def get_index_epoch(index_timestamp, separator='.'):
     :return The creation time (epoch) of the index.
     """
     year_month_day_optionalhour = index_timestamp.split(separator)
-    if len(year_month_day_optionalhour) == 3:
-        year_month_day_optionalhour.append('3')
-
-    return time.mktime([int(part) for part in year_month_day_optionalhour] + [0, 0, 0, 0, 0])
+    # If no hour has been appended, add UTC hour for "right now"
+    # since Elasticsearch indices rollover at 00:00 UTC
+    if len(year_month_day_optionalhour) == 3: 		
+        year_month_day_optionalhour.append(datetime.utcnow().hour) 
+    # Break down the parts on the separator
+    t_array = [int(part) for part in year_month_day_optionalhour]
+    # t_array: 0 = year, 1 = month, 2 = day, 3 = hour
+    t_tuple = (t_array[0], t_array[1], t_array[2], t_array[3], 0, 0, 0, 0, 0)
+    return time.mktime(t_tuple)
 
 
 def find_expired_indices(IndicesClient, logger, days_to_keep=None, hours_to_keep=None, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
@@ -70,7 +75,7 @@ def find_expired_indices(IndicesClient, logger, days_to_keep=None, hours_to_keep
         is the name of the expired index and expired_by is the number of seconds (a float value) that the
         index was expired by.
     """
-    utc_now_time = time.time() + time.altzone
+    utc_now_time = time.time() + 86400 # Add 1 day so we never prune the current index
     days_cutoff = utc_now_time - days_to_keep * 24 * 60 * 60 if days_to_keep is not None else None
     hours_cutoff = utc_now_time - hours_to_keep * 60 * 60 if hours_to_keep is not None else None
 
@@ -85,7 +90,7 @@ def find_expired_indices(IndicesClient, logger, days_to_keep=None, hours_to_keep
             logger.debug('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
             continue
 
-        unprefixed_index_name = index_name[len(prefix)+1:]
+        unprefixed_index_name = index_name[len(prefix):]
 
         # find the timestamp parts (i.e ['2011', '01', '05'] from '2011.01.05') using the configured separator
         parts = unprefixed_index_name.split(separator)
