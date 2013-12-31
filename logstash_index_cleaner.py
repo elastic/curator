@@ -192,28 +192,22 @@ def main():
 
     d = {}
     if arguments.open_hours:
-        e = { 'keepby':'time', 'unit':'hours', 'close':arguments.open_hours }
-        d = dict(d,**e)
+        d.update({ 'keepby':'time', 'unit':'hours', 'close':arguments.open_hours })
     if arguments.open_days:
-        e = { 'keepby':'time', 'unit':'days', 'close':arguments.open_days }
-        d = dict(d,**e)
+        d.update({ 'keepby':'time', 'unit':'days', 'close':arguments.open_days })
     if arguments.open_space:
-        e = { 'keepby':'space', 'unit':'GB', 'close':arguments.open_space }
-        d = dict(d,**e)
+        d.update({ 'keepby':'space', 'unit':'GB', 'close':arguments.open_space })
     if arguments.days_to_keep:
-        e = { 'keepby':'time', 'unit':'days', 'delete':arguments.days_to_keep }
-        d = dict(d,**e)
+        d.update({ 'keepby':'time', 'unit':'days', 'delete':arguments.days_to_keep })
     if arguments.hours_to_keep:
-        e = { 'keepby':'time', 'unit':'hours', 'delete':arguments.hours_to_keep }
-        d = dict(d,**e)
+        d.update({ 'keepby':'time', 'unit':'hours', 'delete':arguments.hours_to_keep })
     if arguments.disk_space_to_keep:
-        e = { 'keepby':'space', 'unit':'GB', 'delete':arguments.disk_space_to_keep }
-        d = dict(d,**e)
+        d.update({ 'keepby':'space', 'unit':'GB', 'delete':arguments.disk_space_to_keep })
 
     operations = []
-    if 'close' in d.keys():
+    if 'close' in d:
         operations.append('close')
-    if 'delete' in d.keys():
+    if 'delete' in d:
         operations.append('delete')
 
     for operation in operations:
