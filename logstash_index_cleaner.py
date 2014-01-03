@@ -29,7 +29,7 @@ from datetime import timedelta, datetime
 import elasticsearch
 from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
