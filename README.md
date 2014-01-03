@@ -14,6 +14,7 @@ See `python logstash_index_cleaner.py --help` for usage specifics.
 ### Defaults
 
 The default values for host, port and prefix are:
+
     --host localhost
     --port 9200
     -p (or --prefix) logstash-
