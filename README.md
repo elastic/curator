@@ -8,7 +8,19 @@ Install dependencies
 
     pip install -r requirements.txt
 
-See `python logstash_index_cleaner.py --help` for specifics, but here are some examples:
+
+See `python logstash_index_cleaner.py --help` for usage specifics.
+
+### Defaults
+
+The default values for host, port and prefix are:
+    --host localhost
+    --port 9200
+    -p (or --prefix) logstash-
+
+If your values match these you do not need to include them.  The `prefix` should be everything before the date string.
+
+### Examples
 
 Close indices older than 14 days, delete indices older than 30 days (See https://github.com/logstash/expire-logs/issues/1):
 
