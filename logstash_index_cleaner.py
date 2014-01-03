@@ -37,12 +37,12 @@ def make_parser():
 
     parser.add_argument('-v', '--version', action='version', version='%(prog)s '+__version__)
 
-    parser.add_argument('--host', help='Elasticsearch host.', default='localhost')
-    parser.add_argument('--port', help='Elasticsearch port', default=9200, type=int)
-    parser.add_argument('-t', '--timeout', help='Elasticsearch timeout', default=30, type=int)
+    parser.add_argument('--host', help='Elasticsearch host. Default: localhost', default='localhost')
+    parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=9200, type=int)
+    parser.add_argument('-t', '--timeout', help='Elasticsearch timeout. Default: 30', default=30, type=int)
 
-    parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped.', default='logstash-')
-    parser.add_argument('-s', '--separator', help='Time unit separator', default='.')
+    parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default='logstash-')
+    parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default='.')
 
     parser.add_argument('--keep-open-hours', dest='open_hours', action='store', help='Number of hourly indices to keep open.', type=int)
     parser.add_argument('--keep-open-days', dest='open_days', action='store', help='Number of daily indices to keep open.', type=int)
