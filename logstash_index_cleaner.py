@@ -29,7 +29,17 @@ from datetime import timedelta, datetime
 import elasticsearch
 from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
-__version__ = '0.3.1'
+# This solves https://github.com/logstash/expire-logs/issues/12
+try:
+    from logging import NullHandler
+except ImportError:
+    from logging import Handler
+
+    class NullHandler(Handler):
+        def emit(self, record):
+            pass
+
+__version__ = '0.3.2'
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
@@ -179,7 +189,7 @@ def main():
     logger = logging.getLogger(__name__)
 
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
-    h = logging.NullHandler()
+    h = NullHandler()
     logging.getLogger('elasticsearch.trace').addHandler(h)
 
     if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep:
