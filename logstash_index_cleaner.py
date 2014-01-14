@@ -6,7 +6,7 @@
 # Closes all indices with a datestamp older than "open_days" for daily
 # If you have hourly indices, it will close all of those older than "open_hours"
 #
-# Now permits deletion/closing based on size in GB with "disk-space-to-keep" and "open_space"
+# Now permits deletion based on size in GB with "disk-space-to-keep"
 #
 # This script presumes an index is named typically, e.g. logstash-YYYY.MM.DD
 # It will work with any name-YYYY.MM.DD or name-YYYY.MM.DD.HH type sequence
@@ -56,7 +56,6 @@ def make_parser():
 
     parser.add_argument('--keep-open-hours', dest='open_hours', action='store', help='Number of hourly indices to keep open.', type=int)
     parser.add_argument('--keep-open-days', dest='open_days', action='store', help='Number of daily indices to keep open.', type=int)
-    parser.add_argument('--keep-open-space', dest='open_space', action='store', help='Amount of indexed disk space to keep open(GB).', type=float)
     parser.add_argument('-H', '--hours-to-keep', action='store', help='Number of hours to keep.', type=int)
     parser.add_argument('-d', '--days-to-keep', action='store', help='Number of days to keep.', type=int)
     parser.add_argument('-g', '--disk-space-to-keep', action='store', help='Disk space to keep (GB).', type=float)
@@ -191,21 +190,20 @@ def main():
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
-    if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep:
+    if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep and not arguments.open_days and not arguments.open_hours:
         logger.error('Invalid arguments: You must specify either the number of hours, the number of days to keep or the maximum disk space to use')
         parser.print_help()
         return
 
     client = elasticsearch.Elasticsearch('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
     IndicesClient = elasticsearch.client.IndicesClient(client)
+    ClusterClient = elasticsearch.client.ClusterClient(client)
 
     d = {}
     if arguments.open_hours:
         d.update({ 'keepby':'time', 'unit':'hours', 'close':arguments.open_hours })
     if arguments.open_days:
         d.update({ 'keepby':'time', 'unit':'days', 'close':arguments.open_days })
-    if arguments.open_space:
-        d.update({ 'keepby':'space', 'unit':'GB', 'close':arguments.open_space })
     if arguments.days_to_keep:
         d.update({ 'keepby':'time', 'unit':'days', 'delete':arguments.days_to_keep })
     if arguments.hours_to_keep:
@@ -238,6 +236,7 @@ def main():
                 expired_indices = find_expired_indices(IndicesClient, logger, days_to_keep=d[operation], separator=arguments.separator, prefix=arguments.prefix)
 
         for index_name, expired_by in expired_indices:
+            skip = False
             expiration = timedelta(seconds=expired_by)
     
             if arguments.dry_run:
@@ -247,14 +246,20 @@ def main():
             logger.info('Attempting to {0} index {1} because it is {2} older than cutoff.'.format(operation, index_name, expiration))
     
             if operation == 'close':
-                do_operation = IndicesClient.close(index_name)
+                index_metadata = ClusterClient.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
+                if index_metadata['metadata']['indices'][index_name]['state'] == 'close':
+                    logger.info('Skipping index {0}: Already closed.'.format(index_name))
+                    skip = True
+                else:
+                    do_operation = IndicesClient.close(index_name)
             else: # delete is only other alternative
                 do_operation = IndicesClient.delete(index_name)
-            # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
-            if do_operation.get('ok'):
-                logger.info('{0}: Successfully {1}.'.format(index_name, verbed))
-            else:
-                logger.error('Error {0} index: {1}. ({2})'.format(gerund, index_name, do_operation))
+            if not skip:
+                # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
+                if do_operation.get('ok'):
+                    logger.info('{0}: Successfully {1}.'.format(index_name, verbed))
+                else:
+                    logger.error('Error {0} index: {1}. ({2})'.format(gerund, index_name, do_operation))
         logger.info('Index {0} operations completed.'.format(operation.upper()))
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
