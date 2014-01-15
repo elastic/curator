@@ -33,22 +33,22 @@ Keep 14 days of logs in elasticsearch:
 
 Keep 1TB of data in elasticsearch, show debug output:
 
-    python logstash_index_cleaner.py --host my-elasticsearch -g 1024 -l debug
+    python logstash_index_cleaner.py --host my-elasticsearch -g 1024 -D
 
 Dry run of above:
 
-    python logstash_index_cleaner.py --host my-elasticsearch -g 1024 -l debug -n
+    python logstash_index_cleaner.py --host my-elasticsearch -g 1024 -D -n
 
 ## Documentation and Errata
 
 Be sure not to mix types in the same command-line when using both close and delete operations, e.g.
 
-    DO NOT DO THIS: python logstash_index_cleaner.py --host my-elasticsearch -d 30 --keep-open-size 300
+    DO NOT DO THIS: python logstash_index_cleaner.py --host my-elasticsearch -g 1024 --keep-open-days 15
 
 If you need to close and delete based on different criteria, please use separate command lines, e.g.
 
-    python logstash_index_cleaner.py --host my-elasticsearch --keep-open-size 300
-    python logstash_index_cleaner.py --host my-elasticsearch -d 30
+    python logstash_index_cleaner.py --host my-elasticsearch -g 1024
+    python logstash_index_cleaner.py --host my-elasticsearch --keep-open-days 15
 
 
 ## Contributing
