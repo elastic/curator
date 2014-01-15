@@ -1,0 +1,6 @@
+0.4.0 (???)
+  # General
+  - First version logged in CHANGELOG
+  - new --disable-bloom-days feature requires 0.90.9+
+    http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-codec.html#bloom-postings
+    This can save a lot of heap space on cold indexes (i.e. not actively indexing documents)
