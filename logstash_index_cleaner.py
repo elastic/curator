@@ -57,6 +57,7 @@ def make_parser():
     parser.add_argument('--keep-open-hours', dest='open_hours', action='store', help='Number of hourly indices to keep open.', type=int)
     parser.add_argument('--keep-open-days', dest='open_days', action='store', help='Number of daily indices to keep open.', type=int)
     parser.add_argument('--disable-bloom-days', dest='bloom_days', action='store', help='Disable bloom filter for indices older than n days.', type=int)
+    parser.add_argument('--disable-bloom-hours', dest='bloom_hours', action='store', help='Disable bloom filter for indices older than n hours.', type=int)
     parser.add_argument('-H', '--hours-to-keep', action='store', help='Number of hours to keep.', type=int)
     parser.add_argument('-d', '--days-to-keep', action='store', help='Number of days to keep.', type=int)
     parser.add_argument('-g', '--disk-space-to-keep', action='store', help='Disk space to keep (GB).', type=float)
@@ -191,7 +192,7 @@ def main():
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
-    if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep and not arguments.open_days and not arguments.open_hours and not arguments.bloom_days:
+    if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep and not arguments.open_days and not arguments.open_hours and not arguments.bloom_days and not arguments.bloom_hours:
         logger.error('Invalid arguments: You must specify either the number of hours, the number of days to keep or the maximum disk space to use')
         parser.print_help()
         return
@@ -219,6 +220,8 @@ def main():
         d.update({ 'keepby':'time', 'unit':'hours', 'delete':arguments.hours_to_keep })
     if arguments.disk_space_to_keep:
         d.update({ 'keepby':'space', 'unit':'GB', 'delete':arguments.disk_space_to_keep })
+    if arguments.bloom_hours:
+        d.update({ 'keepby':'time', 'unit':'hours', 'disable bloom filter for':arguments.bloom_hours })
     if arguments.bloom_days:
         d.update({ 'keepby':'time', 'unit':'days', 'disable bloom filter for':arguments.bloom_days })
 
