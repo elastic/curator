@@ -202,6 +202,7 @@ def main():
     if (es_version[0] > 0) or (es_version[1] >= 90 and es_version[2] >= 9):
         can_bloom = True
     else:
+        can_bloom = False
         logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format('.'.join(es_version)))
 
     IndicesClient = elasticsearch.client.IndicesClient(client)
