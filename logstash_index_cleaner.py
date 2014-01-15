@@ -39,7 +39,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
@@ -56,6 +56,8 @@ def make_parser():
 
     parser.add_argument('--keep-open-hours', dest='open_hours', action='store', help='Number of hourly indices to keep open.', type=int)
     parser.add_argument('--keep-open-days', dest='open_days', action='store', help='Number of daily indices to keep open.', type=int)
+    parser.add_argument('--disable-bloom-days', dest='bloom_days', action='store', help='Disable bloom filter for indices older than n days.', type=int)
+    parser.add_argument('--disable-bloom-hours', dest='bloom_hours', action='store', help='Disable bloom filter for indices older than n hours.', type=int)
     parser.add_argument('-H', '--hours-to-keep', action='store', help='Number of hours to keep.', type=int)
     parser.add_argument('-d', '--days-to-keep', action='store', help='Number of days to keep.', type=int)
     parser.add_argument('-g', '--disk-space-to-keep', action='store', help='Disk space to keep (GB).', type=float)
@@ -190,12 +192,20 @@ def main():
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
-    if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep and not arguments.open_days and not arguments.open_hours:
+    if not arguments.hours_to_keep and not arguments.days_to_keep and not arguments.disk_space_to_keep and not arguments.open_days and not arguments.open_hours and not arguments.bloom_days and not arguments.bloom_hours:
         logger.error('Invalid arguments: You must specify either the number of hours, the number of days to keep or the maximum disk space to use')
         parser.print_help()
         return
 
     client = elasticsearch.Elasticsearch('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
+    es_version = client.info()['version']['number'].split('.')
+    # Bloom filter unloading not supported in versions < 0.90.9
+    if (es_version[0] > 0) or (es_version[1] >= 90 and es_version[2] >= 9):
+        can_bloom = True
+    else:
+        can_bloom = False
+        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format('.'.join(es_version)))
+
     IndicesClient = elasticsearch.client.IndicesClient(client)
     ClusterClient = elasticsearch.client.ClusterClient(client)
 
@@ -210,21 +220,30 @@ def main():
         d.update({ 'keepby':'time', 'unit':'hours', 'delete':arguments.hours_to_keep })
     if arguments.disk_space_to_keep:
         d.update({ 'keepby':'space', 'unit':'GB', 'delete':arguments.disk_space_to_keep })
+    if arguments.bloom_hours:
+        d.update({ 'keepby':'time', 'unit':'hours', 'disable bloom filter for':arguments.bloom_hours })
+    if arguments.bloom_days:
+        d.update({ 'keepby':'time', 'unit':'days', 'disable bloom filter for':arguments.bloom_days })
 
     operations = []
     if 'close' in d:
         operations.append('close')
     if 'delete' in d:
         operations.append('delete')
+    if 'disable bloom filter for' in d:
+        operations.append('disable bloom filter for')
 
     for operation in operations:
-        logger.info('Index {0} operations commencing...'.format(operation.upper()))
+        logger.info('{0} Index operations commencing...'.format(operation.upper()))
         if operation == 'close':
             verbed = 'closed'
             gerund = 'Closing'
         if operation == 'delete':
             verbed = 'deleted'
             gerund = 'Deleting'
+        if operation == 'disable bloom filter for':
+            verbed = 'bloom filter disabled'
+            gerund = 'Disabling bloom filter for'
         if d['keepby'] == 'space':
             expired_indices = find_overusage_indices(IndicesClient, logger, d[operation], arguments.separator, arguments.prefix)
             logger.info('{0} indices by disk usage over {1} {2}.'.format(gerund, d[operation], d['unit']))
@@ -237,6 +256,7 @@ def main():
 
         for index_name, expired_by in expired_indices:
             skip = False
+            index_closed = False
             expiration = timedelta(seconds=expired_by)
     
             if arguments.dry_run:
@@ -244,23 +264,31 @@ def main():
                 continue
     
             logger.info('Attempting to {0} index {1} because it is {2} older than cutoff.'.format(operation, index_name, expiration))
-    
+            index_metadata = ClusterClient.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
+            if index_metadata['metadata']['indices'][index_name]['state'] == 'close':
+                index_closed = True
+
             if operation == 'close':
-                index_metadata = ClusterClient.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
-                if index_metadata['metadata']['indices'][index_name]['state'] == 'close':
+                if index_closed:
                     logger.info('Skipping index {0}: Already closed.'.format(index_name))
                     skip = True
                 else:
                     do_operation = IndicesClient.close(index_name)
-            else: # delete is only other alternative
+            elif operation == 'delete': 
                 do_operation = IndicesClient.delete(index_name)
+            elif operation == 'disable bloom filter for' and can_bloom:
+                if index_closed: # Don't try to disable bloom filter on a closed index.  It will re-open them
+                    logger.info('Skipping index {0}: Already closed.'.format(index_name))
+                    skip = True
+                else:
+                    do_operation = IndicesClient.put_settings(index=index_name, body='index.codec.bloom.load=false')
             if not skip:
                 # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
                 if do_operation.get('ok'):
                     logger.info('{0}: Successfully {1}.'.format(index_name, verbed))
                 else:
                     logger.error('Error {0} index: {1}. ({2})'.format(gerund, index_name, do_operation))
-        logger.info('Index {0} operations completed.'.format(operation.upper()))
+        logger.info('{0} index operations completed.'.format(operation.upper()))
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 

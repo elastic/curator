@@ -31,6 +31,10 @@ Keep 14 days of logs in elasticsearch:
 
     python logstash_index_cleaner.py --host my-elasticsearch -d 14
 
+Disable bloom filter for indices older than 2 days, close indices older than 14 days, delete indices older than 30 days:
+
+    python logstash_index_cleaner.py --host my-elasticsearch --disable-bloom-days 2 --keep-open-days 14 -d 30
+
 Keep 1TB of data in elasticsearch, show debug output:
 
     python logstash_index_cleaner.py --host my-elasticsearch -g 1024 -D
