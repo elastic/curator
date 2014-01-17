@@ -40,7 +40,7 @@ from datetime import timedelta, datetime
 import elasticsearch
 from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
-# This solves https://github.com/logstash/expire-logs/issues/12
+# This solves https://github.com/elasticsearch/curator/issues/12
 try:
     from logging import NullHandler
 except ImportError:

@@ -1,6 +1,6 @@
-# Expire logs!
+# Curator
 
-Need to delete old data in logstash/elasticsearch? This is the tool for you!
+Need to delete time-series indices in Elasticsearch? This is the tool for you!
 
 ## Usage
 
@@ -28,7 +28,7 @@ If your values match these you do not need to include them.  The `prefix` should
 
 ### Examples
 
-Close indices older than 14 days, delete indices older than 30 days (See https://github.com/logstash/expire-logs/issues/1):
+Close indices older than 14 days, delete indices older than 30 days (See https://github.com/elasticsearch/curator/issues/1):
 
     python curator.py --host my-elasticsearch -d 30 -c 14
 
