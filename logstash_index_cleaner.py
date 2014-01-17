@@ -43,7 +43,7 @@ __version__ = '0.4.0'
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
-    parser = argparse.ArgumentParser(description='DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator" instead. Delete old logstash indices from Elasticsearch.')
+    parser = argparse.ArgumentParser(description='DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator.py" instead. Delete old logstash indices from Elasticsearch.')
 
     parser.add_argument('-v', '--version', action='version', version='%(prog)s '+__version__)
 
@@ -174,7 +174,7 @@ def find_overusage_indices(IndicesClient, logger, disk_space_to_keep, separator=
 
 
 def main():
-    print('DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator" instead.')
+    print('DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator.py" instead.')
     start = time.time()
 
     parser = make_parser()
@@ -292,9 +292,9 @@ def main():
         logger.info('{0} index operations completed.'.format(operation.upper()))
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
-    print('DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator" instead.')
+    print('DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator.py" instead.')
 
 
 if __name__ == '__main__':
     main()
-    print('DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator" instead.')
+    print('DEPRECATED! THIS SCRIPT MAY GO AWAY AT ANY TIME. Please use "curator.py" instead.')

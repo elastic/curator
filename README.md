@@ -9,7 +9,7 @@ Install dependencies
     pip install -r requirements.txt
 
 
-See `python curator --help` for usage specifics.
+See `python curator.py --help` for usage specifics.
 
 ### Defaults
 
@@ -30,34 +30,34 @@ If your values match these you do not need to include them.  The `prefix` should
 
 Close indices older than 14 days, delete indices older than 30 days (See https://github.com/logstash/expire-logs/issues/1):
 
-    python curator --host my-elasticsearch -d 30 -c 14
+    python curator.py --host my-elasticsearch -d 30 -c 14
 
 Keep 14 days of logs in elasticsearch:
 
-    python curator --host my-elasticsearch -d 14
+    python curator.py --host my-elasticsearch -d 14
 
 Disable bloom filter for indices older than 2 days, close indices older than 14 days, delete indices older than 30 days:
 
-    python curator --host my-elasticsearch -b 2 -c 14 -d 30
+    python curator.py --host my-elasticsearch -b 2 -c 14 -d 30
     
 Optimize (Lucene forceMerge) indices older than 2 days to 1 segment per shard:
 
-    python curator --host my-elasticsearch -t 3600 -o 2 --max_num_segments 1
+    python curator.py --host my-elasticsearch -t 3600 -o 2 --max_num_segments 1
 
 Keep 1TB of data in elasticsearch, show debug output:
 
-    python curator --host my-elasticsearch -C space -g 1024 -D
+    python curator.py --host my-elasticsearch -C space -g 1024 -D
 
 Dry run of above:
 
-    python curator --host my-elasticsearch -C space -g 1024 -D -n
+    python curator.py --host my-elasticsearch -C space -g 1024 -D -n
 
 ## Documentation and Errata
 
 If you need to close and delete based on different criteria, please use separate command lines, e.g.
 
-    python curator --host my-elasticsearch -C space -g 1024
-    python curator --host my-elasticsearch -c 15
+    python curator.py --host my-elasticsearch -C space -g 1024
+    python curator.py --host my-elasticsearch -c 15
     
 When using optimize the current behavior is to wait until the optimize operation is complete before continuing.  With large indices, this can result in timeouts with the default 30 seconds.  It is recommended that you increase the timeout to at least 3600 seconds, if not more.  
 
@@ -71,7 +71,4 @@ When using optimize the current behavior is to wait until the optimize operation
 ## Origins
 
 <https://logstash.jira.com/browse/LOGSTASH-211>
-
-This tool was written by by Aaron Mildenstein, Njal Karevoll, and François
-Deppierraz.
 

@@ -27,6 +27,7 @@
 #
 # TODO: Unit tests. The code is somewhat broken up into logical parts that may 
 #       be tested separately.
+#       Make sure the code can be used outside of __main__ by people importing the module
 #       Better error reporting?
 #       Improve the get_index_epoch method to parse more date formats. Consider renaming (to "parse_date_to_timestamp"?)
 
@@ -50,6 +51,8 @@ except ImportError:
             pass
 
 __version__ = '0.5.0'
+
+logger = logging.getLogger(__name__)
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
@@ -117,29 +120,6 @@ def validate_args(myargs):
     else:
         return messages
 
-
-def op_map(w):
-    """Return a dict of words to use in messages"""
-    d = {}
-    if w == 'close':
-        d['op']     = w
-        d['verbed'] = 'closed'
-        d['gerund'] = 'Closing'
-    elif w == 'delete':
-        d['op']     = w
-        d['verbed'] = 'deleted'
-        d['gerund'] = 'Deleting'
-    elif w == 'optimize':
-        d['op']     = w
-        d['verbed'] = 'optimized'
-        d['gerund'] = 'Optimizing'
-    elif w == 'bloom':
-        d['op']     = 'disable bloom filter for'
-        d['verbed'] = 'bloom filter disabled'
-        d['gerund'] = 'Disabling bloom filter for'
-    return d
-
-
 def get_index_epoch(index_timestamp, separator='.'):
     """ Gets the epoch of the index.
 
@@ -158,7 +138,7 @@ def get_index_epoch(index_timestamp, separator='.'):
     return time.mktime(t_tuple)
 
 
-def can_bloom(client, logger):
+def can_bloom(client):
     """Return True if ES version > 0.90.9"""
     es_version = client.info()['version']['number'].split('.')
     # Bloom filter unloading not supported in versions < 0.90.9
@@ -169,7 +149,7 @@ def can_bloom(client, logger):
         return False
 
 
-def find_expired_indices(IndicesClient, logger, time_unit=None, unit_count=None, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
+def find_expired_indices(client, time_unit=None, unit_count=None, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
     """ Generator that yields expired indices.
 
     :return: Yields tuples on the format ``(index_name, expired_by)`` where index_name
@@ -181,8 +161,8 @@ def find_expired_indices(IndicesClient, logger, time_unit=None, unit_count=None,
     hours_cutoff = utc_now_time - unit_count * 60 * 60 if time_unit is 'hours' else None
 
     try:
-        sorted_indices = sorted(set(IndicesClient.get_settings().keys()))
-    except (ImproperlyConfigured, ElasticsearchException, exception) as e:
+        sorted_indices = sorted(client.indices.get_settings().keys())
+    except (ImproperlyConfigured, ElasticsearchException) as e:
         logger.exception(e)
         sys.exit(1)
 
@@ -223,7 +203,7 @@ def find_expired_indices(IndicesClient, logger, time_unit=None, unit_count=None,
             logger.info('{0} is {1} above the cutoff.'.format(index_name, timedelta(seconds=index_epoch-cutoff)))
 
 
-def find_overusage_indices(client, logger, disk_space_to_keep, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
+def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
     """ Generator that yields over usage indices.
 
     :return: Yields tuples on the format ``(index_name, 0)`` where index_name
@@ -231,13 +211,12 @@ def find_overusage_indices(client, logger, disk_space_to_keep, separator='.', pr
     compatiblity reasons.
     """
 
-    IndicesClient = elasticsearch.client.IndicesClient(client)
     disk_usage = 0.0
     disk_limit = disk_space_to_keep * 2**30
 
     try:
-        sorted_indices = reversed(sorted(set(IndicesClient.get_settings().keys())))
-    except (ImproperlyConfigured, ElasticsearchException, exception) as e:
+        sorted_indices = sorted(client.indices.get_settings().keys(), reverse=True)
+    except (ImproperlyConfigured, ElasticsearchException) as e:
         logger.exception(e)
         sys.exit(1)
 
@@ -248,7 +227,7 @@ def find_overusage_indices(client, logger, disk_space_to_keep, separator='.', pr
             continue
 
         if not index_closed(client, index_name):
-            index_size = IndicesClient.status(index_name)['indices'][index_name]['index']['primary_size_in_bytes']
+            index_size = client.indices.status(index_name)['indices'][index_name]['index']['primary_size_in_bytes']
             disk_usage += index_size
         else:
             logger.warn('Cannot check size of index {0} because it is closed.  Size estimates will not be accurate.')
@@ -261,19 +240,53 @@ def find_overusage_indices(client, logger, disk_space_to_keep, separator='.', pr
 
 def index_closed(client, index_name):
     """Return True if index is closed"""
-    ClusterClient = elasticsearch.client.ClusterClient(client)
-    index_metadata = ClusterClient.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
+    index_metadata = client.cluster.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
     if index_metadata['metadata']['indices'][index_name]['state'] == 'close':
         return True
     else:
         return False
 
+def _close_index(client, index_name, **kwargs):
+    if index_closed(client, index_name):
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    else:
+        client.indices.close(index_name)
 
-def index_loop(client, logger, operation, expired_indices, dry_run=False, by_space=False, max_num_segments=2):
-    IndicesClient = elasticsearch.client.IndicesClient(client)
-    words = op_map(operation)
+def _delete_index(client, index_name, **kwargs):
+    client.indices.delete(index_name)
+
+def _optimize_index(client, index_name, max_num_segments=2, **kwargs):
+    if index_closed(client, index_name): # Don't try to optimize a closed index
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    else:
+        shards, segmentcount = get_segmentcount(client, index_name)
+        logger.debug('Index {0} has {1} shards and {2} segments total.'.format(index_name, shards, segmentcount))
+        if segmentcount > (shards * max_num_segments):
+            logger.info('Optimizing index {0} to {1} segments per shard.  Please wait...'.format(index_name, max_num_segments))
+            client.indices.optimize(index=index_name, max_num_segments=max_num_segments)
+        else:
+            logger.info('Skipping index {0}: Already optimized.'.format(index_name))
+            return True
+
+def _bloom_index(client, index_name, **kwargs):
+    if index_closed(client, index_name): # Don't try to disable bloom filter on a closed index.  It will re-open them
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    else:
+        client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
+
+OP_MAP = {
+    'close': (_close_index, {'op': 'close', 'verbed': 'closed', 'gerund': 'Closing'}),
+    'delete': (_delete_index, {'op': 'delete', 'verbed': 'deleted', 'gerund': 'Deleting'}),
+    'optimize': (_optimize_index, {'op': 'optimize', 'verbed': 'optimized', 'gerund': 'Optimizing'}),
+    'bloom': (_bloom_index, {'op': 'disable bloom filter for', 'verbed': 'bloom filter disabled', 'gerund': 'Disabling bloom filter for'}),
+}
+
+def index_loop(client, operation, expired_indices, dry_run=False, by_space=False, **kwargs):
+    op, words = OP_MAP[operation]
     for index_name, expired_by in expired_indices:
-        skip = False
         expiration = timedelta(seconds=expired_by)
 
         if dry_run and not by_space:
@@ -288,47 +301,19 @@ def index_loop(client, logger, operation, expired_indices, dry_run=False, by_spa
         else:
             logger.info('Attempting {0} index {1} due to space constraints.'.format(words['gerund'].lower(), index_name))
 
-        if operation == 'close':
-            if index_closed(client, index_name):
-                logger.info('Skipping index {0}: Already closed.'.format(index_name))
-                skip = True
-            else:
-                do_operation = IndicesClient.close(index_name)
-        elif operation == 'delete': 
-            do_operation = IndicesClient.delete(index_name)
+        skipped = op(client, index_name, **kwargs)
 
-        elif operation == 'optimize':
-            if index_closed(client, index_name): # Don't try to optimize a closed index
-                logger.info('Skipping index {0}: Already closed.'.format(index_name))
-                skip = True
-            else:
-                shards, segmentcount = get_segmentcount(IndicesClient, index_name)
-                logger.debug('Index {0} has {1} shards and {2} segments total.'.format(index_name, shards, segmentcount))
-                if segmentcount > (shards * max_num_segments):
-                    logger.info('Optimizing index {0} to {1} segments per shard.  Please wait...'.format(index_name, max_num_segments))
-                    do_operation = IndicesClient.optimize(index=index_name, max_num_segments=max_num_segments)
-                else:
-                    logger.info('Skipping index {0}: Already optimized.'.format(index_name))
-                    skip = True
+        if skipped:
+            continue
 
-        elif operation == 'bloom' and can_bloom(client, logger):
-            if index_closed: # Don't try to disable bloom filter on a closed index.  It will re-open them
-                logger.info('Skipping index {0}: Already closed.'.format(index_name))
-                skip = True
-            else:
-                do_operation = IndicesClient.put_settings(index=index_name, body='index.codec.bloom.load=false')
-        if not skip:
-            # ES returns a dict on the format {u'acknowledged': True, u'ok': True} on success.
-            if do_operation.get('ok'):
-                logger.info('{0}: Successfully {1}.'.format(index_name, words['verbed']))
-            else:
-                logger.error('Error {0} index: {1}. ({2})'.format(words['gerund'], index_name, do_operation))
+        # if no error was raised and we got here that means the operation succeeded
+        logger.info('{0}: Successfully {1}.'.format(index_name, words['verbed']))
     logger.info('{0} index operations completed.'.format(words['op'].upper()))
 
 
-def get_segmentcount(IndicesClient, index_name):
+def get_segmentcount(client, index_name):
     """Return a list of shardcount, segmentcount"""
-    shards = IndicesClient.segments(index_name)['indices'][index_name]['shards']
+    shards = client.indices.segments(index_name)['indices'][index_name]['shards']
     segmentcount = 0
     for shardnum in shards:
         for shard in range(0,len(shards[shardnum])):
@@ -342,15 +327,12 @@ def main():
     parser = make_parser()
     arguments = parser.parse_args()
 
-    log_file = arguments.log_file if arguments.log_file else 'STDERR'
-
     # Setup logging
     logging.basicConfig(level=logging.DEBUG if arguments.debug else logging.INFO,
                         format='%(asctime)s.%(msecs)03d %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s',
                         datefmt="%Y-%m-%dT%H:%M:%S",
                         stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
     logging.info("Job starting...")
-    logger = logging.getLogger(__name__)
 
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
@@ -362,33 +344,32 @@ def main():
         return
 
     client = elasticsearch.Elasticsearch('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
-    IndicesClient = elasticsearch.client.IndicesClient(client)
 
     # Delete by space first
     if arguments.disk_space:
         logger.info('Deleting indices by disk usage over {0} gigabytes'.format(arguments.disk_space))
-        expired_indices = find_overusage_indices(client, logger, arguments.disk_space, arguments.separator, arguments.prefix)
-        index_loop(client, logger, 'delete', expired_indices, arguments.dry_run, by_space=True)
+        expired_indices = find_overusage_indices(client, arguments.disk_space, arguments.separator, arguments.prefix)
+        index_loop(client, 'delete', expired_indices, arguments.dry_run, by_space=True)
     # Delete by time
     if arguments.delete_older:
         logger.info('Deleting indices older than {0} {1}...'.format(arguments.delete_older, arguments.time_unit))
-        expired_indices = find_expired_indices(IndicesClient, logger, time_unit=arguments.time_unit, unit_count=arguments.delete_older, separator=arguments.separator, prefix=arguments.prefix)
-        index_loop(client, logger, 'delete', expired_indices, arguments.dry_run)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.delete_older, separator=arguments.separator, prefix=arguments.prefix)
+        index_loop(client, 'delete', expired_indices, arguments.dry_run)
     # Close by time
     if arguments.close_older:
         logger.info('Closing indices older than {0} {1}...'.format(arguments.close_older, arguments.time_unit))
-        expired_indices = find_expired_indices(IndicesClient, logger, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator, prefix=arguments.prefix)
-        index_loop(client, logger, 'close', expired_indices, arguments.dry_run)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator, prefix=arguments.prefix)
+        index_loop(client, 'close', expired_indices, arguments.dry_run)
     # Disable bloom filter by time
     if arguments.bloom_older:
         logger.info('Disabling bloom filter on indices older than {0} {1}...'.format(arguments.bloom_older, arguments.time_unit))
-        expired_indices = find_expired_indices(IndicesClient, logger, time_unit=arguments.time_unit, unit_count=arguments.bloom_older, separator=arguments.separator, prefix=arguments.prefix)
-        index_loop(client, logger, 'bloom', expired_indices, arguments.dry_run)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.bloom_older, separator=arguments.separator, prefix=arguments.prefix)
+        index_loop(client, 'bloom', expired_indices, arguments.dry_run)
     # Optimize index
     if arguments.optimize:
         logger.info('Optimizing indices older than {0} {1}...'.format(arguments.optimize, arguments.time_unit))
-        expired_indices = find_expired_indices(IndicesClient, logger, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator, prefix=arguments.prefix)
-        index_loop(client, logger, 'optimize', expired_indices, arguments.dry_run)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator, prefix=arguments.prefix)
+        index_loop(client, 'optimize', expired_indices, arguments.dry_run)
 
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
