@@ -16,9 +16,7 @@
 # elasticsearch (official Elasticsearch Python API, http://www.elasticsearch.org/guide/en/elasticsearch/client/python-api/current/index.html)
 # argparse (built-in in python2.7 and higher, python 2.6 and lower will have to easy_install it)
 #
-# TODO: Unit tests. The code is somewhat broken up into logical parts that may be tested separately.
-#       Better error reporting?
-#       Improve the get_index_epoch method to parse more date formats. Consider renaming (to "parse_date_to_timestamp"?)
+# DEPRECATED!  Use https://github.com/elasticsearch/curator curator.py instead now!
 
 import sys
 import time
