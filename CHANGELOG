@@ -1,4 +1,16 @@
-0.4.0 (???)
+0.5.0 (17 Jan 2014)
+  # General
+  - Deprecated logstash_index_cleaner.py
+    Use new 'curator.py' instead (untergeek)
+  - new script change: 'curator.py' (untergeek)
+  - new add index optimization (Lucene forceMerge) to reduce segments
+    and therefore memory usage. (untergeek)
+  - update refactor of args and several functions to streamline operation
+    and make it more readable (untergeek)
+  - update refactor further to clean up and allow immediate (and future) 
+    portability (HonzaKral)
+
+0.4.0
   # General
   - First version logged in CHANGELOG
   - new --disable-bloom-days feature requires 0.90.9+
