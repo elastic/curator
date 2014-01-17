@@ -40,7 +40,7 @@ Disable bloom filter for indices older than 2 days, close indices older than 14 
 
     python curator --host my-elasticsearch -b 2 -c 14 -d 30
     
-Optimize indices older than 2 days to 1 segment per shard:
+Optimize (Lucene forceMerge) indices older than 2 days to 1 segment per shard:
 
     python curator --host my-elasticsearch -t 3600 -o 2 --max_num_segments 1
 

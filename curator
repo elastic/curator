@@ -73,7 +73,7 @@ def make_parser():
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond n GIGABYTES.', type=float)
 
     parser.add_argument('--max_num_segments', action='store', help='Maximum number of segments, post-optimize. Default: 2', type=int, default=2)
-    parser.add_argument('-o', '--optimize', action='store', help='Optimize indices older than n TIME_UNITs.  Must increase timeout to stay connected throughout optimize operation, recommend no less than 3600.', type=int)
+    parser.add_argument('-o', '--optimize', action='store', help='Optimize (Lucene forceMerge) indices older than n TIME_UNITs.  Must increase timeout to stay connected throughout optimize operation, recommend no less than 3600.', type=int)
 
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=False)
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=False)
