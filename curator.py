@@ -208,7 +208,7 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
             continue
 
         if not index_closed(client, index_name):
-            index_size = client.indices.status(index_name)['indices'][index_name]['index']['primary_size_in_bytes']
+            index_size = client.indices.status(index=index_name)['indices'][index_name]['index']['primary_size_in_bytes']
             disk_usage += index_size
         else:
             logger.warn('Cannot check size of index {0} because it is closed.  Size estimates will not be accurate.')
@@ -221,21 +221,32 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
 
 def index_closed(client, index_name):
     """Return True if index is closed"""
-    index_metadata = client.cluster.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
-    if index_metadata['metadata']['indices'][index_name]['state'] == 'close':
-        return True
-    else:
-        return False
+    try:
+        # 1.0 params
+        index_metadata = client.cluster.state(
+            index=index_name,
+            metric='metadata',
+        )
+    except TypeError:
+        # 0.90 params:
+        index_metadata = client.cluster.state(
+            filter_blocks=True,
+            filter_index_templates=True,
+            filter_indices=index_name,
+            filter_nodes=True,
+            filter_routing_table=True,
+        )
+    return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
 def _close_index(client, index_name, **kwargs):
     if index_closed(client, index_name):
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
     else:
-        client.indices.close(index_name)
+        client.indices.close(index=index_name)
 
 def _delete_index(client, index_name, **kwargs):
-    client.indices.delete(index_name)
+    client.indices.delete(index=index_name)
 
 def _optimize_index(client, index_name, max_num_segments=2, **kwargs):
     if index_closed(client, index_name): # Don't try to optimize a closed index
@@ -292,7 +303,7 @@ def index_loop(client, operation, expired_indices, dry_run=False, by_space=False
 
 def get_segmentcount(client, index_name):
     """Return a list of shardcount, segmentcount"""
-    shards = client.indices.segments(index_name)['indices'][index_name]['shards']
+    shards = client.indices.segments(index=index_name)['indices'][index_name]['shards']
     segmentcount = 0
     for shardnum in shards:
         for shard in range(0,len(shards[shardnum])):
