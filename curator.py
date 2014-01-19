@@ -38,7 +38,6 @@ import argparse
 from datetime import timedelta, datetime
 
 import elasticsearch
-from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
 # This solves https://github.com/elasticsearch/curator/issues/12
 try:
@@ -158,11 +157,7 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
     cutoff = utc_now - timedelta(**{time_unit: unit_count})
     required_parts = 4 if time_unit == 'hourly' else 3
 
-    try:
-        sorted_indices = sorted(client.indices.get_settings().keys())
-    except (ImproperlyConfigured, ElasticsearchException) as e:
-        logger.exception(e)
-        sys.exit(1)
+    sorted_indices = sorted(client.indices.get_settings().keys())
 
     for index_name in sorted_indices:
         if not index_name.startswith(prefix):
@@ -204,11 +199,7 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
     disk_usage = 0.0
     disk_limit = disk_space_to_keep * 2**30
 
-    try:
-        sorted_indices = sorted(client.indices.get_settings().keys(), reverse=True)
-    except (ImproperlyConfigured, ElasticsearchException) as e:
-        logger.exception(e)
-        sys.exit(1)
+    sorted_indices = sorted(client.indices.get_settings().keys(), reverse=True)
 
     for index_name in sorted_indices:
 
