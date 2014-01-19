@@ -140,12 +140,13 @@ def get_index_epoch(index_timestamp, separator='.'):
 
 def can_bloom(client):
     """Return True if ES version > 0.90.9"""
-    es_version = client.info()['version']['number'].split('.')
+    version = client.info()['version']['number']
+    version_number = tuple(map(int, version.split('.')))
     # Bloom filter unloading not supported in versions < 0.90.9
-    if (es_version[0] > 0) or (es_version[1] >= 90 and es_version[2] >= 9):
+    if version_number >= (0, 90, 9):
         return True
     else:
-        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format('.'.join(es_version)))
+        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format(version))
         return False
 
 
