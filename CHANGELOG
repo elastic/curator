@@ -1,3 +1,13 @@
+0.5.1 (20 Jan 2014)
+  # General
+  - Fix can_bloom to compare numbers (HonzaKral)
+  - Switched find_expired_indices to use datetimes and timedeltas
+  - Do not try and catch unrecoverable exceptions. (HonzaKral)
+  - Future proofing the use of the elasticsearch client (i.e. work with version
+    1.0+ of Elasticsearch) (HonzaKral)
+    Needs more testing, but should work.
+  - Add tests for these scenarios (HonzaKral)
+
 0.5.0 (17 Jan 2014)
   # General
   - Deprecated logstash_index_cleaner.py

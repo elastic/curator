@@ -1,6 +1,6 @@
 # Curator
 
-Need to delete time-series indices in Elasticsearch? This is the tool for you!
+Have time-series indices in Elasticsearch? This is the tool for you!
 
 ## Usage
 
