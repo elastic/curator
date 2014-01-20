@@ -38,7 +38,6 @@ import argparse
 from datetime import timedelta, datetime
 
 import elasticsearch
-from elasticsearch.exceptions import ElasticsearchException, ImproperlyConfigured
 
 # This solves https://github.com/elasticsearch/curator/issues/12
 try:
@@ -120,51 +119,45 @@ def validate_args(myargs):
     else:
         return messages
 
-def get_index_epoch(index_timestamp, separator='.'):
-    """ Gets the epoch of the index.
+def get_index_time(index_timestamp, separator='.'):
+    """ Gets the time of the index.
 
     :param index_timestamp: A string on the format YYYY.MM.DD[.HH]
-    :return The creation time (epoch) of the index.
+    :return The creation time (datetime) of the index.
     """
-    year_month_day_optionalhour = index_timestamp.split(separator)
-    # If no hour has been appended, add UTC hour for "right now"
-    # since Elasticsearch indices rollover at 00:00 UTC
-    if len(year_month_day_optionalhour) == 3: 		
-        year_month_day_optionalhour.append(datetime.utcnow().hour) 
-    # Break down the parts on the separator
-    t_array = [int(part) for part in year_month_day_optionalhour]
-    # t_array: 0 = year, 1 = month, 2 = day, 3 = hour
-    t_tuple = (t_array[0], t_array[1], t_array[2], t_array[3], 0, 0, 0, 0, 0)
-    return time.mktime(t_tuple)
-
+    try:
+        return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d', '%H')))
+    except ValueError:
+        return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
 
 def can_bloom(client):
     """Return True if ES version > 0.90.9"""
-    es_version = client.info()['version']['number'].split('.')
+    version = client.info()['version']['number']
+    version_number = tuple(map(int, version.split('.')))
     # Bloom filter unloading not supported in versions < 0.90.9
-    if (es_version[0] > 0) or (es_version[1] >= 90 and es_version[2] >= 9):
+    if version_number >= (0, 90, 9):
         return True
     else:
-        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format('.'.join(es_version)))
+        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format(version))
         return False
 
 
-def find_expired_indices(client, time_unit=None, unit_count=None, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
+def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
     """ Generator that yields expired indices.
 
     :return: Yields tuples on the format ``(index_name, expired_by)`` where index_name
-        is the name of the expired index and expired_by is the number of seconds (a float value) that the
+        is the name of the expired index and expired_by is the interval (timedelta) that the
         index was expired by.
     """
-    utc_now_time = time.time() + 86400 # Add 1 day so we never prune the current index
-    days_cutoff = utc_now_time - unit_count * 24 * 60 * 60 if time_unit is 'days' else None
-    hours_cutoff = utc_now_time - unit_count * 60 * 60 if time_unit is 'hours' else None
+    # time-injection for test purposes only
+    utc_now = utc_now if utc_now else datetime.utcnow()
+    # reset to midnight to be sure we are not retiring a human by mistake
+    utc_now = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    try:
-        sorted_indices = sorted(client.indices.get_settings().keys())
-    except (ImproperlyConfigured, ElasticsearchException) as e:
-        logger.exception(e)
-        sys.exit(1)
+    cutoff = utc_now - timedelta(**{time_unit: unit_count})
+    required_parts = 4 if time_unit == 'hourly' else 3
+
+    sorted_indices = sorted(client.indices.get_settings().keys())
 
     for index_name in sorted_indices:
         if not index_name.startswith(prefix):
@@ -176,34 +169,26 @@ def find_expired_indices(client, time_unit=None, unit_count=None, separator='.',
         # find the timestamp parts (i.e ['2011', '01', '05'] from '2011.01.05') using the configured separator
         parts = unprefixed_index_name.split(separator)
 
-        # perform some basic validation
-        if len(parts) < 3 or len(parts) > 4 or not all([item.isdigit() for item in parts]):
-            logger.error('Could not find a valid timestamp from the index: {0}'.format(index_name))
-            continue
-
-        # find the cutoff. if we have more than 3 parts in the timestamp, the timestamp includes the hours and we
-        # should compare it to the hours_cutoff, otherwise, we should use the days_cutoff
-        cutoff = hours_cutoff
-        if len(parts) == 3:
-            cutoff = days_cutoff
-
-        # but the cutoff might be none, if the current index only has three parts (year.month.day) and we're only
-        # counting hourly indices:
-        if cutoff is None:
+        # verify we have a valid cutoff - hours for 4-part indices, days for 3-part
+        if len(parts) != required_parts:
             logger.debug('Skipping {0} because it is of a type (hourly or daily) that I\'m not asked to evaluate.'.format(index_name))
             continue
 
-        index_epoch = get_index_epoch(unprefixed_index_name)
+        try:
+            index_time = get_index_time(unprefixed_index_name, separator=separator)
+        except ValueError:
+            logger.error('Could not find a valid timestamp from the index: {0}'.format(index_name))
+            continue
 
         # if the index is older than the cutoff
-        if index_epoch < cutoff:
-            yield index_name, cutoff-index_epoch
+        if index_time < cutoff:
+            yield index_name, cutoff-index_time
 
         else:
-            logger.info('{0} is {1} above the cutoff.'.format(index_name, timedelta(seconds=index_epoch-cutoff)))
+            logger.info('{0} is {1} above the cutoff.'.format(index_name, index_time-cutoff))
 
 
-def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='logstash-', out=sys.stdout, err=sys.stderr):
+def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='logstash-'):
     """ Generator that yields over usage indices.
 
     :return: Yields tuples on the format ``(index_name, 0)`` where index_name
@@ -214,11 +199,7 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
     disk_usage = 0.0
     disk_limit = disk_space_to_keep * 2**30
 
-    try:
-        sorted_indices = sorted(client.indices.get_settings().keys(), reverse=True)
-    except (ImproperlyConfigured, ElasticsearchException) as e:
-        logger.exception(e)
-        sys.exit(1)
+    sorted_indices = sorted(client.indices.get_settings().keys(), reverse=True)
 
     for index_name in sorted_indices:
 
@@ -227,7 +208,7 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
             continue
 
         if not index_closed(client, index_name):
-            index_size = client.indices.status(index_name)['indices'][index_name]['index']['primary_size_in_bytes']
+            index_size = client.indices.status(index=index_name)['indices'][index_name]['index']['primary_size_in_bytes']
             disk_usage += index_size
         else:
             logger.warn('Cannot check size of index {0} because it is closed.  Size estimates will not be accurate.')
@@ -240,21 +221,32 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
 
 def index_closed(client, index_name):
     """Return True if index is closed"""
-    index_metadata = client.cluster.state(filter_blocks=True, filter_index_templates=True, filter_indices=index_name, filter_nodes=True, filter_routing_table=True) 
-    if index_metadata['metadata']['indices'][index_name]['state'] == 'close':
-        return True
-    else:
-        return False
+    try:
+        # 1.0 params
+        index_metadata = client.cluster.state(
+            index=index_name,
+            metric='metadata',
+        )
+    except TypeError:
+        # 0.90 params:
+        index_metadata = client.cluster.state(
+            filter_blocks=True,
+            filter_index_templates=True,
+            filter_indices=index_name,
+            filter_nodes=True,
+            filter_routing_table=True,
+        )
+    return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
 def _close_index(client, index_name, **kwargs):
     if index_closed(client, index_name):
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
     else:
-        client.indices.close(index_name)
+        client.indices.close(index=index_name)
 
 def _delete_index(client, index_name, **kwargs):
-    client.indices.delete(index_name)
+    client.indices.delete(index=index_name)
 
 def _optimize_index(client, index_name, max_num_segments=2, **kwargs):
     if index_closed(client, index_name): # Don't try to optimize a closed index
@@ -286,9 +278,7 @@ OP_MAP = {
 
 def index_loop(client, operation, expired_indices, dry_run=False, by_space=False, **kwargs):
     op, words = OP_MAP[operation]
-    for index_name, expired_by in expired_indices:
-        expiration = timedelta(seconds=expired_by)
-
+    for index_name, expiration in expired_indices:
         if dry_run and not by_space:
             logger.info('Would have attempted {0} index {1} because it is {2} older than the calculated cutoff.'.format(words['gerund'].lower(), index_name, expiration))
             continue
@@ -313,7 +303,7 @@ def index_loop(client, operation, expired_indices, dry_run=False, by_space=False
 
 def get_segmentcount(client, index_name):
     """Return a list of shardcount, segmentcount"""
-    shards = client.indices.segments(index_name)['indices'][index_name]['shards']
+    shards = client.indices.segments(index=index_name)['indices'][index_name]['shards']
     segmentcount = 0
     for shardnum in shards:
         for shard in range(0,len(shards[shardnum])):
