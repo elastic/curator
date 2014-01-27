@@ -98,7 +98,7 @@ def validate_args(myargs):
             (myargs.optimize and myargs.optimize < 1)):
             success = False
             messages.append('Values for --delete, --close, --bloom, --optimize must be > 0')
-        if myargs.time_unit is not ('days' or 'hours'):
+        if myargs.time_unit != 'days' and myargs.time_unit != 'hours':
             success = False
             messages.append('Values for --time-unit must be either "days" or "hours"')
         if myargs.disk_space:
