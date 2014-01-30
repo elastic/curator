@@ -282,7 +282,7 @@ def index_loop(client, operation, expired_indices, dry_run=False, by_space=False
         if dry_run and not by_space:
             logger.info('Would have attempted {0} index {1} because it is {2} older than the calculated cutoff.'.format(words['gerund'].lower(), index_name, expiration))
             continue
-        elif by_space:
+        elif dry_run and by_space:
             logger.info('Would have attempted {0} index {1} due to space constraints.'.format(words['gerund'].lower(), index_name))
             continue
 
