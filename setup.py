@@ -22,7 +22,7 @@ setup(
     #author_email = TBD,
     description = "Tending your time-series indices in Elasticsearch",
     url = "http://github.com/elasticsearch/curator",
-    #license = "MIT", ??
+    license = "Apache License, Version 2.0",
     install_requires = [
         'elasticsearch >= 0.4.4'
     ],
@@ -36,7 +36,7 @@ setup(
     classifiers=[
         "Intended Audience :: Developers",
         "Intended Audience :: System Administrator",
-        #"License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
     ],
     test_suite = "curator.test.test_curator",
     tests_require = ["mock"]
