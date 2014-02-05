@@ -18,8 +18,8 @@ def get_version():
 setup(
     name = "curator-es",
     version = get_version(),
-    #author = TBD,
-    #author_email = TBD,
+    author = "Aaron Mildenstein",
+    author_email = "aaron@mildensteins.com",
     description = "Tending your time-series indices in Elasticsearch",
     url = "http://github.com/elasticsearch/curator",
     license = "Apache License, Version 2.0",
