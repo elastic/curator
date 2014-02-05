@@ -16,7 +16,7 @@ def get_version():
     return VERSION
 
 setup(
-    name = "curator",
+    name = "curator-es",
     version = get_version(),
     #author = TBD,
     #author_email = TBD,
@@ -38,4 +38,6 @@ setup(
         "Intended Audience :: System Administrator",
         #"License :: OSI Approved :: MIT License",
     ],
+    test_suite = "curator.test.test_curator",
+    tests_require = ["mock"]
 )
