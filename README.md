@@ -56,8 +56,8 @@ Dry run of above:
 
 If you need to close and delete based on different criteria, please use separate command lines, e.g.
 
-    curator.py --host my-elasticsearch -C space -g 1024
-    curator.py --host my-elasticsearch -c 15
+    curator --host my-elasticsearch -C space -g 1024
+    curator --host my-elasticsearch -c 15
     
 When using optimize the current behavior is to wait until the optimize operation is complete before continuing.  With large indices, this can result in timeouts with the default 30 seconds.  It is recommended that you increase the timeout to at least 3600 seconds, if not more.  
 
