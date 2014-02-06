@@ -16,7 +16,7 @@ def get_version():
     return VERSION
 
 setup(
-    name = "curator-es",
+    name = "elasticsearch-curator",
     version = get_version(),
     author = "Aaron Mildenstein",
     author_email = "aaron@mildensteins.com",
