@@ -1,1 +1,2 @@
 elasticsearch>=0.4.4
+argparse>=1.2.1
