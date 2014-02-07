@@ -35,7 +35,7 @@ setup(
     },
     classifiers=[
         "Intended Audience :: Developers",
-        "Intended Audience :: System Administrator",
+        "Intended Audience :: System Administrators",
         "License :: OSI Approved :: Apache Software License",
     ],
     test_suite = "curator.test.test_curator",
