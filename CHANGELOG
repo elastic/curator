@@ -1,10 +1,12 @@
-0.6.0 (06 Feb 2014)
+0.6.0 (08 Feb 2014)
  # General
  - Restructured repository to a be a proper python package. (arieb)
  - Added setup.py file. (arieb)
  - Removed the deprecated file logstash_index_cleaner.py (arieb)
  - Updated README.md to fit the new package, most importantly the usage 
    and installation. (arieb)
+ - Fixes and package push to PyPI (untergeek)
+
 0.5.2 (26 Jan 2014)
   # General
   - Fix boolean logic determining hours or days for time selection (untergeek)
