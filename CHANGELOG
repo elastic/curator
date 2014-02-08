@@ -1,3 +1,10 @@
+0.6.1 (08 Feb 2014)
+ # General
+ - Added tarball versioning to setup.py (untergeek)
+ # Bugfixes
+ - Fix long_description by including README.md in MANIFEST.in (untergeek)
+ - Incorrect version number in curator.py (untergeek)
+
 0.6.0 (08 Feb 2014)
  # General
  - Restructured repository to a be a proper python package. (arieb)

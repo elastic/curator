@@ -2,3 +2,4 @@ include CHANGELOG
 include CONTRIBUTORS
 include VERSION
 include LICENSE.txt
+include README.md

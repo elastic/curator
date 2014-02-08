@@ -49,7 +49,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '0.5.2'
+__version__ = '0.6.1'
 
 logger = logging.getLogger(__name__)
 
