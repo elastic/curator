@@ -1,0 +1,4 @@
+*.tar.gz
+build
+dist
+elasticsearch_curator.egg-info
