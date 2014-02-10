@@ -19,13 +19,13 @@
 # REQUIREMENTS
 # Requires python and the following dependencies (all pip/easy_installable):
 #
-# elasticsearch (official Elasticsearch Python API, 
+# elasticsearch (official Elasticsearch Python API,
 # http://www.elasticsearch.org/guide/en/elasticsearch/client/python-api/current/index.html)
 #
 # argparse (built-in in python2.7 and higher, python 2.6 and lower will have to
 # easy_install it)
 #
-# TODO: Unit tests. The code is somewhat broken up into logical parts that may 
+# TODO: Unit tests. The code is somewhat broken up into logical parts that may
 #       be tested separately.
 #       Make sure the code can be used outside of __main__ by people importing the module
 #       Better error reporting?
@@ -48,7 +48,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '0.5.2'
+__version__ = '0.6.2-dev'
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def make_parser():
     parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default='logstash-')
     parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default='.')
 
-    parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default='time', type=str)    
+    parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default='time', type=str)
     parser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default='days', type=str)
 
     parser.add_argument('-d', '--delete', dest='delete_older', action='store', help='Delete indices older than n TIME_UNITs.', type=int)
@@ -99,13 +99,13 @@ def validate_args(myargs):
     if myargs.curation_style == 'time':
         if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize:
             success = False
-            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize')
-        if ((myargs.delete_older and myargs.delete_older < 1) or 
-            (myargs.close_older and myargs.close_older < 1) or 
-            (myargs.bloom_older and myargs.bloom_older < 1) or 
+            messages.append('Must specify at least one of --delete, --close, --bloom or --optimize')
+        if ((myargs.delete_older and myargs.delete_older < 1) or
+            (myargs.close_older and myargs.close_older < 1) or
+            (myargs.bloom_older and myargs.bloom_older < 1) or
             (myargs.optimize and myargs.optimize < 1)):
             success = False
-            messages.append('Values for --delete, --close, --bloom, --optimize must be > 0')
+            messages.append('Values for --delete, --close, --bloom or --optimize must be > 0')
         if myargs.time_unit != 'days' and myargs.time_unit != 'hours':
             success = False
             messages.append('Values for --time-unit must be either "days" or "hours"')
@@ -118,7 +118,7 @@ def validate_args(myargs):
     else: # Curation-style is 'space'
         if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize):
             success = False
-            messages.append('Cannot specify --curation-style "space" and any of --delete, --close, --bloom, --optimize')
+            messages.append('Cannot specify --curation-style "space" and any of --delete, --close, --bloom or --optimize')
         if (myargs.disk_space == 0) or (myargs.disk_space < 0):
             success = False
             messages.append('Value for --disk-space must be greater than 0')
@@ -290,7 +290,7 @@ def index_loop(client, operation, expired_indices, dry_run=False, by_space=False
         if dry_run and not by_space:
             logger.info('Would have attempted {0} index {1} because it is {2} older than the calculated cutoff.'.format(words['gerund'].lower(), index_name, expiration))
             continue
-        elif by_space:
+        elif dry_run and by_space:
             logger.info('Would have attempted {0} index {1} due to space constraints.'.format(words['gerund'].lower(), index_name))
             continue
 

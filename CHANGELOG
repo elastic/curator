@@ -1,3 +1,23 @@
+0.6.2 (???)
+ # General
+ - Documentation fixes #38 (dharrigan)
+ 
+0.6.1 (08 Feb 2014)
+ # General
+ - Added tarball versioning to setup.py (untergeek)
+ # Bugfixes
+ - Fix long_description by including README.md in MANIFEST.in (untergeek)
+ - Incorrect version number in curator.py (untergeek)
+
+0.6.0 (08 Feb 2014)
+ # General
+ - Restructured repository to a be a proper python package. (arieb)
+ - Added setup.py file. (arieb)
+ - Removed the deprecated file logstash_index_cleaner.py (arieb)
+ - Updated README.md to fit the new package, most importantly the usage 
+   and installation. (arieb)
+ - Fixes and package push to PyPI (untergeek)
+
 0.5.2 (26 Jan 2014)
   # General
   - Fix boolean logic determining hours or days for time selection (untergeek)
