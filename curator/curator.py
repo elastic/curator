@@ -34,7 +34,6 @@
 import sys
 import time
 import logging
-import argparse
 from datetime import timedelta, datetime
 
 import elasticsearch
@@ -55,12 +54,21 @@ logger = logging.getLogger(__name__)
 
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
-    parser = argparse.ArgumentParser(description='Curator for Elasticsearch indices.  Can delete (by space or time), close, disable bloom filters and optimize (forceMerge) your indices.')
-
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s '+__version__)
-
+    help_desc = 'Curator for Elasticsearch indices.  Can delete (by space or time), close, disable bloom filters and optimize (forceMerge) your indices.'
+    try:
+        import argparse
+        parser = argparse.ArgumentParser(description=help_desc)
+        parser.add_argument('-v', '--version', action='version', version='%(prog)s '+__version__)
+    except ImportError:
+        import optparse
+        parser = optparse.OptionParser(description=help_desc, version='%prog '+ __version__)
+        parser.parse_args_orig = parser.parse_args
+        parser.parse_args = lambda: parser.parse_args_orig()[0]
+        parser.add_argument = parser.add_option
     parser.add_argument('--host', help='Elasticsearch host. Default: localhost', default='localhost')
+    parser.add_argument('--url_prefix', help='Elasticsearch http url prefix. Default: none', default='')
     parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=9200, type=int)
+    parser.add_argument('--ssl', help='Connect to Elasticsearch through SSL. Default: false', action='store_true', default=False)
     parser.add_argument('-t', '--timeout', help='Elasticsearch timeout. Default: 30', default=30, type=int)
 
     parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default='logstash-')
@@ -332,8 +340,7 @@ def main():
         logger.error('Malformed arguments: {0}'.format(';'.join(check_args)))
         parser.print_help()
         return
-
-    client = elasticsearch.Elasticsearch('{0}:{1}'.format(arguments.host, arguments.port), timeout=arguments.timeout)
+    client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
 
     # Delete by space first
     if arguments.disk_space:
