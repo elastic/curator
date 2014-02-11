@@ -50,6 +50,10 @@ except ImportError:
 
 __version__ = '0.6.2-dev'
 
+# Elasticsearch versions supported
+version_max  = (1, 0, 0)
+version_min = (0, 19, 4)
+        
 logger = logging.getLogger(__name__)
 
 def make_parser():
@@ -138,17 +142,20 @@ def get_index_time(index_timestamp, separator='.'):
     except ValueError:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
 
+def get_version(client):
+    """Return ES version number as a tuple"""
+    version = client.info()['version']['number']
+    return tuple(map(int, version.split('.')))
+
 def can_bloom(client):
     """Return True if ES version > 0.90.9"""
-    version = client.info()['version']['number']
-    version_number = tuple(map(int, version.split('.')))
+    version_number = get_version(client)
     # Bloom filter unloading not supported in versions < 0.90.9
     if version_number >= (0, 90, 9):
         return True
     else:
-        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format(version))
+        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format(".".join(map(str,version_number))))
         return False
-
 
 def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
     """ Generator that yields expired indices.
@@ -341,6 +348,13 @@ def main():
         parser.print_help()
         return
     client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
+    
+    version_number = get_version(client)
+    logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
+    if version_number >= version_max or version_number < version_min:
+        print('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
+        print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
+        sys.exit(1)
 
     # Delete by space first
     if arguments.disk_space:
