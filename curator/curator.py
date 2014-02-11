@@ -236,21 +236,10 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
 
 def index_closed(client, index_name):
     """Return True if index is closed"""
-    try:
-        # 1.0 params
-        index_metadata = client.cluster.state(
-            index=index_name,
-            metric='metadata',
-        )
-    except TypeError:
-        # 0.90 params:
-        index_metadata = client.cluster.state(
-            filter_blocks=True,
-            filter_index_templates=True,
-            filter_indices=index_name,
-            filter_nodes=True,
-            filter_routing_table=True,
-        )
+    index_metadata = client.cluster.state(
+        index=index_name,
+        metric='metadata',
+    )
     return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
 def _close_index(client, index_name, **kwargs):

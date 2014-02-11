@@ -2,6 +2,15 @@
 
 Have time-series indices in Elasticsearch? This is the tool for you!
 
+## Versioning
+
+There are two branches for development - `master` and `0.6`. Master branch is
+used to track all the changes for Elasticsearch 1.0 and beyond whereas 0.6
+tracks Elasticsearch 0.90 and the corresponding `elasticsearch-py` version.
+
+Releases with major version 1 (1.X.Y) are to be used with Elasticsearch 1.0 and
+later, 0.6 releases are meant to work with Elasticsearch 0.90.X.
+
 ## Usage
 
 Install using pip
