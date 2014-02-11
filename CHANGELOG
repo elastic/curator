@@ -1,3 +1,7 @@
+1.0.0 (???)
+ # General
+ - compatible with elasticsearch-py 1.0 and Elasticsearch 1.0 (honzakral)
+
 0.6.2 (???)
  # General
  - Documentation fixes #38 (dharrigan)

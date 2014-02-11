@@ -23,7 +23,7 @@ setup(
     download_url = "https://github.com/elasticsearch/curator/tarball/v" + get_version(),
     license = "Apache License, Version 2.0",
     install_requires = [
-        'elasticsearch>=0.4.4,<1.0.0'
+        'elasticsearch>=1.0.0,<2.0.0'
     ],
     keywords = "elasticsearch time-series indexed index-expiry",
     packages = ["curator"],
