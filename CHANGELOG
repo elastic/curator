@@ -1,7 +1,9 @@
 0.6.2 (???)
  # General
  - Documentation fixes #38 (dharrigan)
- - Add support for HTTPS URI scheme and optparse compatibility for Python 2.6 (gelim) 
+ - Add support for HTTPS URI scheme and optparse compatibility for Python 2.6 (gelim)
+ - Add elasticsearch module version checking for future compatibility checks (untergeek)
+ 
 0.6.1 (08 Feb 2014)
  # General
  - Added tarball versioning to setup.py (untergeek)

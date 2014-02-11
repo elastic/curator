@@ -36,7 +36,6 @@ import time
 import logging
 from datetime import timedelta, datetime
 
-import elasticsearch
 
 # This solves https://github.com/elasticsearch/curator/issues/12
 try:
@@ -50,6 +49,22 @@ except ImportError:
 
 __version__ = '0.6.2-dev'
 
+# This (__version__) of curator may only work with the appropriate version of elasticsearch-py module
+module_hi  = (1, 0, 0)
+module_low = (0, 4, 4)
+
+try:
+    import elasticsearch
+    if elasticsearch.__version__ >= module_low and elasticsearch.__version__ < module_hi:
+        pass
+    else:
+        print('Expected python elasticsearch module version range > {0} < {1}'.format(".".join(map(str,module_low)),".".join(map(str,module_hi))))
+        print('ERROR: Version {0} of the elasticsearch-py module is incompatible with this ({1}) version of curator.  Exiting.'.format(".".join(map(str,elasticsearch.__version__)), __version__))
+        sys.exit(1)
+except ImportError:
+    print('Unable to import elasticsearch python module.  Exiting.')
+    sys.exit(1)
+        
 logger = logging.getLogger(__name__)
 
 def make_parser():
