@@ -48,11 +48,11 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '0.6.2-dev'
+__version__ = '1.0.0-dev'
 
 # Elasticsearch versions supported
-version_max  = (1, 0, 0)
-version_min = (0, 19, 4)
+version_max  = (2, 0, 0)
+version_min = (1, 0, 0)
         
 logger = logging.getLogger(__name__)
 
