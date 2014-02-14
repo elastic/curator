@@ -56,6 +56,22 @@ version_min = (1, 0, 0)
         
 logger = logging.getLogger(__name__)
 
+DEFAULT_ARGS = {
+    'host': 'localhost',
+    'url_prefix': '',
+    'port': 9200,
+    'ssl': False,
+    'timeout': 30,
+    'prefix': 'logstash-',
+    'separator': '.',
+    'curation_style': 'time',
+    'time_unit': 'days',
+
+    'max_num_segments': 2,
+    'dry_run': False,
+    'debug': False,
+}
+
 def make_parser():
     """ Creates an ArgumentParser to parse the command line options. """
     help_desc = 'Curator for Elasticsearch indices.  Can delete (by space or time), close, disable bloom filters and optimize (forceMerge) your indices.'
@@ -69,29 +85,29 @@ def make_parser():
         parser.parse_args_orig = parser.parse_args
         parser.parse_args = lambda: parser.parse_args_orig()[0]
         parser.add_argument = parser.add_option
-    parser.add_argument('--host', help='Elasticsearch host. Default: localhost', default='localhost')
-    parser.add_argument('--url_prefix', help='Elasticsearch http url prefix. Default: none', default='')
-    parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=9200, type=int)
-    parser.add_argument('--ssl', help='Connect to Elasticsearch through SSL. Default: false', action='store_true', default=False)
-    parser.add_argument('-t', '--timeout', help='Elasticsearch timeout. Default: 30', default=30, type=int)
+    parser.add_argument('--host', help='Elasticsearch host. Default: localhost', default=DEFAULT_ARGS['host'])
+    parser.add_argument('--url_prefix', help='Elasticsearch http url prefix. Default: none', default=DEFAULT_ARGS['url_prefix'])
+    parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=DEFAULT_ARGS['port'], type=int)
+    parser.add_argument('--ssl', help='Connect to Elasticsearch through SSL. Default: false', action='store_true', default=DEFAULT_ARGS['ssl'])
+    parser.add_argument('-t', '--timeout', help='Elasticsearch timeout. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
 
-    parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default='logstash-')
-    parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default='.')
+    parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default=DEFAULT_ARGS['separator'])
 
-    parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default='time', type=str)
-    parser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default='days', type=str)
+    parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default=DEFAULT_ARGS['curation_style'], type=str)
+    parser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
 
     parser.add_argument('-d', '--delete', dest='delete_older', action='store', help='Delete indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-c', '--close', dest='close_older', action='store', help='Close indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond n GIGABYTES.', type=float)
 
-    parser.add_argument('--max_num_segments', action='store', help='Maximum number of segments, post-optimize. Default: 2', type=int, default=2)
+    parser.add_argument('--max_num_segments', action='store', help='Maximum number of segments, post-optimize. Default: 2', type=int, default=DEFAULT_ARGS['max_num_segments'])
     parser.add_argument('-o', '--optimize', action='store', help='Optimize (Lucene forceMerge) indices older than n TIME_UNITs.  Must increase timeout to stay connected throughout optimize operation, recommend no less than 3600.', type=int)
 
-    parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=False)
-    parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=False)
-    parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str, default=None)
+    parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
+    parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
+    parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
 
     return parser
 
