@@ -75,7 +75,23 @@ When using optimize the current behavior is to wait until the optimize operation
 
 * fork the repo
 * make changes in your fork
+* run tests
 * send a pull request!
+
+### Running tests
+
+To run the test suite just run `python setup.py tests`.
+
+When changing code, contributing new code or fixing a bug please make sure you
+include tests in your PR (or mark it as without tests so that someone else can
+pick it up to add the tests). When fixing a bug please make sure the test
+actually tests the bug - it should fail without the code changes and pass after
+they're applied (it can still be one commit of course).
+
+The tests will try to connect to your local elasticsearch instance and run
+integration tests against it. This will delete all the data stored there! You
+can use the env variable `TEST_ES_SERVER` to point to a different instance (for
+example 'otherhost:9203').
 
 ## Origins
 
