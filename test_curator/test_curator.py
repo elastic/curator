@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from unittest import TestCase, main
+from unittest import TestCase
 from mock import Mock
 
 import curator
@@ -40,7 +40,3 @@ class TestExpireIndices(TestCase):
             ],
             expired
         )
-
-
-if __name__ == '__main__':
-    main()
