@@ -67,14 +67,15 @@ class CuratorTestCase(TestCase):
         self.args.update(kwargs)
         curator.main()
 
-    def create_indices(self, count):
+    def create_indices(self, count, unit=None):
         now = datetime.utcnow()
-        if self.args['time_unit'] == 'days':
+        unit = unit if unit else self.args['time_unit']
+        if unit == 'days':
             format = self.args['separator'].join(('%Y', '%m', '%d'))
         else:
             format = self.args['separator'].join(('%Y', '%m', '%d', '%H'))
 
-        step = timedelta(**{self.args['time_unit']: 1})
+        step = timedelta(**{unit: 1})
         for x in range(count):
             self.create_index(self.args['prefix'] + now.strftime(format))
             now -= step
