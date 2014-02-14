@@ -178,13 +178,9 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
     cutoff = utc_now - timedelta(**{time_unit: unit_count})
     required_parts = 4 if time_unit == 'hourly' else 3
 
-    sorted_indices = sorted(client.indices.get_settings().keys())
+    sorted_indices = sorted(client.indices.get_settings(index=prefix+'*').keys())
 
     for index_name in sorted_indices:
-        if not index_name.startswith(prefix):
-            logger.debug('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
-            continue
-
         unprefixed_index_name = index_name[len(prefix):]
 
         # find the timestamp parts (i.e ['2011', '01', '05'] from '2011.01.05') using the configured separator
@@ -220,14 +216,9 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
     disk_usage = 0.0
     disk_limit = disk_space_to_keep * 2**30
 
-    sorted_indices = sorted(client.indices.get_settings().keys(), reverse=True)
+    sorted_indices = sorted(client.indices.get_settings(index=prefix+'*').keys(), reverse=True)
 
     for index_name in sorted_indices:
-
-        if not index_name.startswith(prefix):
-            logger.debug('Skipping index due to missing prefix {0}: {1}'.format(prefix, index_name))
-            continue
-
         if not index_closed(client, index_name):
             index_size = client.indices.status(index=index_name)['indices'][index_name]['index']['primary_size_in_bytes']
             disk_usage += index_size
