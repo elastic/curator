@@ -13,7 +13,7 @@ def run_all(argv=None):
     if argv is None:
         argv = [
             'nosetests', '--with-xunit',
-            '--with-coverage', '--cover-package=curator', '--cover-erase',
+            '--with-xcoverage', '--cover-package=curator', '--cover-erase',
             '--verbose',
         ]
 

@@ -37,5 +37,5 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     test_suite = "test_curator.run_tests.run_all",
-    tests_require = ["mock", "nose", "coverage"]
+    tests_require = ["mock", "nose", "coverage", "nosexcover"]
 )
