@@ -1,9 +1,6 @@
 from . import CuratorTestCase
 
 class TestTimeBasedDeletion(CuratorTestCase):
-    def setUp(self):
-        super(TestTimeBasedDeletion, self).setUp()
-
     def test_curator_will_properly_delete_indices(self):
         self.create_indices(10)
         self.run_curator(delete_older=3)
