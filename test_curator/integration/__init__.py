@@ -23,7 +23,7 @@ def get_client():
     client = Elasticsearch([os.environ.get('TEST_ES_SERVER', {})])
 
     # wait for yellow status
-    for _ in range(10):
+    for _ in range(100):
         time.sleep(.1)
         try:
             client.cluster.health(wait_for_status='yellow')
