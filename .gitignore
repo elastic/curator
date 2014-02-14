@@ -2,3 +2,5 @@
 build
 dist
 elasticsearch_curator.egg-info
+.coverage
+nosetests.xml
