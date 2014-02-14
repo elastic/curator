@@ -172,12 +172,16 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
     """
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
-    # reset to midnight to be sure we are not retiring a human by mistake
-    utc_now = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # reset to start of the period to be sure we are not retiring a human by mistake
+    utc_now = utc_now.replace(minute=0, second=0, microsecond=0)
+
+    if time_unit == 'hours':
+        required_parts = 4
+    else:
+        required_parts = 3
+        utc_now = utc_now.replace(hour=0)
 
     cutoff = utc_now - timedelta(**{time_unit: unit_count})
-    required_parts = 4 if time_unit == 'hours' else 3
-
     sorted_indices = sorted(client.indices.get_settings(index=prefix+'*').keys())
 
     for index_name in sorted_indices:

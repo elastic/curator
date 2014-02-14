@@ -1,6 +1,6 @@
 import time
 import os
-from datetime import date, timedelta, datetime
+from datetime import timedelta, datetime
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
@@ -68,12 +68,11 @@ class CuratorTestCase(TestCase):
         curator.main()
 
     def create_indices(self, count):
+        now = datetime.utcnow()
         if self.args['time_unit'] == 'days':
             format = self.args['separator'].join(('%Y', '%m', '%d'))
-            now = date.today()
         else:
             format = self.args['separator'].join(('%Y', '%m', '%d', '%H'))
-            now = datetime.now()
 
         step = timedelta(**{self.args['time_unit']: 1})
         for x in range(count):
