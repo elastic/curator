@@ -6,18 +6,6 @@ import curator
 
 
 class TestUtils(TestCase):
-    def test_can_bloom(self):
-        client = Mock()
-
-        client.info.return_value = {"version": {"number": "1.0.0"}}
-        self.assertTrue(curator.can_bloom(client))
-
-        client.info.return_value = {"version": {"number": "0.90.10"}}
-        self.assertTrue(curator.can_bloom(client))
-
-        client.info.return_value = {"version": {"number": "0.90.8"}}
-        self.assertFalse(curator.can_bloom(client))
-
     def test_get_index_time(self):
         for text, sep, dt in [
             ('2014.01.19', '.', datetime(2014, 1, 19)),

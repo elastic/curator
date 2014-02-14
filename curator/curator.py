@@ -163,16 +163,6 @@ def get_version(client):
     version = client.info()['version']['number']
     return tuple(map(int, version.split('.')))
 
-def can_bloom(client):
-    """Return True if ES version > 0.90.9"""
-    version_number = get_version(client)
-    # Bloom filter unloading not supported in versions < 0.90.9
-    if version_number >= (0, 90, 9):
-        return True
-    else:
-        logger.warn('Your Elasticsearch version {0} is too old to use the bloom filter disable feature. Requires 0.90.9+'.format(".".join(map(str,version_number))))
-        return False
-
 def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
     """ Generator that yields expired indices.
 
