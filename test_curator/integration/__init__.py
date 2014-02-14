@@ -1,6 +1,6 @@
 import time
 import os
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
@@ -67,12 +67,20 @@ class CuratorTestCase(TestCase):
         self.args.update(kwargs)
         curator.main()
 
-    def create_day_indices(self, day_count):
-        # TODO: hours as well
-        format = self.args['separator'].join(('%Y', '%m', '%d'))
-        for x in range(day_count):
-            day = date.today() - timedelta(days=x)
-            self.create_index(self.args['prefix'] + day.strftime(format))
+    def create_indices(self, count):
+        if self.args['time_unit'] == 'days':
+            format = self.args['separator'].join(('%Y', '%m', '%d'))
+            now = date.today()
+        else:
+            format = self.args['separator'].join(('%Y', '%m', '%d', '%H'))
+            now = datetime.now()
+
+        step = timedelta(**{self.args['time_unit']: 1})
+        for x in range(count):
+            self.create_index(self.args['prefix'] + now.strftime(format))
+            now -= step
+
+        self.client.cluster.health(wait_for_status='yellow')
 
     def create_index(self, name):
         self.client.indices.create(
