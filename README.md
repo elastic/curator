@@ -57,6 +57,11 @@ Keep 1TB of data in elasticsearch, show debug output:
 
     curator --host my-elasticsearch -C space -g 1024 -D
 
+Note that when using size to determine which indices to keep having closed
+indices will cause inaccuracies since they cannot be added to the overall size.
+This is only an issue if you have closed some indices that are not your oldest
+ones.
+
 Dry run of above:
 
     curator --host my-elasticsearch -C space -g 1024 -D -n

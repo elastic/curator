@@ -220,14 +220,17 @@ def find_overusage_indices(client, disk_space_to_keep, separator='.', prefix='lo
     disk_usage = 0.0
     disk_limit = disk_space_to_keep * 2**30
 
-    sorted_indices = sorted(client.indices.get_settings(index=prefix+'*').keys(), reverse=True)
+    stats = client.indices.status(index=prefix+'*')
+    sorted_indices = sorted(
+        (
+            (index_name, index_stats['index']['primary_size_in_bytes'])
+            for (index_name, index_stats) in stats['indices'].items()
+        ),
+        reverse=True
+    )
 
-    for index_name in sorted_indices:
-        if not index_closed(client, index_name):
-            index_size = client.indices.status(index=index_name)['indices'][index_name]['index']['primary_size_in_bytes']
-            disk_usage += index_size
-        else:
-            logger.warn('Cannot check size of index {0} because it is closed.  Size estimates will not be accurate.')
+    for index_name, index_size in sorted_indices:
+        disk_usage += index_size
 
         if disk_usage > disk_limit:
             yield index_name, 0

@@ -40,3 +40,25 @@ class TestExpireIndices(TestCase):
             ],
             expired
         )
+
+    def test_size_based_finds_indices_over_threshold(self):
+        client = Mock()
+        client.indices.status.return_value = {
+            'indices': {
+                'logstash-2014.02.14': {'index': {'primary_size_in_bytes': 3 * 2**30}},
+                'logstash-2014.02.13': {'index': {'primary_size_in_bytes': 2 * 2**30}},
+                'logstash-2014.02.12': {'index': {'primary_size_in_bytes': 1 * 2**30}},
+                'logstash-2014.02.11': {'index': {'primary_size_in_bytes': 3 * 2**30}},
+                'logstash-2014.02.10': {'index': {'primary_size_in_bytes': 3 * 2**30}},
+            }        
+        }
+        expired = curator.find_overusage_indices(client, 6)
+        expired = list(expired)
+
+        self.assertEquals(
+            [
+                ('logstash-2014.02.11', 0),
+                ('logstash-2014.02.10', 0),
+            ],
+            expired
+        )
