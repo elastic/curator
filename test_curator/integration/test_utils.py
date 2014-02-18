@@ -1,5 +1,7 @@
 from curator import curator
 
+from mock import patch, Mock
+
 from . import CuratorTestCase
 
 class TestCloseIndex(CuratorTestCase):
@@ -57,3 +59,34 @@ class TestBloomIndex(CuratorTestCase):
             metric='metadata',
         )
         self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
+
+class TestOptimizeIndex(CuratorTestCase):
+    def test_closed_index_will_be_skipped(self):
+        self.create_index('test_index')
+        self.client.indices.close(index='test_index')
+        self.assertTrue(curator._optimize_index(self.client, 'test_index'))
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata',
+        )
+        self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
+
+    @patch('curator.curator.get_segmentcount')
+    def test_optimized_index_will_be_skipped(self, get_segmentcount):
+        get_segmentcount.return_value = 1, 4
+        self.create_index('test_index')
+        self.assertTrue(curator._optimize_index(self.client, 'test_index', max_num_segments=4))
+        get_segmentcount.assert_called_once_with(self.client, 'test_index')
+
+    @patch('curator.curator.index_closed')
+    @patch('curator.curator.get_segmentcount')
+    def test_unoptimized_index_will_be_optimized(self, get_segmentcount, index_closed):
+        get_segmentcount.return_value = 1, 40
+        index_closed.return_value = False
+        client = Mock()
+        self.create_index('test_index')
+        curator._optimize_index(client, 'test_index', max_num_segments=4)
+        get_segmentcount.assert_called_once_with(client, 'test_index')
+        index_closed.assert_called_once_with(client, 'test_index')
+        client.indices.optimize.assert_called_once_with(index='test_index', max_num_segments=4)
+
