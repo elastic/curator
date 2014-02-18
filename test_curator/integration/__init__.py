@@ -82,9 +82,9 @@ class CuratorTestCase(TestCase):
 
         self.client.cluster.health(wait_for_status='yellow')
 
-    def create_index(self, name):
+    def create_index(self, name, shards=1):
         self.client.indices.create(
             index=name,
-            body={'settings': {'number_of_shards': 1, 'number_of_replicas': 0}}
+            body={'settings': {'number_of_shards': shards, 'number_of_replicas': 0}}
         )
 

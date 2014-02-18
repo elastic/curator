@@ -90,3 +90,11 @@ class TestOptimizeIndex(CuratorTestCase):
         index_closed.assert_called_once_with(client, 'test_index')
         client.indices.optimize.assert_called_once_with(index='test_index', max_num_segments=4)
 
+class TestSegmentCount(CuratorTestCase):
+    def test_simple(self):
+        self.create_index('test_index', shards=2)
+        self.client.index(index='test_index', doc_type='t', id=42, body={})
+        self.client.indices.refresh(index='test_index')
+
+        self.assertEquals((2, 1), curator.get_segmentcount(self.client, 'test_index'))
+
