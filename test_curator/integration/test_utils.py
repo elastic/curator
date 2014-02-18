@@ -34,3 +34,9 @@ class TestCloseIndex(CuratorTestCase):
         )
         self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
 
+class TestDeleteIndex(CuratorTestCase):
+    def test_index_will_be_deleted(self):
+        self.create_index('test_index')
+        curator._delete_index(self.client, 'test_index')
+        self.assertFalse(self.client.indices.exists('test_index'))
+
