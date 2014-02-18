@@ -170,7 +170,7 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
     utc_now = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     cutoff = utc_now - timedelta(**{time_unit: unit_count})
-    required_parts = 4 if time_unit == 'hourly' else 3
+    required_parts = 4 if time_unit == 'hours' else 3
 
     sorted_indices = sorted(client.indices.get_settings().keys())
 
