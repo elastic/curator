@@ -1,8 +1,12 @@
-0.6.2 (???)
+0.6.2 (18 Feb 2014)
  # General
+ - Branch fork between 1.0 (ES 1.0+) and 0.6 (< ES 1.0)
  - Documentation fixes #38 (dharrigan)
  - Add support for HTTPS URI scheme and optparse compatibility for Python 2.6 (gelim)
- - Add elasticsearch module version checking for future compatibility checks (untergeek)
+ - Module version checking handled inside setup.py (untergeek)
+ - Added ES version verification so 0.6 will not operate against ES 1.0 (untergeek)
+ - Pruned a 1.0 dependent operation from 0.6 branch (honzakral)
+ - Merged typo fix from #48 (gitshaw)
  
 0.6.1 (08 Feb 2014)
  # General
