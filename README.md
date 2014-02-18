@@ -1,3 +1,8 @@
+# NOTICE
+
+The 0.6 branch is fully usable, but deprecated.  It remains for those not yet using Elasticsearch version 1.0.
+Bug fixes will be released as needed, but no further development will be done for the 0.6 branch.  Please consider upgrading your Elasticsearch to version 1.0+ and use the current release branch of curator.
+
 # Curator
 
 Have time-series indices in Elasticsearch? This is the tool for you!
