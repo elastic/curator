@@ -1,4 +1,4 @@
-import curator
+from curator import curator
 
 from . import CuratorTestCase
 
@@ -13,4 +13,24 @@ class TestCloseIndex(CuratorTestCase):
         self.create_index('test_index')
 
         self.assertFalse(curator.index_closed(self.client, 'test_index'))
+
+class TestCloseIndex(CuratorTestCase):
+    def test_index_will_be_closed(self):
+        self.create_index('test_index')
+        curator._close_index(self.client, 'test_index')
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata',
+        )
+        self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
+
+    def test_closed_index_will_be_skipped(self):
+        self.create_index('test_index')
+        self.client.indices.close(index='test_index')
+        self.assertTrue(curator._close_index(self.client, 'test_index'))
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata',
+        )
+        self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
 
