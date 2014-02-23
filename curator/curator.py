@@ -182,7 +182,7 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
         utc_now = utc_now.replace(hour=0)
 
     cutoff = utc_now - timedelta(**{time_unit: unit_count})
-    sorted_indices = sorted(client.indices.get_settings(index=prefix+'*').keys())
+    sorted_indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
 
     for index_name in sorted_indices:
         unprefixed_index_name = index_name[len(prefix):]

@@ -18,6 +18,23 @@ class TestTimeBasedDeletion(CuratorTestCase):
         self.assertEquals(4, len(mtd['metadata']['indices'].keys()))
 
 class TestFindExpiredIndices(CuratorTestCase):
+    def test_find_closed_indices(self):
+        self.create_index('l-2014.01.03')
+        self.client.indices.close(index='l-2014.01.03')
+        self.create_index('l-2014.01.01')
+
+        # all indices should be expired
+        expired = list(curator.find_expired_indices(self.client, 'days', 1,
+            utc_now=datetime(2014, 1, 8, 3, 45, 50), prefix='l-'))
+
+        self.assertEquals(
+            [
+                ('l-2014.01.01', timedelta(6)),
+                ('l-2014.01.03', timedelta(4)),
+            ],
+            expired
+        )
+
     def test_find_indices_ignores_indices_with_different_prefix_or_time_unit(self):
         self.create_index('logstash-2012.01.01')        # wrong precision
         self.create_index('not-logstash-2012.01.01.00') # wrong prefix
