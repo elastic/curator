@@ -77,14 +77,16 @@ class CuratorTestCase(TestCase):
 
         step = timedelta(**{unit: 1})
         for x in range(count):
-            self.create_index(self.args['prefix'] + now.strftime(format))
+            self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
             now -= step
 
         self.client.cluster.health(wait_for_status='yellow')
 
-    def create_index(self, name, shards=1):
+    def create_index(self, name, shards=1, wait_for_yellow=True):
         self.client.indices.create(
             index=name,
             body={'settings': {'number_of_shards': shards, 'number_of_replicas': 0}}
         )
+        if wait_for_yellow:
+            self.client.cluster.health(wait_for_status='yellow')
 
