@@ -1,8 +1,13 @@
-1.0.0 (???)
+1.0.0 (25 Mar 2014)
  # General
  - compatible with elasticsearch-py 1.0 and Elasticsearch 1.0 (honzakral)
+ - Lots of tests! (honzakral)
+ - Streamline code for 1.0 ES versions (honzakral)
+ 
+ # Bug fixes
+ - Fix find_expired_indices() to not skip closed indices (honzakral)
 
-0.6.2 (???)
+0.6.2 (18 Feb 2014)
  # General
  - Documentation fixes #38 (dharrigan)
  - Add support for HTTPS URI scheme and optparse compatibility for Python 2.6 (gelim)
