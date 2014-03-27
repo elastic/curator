@@ -313,10 +313,12 @@ def get_segmentcount(client, index_name):
     """Return a list of shardcount, segmentcount"""
     shards = client.indices.segments(index=index_name)['indices'][index_name]['shards']
     segmentcount = 0
+    totalshards = 0 # We will increment this manually to capture all replicas...
     for shardnum in shards:
         for shard in range(0,len(shards[shardnum])):
             segmentcount += shards[shardnum][shard]['num_search_segments']
-    return len(shards), segmentcount
+            totalshards += 1
+    return totalshards, segmentcount
 
 
 def main():
