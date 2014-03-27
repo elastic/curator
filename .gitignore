@@ -1,4 +1,5 @@
 .*.swp
+*.pyc
 build
 dist
 elasticsearch_curator.egg-info
