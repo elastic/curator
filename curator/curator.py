@@ -34,7 +34,6 @@
 import sys
 import time
 import logging
-import re
 from datetime import timedelta, datetime
 
 import elasticsearch
@@ -139,9 +138,6 @@ def validate_args(myargs):
         if myargs.optimize and myargs.timeout < 300:
             success = False
             messages.append('Timeout should be much higher for optimize transactions, recommend no less than 3600 seconds')
-#        if not re.compile('[A-z0-9]+=[A-z0-9]+').match(myargs.require):
-#            success = False
-#            messages.append('Require attribute needs to be in the form of <attr>=<value>')
     else: # Curation-style is 'space'
         if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize):
             success = False
