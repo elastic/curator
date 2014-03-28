@@ -34,6 +34,7 @@
 import sys
 import time
 import logging
+import re
 from datetime import timedelta, datetime
 
 import elasticsearch
@@ -101,7 +102,10 @@ def make_parser():
     parser.add_argument('-c', '--close', dest='close_older', action='store', help='Close indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond n GIGABYTES.', type=float)
-
+    
+    parser.add_argument('-r', '--require', help='Update indices required routing allocation rules. Ex. tag=ssd', type=int)
+    parser.add_argument('--required_rule', help='Index routing allocation rule to require. Ex. tag=ssd', type=str)
+    
     parser.add_argument('--max_num_segments', action='store', help='Maximum number of segments, post-optimize. Default: 2', type=int, default=DEFAULT_ARGS['max_num_segments'])
     parser.add_argument('-o', '--optimize', action='store', help='Optimize (Lucene forceMerge) indices older than n TIME_UNITs.  Must increase timeout to stay connected throughout optimize operation, recommend no less than 3600.', type=int)
 
@@ -117,9 +121,9 @@ def validate_args(myargs):
     success = True
     messages = []
     if myargs.curation_style == 'time':
-        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize:
+        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require:
             success = False
-            messages.append('Must specify at least one of --delete, --close, --bloom or --optimize')
+            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize or --require')
         if ((myargs.delete_older and myargs.delete_older < 1) or
             (myargs.close_older and myargs.close_older < 1) or
             (myargs.bloom_older and myargs.bloom_older < 1) or
@@ -135,6 +139,9 @@ def validate_args(myargs):
         if myargs.optimize and myargs.timeout < 300:
             success = False
             messages.append('Timeout should be much higher for optimize transactions, recommend no less than 3600 seconds')
+#        if not re.compile('[A-z0-9]+=[A-z0-9]+').match(myargs.require):
+#            success = False
+#            messages.append('Require attribute needs to be in the form of <attr>=<value>')
     else: # Curation-style is 'space'
         if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize):
             success = False
@@ -276,12 +283,23 @@ def _bloom_index(client, index_name, **kwargs):
         return True
     else:
         client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
+        
+def _require_index(client, index_name, attr, **kwargs):
+    key = attr.split('=')[0]
+    value = attr.split('=')[1]
+    if index_closed(client, index_name):
+      logger.info('Skipping index {0}: Already closed.'.format(index_name))
+      return True
+    else:
+      logger.info('Updating index setting index.routing.allocation.{0}={1}'.format(key,value))
+      client.indices.put_settings(index=index_name, body='index.routing.allocation.{0}={1}'.format(key,value))
 
 OP_MAP = {
     'close': (_close_index, {'op': 'close', 'verbed': 'closed', 'gerund': 'Closing'}),
     'delete': (_delete_index, {'op': 'delete', 'verbed': 'deleted', 'gerund': 'Deleting'}),
     'optimize': (_optimize_index, {'op': 'optimize', 'verbed': 'optimized', 'gerund': 'Optimizing'}),
     'bloom': (_bloom_index, {'op': 'disable bloom filter for', 'verbed': 'bloom filter disabled', 'gerund': 'Disabling bloom filter for'}),
+    'require': (_require_index, {'op': 'update require allocation rules for', 'verbed':'index routing allocation updated', 'gerund': 'Updating required index routing allocation rules for'}),
 }
 
 def index_loop(client, operation, expired_indices, dry_run=False, by_space=False, **kwargs):
@@ -376,6 +394,11 @@ def main():
         logger.info('Optimizing indices older than {0} {1}...'.format(arguments.optimize, arguments.time_unit))
         expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'optimize', expired_indices, arguments.dry_run)
+    # Required routing rules
+    if arguments.require:
+        logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator, prefix=arguments.prefix)
+        index_loop(client, 'require', expired_indices, arguments.dry_run, attr=arguments.required_rule)
 
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
