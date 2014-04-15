@@ -66,6 +66,12 @@ Dry run of above:
 
     curator --host my-elasticsearch -C space -g 1024 -D -n
 
+Add routing information `index.routing.allocation.key=value` to indices older than 2 days:
+
+    curator --host my-elasticsearch -r 2 --required_rule key=value
+
+Note that any arbitrary key and value can be used.  However it must match an existing key and value in your Elasticsearch configuration *for some node(s)* in order for the routing/reallocation to occur.
+
 ## Documentation and Errata
 
 If you need to close and delete based on different criteria, please use separate command lines, e.g.
