@@ -70,6 +70,7 @@ DEFAULT_ARGS = {
     'max_num_segments': 2,
     'dry_run': False,
     'debug': False,
+    'show_indices': False
 }
 
 def make_parser():
@@ -111,6 +112,7 @@ def make_parser():
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
+    parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
 
     return parser
 
@@ -161,6 +163,10 @@ def get_index_time(index_timestamp, separator='.'):
     except ValueError:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
 
+def get_indices(client, prefix='logstash-'):
+    """Return a sorted list of indices matching prefix"""
+    return sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    
 def get_version(client):
     """Return ES version number as a tuple"""
     version = client.info()['version']['number']
@@ -185,9 +191,10 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
         utc_now = utc_now.replace(hour=0)
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
-    sorted_indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    index_list = get_indices(client, prefix)
 
-    for index_name in sorted_indices:
+    for index_name in index_list:
+
         unprefixed_index_name = index_name[len(prefix):]
 
         # find the timestamp parts (i.e ['2011', '01', '05'] from '2011.01.05') using the configured separator
@@ -341,6 +348,11 @@ def main():
     parser = make_parser()
     arguments = parser.parse_args()
 
+    # Do not log and force dry-run if we opt to show indices.
+    if arguments.show_indices:
+        arguments.log_file = '/dev/null'
+        arguments.dry_run = True
+
     # Setup logging
     logging.basicConfig(level=logging.DEBUG if arguments.debug else logging.INFO,
                         format='%(asctime)s.%(msecs)03d %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s',
@@ -351,11 +363,15 @@ def main():
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
-    check_args = validate_args(arguments) # Returns either True or a list of errors
-    if not check_args == True:
-        logger.error('Malformed arguments: {0}'.format(';'.join(check_args)))
-        parser.print_help()
-        return
+    if arguments.show_indices:
+        pass # Skip checking args if we're only showing indices
+    else:
+        check_args = validate_args(arguments) # Returns either True or a list of errors
+        if not check_args == True:
+            logger.error('Malformed arguments: {0}'.format(';'.join(check_args)))
+            parser.print_help()
+            return
+
     client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
     
     version_number = get_version(client)
@@ -365,6 +381,11 @@ def main():
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
+    # Show indices then exit
+    if arguments.show_indices:
+        for index_name in get_indices(client, arguments.prefix):
+            print('{0}'.format(index_name))
+        sys.exit(0)
     # Delete by space first
     if arguments.disk_space:
         logger.info('Deleting indices by disk usage over {0} gigabytes'.format(arguments.disk_space))

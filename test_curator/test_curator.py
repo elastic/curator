@@ -15,6 +15,24 @@ class TestUtils(TestCase):
                 ]:
             self.assertEqual(dt, curator.get_index_time(text, sep))
 
+class TestShowIndices(TestCase):
+    def test_show_indices(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'prefix-2014.01.03': True,
+            'prefix-2014.01.02': True,
+            'prefix-2014.01.01': True
+        }
+        indices = curator.get_indices(client, prefix='prefix-')
+
+        self.assertEquals([
+                'prefix-2014.01.01',
+                'prefix-2014.01.02',
+                'prefix-2014.01.03', 
+            ],
+            indices
+        )
+
 class TestExpireIndices(TestCase):
     def test_all_daily_indices_found(self):
         client = Mock()
