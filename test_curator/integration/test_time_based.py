@@ -9,13 +9,13 @@ class TestTimeBasedDeletion(CuratorTestCase):
         self.create_indices(10)
         self.run_curator(delete_older=3)
         mtd = self.client.cluster.state(index=self.args['prefix'] + '*', metric='metadata')
-        self.assertEquals(4, len(mtd['metadata']['indices'].keys()))
+        self.assertEquals(3, len(mtd['metadata']['indices'].keys()))
 
     def test_curator_will_properly_delete_hourly_indices(self):
         self.create_indices(10, 'hours')
         self.run_curator(delete_older=3, time_unit='hours')
         mtd = self.client.cluster.state(index=self.args['prefix'] + '*', metric='metadata')
-        self.assertEquals(4, len(mtd['metadata']['indices'].keys()))
+        self.assertEquals(3, len(mtd['metadata']['indices'].keys()))
 
 class TestFindExpiredIndices(CuratorTestCase):
     def test_find_closed_indices(self):
@@ -29,8 +29,8 @@ class TestFindExpiredIndices(CuratorTestCase):
 
         self.assertEquals(
             [
-                ('l-2014.01.01', timedelta(6)),
-                ('l-2014.01.03', timedelta(4)),
+                ('l-2014.01.01', timedelta(7)),
+                ('l-2014.01.03', timedelta(5)),
             ],
             expired
         )
@@ -54,8 +54,9 @@ class TestFindExpiredIndices(CuratorTestCase):
             utc_now=datetime(2014, 1, 4, 3, 45, 50), prefix='l-'))
         self.assertEquals(
             [
-                (u'l-2014.01.01', timedelta(2)),
-                (u'l-2014.01.02', timedelta(1))
+                (u'l-2014.01.01', timedelta(3)),
+                (u'l-2014.01.02', timedelta(2)),
+                (u'l-2014.01.03', timedelta(1)),
             ],
             expired
         )
