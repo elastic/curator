@@ -29,7 +29,7 @@ class TestExpireIndices(TestCase):
             'prefix-2013.01.03': True,
             'prefix-2013.01.03.10': True,
         }
-        expired = curator.find_expired_indices(client, 'days', 3, prefix='prefix-', utc_now=datetime(2014, 1, 3))
+        expired = curator.find_expired_indices(client, 'days', 4, prefix='prefix-', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
