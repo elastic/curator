@@ -1,5 +1,11 @@
 1.0.1 (???)
  # General
+ - New! --show-indices command-line option #68 (untergeek)
+ - New! Shard Allocation Routing (-r) #62 (nickethier)
+ 
+ # Bug fixes
+ - Change BUILD_NUMBER to CURATOR_BUILD_NUMBER in setup.py #60 (mohabusama)
+ - Fix off-by-one error in time calculations #66 (untergeek)
 
 1.0.0 (25 Mar 2014)
  # General
