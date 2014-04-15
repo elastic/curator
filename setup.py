@@ -7,7 +7,7 @@ def fread(fname):
 
 def get_version():
     VERSION = fread("VERSION").strip()
-    build_number = os.environ.get('BUILD_NUMBER', None)
+    build_number = os.environ.get('CURATOR_BUILD_NUMBER', None)
     if build_number:
         return VERSION + "b{}".format(build_number)
     return VERSION
