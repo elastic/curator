@@ -70,7 +70,19 @@ DEFAULT_ARGS = {
     'max_num_segments': 2,
     'dry_run': False,
     'debug': False,
-    'show_indices': False
+    'show_indices': False,
+    
+    'repo_type': 'fs',
+    'bucket': None,
+    'region': None,
+    'base_path': None,
+    'access_key': None,
+    'secret_key': None,
+    'compress': True,
+    'concurrent_streams': 5,
+    'chunk_size': None,
+    'max_restore_bytes_per_sec': None,
+    'max_snapshot_bytes_per_sec': None
 }
 
 def make_parser():
@@ -97,23 +109,49 @@ def make_parser():
 
     parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default=DEFAULT_ARGS['curation_style'], type=str)
     parser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
-
+    # Standard features
     parser.add_argument('-d', '--delete', dest='delete_older', action='store', help='Delete indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-c', '--close', dest='close_older', action='store', help='Close indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond n GIGABYTES.', type=float)
-    
+    # Index routing
     parser.add_argument('-r', '--require', help='Update indices required routing allocation rules. Ex. tag=ssd', type=int)
     parser.add_argument('--required_rule', help='Index routing allocation rule to require. Ex. tag=ssd', type=str)
-    
+    # Optimize
     parser.add_argument('--max_num_segments', action='store', help='Maximum number of segments, post-optimize. Default: 2', type=int, default=DEFAULT_ARGS['max_num_segments'])
     parser.add_argument('-o', '--optimize', action='store', help='Optimize (Lucene forceMerge) indices older than n TIME_UNITs.  Must increase timeout to stay connected throughout optimize operation, recommend no less than 3600.', type=int)
-
+    # Meta-data 
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
-
+    # General Snapshot Repository Args
+    parser.add_argument('--repo-type', dest='repo_type', action='store', type=str, default=DEFAULT_ARGS['repo_type'],
+                        help='[Snapshot] repository type, one of "fs", "aws", "hdfs", "azure"')
+    parser.add_argument('--no-compress', dest='compress', action='store_false', default=DEFAULT_ARGS['compress'],
+                        help='[Snapshot] Disable compression (on by default)')
+    parser.add_argument('--concurrent_streams', dest='concurrent_streams', action='store', type=int, default=DEFAULT_ARGS['concurrent_streams'],
+                        help='[Snapshot] Number of streams (per node) preforming snapshot. Default: 5')
+    parser.add_argument('--chunk_size', dest='chunk_size', action='store', type=str, default=DEFAULT_ARGS['chunk_size'],
+                        help='[Snapshot] Chunk size, e.g. 1g, 10m, 5k. Default is unbounded.')
+    parser.add_argument('--max_restore_bytes_per_sec', dest='max_restore_bytes_per_sec', action='store', type=str, default=DEFAULT_ARGS['max_restore_bytes_per_sec'],
+                        help='[Snapshot] Throttles per node restore rate (per second). Default: 20mb')
+    parser.add_argument('--max_snapshot_bytes_per_sec', dest='max_snapshot_bytes_per_sec', action='store', type=str, default=DEFAULT_ARGS['max_snapshot_bytes_per_sec'],
+                        help='[Snapshot] Throttles per node snapshot rate (per second). Default: 20mb')                            
+    # 'fs' repository args
+    parser.add_argument('--location', dest='location', action='store', type=str, default=None,
+                        help='[Snapshot][fs] Shared file-system location. Must match remote path, & be accessible to all master & data nodes')
+    # 'aws' repository args
+    parser.add_argument('--bucket', dest='bucket', action='store', type=str, default=DEFAULT_ARGS['bucket'],
+                        help='[Snapshot][aws] Repository bucket name')
+    parser.add_argument('--region', dest='region', action='store', type=str, default=DEFAULT_ARGS['region'],
+                        help='[Snapshot][aws] S3 region. Defaults to US Standard')
+    parser.add_argument('--base_path', dest='base_path', action='store', type=str, default=DEFAULT_ARGS['base_path'],
+                        help='[Snapshot][aws] S3 base path. Defaults to root directory.')
+    parser.add_argument('--access_key', dest='base_path', action='store', type=str, default=DEFAULT_ARGS['access_key'],
+                        help='[Snapshot][aws] S3 access key. Defaults to value of cloud.aws.access_key')
+    parser.add_argument('--secret_key', dest='base_path', action='store', type=str, default=DEFAULT_ARGS['secret_key'],
+                        help='[Snapshot][aws] S3 secret key. Defaults to value of cloud.aws.secret_key')
     return parser
 
 
@@ -256,6 +294,16 @@ def index_closed(client, index_name):
     )
     return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
+def _get_repository(client, repo_name):
+    """Get Snapshot Repository information"""
+    return client.snapshotclient.get_repository(repository=repo_name)
+
+def _create_repository(client, repo_name, repo_type, settings=None):
+    """Create repository with repo_name and repo_type, with body settings (if present)"""
+    body =  { "type": repo_type, "settings": settings }
+    client.snapshotclient.create_repository(repository=repo_name, body=body)
+    
+    
 def _close_index(client, index_name, **kwargs):
     if index_closed(client, index_name):
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
@@ -341,6 +389,7 @@ def get_segmentcount(client, index_name):
             totalshards += 1
     return totalshards, segmentcount
 
+#def get_repository_settings(arguments)
 
 def main():
     start = time.time()
@@ -410,7 +459,7 @@ def main():
     if arguments.optimize:
         logger.info('Optimizing indices older than {0} {1}...'.format(arguments.optimize, arguments.time_unit))
         expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator, prefix=arguments.prefix)
-        index_loop(client, 'optimize', expired_indices, arguments.dry_run)
+        index_loop(client, 'optimize', expired_indices, arguments.dry_run, max_num_segments=arguments.max_num_segments)
     # Required routing rules
     if arguments.require:
         logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
