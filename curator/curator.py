@@ -124,10 +124,12 @@ def make_parser():
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
-    parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
+    parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix (nullifies other operations)', default=DEFAULT_ARGS['show_indices'])
     # General Snapshot Repository Args
+    parser.add_argument('--repository', dest='repository', action='store', type=str,
+                        help='[Snapshot] Repository name')
     parser.add_argument('--repo-type', dest='repo_type', action='store', type=str, default=DEFAULT_ARGS['repo_type'],
-                        help='[Snapshot] repository type, one of "fs", "aws", "hdfs", "azure"')
+                        help='[Snapshot] Repository type, one of "fs", "aws", "hdfs", "azure"')
     parser.add_argument('--no-compress', dest='compress', action='store_false', default=DEFAULT_ARGS['compress'],
                         help='[Snapshot] Disable compression (on by default)')
     parser.add_argument('--concurrent_streams', dest='concurrent_streams', action='store', type=int, default=DEFAULT_ARGS['concurrent_streams'],
@@ -160,28 +162,36 @@ def validate_args(myargs):
     success = True
     messages = []
     if myargs.curation_style == 'time':
-        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require:
-            success = False
-            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize or --require')
-        if ((myargs.delete_older and myargs.delete_older < 1) or
-            (myargs.close_older and myargs.close_older < 1) or
-            (myargs.bloom_older and myargs.bloom_older < 1) or
-            (myargs.optimize and myargs.optimize < 1)):
-            success = False
-            messages.append('Values for --delete, --close, --bloom or --optimize must be > 0')
         if myargs.time_unit != 'days' and myargs.time_unit != 'hours':
             success = False
             messages.append('Values for --time-unit must be either "days" or "hours"')
-        if myargs.disk_space:
+            if myargs.disk_space:
+                success = False
+                messages.append('Cannot specify --disk-space and --curation-style "time"')
+        if not myargs.repository:
+            if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require:
+                success = False
+                messages.append('Must specify at least one of --delete, --close, --bloom, --optimize or --require')
+            if ((myargs.delete_older and myargs.delete_older < 1) or
+                (myargs.close_older  and myargs.close_older  < 1) or
+                (myargs.bloom_older  and myargs.bloom_older  < 1) or
+                (myargs.optimize     and myargs.optimize     < 1)):
+                success = False
+                messages.append('Values for --delete, --close, --bloom or --optimize must be > 0')
+            if myargs.optimize and myargs.timeout < 300:
+                success = False
+                messages.append('Timeout should be much higher for optimize transactions, recommend no less than 3600 seconds')
+        elif myargs.repository:
+            if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize or myargs.require):
+                success = False
+                messages.append('Cannot specify --repository and any of --delete, --close, --bloom, --optimize or --require')
+        else: # Somebody forgot to give a value to --repository and the argparse check failed.
             success = False
-            messages.append('Cannot specify --disk-space and --curation-style "time"')
-        if myargs.optimize and myargs.timeout < 300:
-            success = False
-            messages.append('Timeout should be much higher for optimize transactions, recommend no less than 3600 seconds')
+            messages.append('Error.  We should never, ever see this...')
     else: # Curation-style is 'space'
-        if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize):
+        if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize or myargs.repository):
             success = False
-            messages.append('Cannot specify --curation-style "space" and any of --delete, --close, --bloom or --optimize')
+            messages.append('Cannot specify --curation-style "space" and any of --delete, --close, --bloom, --optimize or --repository')
         if (myargs.disk_space == 0) or (myargs.disk_space < 0):
             success = False
             messages.append('Value for --disk-space must be greater than 0')
@@ -298,11 +308,9 @@ def _get_repository(client, repo_name):
     """Get Snapshot Repository information"""
     return client.snapshotclient.get_repository(repository=repo_name)
 
-def _create_repository(client, repo_name, repo_type, settings=None):
+def _create_repository(client, repo_name, body):
     """Create repository with repo_name and repo_type, with body settings (if present)"""
-    body =  { "type": repo_type, "settings": settings }
     client.snapshotclient.create_repository(repository=repo_name, body=body)
-    
     
 def _close_index(client, index_name, **kwargs):
     if index_closed(client, index_name):
@@ -389,8 +397,31 @@ def get_segmentcount(client, index_name):
             totalshards += 1
     return totalshards, segmentcount
 
-#def get_repository_settings(arguments)
-
+def get_repository_settings(args):
+    """Create the request body for creating a repository"""
+    # args is the arguments namespace, so I can't just iterate
+    body = { 'settings': { 'compress': args.compress } }
+    body['settings']['concurrent_streams'] = args.concurrent_streams
+    if args.chunk_size:
+        body['settings']['chunk_size'] = args.chunk_size
+    if args.max_restore_bytes_per_sec:
+        body['settings']['max_restore_bytes_per_sec'] = args.max_restore_bytes_per_sec
+    if args.max_restore_bytes_per_sec:
+        body['settings']['max_snapshot_bytes_per_sec'] = args.max_snapshot_bytes_per_sec
+    # Type 'fs'
+    if args.repo_type == 'fs':
+        body['type'] = args.repo_type
+        body['settings']['location']   = args.location
+    # Type 'aws'
+    if args.repo_type == 'aws':
+        body['type'] = args.repo_type
+        body['settings']['bucket']     = args.bucket
+        body['settings']['region']     = args.region
+        body['settings']['base_path']  = args.base_path
+        body['settings']['access_key'] = args.access_key
+        body['settings']['secret_key'] = args.secret_key
+    return body
+    
 def main():
     start = time.time()
 
@@ -418,7 +449,7 @@ def main():
         check_args = validate_args(arguments) # Returns either True or a list of errors
         if not check_args == True:
             logger.error('Malformed arguments: {0}'.format(';'.join(check_args)))
-            parser.print_help()
+            print('See the help output: {0} --help'.format(sys.argv[0]))
             return
 
     client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
