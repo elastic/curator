@@ -1,9 +1,15 @@
-1.0.1 (???)
+1.1.0 (???)
  # General
- - New! --show-indices command-line option #68 (untergeek)
- - New! Shard Allocation Routing (-r) #62 (nickethier)
+ - Updated! New command structure
+ - New! Snapshot to fs or s3 #82 (untergeek)
+ - New! Add/Remove indices to alias #82 via #86 (cschellenger)
+ - New! --exclude-pattern #80 (ekamil)
+ - New! (sort of) Restored log-level support #73 (xavier-calland)
+ - New! show command-line options #82 via #68 (untergeek)
+ - New! Shard Allocation Routing #82 via #62 (nickethier)
  
  # Bug fixes
+ - Fix --max_num_segments not being passed correctly #74 (untergeek)
  - Change BUILD_NUMBER to CURATOR_BUILD_NUMBER in setup.py #60 (mohabusama)
  - Fix off-by-one error in time calculations #66 (untergeek)
 
@@ -34,7 +40,7 @@
  - Restructured repository to a be a proper python package. (arieb)
  - Added setup.py file. (arieb)
  - Removed the deprecated file logstash_index_cleaner.py (arieb)
- - Updated README.md to fit the new package, most importantly the usage 
+ - Updated README.md to fit the new package, most importantly the usage
    and installation. (arieb)
  - Fixes and package push to PyPI (untergeek)
 
@@ -61,7 +67,7 @@
     and therefore memory usage. (untergeek)
   - update refactor of args and several functions to streamline operation
     and make it more readable (untergeek)
-  - update refactor further to clean up and allow immediate (and future) 
+  - update refactor further to clean up and allow immediate (and future)
     portability (HonzaKral)
 
 0.4.0

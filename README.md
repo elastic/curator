@@ -17,12 +17,11 @@ Install using pip
 
     pip install elasticsearch-curator
 
-
 See `curator --help` for usage specifics.
 
 ### Defaults
 
-The default values for host, port and prefix are:
+The default values for the following are:
 
     --host localhost
     --port 9200
@@ -33,53 +32,23 @@ The default values for host, port and prefix are:
     -s (or --separator) .
     --max_num_segments 2
 
-If your values match these you do not need to include them.  The `prefix` should be everything before the date string.
+If your values match these you do not need to include them.  The value of `prefix` should be everything before the date string, i.e. `--prefix .marvel-` would match index `.marvel-2014.05.27`, and all other indices beginning with `.marvel-` (don't forget the trailing hyphen!).
 
-### Examples
+### [Documentation & Examples](http://github.com/elasticsearch/curator/wiki)
 
-Close indices older than 14 days, delete indices older than 30 days (See https://github.com/elasticsearch/curator/issues/1):
+See the [Curator Wiki](http://github.com/elasticsearch/curator/wiki) on Github for more documentation
 
-    curator --host my-elasticsearch -d 30 -c 14
+## Errata
 
-Keep 14 days of logs in elasticsearch:
+### Mutually exclusive arguments
 
-    curator --host my-elasticsearch -d 14
+If you need to perform operations based on differing `--curation-style`s, please use separate command lines, e.g.
 
-Disable bloom filter for indices older than 2 days, close indices older than 14 days, delete indices older than 30 days:
-
-    curator --host my-elasticsearch -b 2 -c 14 -d 30
+    curator --host my-elasticsearch --curation-style space --disk-space 1024
+    curator --host my-elasticsearch [--curation-style time] --optimize 1
     
-Optimize (Lucene forceMerge) indices older than 2 days to 1 segment per shard:
-
-    curator --host my-elasticsearch -t 3600 -o 2 --max_num_segments 1
-
-Keep 1TB of data in elasticsearch, show debug output:
-
-    curator --host my-elasticsearch -C space -g 1024 -D
-
-Note that when using size to determine which indices to keep having closed
-indices will cause inaccuracies since they cannot be added to the overall size.
-This is only an issue if you have closed some indices that are not your oldest
-ones.
-
-Dry run of above:
-
-    curator --host my-elasticsearch -C space -g 1024 -D -n
-
-Add routing information `index.routing.allocation.key=value` to indices older than 2 days:
-
-    curator --host my-elasticsearch -r 2 --required_rule key=value
-
-Note that any arbitrary key and value can be used.  However it must match an existing key and value in your Elasticsearch configuration *for some node(s)* in order for the routing/reallocation to occur.
-
-## Documentation and Errata
-
-If you need to close and delete based on different criteria, please use separate command lines, e.g.
-
-    curator --host my-elasticsearch -C space -g 1024
-    curator --host my-elasticsearch -c 15
-    
-When using optimize the current behavior is to wait until the optimize operation is complete before continuing.  With large indices, this can result in timeouts with the default 30 seconds.  It is recommended that you increase the timeout to at least 3600 seconds, if not more.  
+### Timeouts
+With some operations (e.g. `--optimize` and `--snap-older`) the default behavior is to wait until the operation is complete before proceeding with the next step.  Since these operations can take quite a long time it is advisable to set `--timeout` to a high value (e.g. a minimum of `3600` [1 hour] for optimize operations).
 
 
 ## Contributing
@@ -91,7 +60,7 @@ When using optimize the current behavior is to wait until the optimize operation
 
 ### Running tests
 
-To run the test suite just run `python setup.py test`.
+To run the test suite just run `python setup.py test`
 
 When changing code, contributing new code or fixing a bug please make sure you
 include tests in your PR (or mark it as without tests so that someone else can
@@ -104,7 +73,11 @@ integration tests against it. This will delete all the data stored there! You
 can use the env variable `TEST_ES_SERVER` to point to a different instance (for
 example 'otherhost:9203').
 
+The repository tests all expect to run on a single local node.  These tests will fail if run against a cluster due to the unhappy mixup between unit tests and shared filesystems (total cleanup afterwards).  It is possible, but you would have to manually replace `/tmp/REPOSITORY_LOCATION` with a path on your shared filesystem.  This is defined in `test_curator/integration/__init__.py`
+
 ## Origins
 
-<https://logstash.jira.com/browse/LOGSTASH-211>
+Curator was first called `clearESindices.py` [1] and was almost immediately renamed to `logstash_index_cleaner.py` [1].  After a time it was migrated under the [logstash](https://github.com/elasticsearch/logstash) repository as `expire_logs`.  Soon thereafter, Jordan Sissel was hired by Elasticsearch, as was the original author of this tool.  It became Elasticsearch Curator after that and is now hosted at <https://github.com/elasticsearch/curator>
+
+[1] <https://logstash.jira.com/browse/LOGSTASH-211>
 

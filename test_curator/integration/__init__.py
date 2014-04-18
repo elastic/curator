@@ -1,11 +1,13 @@
 import time
 import os
+import shutil
 from datetime import timedelta, datetime
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
 
 from curator import curator
+from curator import es_repo_mgr
 
 from unittest import SkipTest, TestCase
 from mock import Mock
@@ -54,11 +56,18 @@ class CuratorTestCase(TestCase):
         args = curator.DEFAULT_ARGS.copy()
         args['host'], args['port'] = host, port
         self.args = args
+        self.args['location'] = '/tmp/REPOSITORY_LOCATION'
+        self.args['repository'] = 'TEST_REPOSITORY'
+        if not os.path.exists(self.args['location']):
+            os.makedirs(self.args['location'])
 
     def tearDown(self):
+        self.delete_repositories()
         self.client.indices.delete(index='*')
         self.client.indices.delete_template(name='*', ignore=404)
         curator.make_parser = self._old_parse
+        if os.path.exists(self.args['location']):
+            shutil.rmtree(self.args['location'])
 
     def parse_args(self):
         return Args(self.args)
@@ -90,3 +99,11 @@ class CuratorTestCase(TestCase):
         if wait_for_yellow:
             self.client.cluster.health(wait_for_status='yellow')
 
+    def create_repository(self):
+        body = {'type':'fs', 'settings':{'location':self.args['location']}}
+        self.client.snapshot.create_repository(repository=self.args['repository'], body=body)
+
+    def delete_repositories(self):
+        result = self.client.snapshot.get_repository(repository='_all')
+        for repo in result:
+            self.client.snapshot.delete_repository(repository=repo)
