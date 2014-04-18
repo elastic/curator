@@ -91,7 +91,7 @@ When using optimize the current behavior is to wait until the optimize operation
 
 ### Running tests
 
-To run the test suite just run `python setup.py tests`.
+To run the test suite just run `python setup.py test`.
 
 When changing code, contributing new code or fixing a bug please make sure you
 include tests in your PR (or mark it as without tests so that someone else can
