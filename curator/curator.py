@@ -93,6 +93,7 @@ def make_parser():
     parser.add_argument('-t', '--timeout', help='Elasticsearch timeout. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
 
     parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    parser.add_argument('--exclude-prefix', help='Indices with this prefix are skipper. Combine with -p option')
     parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default=DEFAULT_ARGS['separator'])
 
     parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default=DEFAULT_ARGS['curation_style'], type=str)
@@ -163,16 +164,20 @@ def get_index_time(index_timestamp, separator='.'):
     except ValueError:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
 
-def get_indices(client, prefix='logstash-'):
+def get_indices(client, prefix='logstash-', exclude_prefix=None):
     """Return a sorted list of indices matching prefix"""
-    return sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    _indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    if exclude_prefix:
+        return filter(lambda x: not x.startswith(exclude_prefix), _indices)
+    else:
+        return _indices
     
 def get_version(client):
     """Return ES version number as a tuple"""
     version = client.info()['version']['number']
     return tuple(map(int, version.split('.')))
 
-def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
+def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None, exclude_prefix=None):
     """ Generator that yields expired indices.
 
     :return: Yields tuples on the format ``(index_name, expired_by)`` where index_name
@@ -191,7 +196,7 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
         utc_now = utc_now.replace(hour=0)
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
-    index_list = get_indices(client, prefix)
+    index_list = get_indices(client, prefix, exclude_prefix)
 
     for index_name in index_list:
 
@@ -383,7 +388,7 @@ def main():
 
     # Show indices then exit
     if arguments.show_indices:
-        for index_name in get_indices(client, arguments.prefix):
+        for index_name in get_indices(client, arguments.prefix, arguments.exclude_prefix):
             print('{0}'.format(index_name))
         sys.exit(0)
     # Delete by space first
