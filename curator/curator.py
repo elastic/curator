@@ -399,27 +399,32 @@ def main():
     # Delete by time
     if arguments.delete_older:
         logger.info('Deleting indices older than {0} {1}...'.format(arguments.delete_older, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.delete_older, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.delete_older, separator=arguments.separator, 
+                                               prefix=arguments.prefix, exclude_prefix=arguments.exclude_prefix)
         index_loop(client, 'delete', expired_indices, arguments.dry_run)
     # Close by time
     if arguments.close_older:
         logger.info('Closing indices older than {0} {1}...'.format(arguments.close_older, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_prefix=arguments.exclude_prefix)
         index_loop(client, 'close', expired_indices, arguments.dry_run)
     # Disable bloom filter by time
     if arguments.bloom_older:
         logger.info('Disabling bloom filter on indices older than {0} {1}...'.format(arguments.bloom_older, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.bloom_older, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.bloom_older, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_prefix=arguments.exclude_prefix)
         index_loop(client, 'bloom', expired_indices, arguments.dry_run)
     # Optimize index
     if arguments.optimize:
         logger.info('Optimizing indices older than {0} {1}...'.format(arguments.optimize, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_prefix=arguments.exclude_prefix)
         index_loop(client, 'optimize', expired_indices, arguments.dry_run, max_num_segments=arguments.max_num_segments)
     # Required routing rules
     if arguments.require:
         logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_prefix=arguments.exclude_prefix)
         index_loop(client, 'require', expired_indices, arguments.dry_run, attr=arguments.required_rule)
 
 
