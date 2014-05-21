@@ -325,6 +325,7 @@ def _bloom_index(client, index_name, **kwargs):
     else:
         client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
         
+
 def _require_index(client, index_name, attr, **kwargs):
     key = attr.split('=')[0]
     value = attr.split('=')[1]
@@ -437,7 +438,7 @@ def main():
         index_loop(client, 'delete', expired_indices, arguments.dry_run)
     # Close by time
     if arguments.close_older:
-        logger.info('Closing indices older thanp {0} {1}...'.format(arguments.close_older, arguments.time_unit))
+        logger.info('Closing indices older than {0} {1}...'.format(arguments.close_older, arguments.time_unit))
         expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'close', expired_indices, arguments.dry_run)
     # Disable bloom filter by time
