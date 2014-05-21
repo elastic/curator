@@ -102,6 +102,7 @@ def make_parser():
     parser.add_argument('-c', '--close', dest='close_older', action='store', help='Close indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond n GIGABYTES.', type=float)
+    parser.add_argument('-P', '--precreate', dest='days_in_advance', action='store', help='Precreate indices for n days in advance.', type=int)
     
     parser.add_argument('-r', '--require', help='Update indices required routing allocation rules. Ex. tag=ssd', type=int)
     parser.add_argument('--required_rule', help='Index routing allocation rule to require. Ex. tag=ssd', type=str)
@@ -113,6 +114,7 @@ def make_parser():
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
+    parser.add_argument('--mapping-file', dest='mapping_file', action='store', help='mapping file for creating indices')
 
     return parser
 
@@ -122,9 +124,9 @@ def validate_args(myargs):
     success = True
     messages = []
     if myargs.curation_style == 'time':
-        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require:
+        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require and not myargs.days_in_advance:
             success = False
-            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize or --require')
+            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize, --require, or --precreate')
         if ((myargs.delete_older and myargs.delete_older < 1) or
             (myargs.close_older and myargs.close_older < 1) or
             (myargs.bloom_older and myargs.bloom_older < 1) or
@@ -162,6 +164,42 @@ def get_index_time(index_timestamp, separator='.'):
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d', '%H')))
     except ValueError:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
+
+def create_indices(client, indices_to_create, mapping_file='', dry_run=False, **kwargs):
+    mapping = ''
+    if mapping_file:
+        with open(mapping_file) as f:
+            for line in f:
+                mapping += line
+
+    for index in indices_to_create:
+        if dry_run:
+            logger.info('Would have attempted to create index {0}'.format(index))
+        else:
+            logger.info('Attempting to create index {0}'.format(index))
+            client.indices.create(index, body=mapping)
+
+def get_indices_to_create(time_unit, days_in_advance=1, prefix='logstash-', separator='.', existing_indices={}, utc_now=None):
+    """Return a generator of indices to pre-create."""
+    # time-injection for test purposes only
+    utc_now = utc_now if utc_now else datetime.utcnow()
+    utc_now = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    days = [ utc_now + timedelta(days=day) for day in range(days_in_advance + 1) ]
+    indices = []
+    if time_unit == 'hours':
+        fstr = separator.join(('%Y', '%m', '%d', '%H'))
+        for day in days:
+            for hour in range(24):
+                index = prefix + (day + timedelta(hours=hour)).strftime(fstr)
+                if not index in existing_indices:
+                    yield index
+    else:
+        fstr = separator.join(('%Y', '%m', '%d'))
+        for day in days:
+            index = prefix + day.strftime(fstr)
+            if not index in existing_indices:
+                yield index
 
 def get_indices(client, prefix='logstash-'):
     """Return a sorted list of indices matching prefix"""
@@ -297,6 +335,7 @@ def _require_index(client, index_name, attr, **kwargs):
       logger.info('Updating index setting index.routing.allocation.{0}={1}'.format(key,value))
       client.indices.put_settings(index=index_name, body='index.routing.allocation.{0}={1}'.format(key,value))
 
+
 OP_MAP = {
     'close': (_close_index, {'op': 'close', 'verbed': 'closed', 'gerund': 'Closing'}),
     'delete': (_delete_index, {'op': 'delete', 'verbed': 'deleted', 'gerund': 'Deleting'}),
@@ -398,7 +437,7 @@ def main():
         index_loop(client, 'delete', expired_indices, arguments.dry_run)
     # Close by time
     if arguments.close_older:
-        logger.info('Closing indices older than {0} {1}...'.format(arguments.close_older, arguments.time_unit))
+        logger.info('Closing indices older thanp {0} {1}...'.format(arguments.close_older, arguments.time_unit))
         expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'close', expired_indices, arguments.dry_run)
     # Disable bloom filter by time
@@ -416,7 +455,12 @@ def main():
         logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
         expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'require', expired_indices, arguments.dry_run, attr=arguments.required_rule)
-
+    # Precreate indexes
+    if arguments.days_in_advance:
+        logger.info('Precreating indexes for {0} days with mapping {1}'.format(arguments.days_in_advance, arguments.mapping_file))
+        existing_indices = set(get_indices(client, prefix=arguments.prefix))
+        to_create = get_indices_to_create(arguments.time_unit, days_in_advance=arguments.days_in_advance, prefix=arguments.prefix, separator=arguments.separator, existing_indices=existing_indices)
+        create_indices(client, to_create, dry_run=arguments.dry_run, mapping_file=arguments.mapping_file)
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 
