@@ -80,3 +80,35 @@ class TestExpireIndices(TestCase):
             ],
             expired
         )
+
+class TestPregenerateIndices(TestCase):
+    def test_daily(self):
+        result = set(curator.get_indices_to_create('days', utc_now=datetime(2014, 1, 3, 6, 5)))
+        self.assertEquals(2, len(result))
+        self.assertTrue('logstash-2014.01.03' in result)
+        self.assertTrue('logstash-2014.01.04' in result)
+        result = set(curator.get_indices_to_create('days', prefix='prefix-', separator='-', days_in_advance=3, utc_now=datetime(2014, 1, 3)))
+        self.assertEquals(4, len(result))
+        self.assertTrue('prefix-2014-01-03' in result)
+        self.assertTrue('prefix-2014-01-04' in result)
+        self.assertTrue('prefix-2014-01-05' in result)
+        self.assertTrue('prefix-2014-01-06' in result)
+
+    def test_hourly(self):
+        result = set(curator.get_indices_to_create('hours', utc_now=datetime(2014, 1, 3, 6, 12)))
+        self.assertEquals(48, len(result))
+        self.assertTrue('logstash-2014.01.03.00' in result)
+        self.assertTrue('logstash-2014.01.03.23' in result)
+        self.assertTrue('logstash-2014.01.04.00' in result)
+        self.assertTrue('logstash-2014.01.04.23' in result)
+        result = set(curator.get_indices_to_create('hours', prefix='prefix-', separator='-', days_in_advance=3, utc_now=datetime(2014, 1, 3)))
+        self.assertEquals(96, len(result))
+        self.assertTrue('prefix-2014-01-03-00' in result)
+        self.assertTrue('prefix-2014-01-03-23' in result)
+        self.assertTrue('prefix-2014-01-04-00' in result)
+        self.assertTrue('prefix-2014-01-04-23' in result)
+        self.assertTrue('prefix-2014-01-05-00' in result)
+        self.assertTrue('prefix-2014-01-05-23' in result)
+        self.assertTrue('prefix-2014-01-06-00' in result)
+        self.assertTrue('prefix-2014-01-06-23' in result)
+
