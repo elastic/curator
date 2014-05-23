@@ -84,7 +84,7 @@ Snapshots can take a very long time to complete, if the index is large enough, o
 
 ### Common Repository Flags
 
-* `--no-compress`   Turns off compression of the snapshot files (on by default).
+* `--disable-compression`   Turns off compression of the snapshot files (enabled by default).
 * `--chunk-size`    Big files can be broken down into chunks during snapshotting if needed. The chunk size can be specified in bytes or by using size value notation, i.e. 1g, 10m, 5k. Defaults to `null` (unlimited chunk size).
 * `--max_restore_bytes_per_sec` Throttles _per node_ restore rate. Defaults to 20mb per second.
 * `--max_snapshot_bytes_per_sec` Throttles _per node_ snapshot rate. Defaults to 20mb per second.

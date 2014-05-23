@@ -161,8 +161,8 @@ def make_parser():
                         help='[Snapshot] Create indicated (--repository)')
     parser.add_argument('--repo-type', dest='repo_type', action='store', type=str, default=DEFAULT_ARGS['repo_type'],
                         help='[Snapshot] Repository type, one of "fs", "s3"')
-    parser.add_argument('--no-compress', dest='compress', action='store_false', default=DEFAULT_ARGS['compress'],
-                        help='[Snapshot] Disable compression (on by default)')
+    parser.add_argument('--disable-compression', dest='compress', action='store_false', default=DEFAULT_ARGS['compress'],
+                        help='[Snapshot] Disable compression (enabled by default)')
     parser.add_argument('--concurrent_streams', dest='concurrent_streams', action='store', type=int, default=DEFAULT_ARGS['concurrent_streams'],
                         help='[Snapshot] Number of streams (per node) preforming snapshot. Default: 5')
     parser.add_argument('--chunk_size', dest='chunk_size', action='store', type=str, default=DEFAULT_ARGS['chunk_size'],
