@@ -48,7 +48,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '1.0.1-dev'
+__version__ = '1.1.0-dev'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -148,6 +148,10 @@ def make_parser():
                         help='[Snapshot] Store cluster global state with snapshot. (Default=False)', default=DEFAULT_ARGS['include_global_state'])
     parser.add_argument('--partial', dest='partial', action='store_true',
                         help='[Snapshot] Do not fail if primary shard is unavailable. (Default=False)', default=DEFAULT_ARGS['partial'])
+    parser.add_argument('--show-repositories', dest='show_repositories', action='store_true',
+                        help='[Snapshot] Show all registed repositories.')
+    parser.add_argument('--show-snapshots', dest='show_snapshots', action='store_true',
+                        help='[Snapshot] Show all snapshots in REPOSITORY.')
     # Repository creation
     parser.add_argument('--repository', dest='repository', action='store', type=str,
                         help='[Snapshot] Repository name')
@@ -420,8 +424,7 @@ def _create_snapshot(client, snap_name, prefix='logstash-', **kwargs):
         'argdict' is passed in kwargs in this method so it can work in the index_loop
     """
     # Return True when it was skipped
-    #try:
-    if 1 == 1:
+    try:
         argdict = kwargs['argdict']
         repo_name = argdict['repository']
         successes = get_snapped_indices(client, repo_name, prefix=prefix)
@@ -437,8 +440,7 @@ def _create_snapshot(client, snap_name, prefix='logstash-', **kwargs):
         else:
             logger.info("Skipping: A snapshot with name '{0}' already exists.".format(snap_name))
             return True
-    #except Exception as e:
-    else:
+    except Exception as e:
         logger.error("Unable to create snapshot {0}.  Error: {1} Check logs for more information.".format(snap_name, e))
         return True
 
@@ -602,7 +604,7 @@ def main():
     argdict = arguments.__dict__
 
     # Do not log and force dry-run if we opt to show indices.
-    if arguments.show_indices:
+    if arguments.show_indices or arguments.show_repositories or arguments.show_snapshots:
         arguments.log_file = '/dev/null'
         arguments.dry_run = True
 
@@ -612,7 +614,7 @@ def main():
     else:
         numeric_log_level = getattr(logging, arguments.log_level.upper(), None)
         if not isinstance(numeric_log_level, int):
-            raise ValueError('Invalid log level: %s' % loglevel)
+            raise ValueError('Invalid log level: %s' % arguments.log_level)
     
     logging.basicConfig(level=numeric_log_level,
                         format='%(asctime)s.%(msecs)03d %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s',
@@ -623,8 +625,8 @@ def main():
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
-    if arguments.show_indices:
-        pass # Skip checking args if we're only showing indices
+    if arguments.show_indices or arguments.show_repositories or arguments.show_snapshots:
+        pass # Skip checking args if we're only showing stuff
     else:
         check_args = validate_args(arguments) # Returns either True or a list of errors
         if not check_args == True:
@@ -644,6 +646,22 @@ def main():
     if arguments.show_indices:
         for index_name in get_indices(client, arguments.prefix):
             print('{0}'.format(index_name))
+        sys.exit(0)
+    # Show repositories then exit
+    if arguments.show_repositories:
+        if not arguments.repository:
+            print("Must specify --repository with this option.")
+        else:
+            for repository in sorted(_get_repository(client, '_all').keys()):
+                print('{0}'.format(repository))
+        sys.exit(0)
+    # Show snapshots from repository then exit
+    if arguments.show_snapshots:
+        if not arguments.repository:
+            print("Must specify --repository with this option.")
+        else:
+            for snapshot in get_snaplist(client, arguments.repository, prefix=arguments.prefix):
+                print('{0}'.format(snapshot))
         sys.exit(0)
     # Create repository
     if arguments.create_repo and arguments.repository and arguments.dry_run:
