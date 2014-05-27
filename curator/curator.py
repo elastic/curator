@@ -122,7 +122,7 @@ def make_parser():
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than BLOOM_OLDER TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond DISK_SPACE gigabytes.', type=float)
     # Index routing
-    parser.add_argument('-r', '--require', help='Update indices required routing allocation rules. Ex. tag=ssd', type=int)
+    parser.add_argument('-r', '--require', help='Apply REQUIRED_RULE to indices older than REQUIRE TIME_UNITs.', type=int)
     parser.add_argument('--required_rule', help='Index routing allocation rule to require. Ex. tag=ssd', type=str)
     # Optimize
     parser.add_argument('--max_num_segments', action='store', help='Maximum number of segments, post-optimize. Default: 2', type=int, default=DEFAULT_ARGS['max_num_segments'])
