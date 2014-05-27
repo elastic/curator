@@ -663,18 +663,18 @@ def main():
             for snapshot in get_snaplist(client, arguments.repository, prefix=arguments.prefix):
                 print('{0}'.format(snapshot))
         sys.exit(0)
-    # Create repository
-    if arguments.create_repo and arguments.repository and arguments.dry_run:
-        logger.info('Would have attempted creating repository {0}...'.format(arguments.repository))
-    elif arguments.create_repo and arguments.repository:
-        logger.info('Creating repository {0}...'.format(arguments.repository))
-        _create_repository(client, arguments.repository, create_repo_body(argdict))
     # Delete repository
     if arguments.delete_repo and arguments.repository and arguments.dry_run:
         logger.info('Would have attempted deleting repository {0}...'.format(arguments.repository))
     elif arguments.delete_repo and arguments.repository:
         logger.info('Deleting repository {0}...'.format(arguments.repository))
         _delete_repository(client, arguments.repository)
+    # Create repository
+    if arguments.create_repo and arguments.repository and arguments.dry_run:
+        logger.info('Would have attempted creating repository {0}...'.format(arguments.repository))
+    elif arguments.create_repo and arguments.repository:
+        logger.info('Creating repository {0}...'.format(arguments.repository))
+        _create_repository(client, arguments.repository, create_repo_body(argdict))
     # Delete by space first
     if arguments.disk_space:
         logger.info('Deleting indices by disk usage over {0} gigabytes'.format(arguments.disk_space))
@@ -705,11 +705,6 @@ def main():
         logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
         expired_indices = find_expired_data(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'require', expired_indices, arguments.dry_run, attr=arguments.required_rule)
-    # Take snapshot
-    if arguments.snap_older and arguments.repository:
-        logger.info('Adding snapshot of indices older than {0} {1} to repository {2}...'.format(arguments.snap_older, arguments.time_unit, arguments.repository))
-        expired_indices = find_expired_data(client, time_unit=arguments.time_unit, unit_count=arguments.snap_older, separator=arguments.separator, prefix=arguments.prefix)
-        index_loop(client, 'snapshot', expired_indices, arguments.dry_run, prefix=arguments.prefix, argdict=argdict)
     # Delete snapshot
     if arguments.delete_snaps and arguments.repository:
         logger.info('Deleting snapshots older than {0} {1}...'.format(arguments.delete_snaps, arguments.time_unit))
@@ -718,6 +713,11 @@ def main():
     if arguments.snap_latest and arguments.repository:
         logger.info('Adding snapshot of {0} most recent indices matching prefix \'{1}\' to repository {2}...'.format(arguments.snap_latest, arguments.prefix, arguments.repository))
         snap_latest_indices(client, arguments.snap_latest, prefix=arguments.prefix, dry_run=arguments.dry_run, argdict=argdict)
+    # Take snapshot
+    if arguments.snap_older and arguments.repository:
+        logger.info('Adding snapshot of indices older than {0} {1} to repository {2}...'.format(arguments.snap_older, arguments.time_unit, arguments.repository))
+        expired_indices = find_expired_data(client, time_unit=arguments.time_unit, unit_count=arguments.snap_older, separator=arguments.separator, prefix=arguments.prefix)
+        index_loop(client, 'snapshot', expired_indices, arguments.dry_run, prefix=arguments.prefix, argdict=argdict)
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 

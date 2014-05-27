@@ -17,12 +17,11 @@ Install using pip
 
     pip install elasticsearch-curator
 
-
 See `curator --help` for usage specifics.
 
 ### Defaults
 
-The default values for host, port and prefix are:
+The default values for the following are:
 
     --host localhost
     --port 9200
@@ -33,43 +32,119 @@ The default values for host, port and prefix are:
     -s (or --separator) .
     --max_num_segments 2
 
-If your values match these you do not need to include them.  The `prefix` should be everything before the date string.
+If your values match these you do not need to include them.  The value of `prefix` should be everything before the date string, i.e. `--prefix .marvel-` would match index `.marvel-2014.05.27`, and all other indices beginning with `.marvel-` (don't forget the trailing hyphen!).
 
 ### Examples
 
-Close indices older than 14 days, delete indices older than 30 days (See https://github.com/elasticsearch/curator/issues/1):
+#### Delete indices
 
-    curator --host my-elasticsearch -d 30 -c 14
+Delete indices older than 30 days:
 
-Keep 14 days of logs in elasticsearch:
-
-    curator --host my-elasticsearch -d 14
-
-Disable bloom filter for indices older than 2 days, close indices older than 14 days, delete indices older than 30 days:
-
-    curator --host my-elasticsearch -b 2 -c 14 -d 30
+    curator --host my-elasticsearch --delete 30
     
+You can also use `-d` in place of `--delete`
+
+#### Close indices
+
+Close indices older than 14 days:
+
+    curator --host my-elasticsearch --close 14
+
+You can also use `-c` in place of `--close`
+
+#### Disable bloom filter for indices
+
+Disable bloom filter for indices older than 1:
+
+    curator --host my-elasticsearch --bloom 1
+
+You can also use `-b` in place of `--bloom`
+
+#### Optimize (Lucene forceMerge) indices
+
+*Optimize* is a bit of a misnomer.  It is in actuality a Lucene forceMerge operation. With time-series data in a per-day index, Lucene does a good job of keeping the number of segments low.  However, if no new data is being ingested, no further segment merging will happen.  There are some minor performance benefits from merging segments down to a smaller count, but a greater benefit when it comes to restarts [e.g. version upgrades, etc.] after a shutdown: with fewer segments to have to validate, the cluster comes back up sooner.
+
+Optimize (Lucene forceMerge) indices older than 2 days to 2 segments per shard (the default is 2):
+
+    curator --host my-elasticsearch --timeout 7200 --optimize 2
+
 Optimize (Lucene forceMerge) indices older than 2 days to 1 segment per shard:
 
-    curator --host my-elasticsearch -t 3600 -o 2 --max_num_segments 1
+	curator --host my-elasticsearch --timeout 7200 --optimize 2 --max_num_segments 1
+	
+You can also use `-t` in place of `--timeout`, and `-o` in place of `--optimize`
 
-Keep 1TB of data in elasticsearch, show debug output:
+Please note that `--timeout 7200` is specified in each case.  Since the optimize operation can take a long time, curator may disconnect and fail to continue with further operations if the timeout is not set high enough.  This number may need to be higher, or could be reduced depending on your scenario.  The log file will tell you how long it took to perform previous operations, which you could use as a guideline.
 
-    curator --host my-elasticsearch -C space -g 1024 -D
+#### Delete by space
 
-Note that when using size to determine which indices to keep having closed
+Keep 1024GB (1TB) of data in elasticsearch:
+
+    curator --host my-elasticsearch --curation-style space --disk-space 1024
+
+You can also use `-C` in place of `--curation-style`, and `-g` in place of `--disk-space`.
+
+Note that when using size to determine which indices to keep, having closed
 indices will cause inaccuracies since they cannot be added to the overall size.
 This is only an issue if you have closed some indices that are not your oldest
 ones.
 
-Dry run of above:
+#### Shard/index allocation
 
-    curator --host my-elasticsearch -C space -g 1024 -D -n
+You can use curator to apply routing tags to your indices.  This is useful for migrating stale indices from your heavy-duty indexing boxes to slower-hardware search boxes.  Read more [here](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/modules-cluster.html#allocation-filtering) about the `index.routing.allocation.require.*` settings.  In order for the index-level settings to work, you must also have corresponding node-level settings.
+
+Apply setting `index.routing.allocation.tag=done_indexing` to indices older than 2 days:
+
+	curator --host my-elasticsearch --require 2 --require_rule tag=done_indexing
+	
+You can also use `-r` in place of `--require`
+
+#### Display indices matching prefix
 
 Display a list of all indices matching `PREFIX` (`logstash-` by default):
 
 	curator --host my-elasticsearch --show-indices
 
+####  Other common flags
+
+* `--dry-run` Will not actually perform actions, but will log the attempts.  Can also use `-n`.
+* `--debug` Enables debug logging.  Can also use `-D`.
+* `--loglevel` Specify desired log level. `INFO` by default.  Can also use `-ll`.
+* `--logfile` Path to desired log file (STDOUT by default).  Can also use `-l`.
+
+### Argument combining
+
+#### Curaton styles
+
+You cannot mix curation styles within the same command-line.  If you need to both optimize and delete by space, please use separate command lines, e.g.
+
+    curator --host my-elasticsearch --curation-style space --disk-space 1024
+    curator --host my-elasticsearch [--curation-style time] --optimize 1
+
+#### Order of operations.
+
+There is a specific order of operations.  The reasoning being, why disable bloom filters or close an index I'm about to delete anyway?  I should delete first, then perform those operations on remaining indices.  Likewise, in some cases you'd want to optimize an index before re-routing it (though perhaps not in others).  
+
+This is the order of operations:
+
+   0. Show (indices, repositories, snapshots) [exit immediately after showing]
+   1. Delete Repository
+   1. Create Repository
+   1. Delete (by space)
+   1. Delete
+   1. Close
+   1. Disable bloom filter
+   1. Optimize
+   1. Required routing (`--require`)
+   1. Delete snapshot
+   1. Create snapshot
+
+#### Example of combined arguments
+As a result, I can combine some operations into a single command-line:
+
+	curator --host my-elasticsearch --timeout 3600 -c 5 -b 1 -o 1 -d 6 -l /usr/local/var/log/curator.log
+
+This line will close all indices older than 5 days, disable bloom filter caches for indices older than 1 day, optimize indices older than 1 day, and delete indices older than 6 days.  However, it will process them in the order of operations described above, i.e. delete, close, disable bloom filters, then optimize.
 
 ## Snapshots
 
@@ -156,15 +231,17 @@ Show all snapshots matching `PREFIX`:
 
 	curator --host my-elasticsearch --repository REPOSITORY --prefix .marvel- --show-snapshots
 
+## Errata
 
-## Documentation and Errata
+### Mutually exclusive arguments
 
-If you need to close and delete based on different criteria, please use separate command lines, e.g.
+If you need to perform operations based on differing `--curation-style`s, please use separate command lines, e.g.
 
-    curator --host my-elasticsearch -C space -g 1024
-    curator --host my-elasticsearch -c 15
+    curator --host my-elasticsearch --curation-style space --disk-space 1024
+    curator --host my-elasticsearch [--curation-style time] --optimize 1
     
-When using optimize the current behavior is to wait until the optimize operation is complete before continuing.  With large indices, this can result in timeouts with the default 30 seconds.  It is recommended that you increase the timeout to at least 3600 seconds, if not more.  
+### Timeouts
+With some operations (e.g. `--optimize` and `--snap-older`) the default behavior is to wait until the operation is complete before proceeding with the next step.  Since these operations can take quite a long time it is advisable to set `--timeout` to a high value (e.g. a minimum of `3600` [1 hour] for optimize operations).
 
 
 ## Contributing
