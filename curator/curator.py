@@ -115,6 +115,7 @@ def make_parser():
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
     parser.add_argument('-a', '--alias', dest='alias', action='store', help='Alias name to remove indices from', type=str)
+    parser.add_argument('--master-only', dest='master_only', action='store_true', help='Verify that the node the master before continuing')
 
     return parser
 
@@ -185,6 +186,11 @@ def get_aligned_week(utc_now=None):
     utc_now = utc_now if utc_now else datetime.utcnow()
     week_begin = utc_now.strftime("%Y.%U") + ".0"
     return datetime.strptime(week_begin, "%Y.%U.%w")
+
+def is_master_node(client):
+    my_node_id = client.nodes.info('_local')['nodes'].keys()[0]
+    master_node_id = client.cluster.state(metric='master_node')['master_node']
+    return my_node_id == master_node_id
 
 def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
     """ Generator that yields expired indices.
@@ -411,6 +417,10 @@ def main():
     if version_number >= version_max or version_number < version_min:
         print('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
+        sys.exit(1)
+
+    if arguments.master_only and not is_master_node(client):
+        logger.fatal('Connected to non master node. Aborting.')
         sys.exit(1)
 
     # Show indices then exit
