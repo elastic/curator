@@ -31,7 +31,7 @@ class TestFindExpiredIndices(CuratorTestCase):
         self.create_index('l-2014.01.01')
 
         # all indices should be expired
-        expired = list(curator.find_expired_indices(self.client, 'days', 1,
+        expired = list(curator.find_expired_data(self.client, 'days', 1,
             utc_now=datetime(2014, 1, 8, 3, 45, 50), prefix='l-'))
 
         self.assertEquals(
@@ -47,7 +47,7 @@ class TestFindExpiredIndices(CuratorTestCase):
         self.create_index('not-logstash-2012.01.01.00') # wrong prefix
         self.create_index('logstash-2012.01.01.00')
 
-        expired = list(curator.find_expired_indices(self.client, 'hours', 1))
+        expired = list(curator.find_expired_data(self.client, 'hours', 1))
         self.assertEquals(1, len(expired))
         self.assertEquals('logstash-2012.01.01.00', expired[0][0])
 
@@ -57,7 +57,7 @@ class TestFindExpiredIndices(CuratorTestCase):
         # yesterday is always save since we reset to mignight and do <, not <=
         self.create_index('l-2014.01.03')
 
-        expired = list(curator.find_expired_indices(self.client, 'days', 1,
+        expired = list(curator.find_expired_data(self.client, 'days', 1,
             utc_now=datetime(2014, 1, 4, 3, 45, 50), prefix='l-'))
         self.assertEquals(
             [
