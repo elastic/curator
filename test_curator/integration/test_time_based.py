@@ -17,6 +17,13 @@ class TestTimeBasedDeletion(CuratorTestCase):
         mtd = self.client.cluster.state(index=self.args['prefix'] + '*', metric='metadata')
         self.assertEquals(3, len(mtd['metadata']['indices'].keys()))
 
+class TestAliasRemoval(CuratorTestCase):
+    def test_remove_from_alias(self):
+        self.create_indices(10, alias='remove_test')
+        self.run_curator(remove_alias_older=3, alias='remove_test')
+        indices_in_alias = self.client.indices.get_alias('remove_test').keys()
+        self.assertEquals(3, len(indices_in_alias))
+
 class TestFindExpiredIndices(CuratorTestCase):
     def test_find_closed_indices(self):
         self.create_index('l-2014.01.03')

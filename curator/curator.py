@@ -121,6 +121,7 @@ def make_parser():
     parser.add_argument('-c', '--close', dest='close_older', action='store', help='Close indices older than CLOSE_OLDER TIME_UNITs.', type=int)
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than BLOOM_OLDER TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond DISK_SPACE gigabytes.', type=float)
+    parser.add_argument('-R', '--remove-from-alias', dest='remove_alias_older', action='store', help='Remove indices older than n TIME_UNITs from ALIAS.', type=int)
     # Index routing
     parser.add_argument('-r', '--require', help='Apply REQUIRED_RULE to indices older than REQUIRE TIME_UNITs.', type=int)
     parser.add_argument('--required_rule', help='Index routing allocation rule to require. Ex. tag=ssd', type=str)
@@ -132,6 +133,7 @@ def make_parser():
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('-ll', '--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
+    parser.add_argument('-a', '--alias', dest='alias', action='store', help='Alias name to remove indices from', type=str)
     parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix (nullifies other operations)', default=DEFAULT_ARGS['show_indices'])
     # Snapshot
     parser.add_argument('--snap-older', dest='snap_older', action='store', type=int,
@@ -185,6 +187,8 @@ def make_parser():
                         help='[Snapshot][s3] S3 access key. Defaults to value of cloud.aws.access_key')
     parser.add_argument('--secret_key', dest='secret_key', action='store', type=str, default=DEFAULT_ARGS['secret_key'],
                         help='[Snapshot][s3] S3 secret key. Defaults to value of cloud.aws.secret_key')
+
+
     return parser
 
 
@@ -200,9 +204,9 @@ def validate_args(myargs):
                 success = False
                 messages.append('Cannot specify --disk-space and --curation-style "time"')
         if not myargs.create_repo:
-            if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require and not myargs.snap_older and not myargs.snap_latest and not myargs.delete_snaps and not myargs.delete_repo:
+            if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require and not myargs.snap_older and not myargs.snap_latest and not myargs.delete_snaps and not myargs.delete_repo and not myargs.remove_alias_older:
                 success = False
-                messages.append('Must specify at least one of --delete, --close, --bloom, --optimize, --require, --snap-older, --snap-latest, --delete-snaps, or --delete-repo')
+                messages.append('Must specify at least one of --delete, --close, --bloom, --optimize, --require, --snap-older, --snap-latest, --delete-snaps, --delete-repo, or --remove-from-alias')
             if ((myargs.delete_older and myargs.delete_older < 1) or
                 (myargs.close_older  and myargs.close_older  < 1) or
                 (myargs.bloom_older  and myargs.bloom_older  < 1) or
@@ -235,10 +239,13 @@ def validate_args(myargs):
         if myargs.snap_latest and myargs.timeout < 300:
             success = False
             messages.append('Timeout should be much higher for snapshot operations. Recommend no less than 3600 seconds')
+        if (myargs.remove_alias_older and not myargs.alias):
+            success = False
+            messages.append('Cannot specify --remove-from-alias without also specifying --alias')
     else: # Curation-style is 'space'
         if (myargs.delete_older or myargs.close_older or myargs.bloom_older or myargs.optimize or myargs.repository or myargs.snap_older):
             success = False
-            messages.append('Cannot specify --curation-style "space" and any of --delete, --close, --bloom, --optimize, --repository, or --snap-older')
+            messages.append('Cannot specify --curation-style "space" and any of --delete, --close, --bloom, --optimize, --repository, --snap-older, or --remove-from-alias')
         if (myargs.disk_space == 0) or (myargs.disk_space < 0):
             success = False
             messages.append('Value for --disk-space must be greater than 0')
@@ -256,7 +263,10 @@ def get_index_time(index_timestamp, separator='.'):
     try:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d', '%H')))
     except ValueError:
-        return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
+        try: 
+            return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
+        except ValueError:
+            return datetime.strptime(index_timestamp + separator + "0", separator.join(('%Y', '%U', '%w')))
 
 def get_indices(client, prefix='logstash-'):
     """Return a sorted list of indices matching prefix"""
@@ -305,9 +315,20 @@ def find_expired_data(client, time_unit, unit_count, data_type='index', repo_nam
 
     if time_unit == 'hours':
         required_parts = 4
-    else:
+    elif time_unit == 'days':
         required_parts = 3
         utc_now = utc_now.replace(hour=0)
+    else:
+        # weeks if not hours or days
+        required_parts = 2
+        # reset utc time to beginning of current week
+        utc_now = get_aligned_week(utc_now)
+        logger.info("Aligned time is {0}".format(utc_now))
+        # convert time_unit to days because that is supported by timedelta
+        time_unit = 'days'
+        unit_count -= 1 # consider current week
+        unit_count *= 7 # convert weeks to days
+        unit_count += 1 # account for -1 day in cutoff calculation
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
     if data_type == 'index':
@@ -490,6 +511,12 @@ def _require_index(client, index_name, attr, **kwargs):
       logger.info('Updating index setting index.routing.allocation.{0}={1}'.format(key,value))
       client.indices.put_settings(index=index_name, body='index.routing.allocation.{0}={1}'.format(key,value))
 
+def _remove_from_alias(client, index_name, alias, indices_in_alias, **kwargs):
+    if index_name in indices_in_alias:
+        client.indices.update_aliases(body={'actions': [{ 'remove': { 'index': index_name, 'alias': alias}}]})
+    else:
+        logger.info('Index {0} does not exist in alias {1}; skipping.'.format(index_name, alias))
+
 OP_MAP = {
     'close'       : (_close_index, {'op': 'close', 'verbed': 'closed', 'gerund': 'Closing'}),
     'delete'      : (_delete_index, {'op': 'delete', 'verbed': 'deleted', 'gerund': 'Deleting'}),
@@ -498,6 +525,7 @@ OP_MAP = {
     'require'     : (_require_index, {'op': 'update require allocation rules for', 'verbed':'index routing allocation updated', 'gerund': 'Updating required index routing allocation rules for'}),
     'snapshot'    : (_create_snapshot, {'op': 'create snapshot for', 'verbed':'created snapshot', 'gerund': 'Initiating snapshot for'}),
     'delete_snaps': (_delete_snapshot, {'op': 'delete snapshot for', 'verbed':'deleted snapshot', 'gerund': 'Deleting snapshot for'}),
+    'remove-from-alias': (_remove_from_alias, {'op': 'remove from alias for', 'verbed': 'removed from alias', 'gerund': 'Removing from alias for'}),
 }
 
 def snap_latest_indices(client, count, prefix='logstash-', dry_run=False, **kwargs):
@@ -718,6 +746,12 @@ def main():
         logger.info('Adding snapshot of indices older than {0} {1} to repository {2}...'.format(arguments.snap_older, arguments.time_unit, arguments.repository))
         expired_indices = find_expired_data(client, time_unit=arguments.time_unit, unit_count=arguments.snap_older, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'snapshot', expired_indices, arguments.dry_run, prefix=arguments.prefix, argdict=argdict)
+    # Remove from alias
+    if arguments.remove_alias_older:
+        logger.info('Removing indices older than {0} {1} from alias {2}'.format(arguments.remove_alias_older, arguments.time_unit, arguments.alias))
+        expired_indices = find_expired_data(client, time_unit=arguments.time_unit, unit_count=arguments.remove_alias_older, separator=arguments.separator, prefix=arguments.prefix)
+        indices_in_alias = client.indices.get_alias(arguments.alias)
+        index_loop(client, 'remove-from-alias', expired_indices, arguments.dry_run, alias=arguments.alias, indices_in_alias=indices_in_alias)
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 

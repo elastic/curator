@@ -75,7 +75,7 @@ class CuratorTestCase(TestCase):
         self.args.update(kwargs)
         curator.main()
 
-    def create_indices(self, count, unit=None):
+    def create_indices(self, count, unit=None, alias=''):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
         if unit == 'days':
@@ -85,16 +85,18 @@ class CuratorTestCase(TestCase):
 
         step = timedelta(**{unit: 1})
         for x in range(count):
-            self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
+            self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False, alias=alias)
             now -= step
 
         self.client.cluster.health(wait_for_status='yellow')
 
-    def create_index(self, name, shards=1, wait_for_yellow=True):
+    def create_index(self, name, shards=1, wait_for_yellow=True, alias=''):
         self.client.indices.create(
             index=name,
             body={'settings': {'number_of_shards': shards, 'number_of_replicas': 0}}
         )
+        if alias:
+            self.client.indices.update_aliases(body={'actions': [ { 'add': { 'index': name, 'alias': alias }} ]})
         if wait_for_yellow:
             self.client.cluster.health(wait_for_status='yellow')
 
