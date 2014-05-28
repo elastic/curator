@@ -97,12 +97,13 @@ def make_parser():
     parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default=DEFAULT_ARGS['separator'])
 
     parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default=DEFAULT_ARGS['curation_style'], type=str)
-    parser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [weeks, days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
 
     parser.add_argument('-d', '--delete', dest='delete_older', action='store', help='Delete indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-c', '--close', dest='close_older', action='store', help='Close indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-b', '--bloom', dest='bloom_older', action='store', help='Disable bloom filter for indices older than n TIME_UNITs.', type=int)
     parser.add_argument('-g', '--disk-space', dest='disk_space', action='store', help='Delete indices beyond n GIGABYTES.', type=float)
+    parser.add_argument('-R', '--remove-from-alias', dest='remove_alias_older', action='store', help='Remove indices older than n TIME_UNITs from ALIAS.', type=int)
     
     parser.add_argument('-r', '--require', help='Update indices required routing allocation rules. Ex. tag=ssd', type=int)
     parser.add_argument('--required_rule', help='Index routing allocation rule to require. Ex. tag=ssd', type=str)
@@ -115,6 +116,8 @@ def make_parser():
     parser.add_argument('-ll', '--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
+    parser.add_argument('-a', '--alias', dest='alias', action='store', help='Alias name to remove indices from', type=str)
+    parser.add_argument('--master-only', dest='master_only', action='store_true', help='Verify that the node the master before continuing')
 
     return parser
 
@@ -124,18 +127,18 @@ def validate_args(myargs):
     success = True
     messages = []
     if myargs.curation_style == 'time':
-        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require:
+        if not myargs.delete_older and not myargs.close_older and not myargs.bloom_older and not myargs.optimize and not myargs.require and not myargs.remove_alias_older:
             success = False
-            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize or --require')
+            messages.append('Must specify at least one of --delete, --close, --bloom, --optimize, --require, or --remove-from-alias')
         if ((myargs.delete_older and myargs.delete_older < 1) or
             (myargs.close_older and myargs.close_older < 1) or
             (myargs.bloom_older and myargs.bloom_older < 1) or
             (myargs.optimize and myargs.optimize < 1)):
             success = False
             messages.append('Values for --delete, --close, --bloom or --optimize must be > 0')
-        if myargs.time_unit != 'days' and myargs.time_unit != 'hours':
+        if myargs.time_unit != 'days' and myargs.time_unit != 'hours' and myargs.time_unit != 'weeks':
             success = False
-            messages.append('Values for --time-unit must be either "days" or "hours"')
+            messages.append('Values for --time-unit must be either "days", "hours", or "weeks"')
         if myargs.disk_space:
             success = False
             messages.append('Cannot specify --disk-space and --curation-style "time"')
@@ -149,6 +152,9 @@ def validate_args(myargs):
         if (myargs.disk_space == 0) or (myargs.disk_space < 0):
             success = False
             messages.append('Value for --disk-space must be greater than 0')
+        if (myards.remove_alias_older and not myargs.alias):
+            success = False
+            messages.append('Cannot specify --remove-from-alias without also specifying --alias')
     if success:
         return True
     else:
@@ -163,7 +169,10 @@ def get_index_time(index_timestamp, separator='.'):
     try:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d', '%H')))
     except ValueError:
-        return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
+        try: 
+            return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
+        except ValueError:
+            return datetime.strptime(index_timestamp + separator + "0", separator.join(('%Y', '%U', '%w')))
 
 def get_indices(client, prefix='logstash-'):
     """Return a sorted list of indices matching prefix"""
@@ -173,6 +182,17 @@ def get_version(client):
     """Return ES version number as a tuple"""
     version = client.info()['version']['number']
     return tuple(map(int, version.split('.')))
+
+def get_aligned_week(utc_now=None):
+    """Return datetime aligned to beginning of week"""
+    utc_now = utc_now if utc_now else datetime.utcnow()
+    week_begin = utc_now.strftime("%Y.%U") + ".0"
+    return datetime.strptime(week_begin, "%Y.%U.%w")
+
+def is_master_node(client):
+    my_node_id = client.nodes.info('_local')['nodes'].keys()[0]
+    master_node_id = client.cluster.state(metric='master_node')['master_node']
+    return my_node_id == master_node_id
 
 def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
     """ Generator that yields expired indices.
@@ -188,9 +208,22 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
 
     if time_unit == 'hours':
         required_parts = 4
-    else:
+    elif time_unit == 'days':
         required_parts = 3
         utc_now = utc_now.replace(hour=0)
+    elif time_unit == 'weeks':
+        # weeks if not hours or days
+        required_parts = 2
+        # reset utc time to beginning of current week
+        utc_now = get_aligned_week(utc_now)
+        logger.info("Aligned time is {0}".format(utc_now))
+        # convert time_unit to days because that is supported by timedelta
+        time_unit = 'days'
+        unit_count -= 1 # consider current week
+        unit_count *= 7 # convert weeks to days
+        unit_count += 1 # account for -1 day in cutoff calculation
+    else:
+        logger.error('Unhandled time unit: {0}'.format(time_unit))
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
     index_list = get_indices(client, prefix)
@@ -299,12 +332,19 @@ def _require_index(client, index_name, attr, **kwargs):
       logger.info('Updating index setting index.routing.allocation.{0}={1}'.format(key,value))
       client.indices.put_settings(index=index_name, body='index.routing.allocation.{0}={1}'.format(key,value))
 
+def _remove_from_alias(client, index_name, alias, indices_in_alias, **kwargs):
+    if index_name in indices_in_alias:
+        client.indices.update_aliases(body={'actions': [{ 'remove': { 'index': index_name, 'alias': alias}}]})
+    else:
+        logger.info('Index {0} does not exist in alias {1}; skipping.'.format(index_name, alias))
+
 OP_MAP = {
     'close': (_close_index, {'op': 'close', 'verbed': 'closed', 'gerund': 'Closing'}),
     'delete': (_delete_index, {'op': 'delete', 'verbed': 'deleted', 'gerund': 'Deleting'}),
     'optimize': (_optimize_index, {'op': 'optimize', 'verbed': 'optimized', 'gerund': 'Optimizing'}),
     'bloom': (_bloom_index, {'op': 'disable bloom filter for', 'verbed': 'bloom filter disabled', 'gerund': 'Disabling bloom filter for'}),
     'require': (_require_index, {'op': 'update require allocation rules for', 'verbed':'index routing allocation updated', 'gerund': 'Updating required index routing allocation rules for'}),
+    'remove-from-alias': (_remove_from_alias, {'op': 'remove from alias for', 'verbed': 'removed from alias', 'gerund': 'Removing from alias for'})
 }
 
 def index_loop(client, operation, expired_indices, dry_run=False, by_space=False, **kwargs):
@@ -390,6 +430,10 @@ def main():
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
+    if arguments.master_only and not is_master_node(client):
+        logger.fatal('Connected to non master node. Aborting.')
+        sys.exit(1)
+
     # Show indices then exit
     if arguments.show_indices:
         for index_name in get_indices(client, arguments.prefix):
@@ -425,7 +469,12 @@ def main():
         logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
         expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator, prefix=arguments.prefix)
         index_loop(client, 'require', expired_indices, arguments.dry_run, attr=arguments.required_rule)
-
+    # Remove from alias
+    if arguments.remove_alias_older:
+        logger.info('Removing indices older than {0} {1} from alias {2}'.format(arguments.remove_alias_older, arguments.time_unit, arguments.alias))
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.remove_alias_older, separator=arguments.separator, prefix=arguments.prefix)
+        indices_in_alias = client.indices.get_alias(arguments.alias)
+        index_loop(client, 'remove-from-alias', expired_indices, arguments.dry_run, alias=arguments.alias, indices_in_alias=indices_in_alias)
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 

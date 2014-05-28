@@ -59,6 +59,29 @@ class TestExpireIndices(TestCase):
             expired
         )
 
+    def test_weekly_indices_found(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'prefix-2013.51': True,
+            'prefix-2013.52': True,
+            'prefix-2014.00': True,
+            'prefix-2014.01': True,
+            'prefix-2014.02': True,
+            'prefix-2014.03': True,
+            'prefix-2014.04': True,
+            'prefix-2014.05': True,
+        }
+        expired = curator.find_expired_indices(client, 'weeks', 4, prefix='prefix-', utc_now=datetime(2014, 2, 1))
+        expired = list(expired)
+
+        self.assertEquals([
+                ('prefix-2013.51', timedelta(days=14)),
+                ('prefix-2013.52', timedelta(days=7)),
+                ('prefix-2014.00', timedelta(days=7))
+            ],
+            expired
+        )
+
     def test_size_based_finds_indices_over_threshold(self):
         client = Mock()
         client.indices.status.return_value = {
