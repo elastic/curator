@@ -34,7 +34,6 @@
 import sys
 import time
 import logging
-import json
 from datetime import timedelta, datetime
 
 import elasticsearch
