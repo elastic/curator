@@ -209,7 +209,7 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
     elif time_unit == 'days':
         required_parts = 3
         utc_now = utc_now.replace(hour=0)
-    else:
+    elif time_unit == 'weeks':
         # weeks if not hours or days
         required_parts = 2
         # reset utc time to beginning of current week
@@ -220,6 +220,8 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
         unit_count -= 1 # consider current week
         unit_count *= 7 # convert weeks to days
         unit_count += 1 # account for -1 day in cutoff calculation
+    else:
+        logger.error('Unhandled time unit: {0}'.format(time_unit))
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
     index_list = get_indices(client, prefix)
