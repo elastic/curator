@@ -323,16 +323,7 @@ def find_expired_data(client, time_unit, unit_count, data_type='index', repo_nam
         required_parts = 3
         utc_now = utc_now.replace(hour=0)
     else:
-        # weeks if not hours or days
-        required_parts = 2
-        # reset utc time to beginning of current week
-        utc_now = get_aligned_week(utc_now)
-        logger.info("Aligned time is {0}".format(utc_now))
-        # convert time_unit to days because that is supported by timedelta
-        time_unit = 'days'
-        unit_count -= 1 # consider current week
-        unit_count *= 7 # convert weeks to days
-        unit_count += 1 # account for -1 day in cutoff calculation
+        logger.info('Unsupported time unit: {0}'.format(time_unit))
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
     if data_type == 'index':
