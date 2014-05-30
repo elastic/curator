@@ -81,7 +81,30 @@ If you need to close and delete based on different criteria, please use separate
     
 When using optimize the current behavior is to wait until the optimize operation is complete before continuing.  With large indices, this can result in timeouts with the default 30 seconds.  It is recommended that you increase the timeout to at least 3600 seconds, if not more.  
 
+## Cron and logstash
 
+Common practice is to run curator as a cron job, e.g.
+
+    20 0 * * * /usr/local/bin/curator -c 30 -d 60 |& nc localhost 28778
+
+Then logstash can be configured using:
+
+    input {
+      tcp {
+        type => "curator"
+        port => "28778"
+      }
+    }
+    filter {
+      if [type] == "curator" {
+        grok {
+          match => {
+            "message" => "%{TIMESTAMP_ISO8601:timestamp} %{WORD:level}%{SPACE}%{WORD:function}:%{POSINT:line}%{SPACE}%{GREEDYDATA:description}"
+          }
+        }
+      }
+    }
+    
 ## Contributing
 
 * fork the repo
