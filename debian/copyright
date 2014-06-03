@@ -1,0 +1,8 @@
+Format-Specification: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Name: python-elasticsearch-curator
+Maintainer: Dr. Torge Szczepanek <debian@cygnusnetworks.de>
+Source: https://github.com/elasticsearch/curator
+
+Files: *
+Copyright: 2013, Elasticsearch
+License: Apache
