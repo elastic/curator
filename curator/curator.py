@@ -172,7 +172,7 @@ def get_indices(client, prefix='logstash-', exclude_pattern=None):
     _indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
-        return filter(lambda x: not pattern.match(x), _indices)
+        return filter(lambda x: not pattern.search(x), _indices)
     else:
         return _indices
     
