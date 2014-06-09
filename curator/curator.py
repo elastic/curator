@@ -70,6 +70,7 @@ DEFAULT_ARGS = {
     'max_num_segments': 2,
     'dry_run': False,
     'debug': False,
+    'log_level': 'INFO',
     'show_indices': False
 }
 
@@ -112,6 +113,7 @@ def make_parser():
 
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
+    parser.add_argument('-ll', '--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--show-indices', dest='show_indices', action='store_true', help='Show indices matching prefix', default=DEFAULT_ARGS['show_indices'])
 
@@ -359,7 +361,14 @@ def main():
         arguments.dry_run = True
 
     # Setup logging
-    logging.basicConfig(level=logging.DEBUG if arguments.debug else logging.INFO,
+    if arguments.debug:
+        numeric_log_level = logging.DEBUG
+    else:
+        numeric_log_level = getattr(logging, arguments.log_level.upper(), None)
+        if not isinstance(numeric_log_level, int):
+            raise ValueError('Invalid log level: %s' % loglevel)
+
+    logging.basicConfig(level=numeric_log_level,
                         format='%(asctime)s.%(msecs)03d %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s',
                         datefmt="%Y-%m-%dT%H:%M:%S",
                         stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
