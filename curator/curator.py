@@ -34,6 +34,7 @@
 import sys
 import time
 import logging
+import re
 from datetime import timedelta, datetime
 
 import elasticsearch
@@ -94,6 +95,7 @@ def make_parser():
     parser.add_argument('-t', '--timeout', help='Elasticsearch timeout. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
 
     parser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    parser.add_argument('--exclude-pattern', help='Indices matching this re pattern are skipped. Combine with -p option')
     parser.add_argument('-s', '--separator', help='Time unit separator. Default: .', default=DEFAULT_ARGS['separator'])
 
     parser.add_argument('-C', '--curation-style', dest='curation_style', action='store', help='Curate indices by [time, space] Default: time', default=DEFAULT_ARGS['curation_style'], type=str)
@@ -165,16 +167,21 @@ def get_index_time(index_timestamp, separator='.'):
     except ValueError:
         return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
 
-def get_indices(client, prefix='logstash-'):
+def get_indices(client, prefix='logstash-', exclude_pattern=None):
     """Return a sorted list of indices matching prefix"""
-    return sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    _indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    if exclude_pattern:
+        pattern = re.compile(exclude_pattern)
+        return filter(lambda x: not pattern.search(x), _indices)
+    else:
+        return _indices
     
 def get_version(client):
     """Return ES version number as a tuple"""
     version = client.info()['version']['number']
     return tuple(map(int, version.split('.')))
 
-def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None):
+def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='logstash-', utc_now=None, exclude_pattern=None):
     """ Generator that yields expired indices.
 
     :return: Yields tuples on the format ``(index_name, expired_by)`` where index_name
@@ -193,7 +200,7 @@ def find_expired_indices(client, time_unit, unit_count, separator='.', prefix='l
         utc_now = utc_now.replace(hour=0)
 
     cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
-    index_list = get_indices(client, prefix)
+    index_list = get_indices(client, prefix, exclude_pattern)
 
     for index_name in index_list:
 
@@ -392,7 +399,7 @@ def main():
 
     # Show indices then exit
     if arguments.show_indices:
-        for index_name in get_indices(client, arguments.prefix):
+        for index_name in get_indices(client, arguments.prefix, arguments.exclude_pattern):
             print('{0}'.format(index_name))
         sys.exit(0)
     # Delete by space first
@@ -403,27 +410,32 @@ def main():
     # Delete by time
     if arguments.delete_older:
         logger.info('Deleting indices older than {0} {1}...'.format(arguments.delete_older, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.delete_older, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.delete_older, separator=arguments.separator, 
+                                               prefix=arguments.prefix, exclude_pattern=arguments.exclude_pattern)
         index_loop(client, 'delete', expired_indices, arguments.dry_run)
     # Close by time
     if arguments.close_older:
         logger.info('Closing indices older than {0} {1}...'.format(arguments.close_older, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.close_older, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_pattern=arguments.exclude_pattern)
         index_loop(client, 'close', expired_indices, arguments.dry_run)
     # Disable bloom filter by time
     if arguments.bloom_older:
         logger.info('Disabling bloom filter on indices older than {0} {1}...'.format(arguments.bloom_older, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.bloom_older, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.bloom_older, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_pattern=arguments.exclude_pattern)
         index_loop(client, 'bloom', expired_indices, arguments.dry_run)
     # Optimize index
     if arguments.optimize:
         logger.info('Optimizing indices older than {0} {1}...'.format(arguments.optimize, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.optimize, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_pattern=arguments.exclude_pattern)
         index_loop(client, 'optimize', expired_indices, arguments.dry_run, max_num_segments=arguments.max_num_segments)
     # Required routing rules
     if arguments.require:
         logger.info('Updating required routing allocation rules on indices older than {0} {1}...'.format(arguments.require, arguments.time_unit))
-        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator, prefix=arguments.prefix)
+        expired_indices = find_expired_indices(client, time_unit=arguments.time_unit, unit_count=arguments.require, separator=arguments.separator,
+                                               prefix=arguments.prefix, exclude_pattern=arguments.exclude_pattern)
         index_loop(client, 'require', expired_indices, arguments.dry_run, attr=arguments.required_rule)
 
 
