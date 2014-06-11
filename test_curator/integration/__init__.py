@@ -1,6 +1,9 @@
 import time
 import os
 import shutil
+import tempfile
+import random
+import string
 from datetime import timedelta, datetime
 
 from elasticsearch import Elasticsearch
@@ -56,7 +59,8 @@ class CuratorTestCase(TestCase):
         args = curator.DEFAULT_ARGS.copy()
         args['host'], args['port'] = host, port
         self.args = args
-        self.args['location'] = '/tmp/REPOSITORY_LOCATION'
+        dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        self.args['location'] = tempfile.mkdtemp(suffix=dirname)
         self.args['repository'] = 'TEST_REPOSITORY'
         if not os.path.exists(self.args['location']):
             os.makedirs(self.args['location'])
