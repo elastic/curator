@@ -26,11 +26,10 @@ The default values for the following are:
     --host localhost
     --port 9200
     -t (or --timeout) 30
-    -C (or --curation-style) time
     -T (or --time-unit) days
     -p (or --prefix) logstash-
     -s (or --separator) .
-    --max_num_segments 2
+
 
 If your values match these you do not need to include them.  The value of `prefix` should be everything before the date string, i.e. `--prefix .marvel-` would match index `.marvel-2014.05.27`, and all other indices beginning with `.marvel-` (don't forget the trailing hyphen!).
 
@@ -38,17 +37,19 @@ If your values match these you do not need to include them.  The value of `prefi
 
 See the [Curator Wiki](http://github.com/elasticsearch/curator/wiki) on Github for more documentation
 
-## Errata
+#### Commands
 
-### Mutually exclusive arguments
-
-If you need to perform operations based on differing `--curation-style`s, please use separate command lines, e.g.
-
-    curator --host my-elasticsearch --curation-style space --disk-space 1024
-    curator --host my-elasticsearch [--curation-style time] --optimize 1
+* alias - Add/Remove indices from existing aliases
+* allocation - Add a 'require' tag to indices for routing allocation
+* bloom - Disable bloom filter cache for expired indices
+* close - Close indices
+* delete - Delete indices
+* optimize - Optimize (Lucene forceMerge) indices
+* show - Show indices or snapshots
+* snapshot - Snapshot indices to existing repository
     
 ### Timeouts
-With some operations (e.g. `--optimize` and `--snap-older`) the default behavior is to wait until the operation is complete before proceeding with the next step.  Since these operations can take quite a long time it is advisable to set `--timeout` to a high value (e.g. a minimum of `3600` [1 hour] for optimize operations).
+With some operations (e.g. `optimize` and `snapshot`) the default behavior is to wait until the operation is complete before proceeding with the next step.  Since these operations can take quite a long time it is advisable to set `--timeout` to a high value.  If you do not specify, a default of 6 hours will be applied (21,600 seconds).
 
 
 ## Contributing
