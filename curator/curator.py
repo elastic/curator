@@ -257,7 +257,7 @@ def get_object_list(client, data_type='index', prefix='logstash-', repository=No
         logger.error('data_type \'{0}\' is neither \'index\' nor \'snapshot\'.  Returning empty list.'.format(data_type))
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
-        return filter(lambda x: not pattern.search(x), object_list)
+        return list(filter(lambda x: not pattern.search(x), object_list))
     else:
         return object_list
     
