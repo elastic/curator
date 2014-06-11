@@ -197,7 +197,7 @@ def get_indices(client, prefix='logstash-', exclude_pattern=None):
     _indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
-        return filter(lambda x: not pattern.search(x), _indices)
+        return list(filter(lambda x: not pattern.search(x), _indices))
     else:
         return _indices
     
@@ -257,7 +257,7 @@ def get_object_list(client, data_type='index', prefix='logstash-', repository=No
         logger.error('data_type \'{0}\' is neither \'index\' nor \'snapshot\'.  Returning empty list.'.format(data_type))
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
-        return filter(lambda x: not pattern.search(x), object_list)
+        return list(filter(lambda x: not pattern.search(x), object_list))
     else:
         return object_list
     
@@ -597,7 +597,7 @@ def main():
     parser = make_parser()
     arguments = parser.parse_args()
 
-    # Initialize timeout_override 
+    # Initialize timeout_override
     timeout_override = True if arguments.command == 'optimize' else False
 
     # Argparse nearly gets all conditions covered.
@@ -650,7 +650,7 @@ def main():
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
-    # Override the timestamp in case the end-user doesn't.    
+    # Override the timestamp in case the end-user doesn't.
     if timeout_override and arguments.timeout == 30:
         logger.info('Default timeout of 30 seconds is too low for command {}.  Overriding to 21,600 seconds (6 hours).'.format(arguments.command.upper()))
         arguments.timeout = 21600
