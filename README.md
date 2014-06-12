@@ -1,6 +1,7 @@
 # Curator
 
 Have time-series indices in Elasticsearch? This is the tool for you!
+See the new [Documentation Wiki](http://github.com/elasticsearch/curator/wiki)!
 
 ## Versioning
 
