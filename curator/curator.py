@@ -17,7 +17,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '1.1.0-dev'
+__version__ = '1.1.0'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -158,7 +158,6 @@ def make_parser():
     snapshot_group.add_argument('--older-than', type=int, help='Capture snapshots for indices older than n TIME_UNITs.')
     snapshot_group.add_argument('--most-recent', type=int, help='Capture snapshots for n most recent number of indices.')
     snapshot_group.add_argument('--delete-older-than', type=int, help='Delete snapshots older than n TIME_UNITs.')
-    snapshot_group.add_argument('--show-snapshots', action='store_true', help='Show all snapshots in REPOSITORY.')
 
     parser_snapshot.add_argument('--no_wait_for_completion', action='store_false',
                                 help='Do not wait until complete to return. Waits by default.', default=DEFAULT_ARGS['wait_for_completion'])

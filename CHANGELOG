@@ -1,4 +1,4 @@
-1.1.0 (???)
+1.1.0 (12 June 2014)
  # General
  - Updated! New command structure
  - New! Snapshot to fs or s3 #82 (untergeek)
@@ -12,6 +12,10 @@
  - Fix --max_num_segments not being passed correctly #74 (untergeek)
  - Change BUILD_NUMBER to CURATOR_BUILD_NUMBER in setup.py #60 (mohabusama)
  - Fix off-by-one error in time calculations #66 (untergeek)
+ - Fix testing with python3 #92 (untergeek)
+ 
+ # Errata
+ - Removed optparse compatibility.  Now requires argparse.
 
 1.0.0 (25 Mar 2014)
  # General
