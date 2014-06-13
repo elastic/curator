@@ -168,7 +168,7 @@ def _create_repository(client, dry_run=False, **kwargs):
             logger.error("Repository {0} failed validation...".format(repo_name))
             return False
     else:
-        logger.info("Would have attempted to create repository {}".format(kwargs['repository']))
+        logger.info("Would have attempted to create repository {0}".format(kwargs['repository']))
 
 def _delete_repository(client, repository=None, dry_run=False, **kwargs):
     if not dry_run:
@@ -179,7 +179,7 @@ def _delete_repository(client, repository=None, dry_run=False, **kwargs):
             logger.error("Error: {0}".format(e))
             return False
     else:
-        logger.info("Would have attempted to delete repository {}".format(repository))
+        logger.info("Would have attempted to delete repository {0}".format(repository))
 
 def create_repo_body(repo_type='fs',
                      compress=True, concurrent_streams=None, chunk_size=None, max_restore_bytes_per_sec=None, max_snapshot_bytes_per_sec=None,
@@ -242,7 +242,7 @@ def main():
 
     # Execute the command specified in the arguments
     argdict = arguments.__dict__
-    logging.debug("argdict = {}".format(argdict))
+    logging.debug("argdict = {0}".format(argdict))
     arguments.func(client, **argdict)
     
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
