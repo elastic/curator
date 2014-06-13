@@ -535,7 +535,7 @@ def alias_loop(client, dry_run=False, **kwargs):
 
 def command_loop(client, dry_run=False, **kwargs):
     command = kwargs['command']
-    logging.info("Beginning {} operations...".format(command.upper()))
+    logging.info("Beginning {0} operations...".format(command.upper()))
     op, words = OP_MAP[command]
     by_space = kwargs['disk_space'] if 'disk_space' in kwargs else False
     if command == 'delete' and by_space:
@@ -651,7 +651,7 @@ def main():
 
     # Override the timestamp in case the end-user doesn't.
     if timeout_override and arguments.timeout == 30:
-        logger.info('Default timeout of 30 seconds is too low for command {}.  Overriding to 21,600 seconds (6 hours).'.format(arguments.command.upper()))
+        logger.info('Default timeout of 30 seconds is too low for command {0}.  Overriding to 21,600 seconds (6 hours).'.format(arguments.command.upper()))
         arguments.timeout = 21600
 
     client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
@@ -665,7 +665,7 @@ def main():
 
     # Execute the command specified in the arguments
     argdict = arguments.__dict__
-    logging.debug("argdict = {}".format(argdict))
+    logging.debug("argdict = {0}".format(argdict))
     arguments.func(client, **argdict)
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
