@@ -1,8 +1,3 @@
-1.1.1 (13 June 2014)
- # Bug fix
- - This was a showstopper bug for anyone using RHEL/CentOS with a Python 2.6 dependency for yum
- - Python 2.6 does not like format calls without an index. #96 via #95 (untergeek)
-
 1.1.0 (12 June 2014)
  # General
  - Updated! New command structure
