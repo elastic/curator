@@ -8,7 +8,6 @@ from datetime import timedelta, datetime
 
 import elasticsearch
 
-
 try:
     from logging import NullHandler
 except ImportError:
@@ -675,3 +674,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
