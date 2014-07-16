@@ -29,6 +29,7 @@ DEFAULT_ARGS = {
     'host': 'localhost',
     'url_prefix': '',
     'port': 9200,
+    'auth': None,
     'ssl': False,
     'timeout': 30,
     'prefix': 'logstash-',
@@ -62,6 +63,7 @@ def make_parser():
     parser.add_argument('--url_prefix', help='Elasticsearch http url prefix. Default: none', default=DEFAULT_ARGS['url_prefix'])
     parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=DEFAULT_ARGS['port'], type=int)
     parser.add_argument('--ssl', help='Connect to Elasticsearch through SSL. Default: false', action='store_true', default=DEFAULT_ARGS['ssl'])
+    parser.add_argument('--auth', help='Use Basic Authentication ex: user:pass Default: None', default=DEFAULT_ARGS['auth'])
     parser.add_argument('-t', '--timeout', help='Connection timeout in seconds. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
     parser.add_argument('--master-only', dest='master_only', action='store_true', help='Verify that the node is the elected master before continuing', default=False)
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
@@ -655,7 +657,7 @@ def main():
         logger.info('Default timeout of 30 seconds is too low for command {0}.  Overriding to 21,600 seconds (6 hours).'.format(arguments.command.upper()))
         arguments.timeout = 21600
 
-    client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
+    client = elasticsearch.Elasticsearch(host=arguments.host, http_auth=arguments.auth, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
     
     # Verify the version is acceptable.
     check_version(client)
@@ -673,3 +675,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
