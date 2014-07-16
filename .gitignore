@@ -4,5 +4,6 @@ build
 dist
 elasticsearch_curator.egg-info
 .coverage
+.idea
 coverage.xml
 nosetests.xml
