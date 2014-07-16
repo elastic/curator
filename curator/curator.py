@@ -247,7 +247,7 @@ def get_object_list(client, data_type='index', prefix='logstash-', repository=No
         object_list = get_indices(client, prefix)
     elif data_type == 'snapshot':
         if repository:
-            object_list = get_snaplist(client, repository)
+            object_list = get_snaplist(client, repository, prefix=prefix)
         else:
             logger.error('Repository name not specified. Returning empty list.')
             object_list = []
