@@ -613,7 +613,8 @@ def main():
 
     if arguments.command == 'show':
         # Do not log and force dry-run if we opt to show indices or snapshots.
-        arguments.log_file = '/dev/null'
+        import os
+        arguments.log_file = os.devnull
         arguments.dry_run = True
         if not arguments.show_indices and not arguments.show_snapshots:
             print('{0} show: error: expect one of --show-indices or --show-snapshots'.format(sys.argv[0]))
