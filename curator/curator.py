@@ -33,7 +33,6 @@ DEFAULT_ARGS = {
     'ssl': False,
     'timeout': 30,
     'prefix': 'logstash-',
-    'separator': '.',
     'curation_style': 'time',
     'time_unit': 'days',
     'max_num_segments': 2,
@@ -80,8 +79,8 @@ def make_parser():
     parser_alias = subparsers.add_parser('alias', help='Aliasing operations')
     parser_alias.set_defaults(func=alias_loop)
     parser_alias.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_alias.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_alias.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days',
+    parser_alias.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_alias.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days',
                         default=DEFAULT_ARGS['time_unit'], type=str)
     parser_alias.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
     parser_alias.add_argument('--alias', required=True, help='Alias name', type=str)
@@ -93,8 +92,8 @@ def make_parser():
     parser_allocation = subparsers.add_parser('allocation', help='Apply required index routing allocation rule')
     parser_allocation.set_defaults(func=command_loop)
     parser_allocation.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_allocation.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_allocation.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser_allocation.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_allocation.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
     parser_allocation.add_argument('--older-than', required=True, help='Apply rule to indices older than n TIME_UNITs', type=int)
     parser_allocation.add_argument('--rule', required=True, help='Routing allocation rule to apply, e.g. tag=ssd', type=str)
     parser_allocation.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
@@ -103,8 +102,8 @@ def make_parser():
     parser_bloom = subparsers.add_parser('bloom', help='Disable bloom filter cache for indices')
     parser_bloom.set_defaults(func=command_loop)
     parser_bloom.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_bloom.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_bloom.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser_bloom.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_bloom.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
     parser_bloom.add_argument('--older-than', required=True, help='Disable bloom filter cache for indices older than n TIME_UNITs', type=int)
     parser_bloom.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
 
@@ -112,8 +111,8 @@ def make_parser():
     parser_close = subparsers.add_parser('close', help='Close indices')
     parser_close.set_defaults(func=command_loop)
     parser_close.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_close.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_close.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser_close.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_close.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
     parser_close.add_argument('--older-than', required=True, help='Close indices older than n TIME_UNITs', type=int)
     parser_close.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
 
@@ -121,8 +120,8 @@ def make_parser():
     parser_delete = subparsers.add_parser('delete', help='Delete indices')
     parser_delete.set_defaults(func=command_loop)
     parser_delete.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_delete.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_delete.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser_delete.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_delete.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
     parser_delete.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
     delete_group = parser_delete.add_mutually_exclusive_group()
     delete_group.add_argument('--older-than', help='Delete indices older than n TIME_UNITs', type=int)
@@ -132,8 +131,8 @@ def make_parser():
     parser_optimize = subparsers.add_parser('optimize', help='Optimize indices')
     parser_optimize.set_defaults(func=command_loop)
     parser_optimize.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_optimize.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_optimize.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser_optimize.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_optimize.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
     parser_optimize.add_argument('--older-than', required=True, help='Optimize indices older than n TIME_UNITs', type=int)
     parser_optimize.add_argument('--max_num_segments', help='Optimize segment count to n segments per shard.', default=DEFAULT_ARGS['max_num_segments'], type=int)
 
@@ -151,8 +150,8 @@ def make_parser():
     parser_snapshot = subparsers.add_parser('snapshot', help='Take snapshots of indices (Backup)')
     parser_snapshot.set_defaults(func=command_loop)
     parser_snapshot.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    parser_snapshot.add_argument('-s', '--separator', help='TIME_UNIT separator. Default: .', default=DEFAULT_ARGS['separator'])
-    parser_snapshot.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [days, hours] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
+    parser_snapshot.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    parser_snapshot.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days', default=DEFAULT_ARGS['time_unit'], type=str)
     parser_snapshot.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
     parser_snapshot.add_argument('--repository', required=True, type=str, help='Repository name')
 
@@ -182,16 +181,13 @@ def show(client, **kwargs):
             print('{0}'.format(snapshot))
         sys.exit(0)
 
-def get_index_time(index_timestamp, separator='.'):
+def get_index_time(index_timestamp, timestring):
     """ Gets the time of the index.
 
-    :param index_timestamp: A string on the format YYYY.MM.DD[.HH]
+    :param index_timestamp: A string of the format timestring
     :return The creation time (datetime) of the index.
     """
-    try:
-        return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d', '%H')))
-    except ValueError:
-        return datetime.strptime(index_timestamp, separator.join(('%Y', '%m', '%d')))
+    return datetime.strptime(index_timestamp, timestring)
 
 def get_indices(client, prefix='logstash-', exclude_pattern=None):
     """Return a sorted list of indices matching prefix"""
@@ -262,9 +258,9 @@ def get_object_list(client, data_type='index', prefix='logstash-', repository=No
     else:
         return object_list
     
-def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', older_than=999999, prefix='logstash-', separator='.', **kwargs):
+def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', older_than=999999, prefix='logstash-', timestring=None, **kwargs):
     """ Generator that yields expired objects (indices or snapshots).
-
+    
     :return: Yields tuples on the format ``(name, expired_by)`` where name
         is the name of the expired object and expired_by is the interval (timedelta) that the
         object was expired by.
@@ -273,41 +269,33 @@ def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', ol
     utc_now = utc_now if utc_now else datetime.utcnow()
     # reset to start of the period to be sure we are not retiring a human by mistake
     utc_now = utc_now.replace(minute=0, second=0, microsecond=0)
-
-    if time_unit == 'hours':
-        required_parts = 4
-    else:
-        required_parts = 3
+    
+    if time_unit == 'days':
         utc_now = utc_now.replace(hour=0)
-
-    cutoff = utc_now - timedelta(**{time_unit: (older_than - 1)})
-
+    
+    if time_unit == 'months': # timedelta doesn't support months
+        cutoff = utc_now - timedelta(days=(older_than * 32)) # Prevent accidental deletion of current month
+    else: # This cutoff must be a multiple of time_units
+        cutoff = utc_now - timedelta(**{time_unit: (older_than - 1)})
+    
     for object_name in object_list:
-
-        unprefixed_object_name = object_name[len(prefix):]
-
-        # find the timestamp parts (i.e ['2011', '01', '05'] from '2011.01.05') using the configured separator
-        parts = unprefixed_object_name.split(separator)
-
-        # verify we have a valid cutoff - hours for 4-part indices, days for 3-part
-        if len(parts) != required_parts:
-            logger.debug('Skipping {0} because it is of a type (hourly or daily) that I\'m not asked to evaluate.'.format(object_name))
-            continue
+    
+        index_timestamp = object_name[len(prefix):]
 
         try:
-            object_time = get_index_time(unprefixed_object_name, separator=separator)
+            object_time = get_index_time(index_timestamp, timestring)
         except ValueError:
-            logger.error('Could not find a valid timestamp for {0}'.format(object_name))
+            logger.error('Could not find a valid timestamp for {0} with timestring {1}'.format(object_name, timestring))
             continue
-
+    
         # if the index is older than the cutoff
         if object_time < cutoff:
             yield object_name, cutoff-object_time
-
+    
         else:
             logger.info('{0} is {1} above the cutoff.'.format(object_name, object_time-cutoff))
 
-def find_overusage_indices(client, disk_space=2097152.0, separator='.', prefix='logstash-', **kwargs):
+def find_overusage_indices(client, disk_space=2097152.0, prefix='logstash-', **kwargs):
     """ Generator that yields over usage indices.
 
     :return: Yields tuples on the format ``(index_name, 0)`` where index_name
@@ -592,6 +580,32 @@ def get_segmentcount(client, index_name):
             totalshards += 1
     return totalshards, segmentcount
 
+def validate_timestring(timestring, time_unit):
+    """
+    Validate that the appropriate element(s) for time_unit are in the timestring.
+    e.g. If "weeks", we should see %U or %W, if hours %H, etc.
+    """
+    fail = True
+    if time_unit == 'hours':
+        if '%H' in timestring:
+            fail = False
+    elif time_unit == 'days':
+        if '%d' in timestring:
+            fail = False
+    elif time_unit == 'weeks':
+        if '%W' in timestring:
+            fail = False
+        elif '%U' in timestring:
+            fail = False
+    elif time_unit == 'months':
+        if '%m' in timestring:
+            fail = False
+    if fail:
+        print('Timestring {0} does not match time unit {1}'.format(timestring, time_unit))
+        sys.exit(1)
+    return
+
+    
 def main():
     start = time.time()
 
@@ -666,6 +680,19 @@ def main():
         logger.fatal('Master-only flag detected. Connected to non-master node. Aborting.')
         sys.exit(1)
 
+    if arguments.timestring:
+        validate_timestring(arguments.timestring, arguments.time_unit)
+    else: # Set default timestrings
+        if arguments.time_unit == 'hours':
+            arguments.timestring = '%Y.%m.%d.%H'
+        elif arguments.time_unit == 'days':
+            arguments.timestring = '%Y.%m.%d'
+        elif arguments.time_unit == 'weeks':
+            arguments.timestring = '%Y.%U'
+        elif arguments.time_unit == 'months':
+            arguments.timestring = '%Y.%m'
+        logging.debug("Setting default timestring for {0} to {1}".format(arguments.time_unit, arguments.timestring))
+    logging.debug("Matching indices with pattern: {0}{1}".format(arguments.prefix,arguments.timestring))
     # Execute the command specified in the arguments
     argdict = arguments.__dict__
     logging.debug("argdict = {0}".format(argdict))
