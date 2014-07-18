@@ -54,6 +54,16 @@ class TestSnapshots(CuratorTestCase):
         result = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(3, len(result['snapshots']))
 
+    def test_curator_will_manage_weekly_snapshots(self):
+        self.create_indices(10, 'weeks')
+        self.create_repository()
+        curator.command_loop(self.client, time_unit='weeks', command='snapshot', older_than=3, timestring='%Y.%W', delete_older_than=None, most_recent=None, repository=self.args['repository'])
+        result = curator.get_snapshot(self.client, self.args['repository'], '_all')
+        self.assertEqual(7, len(result['snapshots']))
+        curator.command_loop(self.client, time_unit='weeks', command='snapshot', timestring='%Y.%W', delete_older_than=6, repository=self.args['repository'])
+        result = curator.get_snapshot(self.client, self.args['repository'], '_all')
+        self.assertEqual(3, len(result['snapshots']))
+
     def test_curator_will_snap_latest_n_indices(self):
         self.create_indices(10)
         self.create_repository()

@@ -83,10 +83,8 @@ class CuratorTestCase(TestCase):
     def create_indices(self, count, unit=None):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
-        if unit == 'months':
-            format = '%Y.%m'
-        elif unit == 'weeks':
-            format = '%Y.%U'
+        if unit == 'weeks':
+            format = '%Y.%W'
         elif unit == 'days':
             format = '%Y.%m.%d'
         elif unit == 'hours':

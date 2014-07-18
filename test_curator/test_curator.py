@@ -11,6 +11,7 @@ class TestUtils(TestCase):
             ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
             ('2014-01-19', '%Y-%m-%d', datetime(2014, 1, 19)),
             ('2010-12-29', '%Y-%m-%d', datetime(2010, 12, 29)),
+            ('2014-28', '%Y-%W', datetime(2014, 7, 14)),
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
                 ]:
             self.assertEqual(dt, curator.get_index_time(text, datestring))

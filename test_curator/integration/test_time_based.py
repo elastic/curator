@@ -17,6 +17,12 @@ class TestTimeBasedDeletion(CuratorTestCase):
         mtd = self.client.cluster.state(index=self.args['prefix'] + '*', metric='metadata')
         self.assertEquals(3, len(mtd['metadata']['indices'].keys()))
 
+    def test_curator_will_properly_delete_weely_indices(self):
+        self.create_indices(10, 'weeks')
+        curator.command_loop(self.client, command='delete', time_unit='weeks', older_than=3, timestring='%Y.%W')
+        mtd = self.client.cluster.state(index=self.args['prefix'] + '*', metric='metadata')
+        self.assertEquals(3, len(mtd['metadata']['indices'].keys()))
+
 class TestFindExpiredIndices(CuratorTestCase):
     def test_find_closed_indices(self):
         self.create_index('l-2014.01.03')
@@ -32,6 +38,24 @@ class TestFindExpiredIndices(CuratorTestCase):
             [
                 ('l-2014.01.01', timedelta(7)),
                 ('l-2014.01.03', timedelta(5)),
+            ],
+            expired
+        )
+
+    def test_find_closed_weekly_indices(self):
+        self.create_index('l-2014.03')
+        self.client.indices.close(index='l-2014.03')
+        self.create_index('l-2014.04')
+    
+        # all indices should be expired
+        index_list = curator.get_object_list(self.client, prefix='l-')
+        expired = list(curator.find_expired_data(self.client, time_unit='weeks', older_than=1, timestring='%Y.%W', object_list=index_list,
+            utc_now=datetime(2014, 2, 4, 0, 0, 0), prefix='l-'))
+    
+        self.assertEquals(
+            [
+                ('l-2014.03', timedelta(weeks=2)),
+                ('l-2014.04', timedelta(weeks=1)),
             ],
             expired
         )
