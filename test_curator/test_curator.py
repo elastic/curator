@@ -7,13 +7,13 @@ import curator
 
 class TestUtils(TestCase):
     def test_get_index_time(self):
-        for text, sep, dt in [
-            ('2014.01.19', '.', datetime(2014, 1, 19)),
-            ('2014-01-19', '-', datetime(2014, 1, 19)),
-            ('2010-12-29', '-', datetime(2010, 12, 29)),
-            ('2010.12.29.12', '.', datetime(2010, 12, 29, 12)),
+        for text, datestring, dt in [
+            ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
+            ('2014-01-19', '%Y.%m.%d', datetime(2014, 1, 19)),
+            ('2010-12-29', '%Y.%m.%d', datetime(2010, 12, 29)),
+            ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
                 ]:
-            self.assertEqual(dt, curator.get_index_time(text, sep))
+            self.assertEqual(dt, curator.get_index_time(text, datestring))
 
 class TestShowIndices(TestCase):
     def test_show_indices(self):
