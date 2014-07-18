@@ -37,20 +37,20 @@ class TestSnapshots(CuratorTestCase):
     def test_curator_will_create_and_delete_multiple_snapshots(self):
         self.create_indices(10)
         self.create_repository()
-        curator.command_loop(self.client, command='snapshot', older_than=3, delete_older_than=None, most_recent=None, repository=self.args['repository'])
+        curator.command_loop(self.client, command='snapshot', older_than=3, timestring='%Y.%m.%d', delete_older_than=None, most_recent=None, repository=self.args['repository'])
         result = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(7, len(result['snapshots']))
-        curator.command_loop(self.client, command='snapshot', delete_older_than=6, repository=self.args['repository'])
+        curator.command_loop(self.client, command='snapshot', delete_older_than=6, timestring='%Y.%m.%d', repository=self.args['repository'])
         result = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(3, len(result['snapshots']))
 
     def test_curator_will_manage_hourly_snapshots(self):
         self.create_indices(10, 'hours')
         self.create_repository()
-        curator.command_loop(self.client, time_unit='hours', command='snapshot', older_than=3, delete_older_than=None, most_recent=None, repository=self.args['repository'])
+        curator.command_loop(self.client, time_unit='hours', command='snapshot', older_than=3, timestring='%Y.%m.%d.%H', delete_older_than=None, most_recent=None, repository=self.args['repository'])
         result = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(7, len(result['snapshots']))
-        curator.command_loop(self.client, time_unit='hours', command='snapshot', delete_older_than=6, repository=self.args['repository'])
+        curator.command_loop(self.client, time_unit='hours', command='snapshot', timestring='%Y.%m.%d.%H', delete_older_than=6, repository=self.args['repository'])
         result = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(3, len(result['snapshots']))
 
