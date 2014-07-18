@@ -16,7 +16,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -29,6 +29,7 @@ DEFAULT_ARGS = {
     'url_prefix': '',
     'port': 9200,
     'ssl': False,
+    'auth': None,
     'timeout': 30,
     'dry_run': False,
     'debug': False,
@@ -49,6 +50,7 @@ def make_parser():
     parser.add_argument('--url_prefix', help='Elasticsearch http url prefix. Default: none', default=DEFAULT_ARGS['url_prefix'])
     parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=DEFAULT_ARGS['port'], type=int)
     parser.add_argument('--ssl', help='Connect to Elasticsearch through SSL. Default: false', action='store_true', default=DEFAULT_ARGS['ssl'])
+    parser.add_argument('--auth', help='Use Basic Authentication ex: user:pass Default: None', default=DEFAULT_ARGS['auth'])
     parser.add_argument('-t', '--timeout', help='Connection timeout in seconds. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.',
                     default=DEFAULT_ARGS['dry_run'])
@@ -213,7 +215,8 @@ def main():
 
     # Do not log and force dry-run if we opt to show indices.
     if arguments.command == 'show':
-        arguments.log_file = '/dev/null'
+        import os
+        arguments.log_file = os.devnull
         arguments.dry_run = True
 
     # Setup logging
@@ -236,7 +239,7 @@ def main():
     if arguments.dry_run:
         logger.info('DRY RUN MODE.  No changes will be made.')
 
-    client = elasticsearch.Elasticsearch(host=arguments.host, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
+    client = elasticsearch.Elasticsearch(host=arguments.host, http_auth=arguments.auth, port=arguments.port, url_prefix=arguments.url_prefix, timeout=arguments.timeout, use_ssl=arguments.ssl)
 
     check_version(client)
 
