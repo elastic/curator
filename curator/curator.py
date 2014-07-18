@@ -181,12 +181,31 @@ def show(client, **kwargs):
             print('{0}'.format(snapshot))
         sys.exit(0)
 
+def iso_year_start(iso_year):
+    "The gregorian calendar date of the first day of the given ISO year"
+    fourth_jan = datetime.date(iso_year, 1, 4)
+    delta = datetime.timedelta(fourth_jan.isoweekday()-1)
+    return fourth_jan - delta 
+
+def iso_to_gregorian(iso_year, iso_week, iso_day):
+    "Gregorian calendar date for the given ISO year, week and day"
+    year_start = iso_year_start(iso_year)
+    return year_start + datetime.timedelta(days=iso_day-1, weeks=iso_week-1)
+
 def get_index_time(index_timestamp, timestring):
     """ Gets the time of the index.
 
     :param index_timestamp: A string of the format timestring
     :return The creation time (datetime) of the index.
     """
+    # Compensate for week of year by appending '%w' to the timestring
+    # and '1' (Monday) to index_timestamp
+    if '%W' in timestring:
+        timestring += '%w'
+        index_timestamp += '1'
+    elif '%U' in timestring:
+        timestring += '%w'
+        index_timestamp += '1'
     return datetime.strptime(index_timestamp, timestring)
 
 def get_indices(client, prefix='logstash-', exclude_pattern=None):
