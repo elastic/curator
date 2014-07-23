@@ -293,7 +293,7 @@ def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', ol
             yield object_name, cutoff-object_time
     
         else:
-            logger.info('{0} is {1} above the cutoff.'.format(object_name, object_time-cutoff))
+            logger.info('{0} is {1} newer than the cutoff.'.format(object_name, object_time-cutoff))
 
 def find_overusage_indices(client, disk_space=2097152.0, prefix='logstash-', **kwargs):
     """ Generator that yields over usage indices.
