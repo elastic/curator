@@ -54,9 +54,9 @@ class TestExpireIndices(TestCase):
         expired = list(expired)
 
         self.assertEquals([
-                ('prefix-2013.01.03', timedelta(days=362)),
-                ('prefix-2013.12.29', timedelta(days=2)),
-                ('prefix-2013.12.30', timedelta(days=1)),
+                'prefix-2013.01.03',
+                'prefix-2013.12.29',
+                'prefix-2013.12.30',
             ],
             expired
         )

@@ -36,8 +36,8 @@ class TestFindExpiredIndices(CuratorTestCase):
 
         self.assertEquals(
             [
-                ('l-2014.01.01', timedelta(7)),
-                ('l-2014.01.03', timedelta(5)),
+                'l-2014.01.01',
+                'l-2014.01.03',
             ],
             expired
         )
@@ -53,9 +53,8 @@ class TestFindExpiredIndices(CuratorTestCase):
             utc_now=datetime(2014, 2, 4, 0, 0, 0), prefix='l-'))
     
         self.assertEquals(
-            [
-                ('l-2014.03', timedelta(weeks=2)),
-                ('l-2014.04', timedelta(weeks=1)),
+            [ 'l-2014.03',
+              'l-2014.04',
             ],
             expired
         )
@@ -68,7 +67,7 @@ class TestFindExpiredIndices(CuratorTestCase):
         index_list = curator.get_object_list(self.client, prefix=self.args['prefix'])
         expired = list(curator.find_expired_data(self.client, time_unit='hours', older_than=1, timestring='%Y.%m.%d.%H', object_list=index_list))
         self.assertEquals(1, len(expired))
-        self.assertEquals('logstash-2012.01.01.00', expired[0][0])
+        self.assertEquals('logstash-2012.01.01.00', expired[0])
 
     def test_find_reports_correct_time_interval_from_cutoff(self):
         self.create_index('l-2014.01.01')
@@ -80,10 +79,9 @@ class TestFindExpiredIndices(CuratorTestCase):
         expired = list(curator.find_expired_data(self.client, time_unit='days', older_than=1, timestring='%Y.%m.%d', object_list=index_list,
             utc_now=datetime(2014, 1, 4, 3, 45, 50), prefix='l-'))
         self.assertEquals(
-            [
-                (u'l-2014.01.01', timedelta(3)),
-                (u'l-2014.01.02', timedelta(2)),
-                (u'l-2014.01.03', timedelta(1)),
+            [ 'l-2014.01.01',
+              'l-2014.01.02',
+              'l-2014.01.03',
             ],
             expired
         )

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import time
 import logging
@@ -39,6 +40,7 @@ DEFAULT_ARGS = {
     'dry_run': False,
     'debug': False,
     'log_level': 'INFO',
+    'logformat': 'Default',
     'show_indices': False,
     'wait_for_completion': True,
     'ignore_unavailable': False,
@@ -69,6 +71,7 @@ def make_parser():
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
+    parser.add_argument('--logformat', dest='logformat', help='Log output format [default|logstash]. Default: default', default=DEFAULT_ARGS['logformat'], type=str)
 
     # Command sub_parsers
     subparsers = parser.add_subparsers(
@@ -170,6 +173,13 @@ def make_parser():
                                 help='Do not fail if primary shard is unavailable. Default=False', default=DEFAULT_ARGS['partial'])
 
     return parser
+
+class Whitelist(logging.Filter):
+    def __init__(self, *whitelist):
+        self.whitelist = [logging.Filter(name) for name in whitelist]
+
+    def filter(self, record):
+        return any(f.filter(record) for f in self.whitelist)
 
 def show(client, **kwargs):
     if kwargs['show_indices']:
@@ -301,10 +311,9 @@ def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', ol
     
         # if the index is older than the cutoff
         if object_time < cutoff:
-            yield object_name, cutoff-object_time
-    
+            yield object_name
         else:
-            logger.info('{0} is {1} above the cutoff.'.format(object_name, object_time-cutoff))
+            logger.info('{0} is within the threshold period ({1} {2}).'.format(object_name, older_than, time_unit))
 
 def find_overusage_indices(client, disk_space=2097152.0, prefix='logstash-', **kwargs):
     """ Generator that yields over usage indices.
@@ -489,16 +498,15 @@ def snap_latest_indices(client, most_recent=0, prefix='logstash-', dry_run=False
     """Snapshot 'count' most recent indices matching prefix"""
     indices = [] # initialize...
     indices = get_indices(client, prefix)
+    prepend = "DRY RUN: " if dry_run else ''
     for index_name in indices[-most_recent:]:
-        if dry_run:
-            logger.info('Would have attempted creating snapshot for {0}.'.format(index_name))
-            continue
+        if not index_closed(client, index_name):
+            logger.info(prepend + 'Attempting to create snapshot for {0}...'.format(index_name))
         else:
-            if not index_closed(client, index_name):
-                logger.info('Attempting to create snapshot for {0}...'.format(index_name))
-            else:
-                logger.warn('Unable to perform snapshot on closed index {0}'.format(index_name))
-                continue
+            logger.warn(prepend + 'Unable to perform snapshot on closed index {0}'.format(index_name))
+            continue
+        if dry_run:
+            continue # Don't do the work on a dry run
         
         skipped = _create_snapshot(client, index_name, prefix, **kwargs)
             
@@ -506,10 +514,11 @@ def snap_latest_indices(client, most_recent=0, prefix='logstash-', dry_run=False
             continue
         # if no error was raised and we got here that means the operation succeeded
         logger.info('Snapshot operation for index {0} succeeded.'.format(index_name))
-    logger.info('Snapshot \'latest\' {0} indices operations completed.'.format(most_recent))
+    logger.info(prepend + 'Snapshot \'latest\' {0} indices operations completed.'.format(most_recent))
 
 def alias_loop(client, dry_run=False, **kwargs):
-    logging.info("Beginning ALIAS operations...")
+    prepend = "DRY RUN: " if dry_run else ''
+    logging.info(prepend + "Beginning ALIAS operations...")
     if kwargs['alias_older_than']:
         kwargs['older_than'] = kwargs['alias_older_than']
         op = _add_to_alias
@@ -520,23 +529,22 @@ def alias_loop(client, dry_run=False, **kwargs):
         words = ['remove', 'from', 'removed']
     index_list = get_object_list(client, **kwargs)
     expired_indices = find_expired_data(client, object_list=index_list, **kwargs)
-    for index_name, expiration in expired_indices:
+    for index_name in expired_indices:
+        logger.info(prepend + 'Attempting to {0} index {1} {2} alias {3}.'.format(words[0], index_name, words[1], kwargs['alias']))
         if dry_run:
-            logger.info('Would have attempted to {0} index {1} {2} alias {3} because it is {4} older than the calculated cutoff.'.format(words[0], index_name, words[1], kwargs['alias'], expiration))
             continue
-        else:
-            logger.info('Attempting to {0} index {1} {2} alias {3} because it is {4} older than cutoff.'.format(words[0], index_name, words[1], kwargs['alias'], expiration))
 
         skipped = op(client, index_name, **kwargs)
         if skipped:
             continue
         # if no error was raised and we got here that means the operation succeeded
         logger.info('{0}: Successfully {1} {2} alias {3}.'.format(index_name, words[2], words[1], kwargs['alias']))
-    logger.info('Index ALIAS operations completed.')
+    logger.info(prepend + 'Index ALIAS operations completed.')
 
 def command_loop(client, dry_run=False, **kwargs):
+    prepend = "DRY RUN: " if dry_run else ''
     command = kwargs['command']
-    logging.info("Beginning {0} operations...".format(command.upper()))
+    logging.info(prepend + "Beginning {0} operations...".format(command.upper()))
     op, words = OP_MAP[command]
     by_space = kwargs['disk_space'] if 'disk_space' in kwargs else False
     if command == 'delete' and by_space:
@@ -554,18 +562,13 @@ def command_loop(client, dry_run=False, **kwargs):
         index_list = get_object_list(client, **kwargs)
         expired_indices = find_expired_data(client, object_list=index_list, **kwargs)
 
-    for index_name, expiration in expired_indices:
-        if dry_run and not by_space:
-            logger.info('Would have attempted {0} index {1} because it is {2} older than the calculated cutoff.'.format(words['gerund'].lower(), index_name, expiration))
-            continue
-        elif dry_run and by_space:
-            logger.info('Would have attempted {0} index {1} due to space constraints.'.format(words['gerund'].lower(), index_name))
-            continue
-
+    for index_name in expired_indices:
         if not by_space:
-            logger.info('Attempting to {0} index {1} because it is {2} older than cutoff.'.format(words['op'], index_name, expiration))
+            logger.info(prepend + 'Attempting to {0} index {1}.'.format(words['op'], index_name))
         else:
-            logger.info('Attempting to {0} index {1} due to space constraints.'.format(words['op'].lower(), index_name))
+            logger.info(prepend + 'Attempting to {0} index {1} due to space constraints.'.format(words['op'].lower(), index_name))
+        if dry_run:
+            continue # Don't act on dry run
 
         skipped = op(client, index_name, **kwargs)
 
@@ -578,7 +581,7 @@ def command_loop(client, dry_run=False, **kwargs):
         w = words['op'][:-4]
     else:
         w = words['op']
-    logger.info('{0} index operations completed.'.format(w.upper()))
+    logger.info(prepend + '{0} index operations completed.'.format(w.upper()))
 
 def get_segmentcount(client, index_name):
     """Return a list of shardcount, segmentcount"""
@@ -637,7 +640,6 @@ def main():
 
     if arguments.command == 'show':
         # Do not log and force dry-run if we opt to show indices or snapshots.
-        import os
         arguments.log_file = os.devnull
         arguments.dry_run = True
         if not arguments.show_indices and not arguments.show_snapshots:
@@ -662,17 +664,32 @@ def main():
         if not isinstance(numeric_log_level, int):
             raise ValueError('Invalid log level: %s' % arguments.log_level)
     
+    if arguments.logformat == 'logstash':
+        os.environ['TZ'] = 'UTC'
+        time.tzset()
+        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
+        date_string = '%Y-%m-%dT%H:%M:%S'
+    else:
+        format_string = '%(asctime)s %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s'
+        date_string = None
     logging.basicConfig(level=numeric_log_level,
-                        format='%(asctime)s.%(msecs)03d %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s',
-                        datefmt="%Y-%m-%dT%H:%M:%S",
+                        format=format_string,
+                        datefmt=date_string,
                         stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
+
+
+    # Filter out logging from Elasticsearch and associated modules by default
+    if not arguments.debug:
+        for handler in logging.root.handlers:
+            handler.addFilter(Whitelist('root', '__main__'))
+
+    # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
+    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
+
     logging.info("Job starting...")
 
     if arguments.dry_run:
         logging.info("DRY RUN MODE.  No changes will be made.")
-
-    # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
-    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
     # Override the timestamp in case the end-user doesn't.
     if timeout_override and arguments.timeout == 30:
