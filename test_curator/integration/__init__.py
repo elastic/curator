@@ -83,10 +83,12 @@ class CuratorTestCase(TestCase):
     def create_indices(self, count, unit=None):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
-        if unit == 'days':
-            format = self.args['separator'].join(('%Y', '%m', '%d'))
-        else:
-            format = self.args['separator'].join(('%Y', '%m', '%d', '%H'))
+        if unit == 'weeks':
+            format = '%Y.%W'
+        elif unit == 'days':
+            format = '%Y.%m.%d'
+        elif unit == 'hours':
+            format = '%Y.%m.%d.%H'
 
         step = timedelta(**{unit: 1})
         for x in range(count):

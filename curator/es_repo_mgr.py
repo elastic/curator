@@ -16,7 +16,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '1.1.4-dev'
+__version__ = '1.2.0-dev'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -34,6 +34,7 @@ DEFAULT_ARGS = {
     'dry_run': False,
     'debug': False,
     'log_level': 'INFO',
+    'logformat': 'default',
 }
 
 def make_parser():
@@ -57,6 +58,7 @@ def make_parser():
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
     parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
+    parser.add_argument('--logformat', dest='logformat', help='Log output format [default|logstash]. Default: default', default=DEFAULT_ARGS['logformat'], type=str)
 
     # Command sub_parsers
     subparsers = parser.add_subparsers(title='Commands', dest='command', description='Select one of the following commands:',
@@ -116,6 +118,12 @@ def make_parser():
 
     return parser
 
+class Whitelist(logging.Filter):
+    def __init__(self, *whitelist):
+        self.whitelist = [logging.Filter(name) for name in whitelist]
+
+    def filter(self, record):
+        return any(f.filter(record) for f in self.whitelist)
 
 def show(client, **kwargs):
     for repository in sorted(get_repository(client, '_all').keys()):
@@ -150,10 +158,13 @@ def _create_repository(client, dry_run=False, **kwargs):
         try:
             repo_name = kwargs['repository']
             body = create_repo_body(**kwargs)
+            logging.info("Checking if repository {0} already exists...".format(repo_name))
             result = get_repository(client, repo_name)
             if not result:
+                logging.info("Repository {0} not found. Continuing...".format(repo_name))
                 client.snapshot.create_repository(repository=repo_name, body=body)
             elif result is not None and repo_name not in result and not kwargs['dry_run']:
+                logging.info("Repository {0} not found. Continuing...".format(repo_name))
                 client.snapshot.create_repository(repository=repo_name, body=body)
             else:
                 logger.error("Unable to create repository {0}.  A repository with that name already exists.".format(repo_name))
@@ -227,10 +238,24 @@ def main():
         if not isinstance(numeric_log_level, int):
             raise ValueError('Invalid log level: %s' % arguments.log_level)
 
+    if arguments.logformat == 'logstash':
+        os.environ['TZ'] = 'UTC'
+        time.tzset()
+        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
+        date_string = '%Y-%m-%dT%H:%M:%S'
+    else:
+        format_string = '%(asctime)s %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s'
+        date_string = None
     logging.basicConfig(level=numeric_log_level,
-                        format='%(asctime)s.%(msecs)03d %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s',
-                        datefmt="%Y-%m-%dT%H:%M:%S",
+                        format=format_string,
+                        datefmt=date_string,
                         stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
+    
+    
+    # Filter out logging from Elasticsearch and associated modules by default
+    if not arguments.debug:
+        for handler in logging.root.handlers:
+            handler.addFilter(Whitelist('root', '__main__'))
     logging.info("Job starting...")
 
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client

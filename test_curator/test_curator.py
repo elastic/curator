@@ -7,13 +7,14 @@ import curator
 
 class TestUtils(TestCase):
     def test_get_index_time(self):
-        for text, sep, dt in [
-            ('2014.01.19', '.', datetime(2014, 1, 19)),
-            ('2014-01-19', '-', datetime(2014, 1, 19)),
-            ('2010-12-29', '-', datetime(2010, 12, 29)),
-            ('2010.12.29.12', '.', datetime(2010, 12, 29, 12)),
+        for text, datestring, dt in [
+            ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
+            ('2014-01-19', '%Y-%m-%d', datetime(2014, 1, 19)),
+            ('2010-12-29', '%Y-%m-%d', datetime(2010, 12, 29)),
+            ('2014-28', '%Y-%W', datetime(2014, 7, 14)),
+            ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
                 ]:
-            self.assertEqual(dt, curator.get_index_time(text, sep))
+            self.assertEqual(dt, curator.get_index_time(text, datestring))
 
 class TestShowIndices(TestCase):
     def test_show_indices(self):
@@ -48,14 +49,14 @@ class TestExpireIndices(TestCase):
             'prefix-2013.01.03.10': True,
         }
         index_list = curator.get_object_list(client, prefix='prefix-')
-        expired = curator.find_expired_data(client, object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', utc_now=datetime(2014, 1, 3))
+        expired = curator.find_expired_data(client, object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
         self.assertEquals([
-                ('prefix-2013.01.03', timedelta(days=362)),
-                ('prefix-2013.12.29', timedelta(days=2)),
-                ('prefix-2013.12.30', timedelta(days=1)),
+                'prefix-2013.01.03',
+                'prefix-2013.12.29',
+                'prefix-2013.12.30',
             ],
             expired
         )
