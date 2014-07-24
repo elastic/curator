@@ -18,7 +18,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -677,7 +677,7 @@ def main():
     # Filter out logging from Elasticsearch and associated modules by default
     if not arguments.debug:
         for handler in logging.root.handlers:
-            handler.addFilter(Whitelist('root', '__main__'))
+            handler.addFilter(Whitelist('root', '__main__', 'curator.curator'))
 
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
