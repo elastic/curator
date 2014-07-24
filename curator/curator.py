@@ -18,7 +18,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '1.2.0-dev'
+__version__ = '1.2.0'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -279,9 +279,7 @@ def get_object_list(client, data_type='index', prefix='logstash-', repository=No
 def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', older_than=999999, prefix='logstash-', timestring=None, **kwargs):
     """ Generator that yields expired objects (indices or snapshots).
     
-    :return: Yields tuples on the format ``(name, expired_by)`` where name
-        is the name of the expired object and expired_by is the interval (timedelta) that the
-        object was expired by.
+    :return: Yields a list of indices older than n `time_unit`s
     """
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
@@ -318,9 +316,7 @@ def find_expired_data(client, object_list=[], utc_now=None, time_unit='days', ol
 def find_overusage_indices(client, disk_space=2097152.0, prefix='logstash-', **kwargs):
     """ Generator that yields over usage indices.
 
-    :return: Yields tuples on the format ``(index_name, 0)`` where index_name
-    is the name of the expired index. The second element is only here for
-    compatiblity reasons.
+    :return: Yields a list of indices to delete based on space consumed, starting with the oldest.
     """
 
     disk_usage = 0.0
