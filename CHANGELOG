@@ -1,4 +1,16 @@
-1.1.4 (? ? ?)
+1.2.0 (24 July 2014)
+ # General
+ - New! Allow user-specified date patterns: `--timestring` #111 (untergeek)
+ - New! Curate weekly indices (must use week of year) #111 (untergeek)
+ - New! Log output in logstash format `--logformat logstash` #111 (untergeek)
+ - Updated! Cleaner default logs (debug still shows everything) (untergeek)
+ - Improved! Dry runs are more visible in log output (untergeek)
+ 
+ # Errata
+ - The `--separator` option was removed in lieu of user-specified date patterns.
+ - Default `--timestring` for days: %Y.%m.%d (Same as before)
+ - Default `--timestring` for hours: %Y.%m.%d.%H (Same as before)
+ - Default `--timestring` for weeks: %Y.%W
 
 1.1.3 (18 July 2014)
 # Bug fix
