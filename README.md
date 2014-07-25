@@ -41,11 +41,12 @@ The default values for the following are:
     -T (or --time-unit) days
     -p (or --prefix) logstash-
 
-The alternate values for `-T` (or `--time-unit`) are `hours` and `weeks`.  You can construct date strings using [python strftime formatting](https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior).  The default `--timestring`s for these `--time-unit`s are as follows:
+The alternate values for `-T` (or `--time-unit`) are `hours`, `weeks`, and `months`.  You can construct date strings using [python strftime formatting](https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior).  The default `--timestring`s for these `--time-unit`s are as follows:
 
     days:   %Y.%m.%d
     hours:  %Y.%m.%d.%H
     weeks:  %Y.%W
+    months: %Y.%m
 
 
 If your values match these you do not need to include them.  The value of `prefix` should be everything before the date string, i.e. `--prefix .marvel-` would match index `.marvel-2014.05.27`, and all other indices beginning with `.marvel-` (don't forget the trailing hyphen!).
