@@ -1,6 +1,17 @@
 # Curator
 
 Have time-series indices in Elasticsearch? This is the tool for you!
+
+Like a museum curator manages the exhibits and collections on display, Elasticsearch Curator helps you curate, or manage your time-series indices, with commands like:
+
+    delete
+    optimize
+    close
+    snapshot
+    alias
+
+…and more!
+
 See the new [Documentation Wiki](http://github.com/elasticsearch/curator/wiki)!
 
 ## Versioning
