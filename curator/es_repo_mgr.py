@@ -149,7 +149,7 @@ def get_repository(client, repo_name):
     try:
         return client.snapshot.get_repository(repository=repo_name)
     except elasticsearch.NotFoundError as e:
-        logger.info("Repository {0} not found.  Error: {1}".format(repo_name, e))
+        logger.info("Error: {1}".format(repo_name, e))
         return None
 
 def _create_repository(client, dry_run=False, **kwargs):
@@ -175,7 +175,7 @@ def _create_repository(client, dry_run=False, **kwargs):
         logger.info("Repository {0} creation initiated...".format(repo_name))
         test_result = get_repository(client, repo_name)
         if repo_name in test_result:
-            logger.info("Repository {0} created successfully.".format(repo_name))
+            logger.info("Repository {0} creation validated.".format(repo_name))
             return True
         else:
             logger.error("Repository {0} failed validation...".format(repo_name))
@@ -255,7 +255,7 @@ def main():
     # Filter out logging from Elasticsearch and associated modules by default
     if not arguments.debug:
         for handler in logging.root.handlers:
-            handler.addFilter(Whitelist('root', '__main__'))
+            handler.addFilter(Whitelist('root', '__main__', 'curator.es_repo_mgr'))
     logging.info("Job starting...")
 
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
