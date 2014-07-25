@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import random
 import string
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
@@ -83,18 +83,24 @@ class CuratorTestCase(TestCase):
     def create_indices(self, count, unit=None):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
-        if unit == 'weeks':
-            format = '%Y.%W'
-        elif unit == 'days':
-            format = '%Y.%m.%d'
-        elif unit == 'hours':
-            format = '%Y.%m.%d.%H'
-
-        step = timedelta(**{unit: 1})
-        for x in range(count):
+        format = curator.datemap[unit]
+        if not unit == 'months':
+            step = timedelta(**{unit: 1})
+            for x in range(count):
+                self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
+                now -= step
+        else: # months
+            now = date.today()
+            d = date(now.year, now.month, 1)
             self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
-            now -= step
-
+            
+            for i in range(1, count):
+                if d.month == 1:
+                    d = date(d.year-1, 12, 1)
+                else:
+                    d = date(d.year, d.month-1, 1)
+                self.create_index(self.args['prefix'] + datetime(d.year, d.month, 1).strftime(format), wait_for_yellow=False)
+        
         self.client.cluster.health(wait_for_status='yellow')
 
     def create_index(self, name, shards=1, wait_for_yellow=True):

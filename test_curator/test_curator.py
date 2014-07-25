@@ -11,6 +11,8 @@ class TestUtils(TestCase):
             ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
             ('2014-01-19', '%Y-%m-%d', datetime(2014, 1, 19)),
             ('2010-12-29', '%Y-%m-%d', datetime(2010, 12, 29)),
+            ('2012-12', '%Y-%m', datetime(2012, 12, 1)),
+            ('2011.01', '%Y.%m', datetime(2011, 1, 1)),
             ('2014-28', '%Y-%W', datetime(2014, 7, 14)),
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
                 ]:
@@ -47,9 +49,12 @@ class TestExpireIndices(TestCase):
 
             'prefix-2013.01.03': True,
             'prefix-2013.01.03.10': True,
+            'prefix-2013.01': True,
+            'prefix-2013.12': True,
+            'prefix-2013.51': True,
         }
         index_list = curator.get_object_list(client, prefix='prefix-')
-        expired = curator.find_expired_data(client, object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
