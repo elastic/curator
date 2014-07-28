@@ -671,19 +671,20 @@ def main():
     # Setup logging
     if arguments.debug:
         numeric_log_level = logging.DEBUG
+        format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
     else:
         numeric_log_level = getattr(logging, arguments.log_level.upper(), None)
+        format_string = '%(asctime)s %(levelname)-9s %(message)s'
         if not isinstance(numeric_log_level, int):
             raise ValueError('Invalid log level: %s' % arguments.log_level)
     
+    date_string = None
     if arguments.logformat == 'logstash':
         os.environ['TZ'] = 'UTC'
         time.tzset()
-        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
+        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "name":"%(name)s", function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
         date_string = '%Y-%m-%dT%H:%M:%S'
-    else:
-        format_string = '%(asctime)s %(levelname)-9s %(funcName)22s:%(lineno)-4d %(message)s'
-        date_string = None
+
     logging.basicConfig(level=numeric_log_level,
                         format=format_string,
                         datefmt=date_string,
