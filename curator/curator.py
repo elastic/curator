@@ -717,12 +717,14 @@ def main():
         logger.fatal('Master-only flag detected. Connected to non-master node. Aborting.')
         sys.exit(1)
 
-    if arguments.timestring:
-        validate_timestring(arguments.timestring, arguments.time_unit)
-    else: # Set default timestrings
-        arguments.timestring = datemap[arguments.time_unit]
-        logging.debug("Setting default timestring for {0} to {1}".format(arguments.time_unit, arguments.timestring))
-    logging.debug("Matching indices with pattern: {0}{1}".format(arguments.prefix,arguments.timestring))
+    if arguments.command != "show":
+        if arguments.timestring:
+            validate_timestring(arguments.timestring, arguments.time_unit)
+        else: # Set default timestrings
+            arguments.timestring = datemap[arguments.time_unit]
+            logging.debug("Setting default timestring for {0} to {1}".format(arguments.time_unit, arguments.timestring))
+        logging.debug("Matching indices with pattern: {0}{1}".format(arguments.prefix,arguments.timestring))
+
     # Execute the command specified in the arguments
     argdict = arguments.__dict__
     logging.debug("argdict = {0}".format(argdict))
