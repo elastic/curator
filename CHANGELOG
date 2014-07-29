@@ -1,4 +1,4 @@
-1.2.2 (? ? ?)
+1.2.2 (29 July 2014)
  # Bug fix
  - Updated README.md to briefly explain what curator does #117 (untergeek)
  - Fixed es_repo_mgr logging whitelist #119 (untergeek)
@@ -6,7 +6,7 @@
  - Filter out `.marvel-kibana` when prefix is `.marvel-` #120 (untergeek)
  - Clean up arg parsing code where redundancy exists #123 (untergeek)
  - Properly divide debug from non-debug logging #125 (untergeek)
- - Fix bug caused by changes to command structure #126 (michaelweiser)
+ - Fixed `show` command bug caused by changes to command structure #126 (michaelweiser)
 
 1.2.1 (24 July 2014)
  # Bug fix
