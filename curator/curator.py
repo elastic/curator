@@ -135,6 +135,7 @@ def make_parser():
     add_common_args(parser_optimize)
     parser_optimize.add_argument('--older-than', required=True, help='Optimize indices older than n TIME_UNITs', type=int)
     parser_optimize.add_argument('--max_num_segments', help='Optimize segment count to n segments per shard.', default=DEFAULT_ARGS['max_num_segments'], type=int)
+    parser_optimize.add_argument('--delay', help='Number of seconds to delay after optimizing an index.', type=int, default=0)
 
     # Show indices
     parser_show = subparsers.add_parser('show', help='Show indices or snapshots')
@@ -589,6 +590,10 @@ def command_loop(client, dry_run=False, **kwargs):
 
         # if no error was raised and we got here that means the operation succeeded
         logger.info('{0}: Successfully {1}.'.format(index_name, words['verbed']))
+        if 'delay' in kwargs:
+            if kwargs['delay'] > 0:
+                logger.info('Pausing for {0} seconds to allow cluster to quiesce...'.format(kwargs['delay']))
+                time.sleep(kwargs['delay'])
     if 'for' in words['op']:
         w = words['op'][:-4]
     else:

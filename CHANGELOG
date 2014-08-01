@@ -1,5 +1,7 @@
 1.x.x (? ? ?)
-
+ # General
+ - New! `--delay` after optimize to allow cluster to quiesce #131 (untergeek)
+ 
 1.2.2 (29 July 2014)
  # Bug fix
  - Updated README.md to briefly explain what curator does #117 (untergeek)
