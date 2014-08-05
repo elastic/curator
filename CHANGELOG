@@ -1,4 +1,4 @@
-1.x.x (? ? ?)
+2.x.x (? ? ?)
  # General
  - New! `--delay` after optimize to allow cluster to quiesce #131 (untergeek)
  
