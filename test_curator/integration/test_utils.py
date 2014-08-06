@@ -103,7 +103,7 @@ class TestExcludeIndex(CuratorTestCase):
         self.create_index('logstash-2014.06.07')
         self.create_index('logstash-2014.06.08')
         self.create_index('logstash-2014.06.09')
-        object_list = curator.get_object_list(self.client, data_type='index', prefix='logstash-', repository=None, exclude_pattern='2014.06.08')
+        object_list = curator.get_object_list(self.client, data_type='index', prefix='logstash-', suffix='', repository=None, exclude_pattern='2014.06.08')
         self.assertEquals(
             [
                 u'logstash-2014.06.07',
