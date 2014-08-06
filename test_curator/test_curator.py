@@ -36,6 +36,40 @@ class TestShowIndices(TestCase):
             indices
         )
 
+    def test_show_indices_with_suffix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'prefix-2014.01.03-suffix': True,
+            'prefix-2014.01.02-suffix': True,
+            'prefix-2014.01.01-suffix': True
+        }
+        indices = curator.get_indices(client, prefix='prefix-', suffix='-suffix')
+
+        self.assertEquals([
+                'prefix-2014.01.01-suffix',
+                'prefix-2014.01.02-suffix',
+                'prefix-2014.01.03-suffix',
+            ],
+            indices
+        )
+
+    def test_show_indices_with_suffix_and_no_prefix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            '2014.01.03-suffix': True,
+            '2014.01.02-suffix': True,
+            '2014.01.01-suffix': True
+        }
+        indices = curator.get_indices(client, prefix='', suffix='-suffix')
+
+        self.assertEquals([
+                '2014.01.01-suffix',
+                '2014.01.02-suffix',
+                '2014.01.03-suffix',
+            ],
+            indices
+        )
+
 class TestExpireIndices(TestCase):
     def test_all_daily_indices_found(self):
         client = Mock()
@@ -53,8 +87,8 @@ class TestExpireIndices(TestCase):
             'prefix-2013.12': True,
             'prefix-2013.51': True,
         }
-        index_list = curator.get_object_list(client, prefix='prefix-')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        index_list = curator.get_object_list(client, prefix='prefix-', suffix='')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -62,6 +96,176 @@ class TestExpireIndices(TestCase):
                 'prefix-2013.01.03',
                 'prefix-2013.12.29',
                 'prefix-2013.12.30',
+            ],
+            expired
+        )
+
+    def test_all_daily_indices_found_with_suffix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'prefix-2014.01.03-suffix': True,
+            'prefix-2014.01.02': True,
+            'prefix-2014.01.01-suffix': True,
+            'prefix-2013.12.31': True,
+            'prefix-2013.12.30-suffix': True,
+            'prefix-2013.12.29': True,
+
+            'prefix-2013.01.03-suffix': True,
+            'prefix-2013.01.03.10': True,
+            'prefix-2013.01': True,
+            'prefix-2013.12-suffix': True,
+            'prefix-2013.51': True,
+        }
+        index_list = curator.get_object_list(client, prefix='prefix-', suffix='-suffix')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+                'prefix-2013.01.03-suffix',
+                'prefix-2013.12.30-suffix',
+            ],
+            expired
+        )
+
+    def test_all_daily_indices_found_with_suffix_and_no_prefix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            '2014.01.03-suffix': True,
+            'prefix-2014.01.02': True,
+            '2014.01.01-suffix': True,
+            'prefix-2013.12.31': True,
+            '2013.12.30-suffix': True,
+            'prefix-2013.12.29': True,
+
+            '2013.01.03-suffix': True,
+            '2013.01.03.10': True,
+            'prefix-2013.01': True,
+            'prefix-2013.12-suffix': True,
+            'prefix-2013.51': True,
+        }
+        index_list = curator.get_object_list(client, prefix='', suffix='-suffix')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+                '2013.01.03-suffix',
+                '2013.12.30-suffix',
+            ],
+            expired
+        )
+
+    def test_all_daily_indices_found_with_no_suffix_and_no_prefix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            '2014.01.03': True,
+            '2014.01.02': True,
+            '2014.01.01': True,
+            '2013.12.31': True,
+            '2013.12.30': True,
+            '2013.12.29': True,
+
+            '2013.01.03': True,
+            '2013.01.03.10': True,
+            '2013.01': True,
+            '2013.12': True,
+            '2013.51': True,
+        }
+        index_list = curator.get_object_list(client, prefix='', suffix='')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+                '2013.01.03',
+                '2013.12.29',
+                '2013.12.30',
+            ],
+            expired
+        )
+
+    def test_all_daily_indices_found_with_wildcard_prefix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'log-2014.01.03': True,
+            'log-2014.01.02': True,
+            'log-2014.01.01': True,
+            'log0-2013.12.31': True,
+            'logstash-2013.12.30': True,
+            'l-2013.12.29': True,
+
+            'prod-2013.01.03': True,
+            'cert-2013.01.03.10': True,
+            'test-2013.01': True,
+            'fail-2013.12': True,
+            'index-2013.51': True,
+        }
+        index_list = curator.get_object_list(client, prefix='l.*', suffix='')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+                'l-2013.12.29',
+                'logstash-2013.12.30',
+            ],
+            expired
+        )
+
+    def test_all_daily_indices_found_with_wildcard_prefix_and_suffix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'log-2014.01.03-bar': True,
+            'log-2014.01.02-baz': True,
+            'log-2014.01.01-b': True,
+            'log0-2013.12.31-c': True,
+            'logstash-2013.12.30-bigdata': True,
+            'l-2013.12.29-closet': True,
+
+            'prod-2013.01.03-basketball': True,
+            'cert-2013.01.03.10-a': True,
+            'test-2013.01-d': True,
+            'fail-2013.12-f': True,
+            'index-2013.51-e': True,
+        }
+        index_list = curator.get_object_list(client, prefix='l.*', suffix='-b.*')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='-b.*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+                'logstash-2013.12.30-bigdata',
+            ],
+            expired
+        )
+
+    def test_all_daily_indices_found_with_star_prefix_and_suffix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'log-2014.01.03-bar': True,
+            'log-2014.01.02-baz': True,
+            'log-2014.01.01-b': True,
+            'log0-2013.12.31-c': True,
+            'logstash-2013.12.30-bigdata': True,
+            'l-2013.12.29-closet': True,
+
+            'prod-2013.01.03-basketball': True,
+            'cert-2013.01.03.10-a': True,
+            'test-2013.01-d': True,
+            'fail-2013.12-f': True,
+            'index-2013.51-e': True,
+        }
+        index_list = curator.get_object_list(client, prefix='*', suffix='*')
+        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='*', suffix='*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+                'cert-2013.01.03.10-a',
+                'l-2013.12.29-closet',
+                'logstash-2013.12.30-bigdata',
+                'prod-2013.01.03-basketball',
             ],
             expired
         )
