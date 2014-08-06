@@ -246,7 +246,14 @@ def find_target_month(month_count, utc_now=None):
 
 def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
     """Return a sorted list of indices matching prefix"""
-    _indices = sorted(client.indices.get_settings(index=prefix+'*'+suffix, params={'expand_wildcards': 'closed'}).keys())
+    _indices = sorted(client.indices.get_settings(index='*', params={'expand_wildcards': 'closed'}).keys())
+    if prefix:
+        prefix = '.' + prefix if prefix[0] == '*' else prefix
+    if suffix:
+        suffix = '.' + suffix if suffix[0] == '*' else suffix
+    regex = "^" + prefix + ".*" + suffix + "$"
+    _fixes = re.compile(regex)
+    _indices = list(filter(lambda x: _fixes.search(x), _indices))
     if '.marvel-kibana' in _indices:
         _indices.remove('.marvel-kibana')
     if 'kibana-int' in _indices:
