@@ -55,10 +55,20 @@ datemap = {
     'hours': '%Y.%m.%d.%H',
 }
 
+DATE_REGEX = {
+    'Y' : '4',
+    'm' : '2',
+    'W' : '2',
+    'U' : '2',
+    'd' : '2',
+    'H' : '2',
+}
+
 def add_common_args(subparser):
     """Add common arguments here to reduce redundancy and line count"""
-    subparser.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
     subparser.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
+    subparser.add_argument('-p', '--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    subparser.add_argument('--suffix', help='Define a suffix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: None', default='')
     subparser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days',
                         default=DEFAULT_ARGS['time_unit'], type=str)
     subparser.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
@@ -140,7 +150,8 @@ def make_parser():
     # Show indices
     parser_show = subparsers.add_parser('show', help='Show indices or snapshots')
     parser_show.set_defaults(func=show)
-    parser_show.add_argument('-p', '--prefix', help='Prefix for the indices. Indices that do not have this prefix are skipped. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    parser_show.add_argument('-p', '--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    parser_show.add_argument('--suffix', help='Define a suffix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: None', default='')
     parser_show.add_argument('--repository', type=str, help='Repository name (required for --show-repositories)')
     show_group = parser_show.add_mutually_exclusive_group()
     show_group.add_argument('--show-indices', help='Show indices matching PREFIX', action='store_true')
@@ -178,13 +189,27 @@ class Whitelist(logging.Filter):
 
 def show(client, **kwargs):
     if kwargs['show_indices']:
-        for index_name in get_indices(client, kwargs['prefix']):
+        for index_name in get_indices(client, prefix=kwargs['prefix'], suffix=kwargs['suffix']):
             print('{0}'.format(index_name))
         sys.exit(0)
     elif kwargs['show_snapshots']:
-        for snapshot in get_snaplist(client, kwargs['repository'], prefix=kwargs['prefix']):
+        for snapshot in get_snaplist(client, kwargs['repository'], prefix=kwargs['prefix'], suffix=kwargs['suffix']):
             print('{0}'.format(snapshot))
         sys.exit(0)
+
+def get_date_regex(timestring):
+    """Turn a supported strftime string into a regex"""
+    prev = ''; curr = ''; regex = ''
+    for s in range(0, len(timestring)):
+        curr = timestring[s]
+        if curr == '%':
+            pass
+        elif curr in DATE_REGEX and prev == '%':
+            regex += '\d{' + DATE_REGEX[curr] + '}'
+        else:
+            regex += "\\" + curr
+        prev = curr
+    return regex
 
 def get_index_time(index_timestamp, timestring):
     """ Gets the time of the index.
@@ -219,22 +244,36 @@ def find_target_month(month_count, utc_now=None):
 
     return datetime(target_date.year, target_date.month, target_date.day)
 
-def get_indices(client, prefix='logstash-', exclude_pattern=None):
+def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
     """Return a sorted list of indices matching prefix"""
-    _indices = sorted(client.indices.get_settings(index=prefix+'*', params={'expand_wildcards': 'closed'}).keys())
+    _indices = sorted(client.indices.get_settings(index='*', params={'expand_wildcards': 'closed'}).keys())
+    if prefix:
+        prefix = '.' + prefix if prefix[0] == '*' else prefix
+    if suffix:
+        suffix = '.' + suffix if suffix[0] == '*' else suffix
+    regex = "^" + prefix + ".*" + suffix + "$"
+    _fixes = re.compile(regex)
+    _indices = list(filter(lambda x: _fixes.search(x), _indices))
+    if '.marvel-kibana' in _indices:
+        _indices.remove('.marvel-kibana')
+    if 'kibana-int' in _indices:
+        _indices.remove('kibana-int')
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
         return list(filter(lambda x: not pattern.search(x), _indices))
     else:
         return _indices
     
-def get_snaplist(client, repo_name, prefix='logstash-'):
+def get_snaplist(client, repo_name, prefix='logstash-', suffix=''):
     """Get _all snapshots containing prefix from repo_name and return a list"""
     retval = []
     try:
         allsnaps = client.snapshot.get(repository=repo_name, snapshot="_all")['snapshots']
         retval = [snap['snapshot'] for snap in allsnaps if 'snapshot' in snap.keys()]
-        retval = [i for i in retval if prefix in i]
+        if not prefix == '*':
+            retval = [i for i in retval if i.startswith(prefix)]
+        if not suffix == '' and not suffix == '*':
+            retval = [i for i in retval if i.endswith(suffix)]
     except elasticsearch.NotFoundError as e:
         logger.error("Error: {0}".format(e))
     return retval
@@ -269,15 +308,13 @@ def is_master_node(client):
     master_node_id = client.cluster.state(metric='master_node')['master_node']
     return my_node_id == master_node_id
 
-def get_object_list(client, data_type='index', prefix='logstash-', repository=None, exclude_pattern=None, **kwargs):
+def get_object_list(client, data_type='index', prefix='logstash-', suffix='', repository=None, exclude_pattern=None, **kwargs):
     """Return a list of indices or snapshots"""
     if data_type == 'index':
-        object_list = get_indices(client, prefix)
-        if '.marvel-kibana' in object_list:
-            object_list.remove('.marvel-kibana')
+        object_list = get_indices(client, prefix=prefix, suffix=suffix)
     elif data_type == 'snapshot':
         if repository:
-            object_list = get_snaplist(client, repository, prefix=prefix)
+            object_list = get_snaplist(client, repository, prefix=prefix, suffix=suffix)
         else:
             logger.error('Repository name not specified. Returning empty list.')
             object_list = []
@@ -290,11 +327,18 @@ def get_object_list(client, data_type='index', prefix='logstash-', repository=No
     else:
         return object_list
     
-def find_expired_data(object_list=[], utc_now=None, time_unit='days', older_than=999999, prefix='logstash-', timestring=None, **kwargs):
+def find_expired_data(object_list=[], utc_now=None, time_unit='days', older_than=999999, prefix='logstash-', suffix='', timestring=None, **kwargs):
     """ Generator that yields expired objects (indices or snapshots).
     
     :return: Yields a list of indices older than n `time_unit`s
     """
+    if prefix:
+        prefix = '.' + prefix if prefix[0] == '*' else prefix
+    if suffix:
+        suffix = '.' + suffix if suffix[0] == '*' else suffix
+    dateregex = get_date_regex(timestring)
+    regex = "^" + prefix + "(" + dateregex + ")" + suffix + "$"
+
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
     # reset to start of the period to be sure we are not retiring a human by mistake
@@ -315,8 +359,12 @@ def find_expired_data(object_list=[], utc_now=None, time_unit='days', older_than
         cutoff = utc_now - timedelta(**{time_unit: (older_than - 1)})
     
     for object_name in object_list:
-    
-        index_timestamp = object_name[len(prefix):]
+        try:
+            index_timestamp = re.search(regex, object_name).group(1)
+        except AttributeError as e:
+            logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e))
+            continue
+        # index_timestamp = object_name[len(prefix):]
 
         try:
             object_time = get_index_time(index_timestamp, timestring)
@@ -392,7 +440,7 @@ def get_snapshot(client, repo_name, snap_name):
         logger.info("Snapshot or repository {0} not found.  Error: {1}".format(snap_name, e))
         return None
 
-def _create_snapshot(client, snap_name, prefix='logstash-', repository=None, ignore_unavailable=False, include_global_state=False, partial=False, wait_for_completion=True, **kwargs):
+def _create_snapshot(client, snap_name, prefix='logstash-', suffix='', repository=None, ignore_unavailable=False, include_global_state=False, partial=False, wait_for_completion=True, **kwargs):
     """Create a snapshot (or snapshots). Overwrite failures"""
     # Return True when it was skipped
     if not repository:
@@ -400,7 +448,7 @@ def _create_snapshot(client, snap_name, prefix='logstash-', repository=None, ign
         return True
     try:
         successes = get_snapped_indices(client, repository, prefix=prefix)
-        snaps = get_snaplist(client, repository, prefix=prefix)
+        snaps = get_snaplist(client, repository, prefix=prefix, suffix=suffix)
         closed = index_closed(client, snap_name)
         body=create_snapshot_body(snap_name, ignore_unavailable=ignore_unavailable, include_global_state=include_global_state, partial=partial)
         if not snap_name in snaps and not snap_name in successes and not closed:
@@ -507,10 +555,10 @@ OP_MAP = {
     'snapshot'    : (_create_snapshot, {'op': 'create snapshot for', 'verbed':'created snapshot', 'gerund': 'Initiating snapshot for'}),
 }
 
-def snap_latest_indices(client, most_recent=0, prefix='logstash-', dry_run=False, **kwargs):
+def snap_latest_indices(client, most_recent=0, prefix='logstash-', suffix='', dry_run=False, **kwargs):
     """Snapshot 'count' most recent indices matching prefix"""
     indices = [] # initialize...
-    indices = get_indices(client, prefix)
+    indices = get_indices(client, prefix=prefix, suffix=suffix)
     prepend = "DRY RUN: " if dry_run else ''
     for index_name in indices[-most_recent:]:
         if not index_closed(client, index_name):
