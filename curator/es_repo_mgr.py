@@ -6,6 +6,7 @@ import logging
 from datetime import timedelta
 
 import elasticsearch
+from curator import *
 
 try:
     from logging import NullHandler
@@ -130,11 +131,6 @@ def show(client, **kwargs):
         print('{0}'.format(repository))
     sys.exit(0)
 
-def get_version(client):
-    """Return ES version number as a tuple"""
-    version = client.info()['version']['number']
-    return tuple(map(int, version.split('.')))
-
 def check_version(client):
     """Verify version is within acceptable range"""
     version_number = get_version(client)
@@ -143,14 +139,6 @@ def check_version(client):
         print('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
         sys.exit(1)
-
-def get_repository(client, repo_name):
-    """Get Snapshot Repository information"""
-    try:
-        return client.snapshot.get_repository(repository=repo_name)
-    except elasticsearch.NotFoundError as e:
-        logger.info("Error: {1}".format(repo_name, e))
-        return None
 
 def _create_repository(client, dry_run=False, **kwargs):
     """Create repository with repo_name and body settings"""
