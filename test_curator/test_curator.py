@@ -286,8 +286,8 @@ class TestExpireIndices(TestCase):
 
         self.assertEquals(
             [
-                ('logstash-2014.02.11', 0),
-                ('logstash-2014.02.10', 0),
+                'logstash-2014.02.11',
+                'logstash-2014.02.10',
             ],
             expired
         )
