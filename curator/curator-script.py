@@ -4,7 +4,6 @@ import os
 import sys
 import time
 import logging
-import re
 from datetime import timedelta, datetime, date
 
 import elasticsearch
@@ -35,6 +34,7 @@ DEFAULT_ARGS = {
     'ssl': False,
     'timeout': 30,
     'prefix': 'logstash-',
+    'suffix': '',
     'curation_style': 'time',
     'time_unit': 'days',
     'max_num_segments': 2,
@@ -45,7 +45,7 @@ DEFAULT_ARGS = {
     'show_indices': False,
     'wait_for_completion': True,
     'ignore_unavailable': False,
-    'include_global_state': False,
+    'include_global_state': True,
     'partial': False,
 }
 
@@ -60,7 +60,7 @@ def add_common_args(subparser):
     """Add common arguments here to reduce redundancy and line count"""
     subparser.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
     subparser.add_argument('-p', '--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
-    subparser.add_argument('--suffix', help='Define a suffix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: None', default='')
+    subparser.add_argument('--suffix', help='Define a suffix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: Empty', default=DEFAULT_ARGS['suffix'])
     subparser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days',
                         default=DEFAULT_ARGS['time_unit'], type=str)
     subparser.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
@@ -97,7 +97,7 @@ def make_parser():
 
     # Alias
     parser_alias = subparsers.add_parser('alias', help='Aliasing operations')
-    parser_alias.set_defaults(func=alias_loop)
+    parser_alias.set_defaults(func=alias)
     add_common_args(parser_alias)
     parser_alias.add_argument('--alias', required=True, help='Alias name', type=str)
     alias_group = parser_alias.add_mutually_exclusive_group()
@@ -106,26 +106,26 @@ def make_parser():
 
     # Allocation
     parser_allocation = subparsers.add_parser('allocation', help='Apply required index routing allocation rule')
-    parser_allocation.set_defaults(func=command_loop)
+    parser_allocation.set_defaults(func=allocation)
     add_common_args(parser_allocation)
     parser_allocation.add_argument('--older-than', required=True, help='Apply rule to indices older than n TIME_UNITs', type=int)
     parser_allocation.add_argument('--rule', required=True, help='Routing allocation rule to apply, e.g. tag=ssd', type=str)
 
     # Bloom
     parser_bloom = subparsers.add_parser('bloom', help='Disable bloom filter cache for indices')
-    parser_bloom.set_defaults(func=command_loop)
+    parser_bloom.set_defaults(func=bloom)
     add_common_args(parser_bloom)
     parser_bloom.add_argument('--older-than', required=True, help='Disable bloom filter cache for indices older than n TIME_UNITs', type=int)
 
     # Close
     parser_close = subparsers.add_parser('close', help='Close indices')
-    parser_close.set_defaults(func=command_loop)
+    parser_close.set_defaults(func=close)
     add_common_args(parser_close)
     parser_close.add_argument('--older-than', required=True, help='Close indices older than n TIME_UNITs', type=int)
 
     # Delete
     parser_delete = subparsers.add_parser('delete', help='Delete indices')
-    parser_delete.set_defaults(func=command_loop)
+    parser_delete.set_defaults(func=delete)
     add_common_args(parser_delete)
     delete_group = parser_delete.add_mutually_exclusive_group()
     delete_group.add_argument('--older-than', help='Delete indices older than n TIME_UNITs', type=int)
@@ -133,7 +133,7 @@ def make_parser():
 
     # Optimize
     parser_optimize = subparsers.add_parser('optimize', help='Optimize indices')
-    parser_optimize.set_defaults(func=command_loop)
+    parser_optimize.set_defaults(func=optimize)
     add_common_args(parser_optimize)
     parser_optimize.add_argument('--older-than', required=True, help='Optimize indices older than n TIME_UNITs', type=int)
     parser_optimize.add_argument('--max_num_segments', help='Optimize segment count to n segments per shard.', default=DEFAULT_ARGS['max_num_segments'], type=int)
@@ -152,7 +152,7 @@ def make_parser():
 
     # Snapshot
     parser_snapshot = subparsers.add_parser('snapshot', help='Take snapshots of indices (Backup)')
-    parser_snapshot.set_defaults(func=command_loop)
+    parser_snapshot.set_defaults(func=snapshot)
     add_common_args(parser_snapshot)
     parser_snapshot.add_argument('--repository', required=True, type=str, help='Repository name')
 
@@ -165,8 +165,8 @@ def make_parser():
                                 help='Do not wait until complete to return. Waits by default.', default=DEFAULT_ARGS['wait_for_completion'])
     parser_snapshot.add_argument('--ignore_unavailable', action='store_true',
                                 help='Ignore unavailable shards/indices. Default=False', default=DEFAULT_ARGS['ignore_unavailable'])
-    parser_snapshot.add_argument('--include_global_state', action='store_true',
-                                help='Store cluster global state with snapshot. Default=False', default=DEFAULT_ARGS['include_global_state'])
+    parser_snapshot.add_argument('--include_global_state', action='store_false',
+                                help='Store cluster global state with snapshot. Default=True', default=DEFAULT_ARGS['include_global_state'])
     parser_snapshot.add_argument('--partial', action='store_true',
                                 help='Do not fail if primary shard is unavailable. Default=False', default=DEFAULT_ARGS['partial'])
 
@@ -198,108 +198,6 @@ def check_version(client):
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
-OP_MAP = {
-    'allocation'  : (require_index, {'op': 'update require allocation rules for', 'verbed':'index routing allocation updated', 'gerund': 'Updating required index routing allocation rules for'}),
-    'bloom'       : (bloom_index, {'op': 'disable bloom filter for', 'verbed': 'bloom filter disabled', 'gerund': 'Disabling bloom filter for'}),
-    'close'       : (close_index, {'op': 'close', 'verbed': 'closed', 'gerund': 'Closing'}),
-    'delete'      : (delete_index, {'op': 'delete', 'verbed': 'deleted', 'gerund': 'Deleting'}),
-    'optimize'    : (optimize_index, {'op': 'optimize', 'verbed': 'optimized', 'gerund': 'Optimizing'}),
-    'snapshot'    : (create_snapshot, {'op': 'create snapshot for', 'verbed':'created snapshot', 'gerund': 'Initiating snapshot for'}),
-}
-
-def snap_latest_indices(client, most_recent=0, prefix='logstash-', suffix='', dry_run=False, **kwargs):
-    """Snapshot 'count' most recent indices matching prefix"""
-    indices = [] # initialize...
-    indices = get_indices(client, prefix=prefix, suffix=suffix)
-    prepend = "DRY RUN: " if dry_run else ''
-    for index_name in indices[-most_recent:]:
-        if not index_closed(client, index_name):
-            logger.info(prepend + 'Attempting to create snapshot for {0}...'.format(index_name))
-        else:
-            logger.warn(prepend + 'Unable to perform snapshot on closed index {0}'.format(index_name))
-            continue
-        if dry_run:
-            continue # Don't do the work on a dry run
-
-        skipped = _create_snapshot(client, index_name, prefix, **kwargs)
-
-        if skipped:
-            continue
-        # if no error was raised and we got here that means the operation succeeded
-        logger.info('Snapshot operation for index {0} succeeded.'.format(index_name))
-    logger.info(prepend + 'Snapshot \'latest\' {0} indices operations completed.'.format(most_recent))
-
-def alias_loop(client, dry_run=False, **kwargs):
-    prepend = "DRY RUN: " if dry_run else ''
-    logging.info(prepend + "Beginning ALIAS operations...")
-    if kwargs['alias_older_than']:
-        kwargs['older_than'] = kwargs['alias_older_than']
-        op = _add_to_alias
-        words = ['add', 'to', 'added']
-    elif kwargs['unalias_older_than']:
-        kwargs['older_than'] = kwargs['unalias_older_than']
-        op = _remove_from_alias
-        words = ['remove', 'from', 'removed']
-    index_list = get_object_list(client, **kwargs)
-    expired_indices = find_expired_data(object_list=index_list, **kwargs)
-    for index_name in expired_indices:
-        logger.info(prepend + 'Attempting to {0} index {1} {2} alias {3}.'.format(words[0], index_name, words[1], kwargs['alias']))
-        if dry_run:
-            continue
-
-        skipped = op(client, index_name, **kwargs)
-        if skipped:
-            continue
-        # if no error was raised and we got here that means the operation succeeded
-        logger.info('{0}: Successfully {1} {2} alias {3}.'.format(index_name, words[2], words[1], kwargs['alias']))
-    logger.info(prepend + 'Index ALIAS operations completed.')
-
-def command_loop(client, dry_run=False, **kwargs):
-    prepend = "DRY RUN: " if dry_run else ''
-    command = kwargs['command']
-    logging.info(prepend + "Beginning {0} operations...".format(command.upper()))
-    op, words = OP_MAP[command]
-    by_space = kwargs['disk_space'] if 'disk_space' in kwargs else False
-    if command == 'delete' and by_space:
-        expired_indices = find_overusage_indices(client, **kwargs)
-    elif command == 'snapshot' and kwargs['delete_older_than']:
-        kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
-        snapshot_list = get_object_list(client, data_type='snapshot', **kwargs)
-        expired_indices = find_expired_data(object_list=snapshot_list, **kwargs)
-        op = _delete_snapshot
-        words = {'op': 'delete snapshot for', 'verbed':'deleted snapshot', 'gerund': 'Deleting snapshot for'}
-    elif command == 'snapshot' and kwargs['most_recent']:
-        snap_latest_indices(client, **kwargs)
-        return
-    else: # Regular indexes
-        index_list = get_object_list(client, **kwargs)
-        expired_indices = find_expired_data(object_list=index_list, **kwargs)
-
-    for index_name in expired_indices:
-        if not by_space:
-            logger.info(prepend + 'Attempting to {0} index {1}.'.format(words['op'], index_name))
-        else:
-            logger.info(prepend + 'Attempting to {0} index {1} due to space constraints.'.format(words['op'].lower(), index_name))
-        if dry_run:
-            continue # Don't act on dry run
-
-        skipped = op(client, index_name, **kwargs)
-
-        if skipped:
-            continue
-
-        # if no error was raised and we got here that means the operation succeeded
-        logger.info('{0}: Successfully {1}.'.format(index_name, words['verbed']))
-        if 'delay' in kwargs:
-            if kwargs['delay'] > 0:
-                logger.info('Pausing for {0} seconds to allow cluster to quiesce...'.format(kwargs['delay']))
-                time.sleep(kwargs['delay'])
-    if 'for' in words['op']:
-        w = words['op'][:-4]
-    else:
-        w = words['op']
-    logger.info(prepend + '{0} index operations completed.'.format(w.upper()))
-
 def validate_timestring(timestring, time_unit):
     """
     Validate that the appropriate element(s) for time_unit are in the timestring.
@@ -321,7 +219,6 @@ def validate_timestring(timestring, time_unit):
         print('Timestring {0} does not match time unit {1}'.format(timestring, time_unit))
         sys.exit(1)
     return
-
     
 def main():
     start = time.time()
@@ -387,7 +284,7 @@ def main():
     # Filter out logging from Elasticsearch and associated modules by default
     if not arguments.debug:
         for handler in logging.root.handlers:
-            handler.addFilter(Whitelist('root', '__main__', 'curator.curator'))
+            handler.addFilter(Whitelist('root', '__main__', 'curator', 'curator.curator'))
 
     # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
