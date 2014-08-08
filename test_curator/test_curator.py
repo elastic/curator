@@ -281,13 +281,13 @@ class TestExpireIndices(TestCase):
                 'logstash-2014.02.10': {'index': {'primary_size_in_bytes': 3 * 2**30}},
             }
         }
-        expired = curator.find_overusage_indices(client, disk_space=6)
+        expired = curator.filter_by_space(client, disk_space=6)
         expired = list(expired)
 
         self.assertEquals(
             [
-                ('logstash-2014.02.11', 0),
-                ('logstash-2014.02.10', 0),
+                'logstash-2014.02.11',
+                'logstash-2014.02.10',
             ],
             expired
         )
