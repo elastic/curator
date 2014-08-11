@@ -7,7 +7,8 @@ import logging
 from datetime import timedelta, datetime, date
 
 import elasticsearch
-from curator import *
+#from curator import *
+import curator
 
 try:
     from logging import NullHandler
@@ -97,7 +98,7 @@ def make_parser():
 
     # Alias
     parser_alias = subparsers.add_parser('alias', help='Aliasing operations')
-    parser_alias.set_defaults(func=alias)
+    parser_alias.set_defaults(func=curator.alias)
     add_common_args(parser_alias)
     parser_alias.add_argument('--alias', required=True, help='Alias name', type=str)
     alias_group = parser_alias.add_mutually_exclusive_group()
@@ -106,26 +107,26 @@ def make_parser():
 
     # Allocation
     parser_allocation = subparsers.add_parser('allocation', help='Apply required index routing allocation rule')
-    parser_allocation.set_defaults(func=allocation)
+    parser_allocation.set_defaults(func=curator.allocation)
     add_common_args(parser_allocation)
     parser_allocation.add_argument('--older-than', required=True, help='Apply rule to indices older than n TIME_UNITs', type=int)
     parser_allocation.add_argument('--rule', required=True, help='Routing allocation rule to apply, e.g. tag=ssd', type=str)
 
     # Bloom
     parser_bloom = subparsers.add_parser('bloom', help='Disable bloom filter cache for indices')
-    parser_bloom.set_defaults(func=bloom)
+    parser_bloom.set_defaults(func=curator.bloom)
     add_common_args(parser_bloom)
     parser_bloom.add_argument('--older-than', required=True, help='Disable bloom filter cache for indices older than n TIME_UNITs', type=int)
 
     # Close
     parser_close = subparsers.add_parser('close', help='Close indices')
-    parser_close.set_defaults(func=close)
+    parser_close.set_defaults(func=curator.close)
     add_common_args(parser_close)
     parser_close.add_argument('--older-than', required=True, help='Close indices older than n TIME_UNITs', type=int)
 
     # Delete
     parser_delete = subparsers.add_parser('delete', help='Delete indices')
-    parser_delete.set_defaults(func=delete)
+    parser_delete.set_defaults(func=curator.delete)
     add_common_args(parser_delete)
     delete_group = parser_delete.add_mutually_exclusive_group()
     delete_group.add_argument('--older-than', help='Delete indices older than n TIME_UNITs', type=int)
@@ -133,7 +134,7 @@ def make_parser():
 
     # Optimize
     parser_optimize = subparsers.add_parser('optimize', help='Optimize indices')
-    parser_optimize.set_defaults(func=optimize)
+    parser_optimize.set_defaults(func=curator.optimize)
     add_common_args(parser_optimize)
     parser_optimize.add_argument('--older-than', required=True, help='Optimize indices older than n TIME_UNITs', type=int)
     parser_optimize.add_argument('--max_num_segments', help='Optimize segment count to n segments per shard.', default=DEFAULT_ARGS['max_num_segments'], type=int)
@@ -152,7 +153,7 @@ def make_parser():
 
     # Snapshot
     parser_snapshot = subparsers.add_parser('snapshot', help='Take snapshots of indices (Backup)')
-    parser_snapshot.set_defaults(func=snapshot)
+    parser_snapshot.set_defaults(func=curator.snapshot)
     add_common_args(parser_snapshot)
     parser_snapshot.add_argument('--repository', required=True, type=str, help='Repository name')
 
@@ -181,17 +182,17 @@ class Whitelist(logging.Filter):
 
 def show(client, **kwargs):
     if kwargs['show_indices']:
-        for index_name in get_indices(client, prefix=kwargs['prefix'], suffix=kwargs['suffix']):
+        for index_name in curator.get_indices(client, prefix=kwargs['prefix'], suffix=kwargs['suffix']):
             print('{0}'.format(index_name))
         sys.exit(0)
     elif kwargs['show_snapshots']:
-        for snapshot in get_snaplist(client, kwargs['repository'], prefix=kwargs['prefix'], suffix=kwargs['suffix']):
+        for snapshot in curator.get_snaplist(client, kwargs['repository'], prefix=kwargs['prefix'], suffix=kwargs['suffix']):
             print('{0}'.format(snapshot))
         sys.exit(0)
 
 def check_version(client):
     """Verify version is within acceptable range"""
-    version_number = get_version(client)
+    version_number = curator.get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
         print('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
