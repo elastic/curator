@@ -269,8 +269,7 @@ def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
 
     # Use of exclude_pattern here could be _very_ important if you don't
     # want an index pruned even if it is old.
-    if 'exclude_pattern' in kwargs:
-        exclude_pattern=kwargs['exclude_pattern']
+    exclude_pattern = kwargs['exclude_pattern'] if 'exclude_pattern' in kwargs else ''
 
     # These two lines allow us to use common filtering by regex before
     # gathering stats.  However, there are still pitfalls.  You may still
