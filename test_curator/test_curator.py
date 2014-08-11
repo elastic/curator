@@ -88,7 +88,7 @@ class TestExpireIndices(TestCase):
             'prefix-2013.51': True,
         }
         index_list = curator.get_object_list(client, prefix='prefix-', suffix='')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -117,7 +117,7 @@ class TestExpireIndices(TestCase):
             'prefix-2013.51': True,
         }
         index_list = curator.get_object_list(client, prefix='prefix-', suffix='-suffix')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -145,7 +145,7 @@ class TestExpireIndices(TestCase):
             'prefix-2013.51': True,
         }
         index_list = curator.get_object_list(client, prefix='', suffix='-suffix')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -173,7 +173,7 @@ class TestExpireIndices(TestCase):
             '2013.51': True,
         }
         index_list = curator.get_object_list(client, prefix='', suffix='')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -202,7 +202,7 @@ class TestExpireIndices(TestCase):
             'index-2013.51': True,
         }
         index_list = curator.get_object_list(client, prefix='l.*', suffix='')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -230,7 +230,7 @@ class TestExpireIndices(TestCase):
             'index-2013.51-e': True,
         }
         index_list = curator.get_object_list(client, prefix='l.*', suffix='-b.*')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='-b.*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='-b.*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -257,7 +257,7 @@ class TestExpireIndices(TestCase):
             'index-2013.51-e': True,
         }
         index_list = curator.get_object_list(client, prefix='*', suffix='*')
-        expired = curator.find_expired_data(object_list=index_list, time_unit='days', older_than=4, prefix='*', suffix='*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='*', suffix='*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
         
         expired = list(expired)
 
@@ -272,6 +272,34 @@ class TestExpireIndices(TestCase):
 
     def test_size_based_finds_indices_over_threshold(self):
         client = Mock()
+        client.indices.get_settings.return_value = {
+            'logstash-2014.02.14': True,
+            'logstash-2014.02.13': True,
+            'logstash-2014.02.12': True,
+            'logstash-2014.02.11': True,
+            'logstash-2014.02.10': True,
+        }
+        client.cluster.state.return_value = {
+            'metadata': {
+                'indices': {
+                    'logstash-2014.02.14': {
+                        'state' : 'open'
+                    },
+                    'logstash-2014.02.13': {
+                         'state' : 'open'
+                    },
+                    'logstash-2014.02.12': {
+                        'state' : 'open'
+                    },
+                    'logstash-2014.02.11': {
+                        'state' : 'open'
+                    },
+                    'logstash-2014.02.10': {
+                        'state' : 'open'
+                    },
+                }
+            }
+        }
         client.indices.status.return_value = {
             'indices': {
                 'logstash-2014.02.14': {'index': {'primary_size_in_bytes': 3 * 2**30}},
