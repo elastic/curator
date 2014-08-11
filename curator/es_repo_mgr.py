@@ -142,6 +142,9 @@ def check_version(client):
 
 def _create_repository(client, dry_run=False, repository='', **kwargs):
     """Create repository with repository and body settings"""
+    if not repository:
+        logger.error("No repository specified.")
+        sys.exit(1)
     if not dry_run:
         try:
             body = create_repo_body(**kwargs)
@@ -150,7 +153,7 @@ def _create_repository(client, dry_run=False, repository='', **kwargs):
             if not result:
                 logging.info("Repository {0} not found. Continuing...".format(repository))
                 client.snapshot.create_repository(repository=repository, body=body)
-            elif result is not None and repo_name not in result and not kwargs['dry_run']:
+            elif result is not None and repository not in result and not kwargs['dry_run']:
                 logging.info("Repository {0} not found. Continuing...".format(repository))
                 client.snapshot.create_repository(repository=repository, body=body)
             else:
@@ -161,7 +164,7 @@ def _create_repository(client, dry_run=False, repository='', **kwargs):
             return False
         logger.info("Repository {0} creation initiated...".format(repository))
         test_result = get_repository(client, repository)
-        if repo_name in test_result:
+        if repository in test_result:
             logger.info("Repository {0} creation validated.".format(repository))
             return True
         else:
