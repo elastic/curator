@@ -767,8 +767,8 @@ def main():
     check_version(client)
     
     if arguments.master_only and not is_master_node(client):
-        logger.fatal('Master-only flag detected. Connected to non-master node. Aborting.')
-        sys.exit(1)
+        logger.info('Master-only flag detected. Connected to non-master node. Aborting.')
+        sys.exit(0)
 
     if arguments.command != "show":
         if arguments.timestring:
