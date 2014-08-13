@@ -274,7 +274,7 @@ def main():
     if arguments.logformat == 'logstash':
         os.environ['TZ'] = 'UTC'
         time.tzset()
-        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "name":"%(name)s", function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
+        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "name":"%(name)s", "function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
         date_string = '%Y-%m-%dT%H:%M:%S'
 
     logging.basicConfig(level=numeric_log_level,
