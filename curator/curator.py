@@ -364,12 +364,12 @@ def get_snapshot(client, repository='', snapshot=''):
         logger.info("Snapshot or repository {0} not found.  Error: {1}".format(snapshot, e))
         return None
 
-def create_snapshot(client, snap_name, prefix='logstash-', suffix='', repository='', ignore_unavailable=False, include_global_state=True, partial=False, wait_for_completion=True, **kwargs):
+def create_snapshot(client, indices='_all', prefix='logstash-', suffix='', repository='', ignore_unavailable=False, include_global_state=True, partial=False, wait_for_completion=True, **kwargs):
     """
     Create a snapshot (or snapshots). Overwrite failures
     
     :arg client: The Elasticsearch client connection
-    :arg snap_name: The snapshot name.
+    :arg indices: A list of indices to snapshot.
     :arg prefix: A string that comes before the datestamp in an index name.
         Can be empty. Wildcards acceptable.  Default is `logstash-`.
     :arg suffix: A string that comes after the datestamp of an index name.
@@ -389,10 +389,10 @@ def create_snapshot(client, snap_name, prefix='logstash-', suffix='', repository
         logger.error("Unable to create snapshot. Repository name not provided.")
         return True
     try:
-        successes = get_snapped_indices(client, repository=repository, prefix=prefix)
-        snaps = get_snaplist(client, repository=repository, prefix=prefix, suffix=suffix)
-        closed = index_closed(client, snap_name)
-        body=create_snapshot_body(snap_name, ignore_unavailable=ignore_unavailable, include_global_state=include_global_state, partial=partial)
+#        successes = get_snapped_indices(client, repository=repository, prefix=prefix)
+#        snaps = get_snaplist(client, repository=repository, prefix=prefix, suffix=suffix)
+        indices = [i for i in indices if not index_closed(client, i)]
+        body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable, include_global_state=include_global_state, partial=partial)
         if not snap_name in snaps and not snap_name in successes and not closed:
             client.snapshot.create(repository=repository, snapshot=snap_name, body=body, wait_for_completion=wait_for_completion)
         elif snap_name in snaps and not snap_name in successes and not closed:
