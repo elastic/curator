@@ -4,6 +4,9 @@
  - New! `--suffix` option in addition to `--prefix` #136 (untergeek)
  - New! Support for wildcards in prefix & suffix #136 (untergeek)
  
+ # Bug fix
+ - Missing " in Logstash log format #143 (cassianoleal)
+ 
 1.2.2 (29 July 2014)
  # Bug fix
  - Updated README.md to briefly explain what curator does #117 (untergeek)
