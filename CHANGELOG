@@ -7,6 +7,7 @@
  # Bug fix
  - Missing " in Logstash log format #143 (cassianoleal)
  - Change non-master node test to exit code 0, log as info. #145 (untergeek)
+ - `find_overusage_indices` returns a list instead of a tuple. #147 (untergeek)
  
 1.2.2 (29 July 2014)
  # Bug fix

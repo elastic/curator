@@ -400,7 +400,7 @@ def find_overusage_indices(client, disk_space=2097152.0, prefix='logstash-', **k
         disk_usage += index_size
 
         if disk_usage > disk_limit:
-            yield index_name, 0
+            yield index_name
         else:
             logger.info('skipping {0}, disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
 
