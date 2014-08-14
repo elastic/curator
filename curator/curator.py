@@ -624,6 +624,8 @@ def command_loop(client, dry_run=False, **kwargs):
         expired_indices = find_expired_data(object_list=index_list, **kwargs)
 
     for index_name in expired_indices:
+        if isinstance(index_name, tuple):
+            index_name = index_name[0]
         if not by_space:
             logger.info(prepend + 'Attempting to {0} index {1}.'.format(words['op'], index_name))
         else:
