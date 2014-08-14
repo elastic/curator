@@ -60,9 +60,9 @@ DATEMAP = {
 def add_common_args(subparser):
     """Add common arguments here to reduce redundancy and line count"""
     subparser.add_argument('--timestring', help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d", type=str, default=None)
-    subparser.add_argument('-p', '--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    subparser.add_argument('--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
     subparser.add_argument('--suffix', help='Define a suffix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: Empty', default=DEFAULT_ARGS['suffix'])
-    subparser.add_argument('-T', '--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days',
+    subparser.add_argument('--time-unit', dest='time_unit', action='store', help='Unit of time to reckon by: [hours|days|weeks|months] Default: days',
                         default=DEFAULT_ARGS['time_unit'], type=str)
     subparser.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
     
@@ -83,12 +83,12 @@ def make_parser():
     parser.add_argument('--port', help='Elasticsearch port. Default: 9200', default=DEFAULT_ARGS['port'], type=int)
     parser.add_argument('--ssl', help='Connect to Elasticsearch through SSL. Default: false', action='store_true', default=DEFAULT_ARGS['ssl'])
     parser.add_argument('--auth', help='Use Basic Authentication ex: user:pass Default: None', default=DEFAULT_ARGS['auth'])
-    parser.add_argument('-t', '--timeout', help='Connection timeout in seconds. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
+    parser.add_argument('--timeout', help='Connection timeout in seconds. Default: 30', default=DEFAULT_ARGS['timeout'], type=int)
     parser.add_argument('--master-only', dest='master_only', action='store_true', help='Verify that the node is the elected master before continuing', default=False)
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
     parser.add_argument('--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
-    parser.add_argument('-l', '--logfile', dest='log_file', help='log file', type=str)
+    parser.add_argument('--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--logformat', dest='logformat', help='Log output format [default|logstash]. Default: default', default=DEFAULT_ARGS['logformat'], type=str)
 
     # Command sub_parsers
@@ -143,7 +143,7 @@ def make_parser():
     # Show indices
     parser_show = subparsers.add_parser('show', help='Show indices or snapshots')
     parser_show.set_defaults(func=show)
-    parser_show.add_argument('-p', '--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
+    parser_show.add_argument('--prefix', help='Define a prefix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: logstash-', default=DEFAULT_ARGS['prefix'])
     parser_show.add_argument('--suffix', help='Define a suffix. Index name = PREFIX + TIMESTRING + SUFFIX. Default: None', default='')
     parser_show.add_argument('--repository', type=str, help='Repository name (required for --show-repositories)')
     show_group = parser_show.add_mutually_exclusive_group()
