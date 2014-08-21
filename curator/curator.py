@@ -907,23 +907,27 @@ def snapshot(client, dry_run=False, **kwargs):
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
     kwargs['prepend'] = "DRY RUN: " if dry_run else ''
-    if kwargs['delete_older_than']:
+    if 'delete_older_than' in kwargs:
         logging.info(kwargs['prepend'] + "Deleting specified snapshots...")
         kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
         snapshot_list = client.snapshot.get(repository=repository, snapshot="_all")['snapshots']
         matching_snapshots = filter_by_timestamp(object_list=snapshot_list, object_type='snapshot', **kwargs)
         _op_loop(client, matching_snapshots, op=delete_snapshot, dry_run=dry_run, **kwargs)
         logger.info(kwargs['prepend'] + 'Specified snapshots deleted.')
-    else:
+    elif:
+        all_indices = kwargs['all_indices'] if 'all_indices' in kwargs else False
         logging.info(kwargs['prepend'] + "Capturing snapshots of specified indices...")
         if not all_indices:
             index_list = get_object_list(client, **kwargs)
-            if kwargs['most_recent']:
+            if 'most_recent' in kwargs:
                 matching_indices = index_list[-kwargs['most_recent']:]
-            else:
+            elif 'older_than' in kwargs:
                 matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
+            else:
+                logging.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
+                return
             _op_loop(client, matching_indices, op=create_snapshot, dry_run=dry_run, **kwargs)
-        else:
+        elif not dry_run:
             # Default `create_snapshot` behavior is to snap `_all` into a
             # snapshot named `snapshot_name` or `curator-%Y-%m-%dT%H:%M:%S`
             create_snapshot(client, **kwargs)

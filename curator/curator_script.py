@@ -159,6 +159,7 @@ def make_parser():
 
     snapshot_group = parser_snapshot.add_mutually_exclusive_group()
     snapshot_group.add_argument('--older-than', type=int, help='Capture snapshots for indices older than n TIME_UNITs.')
+    snapshot_group.add_argument('--all-indices', type=string, help='Capture "_all" indices (Elasticsearch default).')
     snapshot_group.add_argument('--most-recent', type=int, help='Capture snapshots for n most recent number of indices.')
     snapshot_group.add_argument('--delete-older-than', type=int, help='Delete snapshots older than n TIME_UNITs.')
 
