@@ -44,6 +44,7 @@ DEFAULT_ARGS = {
     'log_level': 'INFO',
     'logformat': 'Default',
     'show_indices': False,
+    'snapshot_prefix': 'curator-',
     'wait_for_completion': True,
     'ignore_unavailable': False,
     'include_global_state': True,
@@ -156,10 +157,12 @@ def make_parser():
     parser_snapshot.set_defaults(func=curator.snapshot)
     add_common_args(parser_snapshot)
     parser_snapshot.add_argument('--repository', required=True, type=str, help='Repository name')
+    parser_snapshot.add_argument('--snapshot-name', type=str, help='Override default name.')
+    parser_snapshot.add_argument('--snapshot-prefix', type=str, help='Override default name.', default=DEFAULT_ARGS['snapshot_prefix'])
 
     snapshot_group = parser_snapshot.add_mutually_exclusive_group()
     snapshot_group.add_argument('--older-than', type=int, help='Capture snapshots for indices older than n TIME_UNITs.')
-    snapshot_group.add_argument('--all-indices', type=string, help='Capture "_all" indices (Elasticsearch default).')
+    snapshot_group.add_argument('--all-indices', type=str, help='Capture "_all" indices (Elasticsearch default).')
     snapshot_group.add_argument('--most-recent', type=int, help='Capture snapshots for n most recent number of indices.')
     snapshot_group.add_argument('--delete-older-than', type=int, help='Delete snapshots older than n TIME_UNITs.')
 
@@ -255,8 +258,8 @@ def main():
             sys.exit(1)
 
     if arguments.command == 'snapshot':
-        if not arguments.older_than and not arguments.most_recent and not arguments.delete_older_than:
-            print('{0} snapshot: error: expect one of --older-than, --most-recent, or --delete-older-than'.format(sys.argv[0]))
+        if not arguments.older_than and not arguments.most_recent and not arguments.delete_older_than and not arguments.all_indices:
+            print('{0} snapshot: error: expect one of --all-indices, --older-than, --most-recent, or --delete-older-than'.format(sys.argv[0]))
             sys.exit(1)
         if arguments.older_than or arguments.most_recent:
             timeout_override = True

@@ -113,11 +113,14 @@ def get_snaplist(client, repository='', prefix='logstash-', suffix=''):
     retval = []
     try:
         allsnaps = client.snapshot.get(repository=repository, snapshot="_all")['snapshots']
-        retval = [snap['snapshot'] for snap in allsnaps if 'snapshot' in snap.keys()]
-        if not prefix == '*':
-            retval = [i for i in retval if i.startswith(prefix)]
-        if not suffix == '' and not suffix == '*':
-            retval = [i for i in retval if i.endswith(suffix)]
+        snaps = [snap['snapshot'] for snap in allsnaps if 'snapshot' in snap.keys()]
+        if prefix:
+            prefix = '.' + prefix if prefix[0] == '*' else prefix
+        if suffix:
+            suffix = '.' + suffix if suffix[0] == '*' else suffix
+        regex = "^" + prefix + ".*" + suffix + "$"
+        pattern = re.compile(regex)
+        return list(filter(lambda x: pattern.search(x), snaps))
     except elasticsearch.NotFoundError as e:
         logger.error("Error: {0}".format(e))
     return retval
@@ -215,7 +218,7 @@ def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
         cutoff = utc_now - timedelta(**{time_unit: (older_than - 1)})
     return cutoff
 
-def filter_by_timestamp(object_list=[], timestring=None, time_unit='days', older_than=999999, prefix='logstash-', suffix='', utc_now=None, **kwargs):
+def filter_by_timestamp(object_list=[], timestring=None, time_unit='days', older_than=999999, prefix='logstash-', suffix='', snapshot_prefix='curator-', utc_now=None, **kwargs):
     """
     Feed in a list of indices or snapshots. Return a list of objects older
     than _n_ `time_unit`s matching `prefix`, `timestring`, and `suffix`.
@@ -237,19 +240,24 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days', older
         prefix = '.' + prefix if prefix[0] == '*' else prefix
     if suffix:
         suffix = '.' + suffix if suffix[0] == '*' else suffix
+    if snapshot_prefix:
+        snapshot_prefix = '.' + snapshot_prefix if snapshot_prefix[0] == '*' else snapshot_prefix
     dateregex = get_date_regex(timestring)
-    regex = "^" + prefix + "(" + dateregex + ")" + suffix + "$"
+    if object_type == 'index':
+        regex = "^" + prefix + "(" + dateregex + ")" + suffix + "$"
+    elif object_type == 'snapshot':
+        regex = "(" + "^" + snapshot_prefix + '.*' + ")"
 
     cutoff = get_cutoff(older_than=older_than, time_unit=time_unit, utc_now=utc_now)
     
     for object_name in object_list:
+        retval = object_name
         if object_type == 'index':
             try:
                 index_timestamp = re.search(regex, object_name).group(1)
             except AttributeError as e:
                 logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e))
                 continue
-
             try:
                 object_time = get_index_time(index_timestamp, timestring)
             except ValueError:
@@ -257,18 +265,20 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days', older
                 continue
         elif object_type == 'snapshot':
             try:
-                snapshot_name = re.search(regex, object_name['snapshot']).group(1)
+                retval = re.search(regex, object_name['snapshot']).group(1)
             except AttributeError as e:
-                logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e))
+                logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(retval, regex, e))
                 continue
-            
-            snapshot_timestamp = datetime.fromtimestamp(object_name['start_time_in_millis']/1000.0)
-            
-        # if the index is older than the cutoff
+            try:
+                object_time = datetime.utcfromtimestamp(object_name['start_time_in_millis']/1000.0)
+            except AttributeError as e:
+                logger.debug('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e))
+                continue
+            # if the index is older than the cutoff
         if object_time < cutoff:
-            yield object_name
+            yield retval
         else:
-            logger.info('{0} is within the threshold period ({1} {2}).'.format(object_name, older_than, time_unit))
+            logger.info('{0} is within the threshold period ({1} {2}).'.format(retval, older_than, time_unit))
 
 def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='', **kwargs):
     """
@@ -385,18 +395,16 @@ def get_snapshot(client, repository='', snapshot=''):
         logger.info("Snapshot or repository {0} not found.  Error: {1}".format(snapshot, e))
         return None
 
-def create_snapshot(client, indices='_all', snapshot_name=None, prefix='logstash-', suffix='', repository='', ignore_unavailable=False, include_global_state=True, partial=False, wait_for_completion=True, **kwargs):
+def create_snapshot(client, indices='_all', snapshot_name=None, snapshot_prefix='curator-', repository='', ignore_unavailable=False, include_global_state=True, partial=False, wait_for_completion=True, **kwargs):
     """
-    Create a snapshot (or snapshots). Overwrite failures
+    Create a snapshot of provided indices (or '_all').
     
     :arg client: The Elasticsearch client connection
-    :arg indices: A list of indices to snapshot.
-    :arg snapshot_name: What to name the snapshot. 'curator' + datestamp if
-        omitted.
-    :arg prefix: A string that comes before the datestamp in an index name.
-        Can be empty. Wildcards acceptable.  Default is `logstash-`.
-    :arg suffix: A string that comes after the datestamp of an index name.
-        Can be empty. Wildcards acceptable.  Default is empty, `''`.
+    :arg indices: A list of indices to snapshot. Default is '_all'
+    :arg snapshot_name: What to name the snapshot. snapshot_prefix + datestamp
+        if omitted.
+    :arg snapshot_prefix: Override the default with this value. Defaults to
+        'curator-'
     :arg repository: The Elasticsearch snapshot repository to use
     :arg wait_for_completion: Boolean. Wait (or not) for the operation
         to complete before returning.  Waits by default, i.e. Default is `True`
@@ -412,21 +420,17 @@ def create_snapshot(client, indices='_all', snapshot_name=None, prefix='logstash
         logger.error("Unable to create snapshot. Repository name not provided.")
         return True
     try:
-        datestamp = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-        snapshot_name = snapshot_name if snapshot_name else 'curator_' + datestamp
-        successes = get_snapped_indices(client, repository=repository, prefix=prefix)
-        snaps = get_snaplist(client, repository=repository, prefix=prefix, suffix=suffix)
-        indices = [i for i in indices if not index_closed(client, i)]
+        if not indices == '_all':
+            if type(indices) == type(list()):
+                indices = [i for i in indices if not index_closed(client, i)]
+            else:
+                indices = indices if not index_closed(client, indices) else ''
         body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable, include_global_state=include_global_state, partial=partial)
-        if not snaphot_name in snaps and not snaphot_name in successes and len(indices) > 0:
-            client.snapshot.create(repository=repository, snapshot=snaphot_name, body=body, wait_for_completion=wait_for_completion)
-        elif snaphot_name in snaps and not snapshot_name in successes and len(indices) > 0:
-            logger.warn("Previous snapshot was unsuccessful.  Deleting snapshot {0} and trying again.".format(snapshot_name))
-            delete_snapshot(client, repository=repository, snapshot_name=snapshot_name)
+        datestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        snapshot_name = snapshot_name if snapshot_name else snapshot_prefix + datestamp
+        all_snaps = get_snaplist(client, repository=repository, prefix=prefix, suffix=suffix)
+        if not snapshot_name in all_snaps and len(indices) > 0:
             client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
-        elif closed:
-            logger.info("Skipping: Index {0} is closed.".format(snapshot_name))
-            return True
         else:
             logger.info("Skipping: A snapshot with name '{0}' already exists.".format(snapshot_name))
             return True
@@ -889,6 +893,7 @@ def snapshot(client, dry_run=False, **kwargs):
         is `days`
     :arg timestring: An strftime string to match the datestamp in an index name.
     :arg snapshot_name: Override the default with this value. Defaults to None
+    :arg snapshot_prefix: Override the default with this value. Defaults to 'curator-'
     :arg prefix: A string that comes before the datestamp in an index name.
         Can be empty. Wildcards acceptable.  Default is `logstash-`.
     :arg suffix: A string that comes after the datestamp of an index name.
@@ -906,17 +911,23 @@ def snapshot(client, dry_run=False, **kwargs):
         expression.
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
+    if not 'repository' in kwargs:
+        logger.error("Repository name not provided.")
+        return
     kwargs['prepend'] = "DRY RUN: " if dry_run else ''
-    if 'delete_older_than' in kwargs:
-        logging.info(kwargs['prepend'] + "Deleting specified snapshots...")
-        kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
-        snapshot_list = client.snapshot.get(repository=repository, snapshot="_all")['snapshots']
-        matching_snapshots = filter_by_timestamp(object_list=snapshot_list, object_type='snapshot', **kwargs)
-        _op_loop(client, matching_snapshots, op=delete_snapshot, dry_run=dry_run, **kwargs)
-        logger.info(kwargs['prepend'] + 'Specified snapshots deleted.')
-    elif:
+    if not 'older_than' in kwargs and not 'most_recent' in kwargs and not 'delete_older_than' in kwargs and not 'all_indices'in kwargs:
+        logger.error('Expect missing argument.')
+        return
+    if kwargs['delete_older_than']:
+            logger.info(kwargs['prepend'] + "Deleting specified snapshots...")
+            kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
+            snapshot_list = client.snapshot.get(repository=kwargs['repository'], snapshot="_all")['snapshots']
+            matching_snapshots = filter_by_timestamp(object_list=snapshot_list, object_type='snapshot', **kwargs)
+            _op_loop(client, matching_snapshots, op=delete_snapshot, dry_run=dry_run, **kwargs)
+            logger.info(kwargs['prepend'] + 'Specified snapshots deleted.')
+    else:
         all_indices = kwargs['all_indices'] if 'all_indices' in kwargs else False
-        logging.info(kwargs['prepend'] + "Capturing snapshots of specified indices...")
+        logger.info(kwargs['prepend'] + "Capturing snapshots of specified indices...")
         if not all_indices:
             index_list = get_object_list(client, **kwargs)
             if 'most_recent' in kwargs:
@@ -924,7 +935,7 @@ def snapshot(client, dry_run=False, **kwargs):
             elif 'older_than' in kwargs:
                 matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
             else:
-                logging.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
+                logger.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
                 return
             _op_loop(client, matching_indices, op=create_snapshot, dry_run=dry_run, **kwargs)
         elif not dry_run:
