@@ -198,6 +198,13 @@ def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
         is `days`
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
+    if prefix:
+        prefix = '.' + prefix if prefix[0] == '*' else prefix
+    if suffix:
+        suffix = '.' + suffix if suffix[0] == '*' else suffix
+    dateregex = get_date_regex(timestring)
+    regex = "^" + prefix + "(" + dateregex + ")" + suffix + "$"
+
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
     # reset to start of the period to be sure we are not retiring a human by mistake
@@ -880,7 +887,7 @@ def snapshot(client, dry_run=False, **kwargs):
     3. `delete_older_than` _n_ `time_units` matching the given `timestring`,
     `prefix`, and `suffix` from `repository`
     4. Ignore `older_than` and `most_recent` and snapshot `all_indices`
-    
+
     :arg client: The Elasticsearch client connection
     :arg dry_run: If true, simulate, but do not perform the operation
     :arg older_than: Indices older than the indicated number of whole `time_units`
@@ -942,5 +949,4 @@ def snapshot(client, dry_run=False, **kwargs):
             # Default `create_snapshot` behavior is to snap `_all` into a
             # snapshot named `snapshot_name` or `curator-%Y-%m-%dT%H:%M:%S`
             create_snapshot(client, **kwargs)
-
         logger.info(kwargs['prepend'] + 'Snapshots captured for specified indices.')
