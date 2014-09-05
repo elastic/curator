@@ -9,8 +9,7 @@ from datetime import timedelta, datetime, date
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
 
-from curator import curator
-from curator import es_repo_mgr
+from curator import curator_script
 
 from unittest import SkipTest, TestCase
 from mock import Mock
@@ -53,10 +52,10 @@ class CuratorTestCase(TestCase):
 
         # make sure we can inject any parameters to the curator; since it takes
         # all it's params from cmdline we have to resort to mocking
-        self._old_parse = curator.make_parser
-        curator.make_parser = Mock()
-        curator.make_parser.return_value = self
-        args = curator.DEFAULT_ARGS.copy()
+        self._old_parse = curator_script.make_parser
+        curator_script.make_parser = Mock()
+        curator_script.make_parser.return_value = self
+        args = curator_script.DEFAULT_ARGS.copy()
         args['host'], args['port'] = host, port
         self.args = args
         dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
@@ -69,7 +68,7 @@ class CuratorTestCase(TestCase):
         self.delete_repositories()
         self.client.indices.delete(index='*')
         self.client.indices.delete_template(name='*', ignore=404)
-        curator.make_parser = self._old_parse
+        curator_script.make_parser = self._old_parse
         if os.path.exists(self.args['location']):
             shutil.rmtree(self.args['location'])
 
@@ -78,12 +77,12 @@ class CuratorTestCase(TestCase):
 
     def run_curator(self, **kwargs):
         self.args.update(kwargs)
-        curator.main()
+        curator_script.main()
 
     def create_indices(self, count, unit=None):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
-        format = curator.datemap[unit]
+        format = curator_script.DATEMAP[unit]
         if not unit == 'months':
             step = timedelta(**{unit: 1})
             for x in range(count):

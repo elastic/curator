@@ -6,6 +6,7 @@ import logging
 from datetime import timedelta
 
 import elasticsearch
+from curator import *
 
 try:
     from logging import NullHandler
@@ -66,7 +67,7 @@ def make_parser():
 
     # 'fs' Repository creation
     parser_fs = subparsers.add_parser('create_fs', help='Create an "fs" type repository')
-    parser_fs.set_defaults(func=_create_repository, repo_type='fs')
+    parser_fs.set_defaults(func=create_repository, repo_type='fs')
     parser_fs.add_argument('-r', '--repository', dest='repository', required=True, help='Repository name', type=str)
     parser_fs.add_argument('--location', dest='location', action='store', type=str, required=True,
                     help='Shared file-system location. Must match remote path, & be accessible to all master & data nodes')
@@ -83,7 +84,7 @@ def make_parser():
 
     # 's3' Repository creation
     parser_s3 = subparsers.add_parser('create_s3', help='Create an \'s3\' type repository')
-    parser_s3.set_defaults(func=_create_repository, repo_type='s3')
+    parser_s3.set_defaults(func=create_repository, repo_type='s3')
     parser_s3.add_argument('-r', '--repository', dest='repository', required=True, help='Repository name', type=str)
     parser_s3.add_argument('--bucket', dest='bucket', action='store', type=str, required=True,
                         help='S3 bucket name')
@@ -108,7 +109,7 @@ def make_parser():
 
     # Delete repository
     parser_delete = subparsers.add_parser('delete', help='Delete named repository')
-    parser_delete.set_defaults(func=_delete_repository)
+    parser_delete.set_defaults(func=delete_repository)
     parser_delete.add_argument('-r', '--repository', dest='repository', required=True, help='Repository name', type=str)
 
 
@@ -130,13 +131,12 @@ def show(client, **kwargs):
         print('{0}'.format(repository))
     sys.exit(0)
 
-def get_version(client):
-    """Return ES version number as a tuple"""
-    version = client.info()['version']['number']
-    return tuple(map(int, version.split('.')))
-
 def check_version(client):
-    """Verify version is within acceptable range"""
+    """
+    Verify version is within acceptable range.  Exit with error if it is not.
+    
+    :arg client: The Elasticsearch client connection
+    """
     version_number = get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
@@ -144,46 +144,43 @@ def check_version(client):
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
-def get_repository(client, repo_name):
-    """Get Snapshot Repository information"""
-    try:
-        return client.snapshot.get_repository(repository=repo_name)
-    except elasticsearch.NotFoundError as e:
-        logger.info("Error: {1}".format(repo_name, e))
-        return None
-
-def _create_repository(client, dry_run=False, **kwargs):
-    """Create repository with repo_name and body settings"""
+def create_repository(client, dry_run=False, repository='', **kwargs):
+    """Create repository with repository and body settings"""
+    if not repository:
+        logger.error("No repository specified.")
+        sys.exit(1)
     if not dry_run:
         try:
-            repo_name = kwargs['repository']
             body = create_repo_body(**kwargs)
-            logging.info("Checking if repository {0} already exists...".format(repo_name))
-            result = get_repository(client, repo_name)
+            logging.info("Checking if repository {0} already exists...".format(repository))
+            result = get_repository(client, repository=repository)
             if not result:
-                logging.info("Repository {0} not found. Continuing...".format(repo_name))
-                client.snapshot.create_repository(repository=repo_name, body=body)
-            elif result is not None and repo_name not in result and not kwargs['dry_run']:
-                logging.info("Repository {0} not found. Continuing...".format(repo_name))
-                client.snapshot.create_repository(repository=repo_name, body=body)
+                logging.info("Repository {0} not found. Continuing...".format(repository))
+                client.snapshot.create_repository(repository=repository, body=body)
+            elif result is not None and repository not in result and not kwargs['dry_run']:
+                logging.info("Repository {0} not found. Continuing...".format(repository))
+                client.snapshot.create_repository(repository=repository, body=body)
             else:
-                logger.error("Unable to create repository {0}.  A repository with that name already exists.".format(repo_name))
+                logger.error("Unable to create repository {0}.  A repository with that name already exists.".format(repository))
                 sys.exit(0)
         except:
-            logger.error("Unable to create repository {0}.  Check logs for more information.".format(repo_name))
+            logger.error("Unable to create repository {0}.  Check logs for more information.".format(repository))
             return False
-        logger.info("Repository {0} creation initiated...".format(repo_name))
-        test_result = get_repository(client, repo_name)
-        if repo_name in test_result:
-            logger.info("Repository {0} creation validated.".format(repo_name))
+        logger.info("Repository {0} creation initiated...".format(repository))
+        test_result = get_repository(client, repository)
+        if repository in test_result:
+            logger.info("Repository {0} creation validated.".format(repository))
             return True
         else:
-            logger.error("Repository {0} failed validation...".format(repo_name))
+            logger.error("Repository {0} failed validation...".format(repository))
             return False
     else:
-        logger.info("Would have attempted to create repository {0}".format(kwargs['repository']))
+        logger.info("Would have attempted to create repository {0}".format(repository))
 
-def _delete_repository(client, repository=None, dry_run=False, **kwargs):
+def delete_repository(client, repository='', dry_run=False, **kwargs):
+    """
+    Delete indicated repository.
+    """
     if not dry_run:
         try:
             logger.info('Deleting repository {0}...'.format(repository))
