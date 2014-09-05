@@ -17,6 +17,7 @@ Changelog
 
  * Missing ``"`` in Logstash log format #143 (cassianoleal)
  * Change non-master node test to exit code 0, log as ``INFO``. #145 (untergeek)
+ * `months` option missing from validate_timestring() (untergeek)
  
 1.2.2 (29 July 2014)
 --------------------
