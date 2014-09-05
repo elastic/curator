@@ -19,7 +19,7 @@ class TestCloseIndex(CuratorTestCase):
 class TestCloseIndex(CuratorTestCase):
     def test_index_will_be_closed(self):
         self.create_index('test_index')
-        self.assertIsNone(curator._close_index(self.client, 'test_index'))
+        self.assertIsNone(curator.close_index(self.client, 'test_index'))
         index_metadata = self.client.cluster.state(
             index='test_index',
             metric='metadata',
@@ -29,7 +29,7 @@ class TestCloseIndex(CuratorTestCase):
     def test_closed_index_will_be_skipped(self):
         self.create_index('test_index')
         self.client.indices.close(index='test_index')
-        self.assertTrue(curator._close_index(self.client, 'test_index'))
+        self.assertTrue(curator.close_index(self.client, 'test_index'))
         index_metadata = self.client.cluster.state(
             index='test_index',
             metric='metadata',
@@ -39,13 +39,13 @@ class TestCloseIndex(CuratorTestCase):
 class TestDeleteIndex(CuratorTestCase):
     def test_index_will_be_deleted(self):
         self.create_index('test_index')
-        self.assertIsNone(curator._delete_index(self.client, 'test_index'))
+        self.assertIsNone(curator.delete_index(self.client, 'test_index'))
         self.assertFalse(self.client.indices.exists('test_index'))
 
 class TestBloomIndex(CuratorTestCase):
     def test_bloom_filter_will_be_disabled(self):
         self.create_index('test_index')
-        self.assertIsNone(curator._bloom_index(self.client, 'test_index'))
+        self.assertIsNone(curator.disable_bloom_filter(self.client, 'test_index'))
 
         settings = self.client.indices.get_settings(index='test_index')
         self.assertEquals('false', settings['test_index']['settings']['index']['codec']['bloom']['load'])
@@ -53,7 +53,7 @@ class TestBloomIndex(CuratorTestCase):
     def test_closed_index_will_be_skipped(self):
         self.create_index('test_index')
         self.client.indices.close(index='test_index')
-        self.assertTrue(curator._bloom_index(self.client, 'test_index'))
+        self.assertTrue(curator.disable_bloom_filter(self.client, 'test_index'))
         index_metadata = self.client.cluster.state(
             index='test_index',
             metric='metadata',
@@ -64,7 +64,7 @@ class TestOptimizeIndex(CuratorTestCase):
     def test_closed_index_will_be_skipped(self):
         self.create_index('test_index')
         self.client.indices.close(index='test_index')
-        self.assertTrue(curator._optimize_index(self.client, 'test_index'))
+        self.assertTrue(curator.optimize_index(self.client, 'test_index'))
         index_metadata = self.client.cluster.state(
             index='test_index',
             metric='metadata',
@@ -75,7 +75,7 @@ class TestOptimizeIndex(CuratorTestCase):
     def test_optimized_index_will_be_skipped(self, get_segmentcount):
         get_segmentcount.return_value = 1, 4
         self.create_index('test_index')
-        self.assertTrue(curator._optimize_index(self.client, 'test_index', max_num_segments=4))
+        self.assertTrue(curator.optimize_index(self.client, 'test_index', max_num_segments=4))
         get_segmentcount.assert_called_once_with(self.client, 'test_index')
 
     @patch('curator.curator.index_closed')
@@ -85,7 +85,7 @@ class TestOptimizeIndex(CuratorTestCase):
         index_closed.return_value = False
         client = Mock()
         self.create_index('test_index')
-        self.assertIsNone(curator._optimize_index(client, 'test_index', max_num_segments=4))
+        self.assertIsNone(curator.optimize_index(client, 'test_index', max_num_segments=4))
         get_segmentcount.assert_called_once_with(client, 'test_index')
         index_closed.assert_called_once_with(client, 'test_index')
         client.indices.optimize.assert_called_once_with(index='test_index', max_num_segments=4)
