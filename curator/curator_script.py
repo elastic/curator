@@ -43,6 +43,7 @@ DEFAULT_ARGS = {
     'debug': False,
     'log_level': 'INFO',
     'logformat': 'Default',
+    'all_indices': False,
     'show_indices': False,
     'snapshot_prefix': 'curator-',
     'wait_for_completion': True,
@@ -150,7 +151,9 @@ def make_parser():
     show_group = parser_show.add_mutually_exclusive_group()
     show_group.add_argument('--show-indices', help='Show indices matching PREFIX', action='store_true')
     show_group.add_argument('--show-snapshots', help='Show snapshots in REPOSITORY', action='store_true')
+    parser_show.add_argument('--snapshot-prefix', type=str, help='Override default name.', default=DEFAULT_ARGS['snapshot_prefix'])
     parser_show.add_argument('--exclude-pattern', help='Exclude indices matching provided pattern, e.g. 2014.06.08', type=str, default=None)
+    
 
     # Snapshot
     parser_snapshot = subparsers.add_parser('snapshot', help='Take snapshots of indices (Backup)')
@@ -162,7 +165,7 @@ def make_parser():
 
     snapshot_group = parser_snapshot.add_mutually_exclusive_group()
     snapshot_group.add_argument('--older-than', type=int, help='Capture snapshots for indices older than n TIME_UNITs.')
-    snapshot_group.add_argument('--all-indices', type=str, help='Capture "_all" indices (Elasticsearch default).')
+    snapshot_group.add_argument('--all-indices', action='store_true', help='Capture "_all" indices (Elasticsearch default).', default=DEFAULT_ARGS['all_indices'])
     snapshot_group.add_argument('--most-recent', type=int, help='Capture snapshots for n most recent number of indices.')
     snapshot_group.add_argument('--delete-older-than', type=int, help='Delete snapshots older than n TIME_UNITs.')
 
@@ -185,17 +188,35 @@ class Whitelist(logging.Filter):
         return any(f.filter(record) for f in self.whitelist)
 
 def show(client, **kwargs):
+    """
+    Show indices or snapshots matching supplied parameters and exit.
+    
+    :arg client: The Elasticsearch client connection
+    :arg data_type: Either ``index`` or ``snapshot``
+    :arg prefix: A string that comes before the datestamp in an index name.
+        Can be empty. Wildcards acceptable.  Default is ``logstash-``.
+    :arg suffix: A string that comes after the datestamp of an index name.
+        Can be empty. Wildcards acceptable.  Default is empty, ``''``.
+    :arg repository: The Elasticsearch snapshot repository to use (only with
+        snapshots)
+    :arg snapshot_prefix: Override the default with this value. Defaults to
+        ``curator-``
+    """
     if kwargs['show_indices']:
         for index_name in curator.get_indices(client, prefix=kwargs['prefix'], suffix=kwargs['suffix']):
             print('{0}'.format(index_name))
         sys.exit(0)
     elif kwargs['show_snapshots']:
-        for snapshot in curator.get_snaplist(client, kwargs['repository'], prefix=kwargs['prefix'], suffix=kwargs['suffix']):
+        for snapshot in curator.get_snaplist(client, kwargs['repository'], snapshot_prefix=kwargs['snapshot_prefix']):
             print('{0}'.format(snapshot))
         sys.exit(0)
 
 def check_version(client):
-    """Verify version is within acceptable range"""
+    """
+    Verify version is within acceptable range.  Exit with error if it is not.
+    
+    :arg client: The Elasticsearch client connection
+    """
     version_number = curator.get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
@@ -207,6 +228,12 @@ def validate_timestring(timestring, time_unit):
     """
     Validate that the appropriate element(s) for time_unit are in the timestring.
     e.g. If "weeks", we should see %U or %W, if hours %H, etc.
+    
+    Exit with error on failure.
+    
+    :arg timestring: An strftime string to match the datestamp in an index name.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``.
     """
     fail = True
     if time_unit == 'hours':
