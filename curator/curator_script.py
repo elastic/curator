@@ -247,6 +247,9 @@ def validate_timestring(timestring, time_unit):
             fail = False
         elif '%U' in timestring:
             fail = False
+    elif time_unit == 'months':
+        if '%m' in timestring:
+            fail = False
     if fail:
         print('Timestring {0} does not match time unit {1}'.format(timestring, time_unit))
         sys.exit(1)
