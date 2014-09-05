@@ -67,7 +67,7 @@ def make_parser():
 
     # 'fs' Repository creation
     parser_fs = subparsers.add_parser('create_fs', help='Create an "fs" type repository')
-    parser_fs.set_defaults(func=_create_repository, repo_type='fs')
+    parser_fs.set_defaults(func=create_repository, repo_type='fs')
     parser_fs.add_argument('-r', '--repository', dest='repository', required=True, help='Repository name', type=str)
     parser_fs.add_argument('--location', dest='location', action='store', type=str, required=True,
                     help='Shared file-system location. Must match remote path, & be accessible to all master & data nodes')
@@ -84,7 +84,7 @@ def make_parser():
 
     # 's3' Repository creation
     parser_s3 = subparsers.add_parser('create_s3', help='Create an \'s3\' type repository')
-    parser_s3.set_defaults(func=_create_repository, repo_type='s3')
+    parser_s3.set_defaults(func=create_repository, repo_type='s3')
     parser_s3.add_argument('-r', '--repository', dest='repository', required=True, help='Repository name', type=str)
     parser_s3.add_argument('--bucket', dest='bucket', action='store', type=str, required=True,
                         help='S3 bucket name')
@@ -109,7 +109,7 @@ def make_parser():
 
     # Delete repository
     parser_delete = subparsers.add_parser('delete', help='Delete named repository')
-    parser_delete.set_defaults(func=_delete_repository)
+    parser_delete.set_defaults(func=delete_repository)
     parser_delete.add_argument('-r', '--repository', dest='repository', required=True, help='Repository name', type=str)
 
 
@@ -132,7 +132,11 @@ def show(client, **kwargs):
     sys.exit(0)
 
 def check_version(client):
-    """Verify version is within acceptable range"""
+    """
+    Verify version is within acceptable range.  Exit with error if it is not.
+    
+    :arg client: The Elasticsearch client connection
+    """
     version_number = get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
@@ -140,7 +144,7 @@ def check_version(client):
         print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
-def _create_repository(client, dry_run=False, repository='', **kwargs):
+def create_repository(client, dry_run=False, repository='', **kwargs):
     """Create repository with repository and body settings"""
     if not repository:
         logger.error("No repository specified.")
@@ -173,7 +177,10 @@ def _create_repository(client, dry_run=False, repository='', **kwargs):
     else:
         logger.info("Would have attempted to create repository {0}".format(repository))
 
-def _delete_repository(client, repository='', dry_run=False, **kwargs):
+def delete_repository(client, repository='', dry_run=False, **kwargs):
+    """
+    Delete indicated repository.
+    """
     if not dry_run:
         try:
             logger.info('Deleting repository {0}...'.format(repository))
