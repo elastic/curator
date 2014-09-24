@@ -161,7 +161,7 @@ def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
         expression.
     :rtype: list of strings
     """
-    _indices = sorted(client.indices.get_settings(index='*', params={'expand_wildcards': 'closed'}).keys())
+    _indices = sorted(client.indices.get_settings(index='*', params={'expand_wildcards': 'open,closed'}).keys())
     if prefix:
         prefix = '.' + prefix if prefix[0] == '*' else prefix
     if suffix:

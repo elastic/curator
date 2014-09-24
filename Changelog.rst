@@ -15,6 +15,7 @@ Changelog
  
 **Bug fix**
 
+ * Correct for API change coming in ES 1.4 #168 (untergeek)
  * Missing ``"`` in Logstash log format #143 (cassianoleal)
  * Change non-master node test to exit code 0, log as ``INFO``. #145 (untergeek)
  * `months` option missing from validate_timestring() (untergeek)
