@@ -647,6 +647,9 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
         all_snaps = get_snaplist(client, repository=repository, snapshot_prefix=snapshot_prefix)
         if not snapshot_name in all_snaps and len(indices) > 0:
             client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
+        elif len(indices) == 0:
+            logger.warn("No indices provided.")
+            return True
         else:
             logger.info("Skipping: A snapshot with name '{0}' already exists.".format(snapshot_name))
             return True

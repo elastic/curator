@@ -1,13 +1,13 @@
-Elasticsearch Curator API
-=========================
+Elasticsearch Curator Python API
+================================
 
-The Elasticsearch Curator API helps you manage time-series indices and
+The Elasticsearch Curator Python API helps you manage time-series indices and
 snapshots.
 
 .. note::
 
-   This documentation is for the Elasticsearch Curator API.  Documentation for
-   the Elasticsearch Curator *script*, which uses this API and is installed as
+   This documentation is for the Elasticsearch Curator Python API.  Documentation 
+   for the Elasticsearch Curator *script*, which uses this API and is installed as
    part of the package is available on the `the wiki`_.
 
 .. _the wiki: http://github.com/elasticsearch/curator/wiki
@@ -15,7 +15,7 @@ snapshots.
 Compatibility
 -------------
 
-The Elasticsearch Curator API is compatible with Elasticsearch versions 1.x
+The Elasticsearch Curator Python API is compatible with Elasticsearch versions 1.x
 through 2.0, and supports Python versions 2.6 and later.
 
 Example Usage
@@ -45,7 +45,7 @@ The API methods fall into the following categories:
 Logging
 ~~~~~~~
 
-The Elasticsearch Curator API uses the standard `logging library`_ from Python.
+The Elasticsearch Curator Python API uses the standard `logging library`_ from Python.
 It inherits two loggers from ``elasticsearch-py``: ``elasticsearch`` and
 ``elasticsearch.trace``. Clients use the ``elasticsearch`` logger to log
 standard activity, depending on the log level. The ``elasticsearch.trace``

@@ -3,11 +3,12 @@
 Changelog
 =========
 
-2.x.x (? ? ?)
+2.0.0 (25 September 2014)
 -------------
 
 **General**
 
+ * New! Separation of Elasticsearch Curator Python API and curator_script.py (untergeek)
  * New! ``--delay`` after optimize to allow cluster to quiesce #131 (untergeek)
  * New! ``--suffix`` option in addition to ``--prefix`` #136 (untergeek)
  * New! Support for wildcards in prefix & suffix #136 (untergeek)
@@ -15,6 +16,7 @@ Changelog
  
 **Bug fix**
 
+ * Incorrect error msg if no indices sent to create_snapshot (untergeek)
  * Correct for API change coming in ES 1.4 #168 (untergeek)
  * Missing ``"`` in Logstash log format #143 (cassianoleal)
  * Change non-master node test to exit code 0, log as ``INFO``. #145 (untergeek)
