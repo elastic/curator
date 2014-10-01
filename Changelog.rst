@@ -3,12 +3,12 @@
 Changelog
 =========
 
-2.0.1 (? ? ?)
--------------
+2.0.1 (1 October 2014)
+----------------------
 
 **Bug fix**
 
- * Override default timeout when snapshotting --all-indices #179 (untergeek)
+ * Override default timeout when snapshotting --all-indices (``curator_script.py``) #179 (untergeek)
 
 2.0.0 (25 September 2014)
 -------------------------
