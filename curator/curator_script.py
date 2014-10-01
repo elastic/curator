@@ -19,7 +19,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '2.0.0'
+__version__ = '2.1.0-dev'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -291,7 +291,7 @@ def main():
         if not arguments.older_than and not arguments.most_recent and not arguments.delete_older_than and not arguments.all_indices:
             print('{0} snapshot: error: expect one of --all-indices, --older-than, --most-recent, or --delete-older-than'.format(sys.argv[0]))
             sys.exit(1)
-        if arguments.older_than or arguments.most_recent:
+        if arguments.older_than or arguments.most_recent or arguments.all_indices:
             timeout_override = True
 
     # Setup logging
