@@ -1,0 +1,5 @@
+python-elasticsearch-curator (1.0.0) UNRELEASED; urgency=low
+
+  * Initial Debian Package
+
+ -- Dr. Torge Szczepanek <debian@cygnusnetworks.de>  Tue, 03 Jun 2014 21:00:09 +0200

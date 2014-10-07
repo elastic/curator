@@ -1,0 +1,13 @@
+Source: python-elasticsearch-curator
+Section: python
+Priority: optional
+Maintainer: Dr. Torge Szczepanek <debian@cygnusnetworks.de>
+Build-Depends: debhelper (>= 9), python-all, python-setuptools
+Standards-Version: 3.9.4
+
+Package: python-elasticsearch-curator
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}
+Description: Python Elasticsearch Curator
+ Elasticsearch Tool to managed time based data in Elasticsearch using
+ the Python Elasticsearch API
