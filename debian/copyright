@@ -4,5 +4,5 @@ Maintainer: Dr. Torge Szczepanek <debian@cygnusnetworks.de>
 Source: https://github.com/elasticsearch/curator
 
 Files: *
-Copyright: 2013, Elasticsearch
+Copyright: 2011-2014 Elasticsearch <http://www.elasticsearch.org> and contributors.
 License: Apache
