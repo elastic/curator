@@ -19,7 +19,7 @@ Changelog
  * Override default timeout when snapshotting --all-indices #179 (untergeek)
 
 2.0.0 (25 September 2014)
--------------
+-------------------------
 
 **General**
 
