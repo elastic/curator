@@ -663,7 +663,7 @@ def delete_snapshot(client, snap, **kwargs):
     Delete a snapshot (or comma-separated list of snapshots)
 
     :arg client: The Elasticsearch client connection
-    :arg snapshot_name: The snapshot name
+    :arg snap: The snapshot name
     :arg repository: The Elasticsearch snapshot repository to use
     """
     if not "repository" in kwargs:
