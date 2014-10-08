@@ -608,7 +608,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
                     ignore_unavailable=False, include_global_state=True,
                     partial=False, wait_for_completion=True, **kwargs):
     """
-    Create a snapshot of provided indices (or ``_all``).
+    Create a snapshot of provided indices (or ``_all``) that are open.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to snapshot. Default is ``_all``
