@@ -658,7 +658,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
         return True
 
 ### Delete a snapshot
-def delete_snapshot(client, snapshot_name, repository=None, **kwargs):
+def delete_snapshot(client, snap, **kwargs):
     """
     Delete a snapshot (or comma-separated list of snapshots)
 
@@ -666,10 +666,14 @@ def delete_snapshot(client, snapshot_name, repository=None, **kwargs):
     :arg snapshot_name: The snapshot name
     :arg repository: The Elasticsearch snapshot repository to use
     """
+    if not "repository" in kwargs:
+        logger.error("Repository information omitted. Must specify repository to delete snapshot.")
+    else:
+        repository = kwargs["repository"]
     try:
-        client.snapshot.delete(repository=repository, snapshot=snapshot_name)
+        client.snapshot.delete(repository=repository, snapshot=snap)
     except elasticsearch.RequestError as e:
-        logger.error("Unable to delete snapshot {0}.  Error: {1} Check logs for more information.".format(snapshot_name, e))
+        logger.error("Unable to delete snapshot {0}.  Error: {1} Check logs for more information.".format(snap, e))
 
 # Operations typically used by the curator_script, directly or indirectly
 ## Loop through a list of objects and perform the indicated operation
@@ -1085,7 +1089,7 @@ def snapshot(client, dry_run=False, **kwargs):
         logger.info(kwargs['prepend'] + "Deleting specified snapshots...")
         kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
         snapshot_list = client.snapshot.get(repository=kwargs['repository'], snapshot="_all")['snapshots']
-        matching_snapshots = filter_by_timestamp(object_list=snapshot_list, object_type='snapshot', **kwargs)
+        matching_snapshots = list(filter_by_timestamp(object_list=snapshot_list, object_type='snapshot', **kwargs))
         _op_loop(client, matching_snapshots, op=delete_snapshot, dry_run=dry_run, **kwargs)
         logger.info(kwargs['prepend'] + 'Specified snapshots deleted.')
     else:
@@ -1095,13 +1099,13 @@ def snapshot(client, dry_run=False, **kwargs):
             if most_recent:
                 matching_indices = index_list[-kwargs['most_recent']:]
             elif older_than:
-                matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
-                matching_indices = list(matching_indices)
+                matching_indices = list(filter_by_timestamp(object_list=index_list, **kwargs))
             else:
                 logger.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
                 return
         else:
             matching_indices = '_all'
+        logger.info(kwargs['prepend'] + 'Snapshot will capture indices: {0}'.format(', '.join(matching_indices)))
         if not dry_run:
             # Default `create_snapshot` behavior is to snap `_all` into a
             # snapshot named `snapshot_name` or `curator-%Y-%m-%dT%H:%M:%S`

@@ -3,8 +3,16 @@
 Changelog
 =========
 
-2.0.1 (? ? ?)
--------------
+2.0.2 (8 October 2014)
+----------------------
+
+**Bug fixes**
+
+ * Snapshot name not displayed in log or STDOUT #185 (untergeek)
+ * Variable name collision in delete_snapshot() #186 (untergeek)
+
+2.0.1 (1 October 2014)
+----------------------
 
 **Bug fix**
 
