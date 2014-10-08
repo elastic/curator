@@ -3,6 +3,17 @@
 Changelog
 =========
 
+2.1.0 (? ? ?)
+-------------
+
+**General**
+
+ * Snapshot name now appears in log output or STDOUT. #178 (untergeek)
+
+**Bug fixes**
+
+ * Edge case where 1.4.0.Beta1-SNAPSHOT would break version check. Reported in #183 (untergeek)
+
 2.0.2 (8 October 2014)
 ----------------------
 
