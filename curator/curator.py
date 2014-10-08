@@ -644,6 +644,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
         body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable, include_global_state=include_global_state, partial=partial)
         datestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
         snapshot_name = snapshot_name if snapshot_name else snapshot_prefix + datestamp
+        logger.info("Snapshot name: {0}".format(snapshot_name))
         all_snaps = get_snaplist(client, repository=repository, snapshot_prefix=snapshot_prefix)
         if not snapshot_name in all_snaps and len(indices) > 0:
             client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
