@@ -240,12 +240,17 @@ def get_snapshot(client, repository='', snapshot=''):
 def get_version(client):
     """
     Return the ES version number as a tuple.
+    Omits trailing tags like -dev, or Beta
     
     :arg client: The Elasticsearch client connection
     :rtype: tuple
     """
     version = client.info()['version']['number']
-    return tuple(map(int, version.split('.')))
+    if len(version.split('.')) > 3:
+        version = version.split('.')[:-1]
+    else:
+       version = version.split('.')
+    return tuple(map(int, version))
 
 ## Segment count
 def get_segmentcount(client, index_name):
