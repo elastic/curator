@@ -27,6 +27,10 @@ Optimize Indices
 ----------------
 .. automethod:: curator.curator.optimize
 
+Change Replica Count of Indices
+-------------------------------
+.. automethod:: curator.curator.replicas
+
 Snapshot Indices
 ----------------
 .. automethod:: curator.curator.snapshot

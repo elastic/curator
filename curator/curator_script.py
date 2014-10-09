@@ -142,6 +142,13 @@ def make_parser():
     parser_optimize.add_argument('--max_num_segments', help='Optimize segment count to n segments per shard.', default=DEFAULT_ARGS['max_num_segments'], type=int)
     parser_optimize.add_argument('--delay', help='Number of seconds to delay after optimizing an index.', type=int, default=0)
 
+    # Replicas
+    parser_replicas = subparsers.add_parser('replicas', help='Change replica count of indices')
+    parser_replicas.set_defaults(func=curator.replicas)
+    add_common_args(parser_replicas)
+    parser_replicas.add_argument('--older-than', required=True, help='Change replica count for indices older than n TIME_UNITs', type=int)
+    parser_replicas.add_argument('--replicas', required=True, help='Number of replicas the indices should have', type=int, default=1)
+
     # Show indices
     parser_show = subparsers.add_parser('show', help='Show indices or snapshots')
     parser_show.set_defaults(func=show)

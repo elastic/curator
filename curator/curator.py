@@ -501,16 +501,16 @@ def apply_allocation_rule(client, index_name, rule=None, **kwargs):
         correlating nodes in your cluster.
     """
     if not rule:
-      logger.error('No rule provided for {0}.'.format(index_name))
-      return True
+        logger.error('No rule provided for {0}.'.format(index_name))
+        return True
     key = rule.split('=')[0]
     value = rule.split('=')[1]
     if index_closed(client, index_name):
-      logger.info('Skipping index {0}: Already closed.'.format(index_name))
-      return True
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
     else:
-      logger.info('Updating index setting index.routing.allocation.require.{0}={1}'.format(key,value))
-      client.indices.put_settings(index=index_name, body='index.routing.allocation.require.{0}={1}'.format(key,value))
+        logger.info('Updating index setting index.routing.allocation.require.{0}={1}'.format(key,value))
+        client.indices.put_settings(index=index_name, body='index.routing.allocation.require.{0}={1}'.format(key,value))
 
 ### Bloom
 def disable_bloom_filter(client, index_name, **kwargs):
@@ -525,6 +525,27 @@ def disable_bloom_filter(client, index_name, **kwargs):
         return True
     else:
         client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
+
+### Change Replica Count
+def change_replicas(client, index_name, replicas=None, **kwargs):
+    """
+    Change the number of replicas, more or less, for the indicated index.
+    
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    :arg replicas: The number of replicas the index should have
+    """
+    if replicas == None:
+        logger.error('No replica count provided for {0}.'.format(index_name))
+        return True
+    if index_closed(client, index_name):
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    else:
+        logger.debug('Previous count for number_of_replicas={0}'.format(client.indices.get_settings(
+            index=index_name)[index_name]['settings']['index']['number_of_replicas']))
+        logger.info('Updating index setting number_of_replicas={0}'.format(replicas))
+        client.indices.put_settings(index=index_name, body='number_of_replicas={0}'.format(replicas))
 
 ### Close
 def close_index(client, index_name, **kwargs):
@@ -1007,6 +1028,51 @@ def optimize(client, dry_run=False, **kwargs):
     matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
     _op_loop(client, matching_indices, op=optimize_index, dry_run=dry_run, **kwargs)
     logger.info(kwargs['prepend'] + 'Optimized specified indices.')
+
+## curator (change) replicas [ARGS]
+def replicas(client, dry_run=False, **kwargs):
+    """
+    Change replica count for indices ``older_than`` *n* ``time_unit``\s, 
+    matching the given ``timestring``, ``prefix``, and ``suffix``.
+    
+    .. note::
+       As this is an iterative function, default values are handled by the
+       target function(s).
+       
+       Unless passed in `kwargs`, parameters other than ``client`` and
+       ``dry_run`` will have default values assigned by the functions being
+       called:
+    
+       :py:func:`curator.curator.get_object_list`
+    
+       :py:func:`curator.curator.filter_by_timestamp`
+    
+       :py:func:`curator.curator.close_index`
+    
+       These defaults are included here for documentation.
+
+    :arg client: The Elasticsearch client connection
+    :arg dry_run: If true, simulate, but do not perform the operation
+    :arg replicas: The number of replicas the index should have
+    :arg older_than: Indices older than the indicated number of whole
+        ``time_units`` will be operated on.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``.
+    :arg timestring: An strftime string to match the datestamp in an index name.
+    :arg prefix: A string that comes before the datestamp in an index name.
+        Can be empty. Wildcards acceptable.  Default is ``logstash-``.
+    :arg suffix: A string that comes after the datestamp of an index name.
+        Can be empty. Wildcards acceptable.  Default is empty, ``''``.
+    :arg exclude_pattern: Exclude indices matching the provided regular
+        expression.
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
+    """
+    kwargs['prepend'] = "DRY RUN: " if dry_run else ''
+    logging.info(kwargs['prepend'] + "Changing replica count of indices...")
+    index_list = get_object_list(client, **kwargs)
+    matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
+    _op_loop(client, matching_indices, op=change_replicas, dry_run=dry_run, **kwargs)
+    logger.info(kwargs['prepend'] + 'Changing replica count for specified indices.')
 
 ## curator snapshot [ARGS]
 def snapshot(client, dry_run=False, **kwargs):
