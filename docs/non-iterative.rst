@@ -22,6 +22,12 @@ Disable Bloom Filter Cache
 --------------------------
 .. automethod:: curator.curator.disable_bloom_filter
 
+.. _replicas_non:
+
+Change Replica Count of Indices
+-------------------------------
+.. automethod:: curator.curator.change_replicas
+
 .. _close_non:
 
 Close Indices

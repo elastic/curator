@@ -9,6 +9,7 @@ Changelog
 **General**
 
  * Snapshot name now appears in log output or STDOUT. #178 (untergeek)
+ * Replicas! You can now change the replica count of indices. Requested in #175 (untergeek)
 
 **Bug fixes**
 
