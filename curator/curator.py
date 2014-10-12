@@ -984,7 +984,7 @@ def delete(client, dry_run=False, **kwargs):
         index_list = get_object_list(client, **kwargs)
         matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
     _op_loop(client, matching_indices, op=delete_index, dry_run=dry_run, **kwargs)
-    logger.info(kwargs['prepend'] + 'Speficied indices deleted.')
+    logger.info(kwargs['prepend'] + 'Specified indices deleted.')
 
 ## curator optimize [ARGS]
 def optimize(client, dry_run=False, **kwargs):
