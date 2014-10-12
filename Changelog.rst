@@ -14,6 +14,7 @@ Changelog
 **Bug fixes**
 
  * Edge case where 1.4.0.Beta1-SNAPSHOT would break version check. Reported in #183 (untergeek)
+ * Typo fixed. #193 (ferki)
 
 2.0.2 (8 October 2014)
 ----------------------
