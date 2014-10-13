@@ -4,11 +4,11 @@ Have time-series indices in Elasticsearch? This is the tool for you!
 
 Like a museum curator manages the exhibits and collections on display, Elasticsearch Curator helps you curate, or manage your time-series indices.
 
-## Curator API Documentation (External)
+## [Curator API Documentation](http://curator.readthedocs.org/) (External)
 
 Since Curator 2.0, the API calls and the wrapper script (`curator_script.py`) have been separated.  This allows you to write your own scripts to accomplish similar goals, or even new and different things with the [Curator API](http://curator.readthedocs.org/), and the [Elasticsearch Python API](http://elasticsearch-py.readthedocs.org/).
 
-## Curator Script Documentation (this wiki)
+## [Curator Script Documentation (GitHub wiki)](http://github.com/elasticsearch/curator/wiki)
 The Curator script is a wrapper for the Elasticsearch Curator API, which allows you to manage your indices with commands like:
 
     delete
