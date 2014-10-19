@@ -66,7 +66,8 @@ def get_index_time(index_timestamp, timestring, time_unit=None):
     if time_unit:
         (time_block, time_unit) = parse_time_unit(time_unit)
         unit_attr = time_unit[:-1]
-        date = date.replace(**{unit_attr : getattr(date, unit_attr) * time_block })
+        if time_unit != 'weeks':
+            date = date.replace(**{unit_attr : getattr(date, unit_attr) * time_block })
 
     return date 
 
