@@ -41,7 +41,7 @@ def get_date_regex(timestring):
     return regex
 
 ### Index time
-def get_index_time(index_timestamp, timestring):
+def get_index_time(index_timestamp, timestring, time_unit=None):
     """
     Return the datetime extracted from the index name, which is the index
     creation time.
@@ -62,7 +62,30 @@ def get_index_time(index_timestamp, timestring):
         if not '%d' in timestring:
             timestring += '%d'
             index_timestamp += '1'
-    return datetime.strptime(index_timestamp, timestring)
+    date = datetime.strptime(index_timestamp, timestring)
+    if time_unit:
+        (time_block, time_unit) = parse_time_unit(time_unit)
+        unit_attr = time_unit[:-1]
+        if time_unit != 'weeks':
+            date = date.replace(**{unit_attr : getattr(date, unit_attr) * time_block })
+
+    return date 
+
+def parse_time_unit(compound_time_unit):
+    """
+    Return a tuple (time_block,time_unit) from ```compound_time_unit```
+
+    :arg compound_time_unit: regular time_unit (hours, days,...) or compound (6hours, 8days). 
+    :rtype: Tuple object
+    """
+    time_block = 1
+    time_unit = compound_time_unit
+    match = re.match(r"^(\d{0,2})(\w+)$", time_unit)
+    if match and match.group(1):
+        time_block = int(match.group(1))
+        time_unit  = match.group(2)
+        # should verify time_block is a divisor of the larger time_unit
+    return (time_block, time_unit)
 
 ### Index time if unit = months
 def get_target_month(month_count, utc_now=None):
@@ -101,6 +124,8 @@ def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
     # reset to start of the period to be sure we are not retiring a human by mistake
     utc_now = utc_now.replace(minute=0, second=0, microsecond=0)
 
+    (time_block, time_unit) = parse_time_unit(time_unit)
+
     if time_unit == 'days':
         utc_now = utc_now.replace(hour=0)
     if time_unit == 'weeks':
@@ -113,7 +138,7 @@ def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
         cutoff = get_target_month(older_than, utc_now=utc_now)
     else:
         # This cutoff must be a multiple of time_units
-        cutoff = utc_now - timedelta(**{time_unit: (older_than - 1)})
+        cutoff = utc_now - timedelta(**{time_unit: time_block * (older_than - 1)})
     return cutoff
 
 ## Alias information
@@ -373,7 +398,7 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
                 logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e))
                 continue
             try:
-                object_time = get_index_time(index_timestamp, timestring)
+                object_time = get_index_time(index_timestamp, timestring, time_unit)
             except ValueError:
                 logger.error('Could not find a valid timestamp for {0} with timestring {1}'.format(object_name, timestring))
                 continue

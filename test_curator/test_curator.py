@@ -270,6 +270,34 @@ class TestExpireIndices(TestCase):
             expired
         )
 
+    def test_6_hours_block_indices_found_with_prefix(self):
+        client = Mock()
+        client.indices.get_settings.return_value = {
+            'log-2014.01.03.00': True,
+            'log-2014.01.02.03': True,
+            'log-2014.01.02.02': True,
+            'log-2014.01.02.01': True,
+            'log-2014.01.01.03': True,
+            'log-2014.01.01.02': True,
+            'log0-2013.12.31.03': True,
+            'logstash-2013.12.30.00': True,
+            'l-2013.12.29.01': True,
+        }
+        index_list = curator.get_object_list(client, prefix='*')
+        expired = curator.filter_by_timestamp(object_list=index_list, time_unit='6hours', older_than=4, prefix='*', suffix='*', timestring='%Y.%m.%d.%H', utc_now=datetime(2014, 1, 3))
+        
+        expired = list(expired)
+
+        self.assertEquals([
+            'l-2013.12.29.01',
+            'log-2014.01.01.02',
+            'log-2014.01.01.03',
+            'log0-2013.12.31.03',
+            'logstash-2013.12.30.00',
+            ],
+            expired
+        )
+
     def test_size_based_finds_indices_over_threshold(self):
         client = Mock()
         client.indices.get_settings.return_value = {
