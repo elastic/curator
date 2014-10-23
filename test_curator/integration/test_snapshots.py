@@ -40,8 +40,11 @@ class TestSnapshots(CuratorTestCase):
         for i in range(3,0,-1):
             curator.snapshot(self.client, older_than=i, timestring='%Y.%m.%d', repository=self.args['repository'])
             time.sleep(1)
+        # Test two ways of getting results to ensure both return properly
         result = curator.get_snapshot(self.client, self.args['repository'], '_all')
+        result2 = curator.get_object_list(self.client, data_type='snapshot', repository=self.args['repository'])
         self.assertEqual(3, len(result['snapshots']))
+        self.assertEqual(3, len(result2))
 
     def test_curator_will_snap_latest_n_indices(self):
         self.create_indices(10)
