@@ -119,6 +119,7 @@ def make_parser():
     parser_bloom.set_defaults(func=curator.bloom)
     add_common_args(parser_bloom)
     parser_bloom.add_argument('--older-than', required=True, help='Disable bloom filter cache for indices older than n TIME_UNITs', type=int)
+    parser_bloom.add_argument('--delay', help='Number of seconds to delay after disabling the bloom filter cache of an index.', type=int, default=0)
 
     # Close
     parser_close = subparsers.add_parser('close', help='Close indices')

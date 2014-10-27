@@ -848,7 +848,9 @@ def bloom(client, dry_run=False, **kwargs):
     """
     Disable bloom filter cache for indices ``older_than`` *n* ``time_unit``\s,
     matching the given ``timestring``, ``prefix``, and ``suffix``.
-    
+
+    Can optionally ``delay`` a given number of seconds after each optimization.
+
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
@@ -878,6 +880,7 @@ def bloom(client, dry_run=False, **kwargs):
         Can be empty. Wildcards acceptable.  Default is empty, ``''``.
     :arg exclude_pattern: Exclude indices matching the provided regular
         expression.
+    :arg delay: Pause *n* seconds after optimizing an index.
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
     kwargs['prepend'] = "DRY RUN: " if dry_run else ''
