@@ -673,7 +673,11 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
         logger.info("Snapshot name: {0}".format(snapshot_name))
         all_snaps = get_snaplist(client, repository=repository, snapshot_prefix=snapshot_prefix)
         if not snapshot_name in all_snaps and len(indices) > 0:
-            client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
+            try:
+                client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
+            except elasticsearch.TransportError as e:
+                logger.error("Client raised a TransportError.  Error: {0}".format(e))
+                return True
         elif len(indices) == 0:
             logger.warn("No indices provided.")
             return True
