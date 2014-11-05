@@ -471,7 +471,11 @@ def add_to_alias(client, index_name, alias=None, **kwargs):
     else:
         indices_in_alias = client.indices.get_alias(alias)
         if not index_name in indices_in_alias:
-            client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
+            if index_closed(client, index_name):
+                logger.info('Skipping index {0}: Already closed.'.format(index_name))
+                return True
+            else:
+                client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
         else:
             logger.info('Skipping index {0}: Index already exists in alias {1}...'.format(index_name, alias))
             return True
