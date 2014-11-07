@@ -1,4 +1,5 @@
 import os
+import sys
 from setuptools import setup
 
 # Utility function to read from file.
@@ -12,6 +13,14 @@ def get_version():
         return VERSION + "b{}".format(build_number)
     return VERSION
 
+def get_install_requires():
+    res = ['elasticsearch>=1.0.0,<2.0.0' ]
+    if sys.version_info < (2, 7):
+        res.append('argparse>=1.1.0')
+    if (3, 0) <= sys.version_info < (3, 2):
+        res.append('argparse>=1.1.0')
+    return res
+
 setup(
     name = "elasticsearch-curator",
     version = get_version(),
@@ -22,10 +31,7 @@ setup(
     url = "http://github.com/elasticsearch/curator",
     download_url = "https://github.com/elasticsearch/curator/tarball/v" + get_version(),
     license = "Apache License, Version 2.0",
-    install_requires = [
-        'elasticsearch>=1.0.0,<2.0.0',
-        'argparse>=1.1.0'
-    ],
+    install_requires = get_install_requires(),
     keywords = "elasticsearch time-series indexed index-expiry",
     packages = ["curator"],
     include_package_data=True,
