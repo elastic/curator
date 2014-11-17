@@ -10,3 +10,5 @@ elasticsearch_curator.egg-info
 .idea
 coverage.xml
 nosetests.xml
+Gemfile.lock
+tmp/
