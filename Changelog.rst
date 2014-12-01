@@ -18,6 +18,7 @@ Changelog
  * Typo fixed. #193 (ferki)
  * Type fixed. #204 (gheppner)
  * Shows proper error in the event of concurrent snapshots. #177 (untergeek)
+ * Fixes erroneous index display of ``_, a, l, l`` when --all-indices selected. Reported in #222 (untergeek)
  
 
 2.0.2 (8 October 2014)
