@@ -127,6 +127,12 @@ def make_parser():
     add_common_args(parser_close)
     parser_close.add_argument('--older-than', required=True, help='Close indices older than n TIME_UNITs', type=int)
 
+    # open
+    parser_open = subparsers.add_parser('open', help='Open indices')
+    parser_open.set_defaults(func=curator.open)
+    add_common_args(parser_open)
+    parser_open.add_argument('--older-than', required=True, help='Open indices older than n TIME_UNITs', type=int)
+
     # Delete
     parser_delete = subparsers.add_parser('delete', help='Delete indices')
     parser_delete.set_defaults(func=curator.delete)
