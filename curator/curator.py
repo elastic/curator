@@ -1182,9 +1182,10 @@ def snapshot(client, dry_run=False, **kwargs):
             else:
                 logger.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
                 return
+            logger.info(kwargs['prepend'] + 'Snapshot will capture indices: {0}'.format(', '.join(matching_indices)))
         else:
             matching_indices = '_all'
-        logger.info(kwargs['prepend'] + 'Snapshot will capture indices: {0}'.format(', '.join(matching_indices)))
+            logger.info(kwargs['prepend'] + 'Snapshot will capture all indices')
         if not dry_run:
             # Default `create_snapshot` behavior is to snap `_all` into a
             # snapshot named `snapshot_name` or `curator-%Y-%m-%dT%H:%M:%S`
