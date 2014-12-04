@@ -20,6 +20,7 @@ Changelog
  * Shows proper error in the event of concurrent snapshots. #177 (untergeek)
  * Fixes erroneous index display of ``_, a, l, l`` when --all-indices selected. Reported in #222 (untergeek)
  * Use json.dumps() to escape exceptions. Reported in #210 (untergeek)
+ * Add 2-digit years as acceptable pattern (y vs. Y). Reported in #209 (untergeek)
  
 
 2.0.2 (8 October 2014)

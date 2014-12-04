@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 DATE_REGEX = {
     'Y' : '4',
+    'y' : '2',
     'm' : '2',
     'W' : '2',
     'U' : '2',

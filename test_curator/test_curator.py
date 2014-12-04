@@ -9,6 +9,7 @@ class TestUtils(TestCase):
     def test_get_index_time(self):
         for text, datestring, dt in [
             ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
+            ('14.01.19', '%y.%m.%d', datetime(2014, 1, 19)),
             ('2014-01-19', '%Y-%m-%d', datetime(2014, 1, 19)),
             ('2010-12-29', '%Y-%m-%d', datetime(2010, 12, 29)),
             ('2012-12', '%Y-%m', datetime(2012, 12, 1)),
