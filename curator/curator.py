@@ -1,6 +1,7 @@
 import time
 import logging
 import re
+import json
 from datetime import timedelta, datetime, date
 
 import elasticsearch
@@ -202,7 +203,7 @@ def get_snaplist(client, repository='', snapshot_prefix='curator-'):
         pattern = re.compile(regex)
         return list(filter(lambda x: pattern.search(x), snaps))
     except elasticsearch.NotFoundError as e:
-        logger.error("Error: {0}".format(e))
+        logger.error(json.dumps("Error: {0}".format(e)))
     return retval
 
 ### Repository information
@@ -217,7 +218,7 @@ def get_repository(client, repository=''):
     try:
         return client.snapshot.get_repository(repository=repository)
     except elasticsearch.NotFoundError as e:
-        logger.info("Repository {0} not found.  Error: {1}".format(repository, e))
+        logger.error(json.dumps("Repository {0} not found.  Error: {1}".format(repository, e)))
         return None
 
 ### Single snapshot information
@@ -233,7 +234,7 @@ def get_snapshot(client, repository='', snapshot=''):
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
     except elasticsearch.NotFoundError as e:
-        logger.info("Snapshot or repository {0} not found.  Error: {1}".format(snapshot, e))
+        logger.error(json.dumps("Snapshot or repository {0} not found.  Error: {1}".format(snapshot, e)))
         return None
 
 ## ES version
@@ -370,7 +371,7 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
             try:
                 index_timestamp = re.search(regex, object_name).group(1)
             except AttributeError as e:
-                logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e))
+                logger.debug(json.dumps('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e)))
                 continue
             try:
                 object_time = get_index_time(index_timestamp, timestring)
@@ -381,12 +382,12 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
             try:
                 retval = re.search(regex, object_name['snapshot']).group(1)
             except AttributeError as e:
-                logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(retval, regex, e))
+                logger.debug(json.dumps('Unable to match {0} with regular expression {1}.  Error: {2}'.format(retval, regex, e)))
                 continue
             try:
                 object_time = datetime.utcfromtimestamp(object_name['start_time_in_millis']/1000.0)
             except AttributeError as e:
-                logger.debug('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e))
+                logger.debug(json.dumps('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e)))
                 continue
             # if the index is older than the cutoff
         if object_time < cutoff:
@@ -676,7 +677,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
             try:
                 client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
             except elasticsearch.TransportError as e:
-                logger.error("Client raised a TransportError.  Error: {0}".format(e))
+                logger.error(json.dumps("Client raised a TransportError.  Error: {0}".format(e)))
                 return True
         elif len(indices) == 0:
             logger.warn("No indices provided.")
@@ -685,7 +686,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
             logger.info("Skipping: A snapshot with name '{0}' already exists.".format(snapshot_name))
             return True
     except elasticsearch.RequestError as e:
-        logger.error("Unable to create snapshot {0}.  Error: {1} Check logs for more information.".format(snapshot_name, e))
+        logger.error(json.dumps("Unable to create snapshot {0}.  Error: {1} Check logs for more information.".format(snapshot_name, e)))
         return True
 
 ### Delete a snapshot
@@ -704,7 +705,7 @@ def delete_snapshot(client, snap, **kwargs):
     try:
         client.snapshot.delete(repository=repository, snapshot=snap)
     except elasticsearch.RequestError as e:
-        logger.error("Unable to delete snapshot {0}.  Error: {1} Check logs for more information.".format(snap, e))
+        logger.error(json.dumps("Unable to delete snapshot {0}.  Error: {1} Check logs for more information.".format(snap, e)))
 
 # Operations typically used by the curator_script, directly or indirectly
 ## Loop through a list of objects and perform the indicated operation

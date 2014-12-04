@@ -7,7 +7,6 @@ import logging
 from datetime import timedelta, datetime, date
 
 import elasticsearch
-#from curator import *
 import curator
 
 try:
