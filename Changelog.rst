@@ -21,6 +21,7 @@ Changelog
  * Fixes erroneous index display of ``_, a, l, l`` when --all-indices selected. Reported in #222 (untergeek)
  * Use json.dumps() to escape exceptions. Reported in #210 (untergeek)
  * Add 2-digit years as acceptable pattern (y vs. Y). Reported in #209 (untergeek)
+ * Check if index is closed before adding to alias.  Reported in #214 (bt5e)
  
 
 2.0.2 (8 October 2014)
