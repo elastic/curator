@@ -23,6 +23,7 @@ Changelog
  * Add 2-digit years as acceptable pattern (y vs. Y). Reported in #209 (untergeek)
  * Check if index is closed before adding to alias.  Reported in #214 (bt5e)
  * No longer force-install argparse if pre-installed #216 (whyscream)
+ * Bloom filters have been removed from Elasticsearch 1.5.0. Update methods and tests to act accordingly. #233 (untergeek)
  
 
 2.0.2 (8 October 2014)
