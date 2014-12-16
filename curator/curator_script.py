@@ -295,7 +295,7 @@ def main():
             sys.exit(1)
 
     if arguments.command == 'snapshot':
-        if not arguments.older_than and not arguments.most_recent and not arguments.delete_older_than and not arguments.all_indices:
+        if arguments.older_than is None and arguments.most_recent is None and arguments.delete_older_than is None and not arguments.all_indices:
             print('{0} snapshot: error: expect one of --all-indices, --older-than, --most-recent, or --delete-older-than'.format(sys.argv[0]))
             sys.exit(1)
         if arguments.older_than or arguments.most_recent or arguments.all_indices:

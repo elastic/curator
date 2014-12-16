@@ -1172,10 +1172,10 @@ def snapshot(client, dry_run=False, **kwargs):
         return
     # Preserving kwargs intact for passing to _op_loop is the game here...
     all_indices       = kwargs['all_indices'] if 'all_indices' in kwargs else False
-    delete_older_than = kwargs['delete_older_than'] if 'delete_older_than' in kwargs else False
-    older_than        = kwargs['older_than'] if 'older_than' in kwargs else False
-    most_recent       = kwargs['most_recent'] if 'most_recent' in kwargs else False
-    if delete_older_than:
+    delete_older_than = kwargs['delete_older_than'] if 'delete_older_than' in kwargs else None
+    older_than        = kwargs['older_than'] if 'older_than' in kwargs else None
+    most_recent       = kwargs['most_recent'] if 'most_recent' in kwargs else None
+    if delete_older_than is not None:
         logger.info(kwargs['prepend'] + "Deleting specified snapshots...")
         kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
         snapshot_list = client.snapshot.get(repository=kwargs['repository'], snapshot="_all")['snapshots']
@@ -1186,9 +1186,9 @@ def snapshot(client, dry_run=False, **kwargs):
         logger.info(kwargs['prepend'] + "Capturing snapshots of specified indices...")
         if not all_indices:
             index_list = get_object_list(client, **kwargs)
-            if most_recent:
+            if most_recent is not None:
                 matching_indices = index_list[-kwargs['most_recent']:]
-            elif older_than:
+            elif older_than is not None:
                 matching_indices = list(filter_by_timestamp(object_list=index_list, **kwargs))
             else:
                 logger.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
