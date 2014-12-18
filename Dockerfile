@@ -5,4 +5,4 @@ MAINTAINER Christian R. Vozar <christian@rogueethic.com>
 
 RUN pip install --quiet elasticsearch-curator
 
-CMD [ "/usr/local/bin/curator" ]
+ENTRYPOINT [ "/usr/local/bin/curator" ]
