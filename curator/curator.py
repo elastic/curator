@@ -1,16 +1,18 @@
 import time
 import logging
 import re
+import json
 from datetime import timedelta, datetime, date
 
 import elasticsearch
 
-__version__ = '2.1.0-dev'
+__version__ = '2.1.0'
 
 logger = logging.getLogger(__name__)
 
 DATE_REGEX = {
     'Y' : '4',
+    'y' : '2',
     'm' : '2',
     'W' : '2',
     'U' : '2',
@@ -202,7 +204,7 @@ def get_snaplist(client, repository='', snapshot_prefix='curator-'):
         pattern = re.compile(regex)
         return list(filter(lambda x: pattern.search(x), snaps))
     except elasticsearch.NotFoundError as e:
-        logger.error("Error: {0}".format(e))
+        logger.error(json.dumps("Error: {0}".format(e)))
     return retval
 
 ### Repository information
@@ -217,7 +219,7 @@ def get_repository(client, repository=''):
     try:
         return client.snapshot.get_repository(repository=repository)
     except elasticsearch.NotFoundError as e:
-        logger.info("Repository {0} not found.  Error: {1}".format(repository, e))
+        logger.error(json.dumps("Repository {0} not found.  Error: {1}".format(repository, e)))
         return None
 
 ### Single snapshot information
@@ -233,19 +235,24 @@ def get_snapshot(client, repository='', snapshot=''):
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
     except elasticsearch.NotFoundError as e:
-        logger.info("Snapshot or repository {0} not found.  Error: {1}".format(snapshot, e))
+        logger.error(json.dumps("Snapshot or repository {0} not found.  Error: {1}".format(snapshot, e)))
         return None
 
 ## ES version
 def get_version(client):
     """
     Return the ES version number as a tuple.
+    Omits trailing tags like -dev, or Beta
     
     :arg client: The Elasticsearch client connection
     :rtype: tuple
     """
     version = client.info()['version']['number']
-    return tuple(map(int, version.split('.')))
+    if len(version.split('.')) > 3:
+        version = version.split('.')[:-1]
+    else:
+       version = version.split('.')
+    return tuple(map(int, version))
 
 ## Segment count
 def get_segmentcount(client, index_name):
@@ -306,7 +313,7 @@ def get_object_list(client, data_type='index', prefix='logstash-', suffix='', re
         object_list = get_indices(client, prefix=prefix, suffix=suffix)
     elif data_type == 'snapshot':
         if repository:
-            object_list = get_snaplist(client, repository=repository, snapshot_prefix=snashot_prefix)
+            object_list = get_snaplist(client, repository=repository, snapshot_prefix=snapshot_prefix)
         else:
             logger.error('Repository name not specified. Returning empty list.')
             object_list = []
@@ -365,7 +372,7 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
             try:
                 index_timestamp = re.search(regex, object_name).group(1)
             except AttributeError as e:
-                logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e))
+                logger.debug(json.dumps('Unable to match {0} with regular expression {1}.  Error: {2}'.format(object_name, regex, e)))
                 continue
             try:
                 object_time = get_index_time(index_timestamp, timestring)
@@ -376,12 +383,12 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
             try:
                 retval = re.search(regex, object_name['snapshot']).group(1)
             except AttributeError as e:
-                logger.debug('Unable to match {0} with regular expression {1}.  Error: {2}'.format(retval, regex, e))
+                logger.debug(json.dumps('Unable to match {0} with regular expression {1}.  Error: {2}'.format(retval, regex, e)))
                 continue
             try:
                 object_time = datetime.utcfromtimestamp(object_name['start_time_in_millis']/1000.0)
             except AttributeError as e:
-                logger.debug('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e))
+                logger.debug(json.dumps('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e)))
                 continue
             # if the index is older than the cutoff
         if object_time < cutoff:
@@ -464,7 +471,11 @@ def add_to_alias(client, index_name, alias=None, **kwargs):
     else:
         indices_in_alias = client.indices.get_alias(alias)
         if not index_name in indices_in_alias:
-            client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
+            if index_closed(client, index_name):
+                logger.info('Skipping index {0}: Already closed.'.format(index_name))
+                return True
+            else:
+                client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
         else:
             logger.info('Skipping index {0}: Index already exists in alias {1}...'.format(index_name, alias))
             return True
@@ -520,11 +531,37 @@ def disable_bloom_filter(client, index_name, **kwargs):
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     """
+    no_more_bloom = (1, 5, 0)
+    version_number = get_version(client)
     if index_closed(client, index_name): # Don't try to disable bloom filter on a closed index.  It will re-open them
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
     else:
-        client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
+        if version_number >= no_more_bloom:
+            logger.info('Skipping index {0}: Bloom filters no longer exist in Elasticsearch since v1.5.0'.format(index_name))
+        else:
+            client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
+
+### Change Replica Count
+def change_replicas(client, index_name, replicas=None, **kwargs):
+    """
+    Change the number of replicas, more or less, for the indicated index.
+    
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    :arg replicas: The number of replicas the index should have
+    """
+    if replicas == None:
+        logger.error('No replica count provided for {0}.'.format(index_name))
+        return True
+    if index_closed(client, index_name):
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    else:
+        logger.debug('Previous count for number_of_replicas={0}'.format(client.indices.get_settings(
+            index=index_name)[index_name]['settings']['index']['number_of_replicas']))
+        logger.info('Updating index setting number_of_replicas={0}'.format(replicas))
+        client.indices.put_settings(index=index_name, body='number_of_replicas={0}'.format(replicas))
 
 ### Change Replica Count
 def change_replicas(client, index_name, replicas=None, **kwargs):
@@ -629,7 +666,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
                     ignore_unavailable=False, include_global_state=True,
                     partial=False, wait_for_completion=True, **kwargs):
     """
-    Create a snapshot of provided indices (or ``_all``).
+    Create a snapshot of provided indices (or ``_all``) that are open.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to snapshot. Default is ``_all``
@@ -665,9 +702,14 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
         body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable, include_global_state=include_global_state, partial=partial)
         datestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
         snapshot_name = snapshot_name if snapshot_name else snapshot_prefix + datestamp
+        logger.info("Snapshot name: {0}".format(snapshot_name))
         all_snaps = get_snaplist(client, repository=repository, snapshot_prefix=snapshot_prefix)
         if not snapshot_name in all_snaps and len(indices) > 0:
-            client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
+            try:
+                client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
+            except elasticsearch.TransportError as e:
+                logger.error(json.dumps("Client raised a TransportError.  Error: {0}".format(e)))
+                return True
         elif len(indices) == 0:
             logger.warn("No indices provided.")
             return True
@@ -675,7 +717,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
             logger.info("Skipping: A snapshot with name '{0}' already exists.".format(snapshot_name))
             return True
     except elasticsearch.RequestError as e:
-        logger.error("Unable to create snapshot {0}.  Error: {1} Check logs for more information.".format(snapshot_name, e))
+        logger.error(json.dumps("Unable to create snapshot {0}.  Error: {1} Check logs for more information.".format(snapshot_name, e)))
         return True
 
 ### Delete a snapshot
@@ -684,7 +726,7 @@ def delete_snapshot(client, snap, **kwargs):
     Delete a snapshot (or comma-separated list of snapshots)
 
     :arg client: The Elasticsearch client connection
-    :arg snapshot_name: The snapshot name
+    :arg snap: The snapshot name
     :arg repository: The Elasticsearch snapshot repository to use
     """
     if not "repository" in kwargs:
@@ -694,7 +736,7 @@ def delete_snapshot(client, snap, **kwargs):
     try:
         client.snapshot.delete(repository=repository, snapshot=snap)
     except elasticsearch.RequestError as e:
-        logger.error("Unable to delete snapshot {0}.  Error: {1} Check logs for more information.".format(snap, e))
+        logger.error(json.dumps("Unable to delete snapshot {0}.  Error: {1} Check logs for more information.".format(snap, e)))
 
 # Operations typically used by the curator_script, directly or indirectly
 ## Loop through a list of objects and perform the indicated operation
@@ -842,7 +884,9 @@ def bloom(client, dry_run=False, **kwargs):
     """
     Disable bloom filter cache for indices ``older_than`` *n* ``time_unit``\s,
     matching the given ``timestring``, ``prefix``, and ``suffix``.
-    
+
+    Can optionally ``delay`` a given number of seconds after each optimization.
+
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
@@ -872,6 +916,7 @@ def bloom(client, dry_run=False, **kwargs):
         Can be empty. Wildcards acceptable.  Default is empty, ``''``.
     :arg exclude_pattern: Exclude indices matching the provided regular
         expression.
+    :arg delay: Pause *n* seconds after optimizing an index.
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
     kwargs['prepend'] = "DRY RUN: " if dry_run else ''
@@ -1148,10 +1193,10 @@ def snapshot(client, dry_run=False, **kwargs):
         return
     # Preserving kwargs intact for passing to _op_loop is the game here...
     all_indices       = kwargs['all_indices'] if 'all_indices' in kwargs else False
-    delete_older_than = kwargs['delete_older_than'] if 'delete_older_than' in kwargs else False
-    older_than        = kwargs['older_than'] if 'older_than' in kwargs else False
-    most_recent       = kwargs['most_recent'] if 'most_recent' in kwargs else False
-    if delete_older_than:
+    delete_older_than = kwargs['delete_older_than'] if 'delete_older_than' in kwargs else None
+    older_than        = kwargs['older_than'] if 'older_than' in kwargs else None
+    most_recent       = kwargs['most_recent'] if 'most_recent' in kwargs else None
+    if delete_older_than is not None:
         logger.info(kwargs['prepend'] + "Deleting specified snapshots...")
         kwargs['older_than'] = kwargs['delete_older_than'] # Fix for delete in this case only.
         snapshot_list = client.snapshot.get(repository=kwargs['repository'], snapshot="_all")['snapshots']
@@ -1162,16 +1207,17 @@ def snapshot(client, dry_run=False, **kwargs):
         logger.info(kwargs['prepend'] + "Capturing snapshots of specified indices...")
         if not all_indices:
             index_list = get_object_list(client, **kwargs)
-            if most_recent:
+            if most_recent is not None:
                 matching_indices = index_list[-kwargs['most_recent']:]
-            elif older_than:
+            elif older_than is not None:
                 matching_indices = list(filter_by_timestamp(object_list=index_list, **kwargs))
             else:
                 logger.error(kwargs['prepend'] + 'Missing argument: Must provide one of: older_than, most_recent, all_indices, delete_older_than')
                 return
+            logger.info(kwargs['prepend'] + 'Snapshot will capture indices: {0}'.format(', '.join(matching_indices)))
         else:
             matching_indices = '_all'
-        logger.info(kwargs['prepend'] + 'Snapshot will capture indices: {0}'.format(', '.join(matching_indices)))
+            logger.info(kwargs['prepend'] + 'Snapshot will capture all indices')
         if not dry_run:
             # Default `create_snapshot` behavior is to snap `_all` into a
             # snapshot named `snapshot_name` or `curator-%Y-%m-%dT%H:%M:%S`

@@ -7,7 +7,6 @@ import logging
 from datetime import timedelta, datetime, date
 
 import elasticsearch
-#from curator import *
 import curator
 
 try:
@@ -19,7 +18,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '2.1.0-dev'
+__version__ = '2.1.0'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -119,6 +118,7 @@ def make_parser():
     parser_bloom.set_defaults(func=curator.bloom)
     add_common_args(parser_bloom)
     parser_bloom.add_argument('--older-than', required=True, help='Disable bloom filter cache for indices older than n TIME_UNITs', type=int)
+    parser_bloom.add_argument('--delay', help='Number of seconds to delay after disabling the bloom filter cache of an index.', type=int, default=0)
 
     # Close
     parser_close = subparsers.add_parser('close', help='Close indices')
@@ -295,7 +295,7 @@ def main():
             sys.exit(1)
 
     if arguments.command == 'snapshot':
-        if not arguments.older_than and not arguments.most_recent and not arguments.delete_older_than and not arguments.all_indices:
+        if arguments.older_than is None and arguments.most_recent is None and arguments.delete_older_than is None and not arguments.all_indices:
             print('{0} snapshot: error: expect one of --all-indices, --older-than, --most-recent, or --delete-older-than'.format(sys.argv[0]))
             sys.exit(1)
         if arguments.older_than or arguments.most_recent or arguments.all_indices:

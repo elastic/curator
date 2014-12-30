@@ -3,18 +3,28 @@
 Changelog
 =========
 
-2.1.0 (? ? ?)
--------------
+2.1.0 (30 December 2014)
 
 **General**
 
  * Snapshot name now appears in log output or STDOUT. #178 (untergeek)
  * Replicas! You can now change the replica count of indices. Requested in #175 (untergeek)
+ * Delay option added to Bloom Filter functionality. #206 (untergeek)
+ * Add 2-digit years as acceptable pattern (y vs. Y). Reported in #209 (untergeek)
+ * Add Docker container definition #226 (christianvozar)
+ * Allow the use of 0 with --older-than, --most-recent and --delete-older-than. See #208. #211 (bobrik)
 
 **Bug fixes**
 
  * Edge case where 1.4.0.Beta1-SNAPSHOT would break version check. Reported in #183 (untergeek)
  * Typo fixed. #193 (ferki)
+ * Type fixed. #204 (gheppner)
+ * Shows proper error in the event of concurrent snapshots. #177 (untergeek)
+ * Fixes erroneous index display of ``_, a, l, l`` when --all-indices selected. Reported in #222 (untergeek)
+ * Use json.dumps() to escape exceptions. Reported in #210 (untergeek)
+ * Check if index is closed before adding to alias.  Reported in #214 (bt5e)
+ * No longer force-install argparse if pre-installed #216 (whyscream)
+ * Bloom filters have been removed from Elasticsearch 1.5.0. Update methods and tests to act accordingly. #233 (untergeek)
 
 2.0.2 (8 October 2014)
 ----------------------
