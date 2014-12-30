@@ -3,6 +3,12 @@
 Changelog
 =========
 
+2.1.1 (30 December 2014)
+
+**Bug fixes**
+
+ * Renamed unnecessarily redundant ``--replicas`` to ``--count`` in args for ``curator_script.py``
+
 2.1.0 (30 December 2014)
 
 **General**

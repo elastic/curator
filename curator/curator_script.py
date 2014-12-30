@@ -18,7 +18,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -147,7 +147,7 @@ def make_parser():
     parser_replicas.set_defaults(func=curator.replicas)
     add_common_args(parser_replicas)
     parser_replicas.add_argument('--older-than', required=True, help='Change replica count for indices older than n TIME_UNITs', type=int)
-    parser_replicas.add_argument('--replicas', required=True, help='Number of replicas the indices should have', type=int, default=1)
+    parser_replicas.add_argument('--count', dest='replicas', required=True, help='Number of replicas the indices should have', type=int, default=1)
 
     # Show indices
     parser_show = subparsers.add_parser('show', help='Show indices or snapshots')
