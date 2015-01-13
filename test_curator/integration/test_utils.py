@@ -13,6 +13,14 @@ class TestChangeReplicas(CuratorTestCase):
 
         self.assertEquals('1', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
 
+    def test_index_replicas_untouched(self):
+        self.create_index('test_index')
+        self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+
+        curator.change_replicas(self.client, 'test_index', replicas=0)
+
+        self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+
 class TestCloseIndex(CuratorTestCase):
     def test_positive(self):
         self.create_index('test_index')
