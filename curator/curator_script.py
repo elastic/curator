@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import logging
+import logging.handlers
 from datetime import timedelta, datetime, date
 
 import elasticsearch
@@ -41,6 +42,8 @@ DEFAULT_ARGS = {
     'dry_run': False,
     'debug': False,
     'log_level': 'INFO',
+    'log_type': 'stderr',
+    'log_syslog_facility': 'user',
     'logformat': 'Default',
     'all_indices': False,
     'show_indices': False,
@@ -88,6 +91,8 @@ def make_parser():
     parser.add_argument('--master-only', dest='master_only', action='store_true', help='Verify that the node is the elected master before continuing', default=False)
     parser.add_argument('-n', '--dry-run', action='store_true', help='If true, does not perform any changes to the Elasticsearch indices.', default=DEFAULT_ARGS['dry_run'])
     parser.add_argument('-D', '--debug', dest='debug', action='store_true', help='Debug mode', default=DEFAULT_ARGS['debug'])
+    parser.add_argument('--logtype', dest='log_type', action='store', help='Log type [syslog|file|stderr]. Default: stderr', default=DEFAULT_ARGS['log_type'], type=str)
+    parser.add_argument('--logsyslogfacility', dest='log_syslog_facility', action='store', help='syslog facility. Default: user', default=DEFAULT_ARGS['log_syslog_facility'], type=str)
     parser.add_argument('--loglevel', dest='log_level', action='store', help='Log level', default=DEFAULT_ARGS['log_level'], type=str)
     parser.add_argument('--logfile', dest='log_file', help='log file', type=str)
     parser.add_argument('--logformat', dest='logformat', help='Log output format [default|logstash]. Default: default', default=DEFAULT_ARGS['logformat'], type=str)
@@ -302,6 +307,8 @@ def main():
             timeout_override = True
 
     # Setup logging
+
+    # set logging level and format
     if arguments.debug:
         numeric_log_level = logging.DEBUG
         format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
@@ -310,7 +317,7 @@ def main():
         format_string = '%(asctime)s %(levelname)-9s %(message)s'
         if not isinstance(numeric_log_level, int):
             raise ValueError('Invalid log level: %s' % arguments.log_level)
-    
+
     date_string = None
     if arguments.logformat == 'logstash':
         os.environ['TZ'] = 'UTC'
@@ -318,10 +325,23 @@ def main():
         format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "name":"%(name)s", "function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
         date_string = '%Y-%m-%dT%H:%M:%S'
 
-    logging.basicConfig(level=numeric_log_level,
-                        format=format_string,
-                        datefmt=date_string,
-                        stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
+    logging.root.setLevel(numeric_log_level)
+    fmt = logging.Formatter(format_string,date_string)
+
+    # retain backwards compatibility by assuming log_type == 'file'
+    # if log_file is defined
+    if arguments.log_file:
+        handlr = logging.StreamHandler(stream=open(arguments.log_file, 'a'))
+
+    elif arguments.log_type == 'syslog':
+        handlr = logging.handlers.SysLogHandler(address = '/dev/log', facility = arguments.log_syslog_facility)
+    
+    # Fallback to using sys.stderr
+    else:
+        handlr = logging.StreamHandler(stream=sys.stderr)
+
+    handlr.setFormatter(fmt)
+    logging.root.addHandler(handlr)
 
     # Filter out logging from Elasticsearch and associated modules by default
     if not arguments.debug:
