@@ -558,8 +558,11 @@ def change_replicas(client, index_name, replicas=None, **kwargs):
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
     else:
-        logger.debug('Previous count for number_of_replicas={0}'.format(client.indices.get_settings(
-            index=index_name)[index_name]['settings']['index']['number_of_replicas']))
+        prev = client.indices.get_settings(index=index_name)[index_name]['settings']['index']['number_of_replicas']
+        logger.debug('Previous count for number_of_replicas={0}'.format(prev))
+        if prev == replicas:
+            logger.info('Index {0} replica count is already {1}. Skipping...'.format(index_name, replicas))
+            return True
         logger.info('Updating index setting number_of_replicas={0}'.format(replicas))
         client.indices.put_settings(index=index_name, body='number_of_replicas={0}'.format(replicas))
 
