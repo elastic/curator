@@ -19,7 +19,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '2.1.1'
+__version__ = '2.2.0-dev'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
