@@ -5,6 +5,7 @@ import sys
 import time
 import logging
 from datetime import timedelta, datetime, date
+import json
 
 import elasticsearch
 import curator
@@ -18,7 +19,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '2.1.1'
+__version__ = '2.2.0-dev'
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -187,6 +188,27 @@ def make_parser():
 
     return parser
 
+class LogstashFormatter(logging.Formatter):
+    # The LogRecord attributes we want to carry over to the Logstash message,
+    # mapped to the corresponding output key.
+    WANTED_ATTRS = {'levelname': 'loglevel',
+                    'funcName': 'function',
+                    'lineno': 'linenum',
+                    'message': 'message',
+                    'name': 'name'}
+
+    def converter(self, timevalue):
+        return time.gmtime(timevalue)
+
+    def format(self, record):
+        timestamp = '%s.%03dZ' % (
+            self.formatTime(record, datefmt='%Y-%m-%dT%H:%M:%S'), record.msecs)
+        result = {'message': record.getMessage(),
+                  '@timestamp': timestamp}
+        for attribute in set(self.WANTED_ATTRS).intersection(record.__dict__):
+            result[self.WANTED_ATTRS[attribute]] = getattr(record, attribute)
+        return json.dumps(result, sort_keys=True)
+
 class Whitelist(logging.Filter):
     def __init__(self, *whitelist):
         self.whitelist = [logging.Filter(name) for name in whitelist]
@@ -311,17 +333,14 @@ def main():
         if not isinstance(numeric_log_level, int):
             raise ValueError('Invalid log level: %s' % arguments.log_level)
     
-    date_string = None
+    handler = logging.StreamHandler(
+        open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
     if arguments.logformat == 'logstash':
-        os.environ['TZ'] = 'UTC'
-        time.tzset()
-        format_string = '{"@timestamp":"%(asctime)s.%(msecs)03dZ", "loglevel":"%(levelname)s", "name":"%(name)s", "function":"%(funcName)s", "linenum":"%(lineno)d", "message":"%(message)s"}'
-        date_string = '%Y-%m-%dT%H:%M:%S'
-
-    logging.basicConfig(level=numeric_log_level,
-                        format=format_string,
-                        datefmt=date_string,
-                        stream=open(arguments.log_file, 'a') if arguments.log_file else sys.stderr)
+        handler.setFormatter(LogstashFormatter())
+    else:
+        handler.setFormatter(logging.Formatter(format_string))
+    logging.root.addHandler(handler)
+    logging.root.setLevel(numeric_log_level)
 
     # Filter out logging from Elasticsearch and associated modules by default
     if not arguments.debug:
