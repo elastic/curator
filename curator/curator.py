@@ -428,25 +428,35 @@ def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
     # must filter them out.
     all_indices = get_indices(client, prefix=prefix, suffix=suffix, exclude_pattern=exclude_pattern)
     not_closed = [i for i in all_indices if not index_closed(client, i)]
-    csv_indices = ','.join(not_closed)
+    # Because we're building a csv list of indices to pass, we need to ensure 
+    # that we actually have at least one index before creating `csv_indices` 
+    # as an empty variable.
+    # 
+    # If csv_indices is empty, it will match _all indices, which is bad.
+    # See https://github.com/elasticsearch/curator/issues/254
+    logger.debug('List of indices found: {0}'.format(not_closed))
+    if not_closed:
+        csv_indices = ','.join(not_closed)
 
-    stats = client.indices.status(index=csv_indices)
-    
-    sorted_indices = sorted(
-        (
-            (index_name, index_stats['index']['primary_size_in_bytes'])
-            for (index_name, index_stats) in stats['indices'].items()
-        ),
-        reverse=True
-    )
+        stats = client.indices.status(index=csv_indices)
 
-    for index_name, index_size in sorted_indices:
-        disk_usage += index_size
+        sorted_indices = sorted(
+            (
+                (index_name, index_stats['index']['primary_size_in_bytes'])
+                for (index_name, index_stats) in stats['indices'].items()
+            ),
+            reverse=True
+        )
 
-        if disk_usage > disk_limit:
-            yield index_name
-        else:
-            logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
+        for index_name, index_size in sorted_indices:
+            disk_usage += index_size
+
+            if disk_usage > disk_limit:
+                yield index_name
+            else:
+                logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
+    else:
+        logger.warn('No indices found matching provided parameters!')
 
 # Operations
 ## Single-index operations
