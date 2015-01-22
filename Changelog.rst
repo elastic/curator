@@ -3,7 +3,17 @@
 Changelog
 =========
 
+2.1.2 (22 January 2015)
+-------------
+
+**Bug fixes**
+
+ * Do not try to set replica count if count matches provided argument. #247 (bobrik)
+ * Fix JSON logging (Logstash format). #250 (magnusbaeck)
+ * Fix bug in `filter_by_space()` which would match all indices if the provided patterns found no matches. Reported in #254 (untergeek)
+
 2.1.1 (30 December 2014)
+-------------
 
 **Bug fixes**
 
