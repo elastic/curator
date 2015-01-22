@@ -5,7 +5,7 @@ from datetime import timedelta, datetime, date
 
 import elasticsearch
 
-__version__ = '2.1.2'
+__version__ = '2.2.0-dev'
 
 logger = logging.getLogger(__name__)
 
