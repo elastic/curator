@@ -174,6 +174,8 @@ def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
         _indices.remove('.marvel-kibana')
     if 'kibana-int' in _indices:
         _indices.remove('kibana-int')
+    if '.kibana' in _indices:
+        _indices.remove('.kibana')
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
         return list(filter(lambda x: not pattern.search(x), _indices))
