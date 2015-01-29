@@ -112,6 +112,7 @@ def make_parser():
     parser_allocation.set_defaults(func=curator.allocation)
     add_common_args(parser_allocation)
     parser_allocation.add_argument('--older-than', required=True, help='Apply rule to indices older than n TIME_UNITs', type=int)
+    parser_allocation.add_argument('--not-older-than', required=False, help='Don\'t apply rule to indices older than n TIME_UNITs', type=int)
     parser_allocation.add_argument('--rule', required=True, help='Routing allocation rule to apply, e.g. tag=ssd', type=str)
 
     # Bloom

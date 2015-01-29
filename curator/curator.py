@@ -330,8 +330,9 @@ def get_object_list(client, data_type='index', prefix='logstash-', suffix='', re
 # Filtering
 ## By timestamp
 def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
-                        older_than=999999, prefix='logstash-', suffix='',
-                        snapshot_prefix='curator-', utc_now=None, **kwargs):
+                        older_than=None, not_older_than=None,
+                        prefix='logstash-', suffix='', utc_now=None,
+                        snapshot_prefix='curator-', **kwargs):
     """
     Pass in a list of indices or snapshots. Return a list of objects older
     than *n* ``time_unit``\s matching ``prefix``, ``timestring``, and
@@ -365,8 +366,11 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
     elif object_type == 'snapshot':
         regex = "(" + "^" + snapshot_prefix + '.*' + ")"
 
-    cutoff = get_cutoff(older_than=older_than, time_unit=time_unit, utc_now=utc_now)
-    
+    if older_than:
+        cutoff_older = get_cutoff(older_than=older_than, time_unit=time_unit, utc_now=utc_now)
+    if not_older_than:
+        cutoff_not_older = get_cutoff(older_than=not_older_than, time_unit=time_unit, utc_now=utc_now)
+
     for object_name in object_list:
         retval = object_name
         if object_type == 'index':
@@ -391,11 +395,12 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
             except AttributeError as e:
                 logger.debug('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e))
                 continue
-            # if the index is older than the cutoff
-        if object_time < cutoff:
-            yield retval
+        if older_than and object_time >= cutoff_older:
+            logger.info('{0} is not older than --older-than ({1} {2}).'.format(retval, older_than, time_unit))
+        elif not_older_than and object_time <= cutoff_not_older:
+            logger.info('{0} is older than --not-older-than ({1} {2}).'.format(retval, not_older_than, time_unit))
         else:
-            logger.info('{0} is within the threshold period ({1} {2}).'.format(retval, older_than, time_unit))
+            yield retval
 
 ## By space
 def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
@@ -851,6 +856,8 @@ def allocation(client, dry_run=False, **kwargs):
     :arg dry_run: If true, simulate, but do not perform the operation
     :arg older_than: Indices older than the indicated number of whole
         ``time_units`` will be operated on.
+    :arg not_older_than: Indices older than the indicated number of whole
+        ``time_units`` will NOT be operated on.
     :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
         is ``days``.
     :arg timestring: An strftime string to match the datestamp in an index name.
