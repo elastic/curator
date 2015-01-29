@@ -53,6 +53,37 @@ class TestCloseIndex(CuratorTestCase):
         )
         self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
 
+class TestOpenIndex(CuratorTestCase):
+    def test_index_will_not_be_opened(self):
+        #don't open an already opened index.
+        self.create_index('test_index')
+        self.assertIsNone(curator.open_index(self.client, 'test_index'))
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata'
+        )
+        self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
+
+    def test_close_open_index(self):
+        self.create_index('test_index')
+        self.assertIsNone(curator.close_index(self.client, 'test_index'))
+        #let's make sure it's closed.
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata',
+        )
+        self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
+
+        #it's closed, now open it.
+        self.assertIsNone(curator.open_index(self.client, 'test_index'))
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata'
+        )
+        self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
+
+
+
 class TestDeleteIndex(CuratorTestCase):
     def test_index_will_be_deleted(self):
         self.create_index('test_index')

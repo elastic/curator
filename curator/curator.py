@@ -516,7 +516,7 @@ def apply_allocation_rule(client, index_name, rule=None, **kwargs):
 
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
-    :arg rule: The routing allocation rule to apply, e.g. ``tag=ssd``.  Must be
+    :arg rule: The routing allocation rule to apply, e.g. ``tag=ssd``. Must be
         in the format of ``key=value``, and should match values declared on the
         correlating nodes in your cluster.
     """
@@ -589,6 +589,19 @@ def close_index(client, index_name, **kwargs):
     else:
         client.indices.flush(index=index_name)
         client.indices.close(index=index_name)
+
+### Open
+def open_index(client, index_name, **kwargs):
+    """
+    Open the indicated index.
+
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    """
+    if index_closed(client, index_name):
+        client.indices.open(index=index_name)
+    else:
+        logger.info('Skipping index {0}: Already open.'.format(index_name))
 
 ### Delete
 def delete_index(client, index_name, **kwargs):
@@ -960,6 +973,50 @@ def close(client, dry_run=False, **kwargs):
     matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
     _op_loop(client, matching_indices, op=close_index, dry_run=dry_run, **kwargs)
     logger.info(kwargs['prepend'] + 'Closed specified indices.')
+
+## curator open [ARGS]
+def open(client, dry_run=False, **kwargs):
+    """
+    Open indices ``older_than`` *n* ``time_unit``\s, matching the given
+    ``timestring``, ``prefix``, and ``suffix``.
+
+    .. note::
+       As this is an iterative function, default values are handled by the
+       target function(s).
+
+       Unless passed in `kwargs`, parameters other than ``client`` and
+       ``dry_run`` will have default values assigned by the functions being
+       called:
+
+       :py:func:`curator.curator.get_object_list`
+
+       :py:func:`curator.curator.filter_by_timestamp`
+
+       :py:func:`curator.curator.close_index`
+
+       These defaults are included here for documentation.
+
+    :arg client: The Elasticsearch client connection
+    :arg dry_run: If true, simulate, but do not perform the operation
+    :arg older_than: Indices older than the indicated number of whole
+        ``time_units`` will be operated on.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``.
+    :arg timestring: An strftime string to match the datestamp in an index name.
+    :arg prefix: A string that comes before the datestamp in an index name.
+        Can be empty. Wildcards acceptable.  Default is ``logstash-``.
+    :arg suffix: A string that comes after the datestamp of an index name.
+        Can be empty. Wildcards acceptable.  Default is empty, ``''``.
+    :arg exclude_pattern: Exclude indices matching the provided regular
+        expression.
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
+    """
+    kwargs['prepend'] = "DRY RUN:" if dry_run else ''
+    logging.info(kwargs['prepend'] + "Opening indices...")
+    index_list = get_object_list(client, **kwargs)
+    matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
+    _op_loop(client, matching_indices, op=open_index, dry_run=dry_run, **kwargs)
+    logger.info(kwargs['prepend'] + 'Opened specified indices.')
 
 ## curator delete [ARGS]
 def delete(client, dry_run=False, **kwargs):

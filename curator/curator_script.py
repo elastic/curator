@@ -135,6 +135,12 @@ def make_parser():
     delete_group.add_argument('--older-than', help='Delete indices older than n TIME_UNITs', type=int)
     delete_group.add_argument('--disk-space', help='Delete indices beyond DISK_SPACE gigabytes.', type=float)
 
+    # Open
+    parser_open = subparsers.add_parser('open', help='Open indices')
+    parser_open.setdefaults(func=curator.open)
+    add_common_args(parser_open)
+    parser_open.add_argument('--older-than', required=True, help='Open indices older than n TIME_UNITs', type=int)
+
     # Optimize
     parser_optimize = subparsers.add_parser('optimize', help='Optimize indices')
     parser_optimize.set_defaults(func=curator.optimize)

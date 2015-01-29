@@ -69,6 +69,7 @@ See the [Curator Wiki](http://github.com/elasticsearch/curator/wiki) on Github f
 * bloom - Disable bloom filter cache for expired indices
 * close - Close indices
 * delete - Delete indices
+* open - Open indices
 * optimize - Optimize (Lucene forceMerge) indices
 * show - Show indices or snapshots
 * snapshot - Snapshot indices to existing repository
