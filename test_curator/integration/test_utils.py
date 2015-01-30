@@ -82,7 +82,11 @@ class TestOpenIndex(CuratorTestCase):
         )
         self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
 
-
+class TestShardsPerNode(CuratorTestCase):
+    def test_set_shards_per_node(self):
+        self.create_index('logstash-2014.06.07')
+        self.assertIsNone(curator.shards_per_node(self.client, shards_per_node=-1, older_than=1,
+                                                  time_unit='days', prefix='logstash', timestring='%%Y.%%m.%%d'))
 
 class TestDeleteIndex(CuratorTestCase):
     def test_index_will_be_deleted(self):
