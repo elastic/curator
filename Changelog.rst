@@ -3,6 +3,15 @@
 Changelog
 =========
 
+2.1.x (? ? ?)
+
+**General**
+
+**Bug fixes**
+
+ * Fix edge case where trying to optimize an empty index causes an error. #265 (untergeek)
+
+
 2.1.2 (22 January 2015)
 -------------
 
@@ -68,7 +77,7 @@ Changelog
  * New! ``--suffix`` option in addition to ``--prefix`` #136 (untergeek)
  * New! Support for wildcards in prefix & suffix #136 (untergeek)
  * Complete refactor of snapshots.  Now supporting incrementals! (untergeek)
- 
+
 **Bug fix**
 
  * Incorrect error msg if no indices sent to create_snapshot (untergeek)
@@ -76,7 +85,7 @@ Changelog
  * Missing ``"`` in Logstash log format #143 (cassianoleal)
  * Change non-master node test to exit code 0, log as ``INFO``. #145 (untergeek)
  * `months` option missing from validate_timestring() (untergeek)
- 
+
 1.2.2 (29 July 2014)
 --------------------
 
@@ -96,7 +105,7 @@ Changelog
 **Bug fix**
 
  * Fixed the new logging when called by ``curator`` entrypoint.
-  
+
 1.2.0 (24 July 2014)
 --------------------
 
@@ -107,7 +116,7 @@ Changelog
  * New! Log output in logstash format ``--logformat logstash`` #111 (untergeek)
  * Updated! Cleaner default logs (debug still shows everything) (untergeek)
  * Improved! Dry runs are more visible in log output (untergeek)
- 
+
 Errata
 
  * The ``--separator`` option was removed in lieu of user-specified date patterns.
@@ -123,7 +132,7 @@ Errata
  * Prefix not passed in ``get_object_list()`` #106 (untergeek)
  * Use ``os.devnull`` instead of ``/dev/null`` for Windows #102 (untergeek)
  * The http auth feature was erroneously omitted #100 (bbuchacher)
- 
+
 1.1.2 (13 June 2014)
 --------------------
 
@@ -145,14 +154,14 @@ Errata
  * New! (sort of) Restored ``--log-level`` support #73 (xavier-calland)
  * New! show command-line options #82 via #68 (untergeek)
  * New! Shard Allocation Routing #82 via #62 (nickethier)
- 
+
 **Bug fix**
 
  * Fix ``--max_num_segments`` not being passed correctly #74 (untergeek)
  * Change ``BUILD_NUMBER`` to ``CURATOR_BUILD_NUMBER`` in ``setup.py`` #60 (mohabusama)
  * Fix off-by-one error in time calculations #66 (untergeek)
  * Fix testing with python3 #92 (untergeek)
- 
+
 Errata
 
  * Removed ``optparse`` compatibility.  Now requires ``argparse``.
@@ -165,7 +174,7 @@ Errata
  * compatible with ``elasticsearch-py`` 1.0 and Elasticsearch 1.0 (honzakral)
  * Lots of tests! (honzakral)
  * Streamline code for 1.0 ES versions (honzakral)
- 
+
 **Bug fix**
 
  * Fix ``find_expired_indices()`` to not skip closed indices (honzakral)
@@ -178,7 +187,7 @@ Errata
  * Documentation fixes #38 (dharrigan)
  * Add support for HTTPS URI scheme and ``optparse`` compatibility for Python 2.6 (gelim)
  * Add elasticsearch module version checking for future compatibility checks (untergeek)
- 
+
 0.6.1 (08 Feb 2014)
 -------------------
 
@@ -245,7 +254,7 @@ Errata
 
  * First version logged in ``CHANGELOG``
  * new ``--disable-bloom-days`` feature requires 0.90.9+
- 
+
    http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-codec.html#bloom-postings
-   
+
    This can save a lot of heap space on cold indexes (i.e. not actively indexing documents)
