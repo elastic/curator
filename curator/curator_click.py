@@ -106,9 +106,10 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             click.echo('Exclude indices matching {0}'.format(exclude))
             ilist.pop(-2)
         if startlen == len(ilist):
+            click.help_option()
             # No changes to the list, and all_indices isn't true.
             # This means no args were passed :(
-            click.echo("ERROR: No filters applied, but nofilter was not selected.")
+            click.echo("ERROR: No filters applied, and --all-indices was not selected.")
             click.echo("Exiting...")
             sys.exit(1)
     print('Index pattern regex is {0}'.format(get_regex(prefix, suffix, timestring, all_flag=all_indices)))
