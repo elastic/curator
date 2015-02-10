@@ -546,14 +546,14 @@ def disable_bloom_filter(client, index_name, **kwargs):
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     """
-    no_more_bloom = (1, 5, 0)
+    no_more_bloom = (1, 4, 0)
     version_number = get_version(client)
     if index_closed(client, index_name): # Don't try to disable bloom filter on a closed index.  It will re-open them
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
     else:
         if version_number >= no_more_bloom:
-            logger.info('Skipping index {0}: Bloom filters no longer exist in Elasticsearch since v1.5.0'.format(index_name))
+            logger.info('Skipping index {0}: Bloom filters no longer exist in Elasticsearch since v1.4.0'.format(index_name))
         else:
             client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
 

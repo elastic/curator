@@ -10,6 +10,7 @@ Changelog
 **Bug fixes**
 
  * Fix edge case where trying to optimize an empty index causes an error. #265 (untergeek)
+ * Bloom filters were disabled in ES 1.4, rather than delayed to 1.5. Reported in #267 (untergeek)
 
 
 2.1.2 (22 January 2015)
