@@ -522,10 +522,11 @@ def apply_allocation_rule(client, index_name, rule=None, **kwargs):
 
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
-    :arg rule: The routing allocation rule to apply, e.g. ``tag=ssd``.  Must be
-        in the format of ``key=value``, and should match values declared on the
-        correlating nodes in your cluster.
+    :arg rule: The routing allocation rule to apply, e.g. ``tag=ssd`` or ``shards_per_node=-1. Must be
+        in the format of ``key=value``. If key is ``tag``, it should match values declared on the
+        correlating nodes in your cluster. If key is ``shards_per_node`` the value should be -1 (default) or a value > 0.
     """
+    logger.error("apply_allocation_rule index=%s, args=%s", index_name, kwargs)
     if not rule:
         logger.error('No rule provided for {0}.'.format(index_name))
         return True
@@ -537,6 +538,24 @@ def apply_allocation_rule(client, index_name, rule=None, **kwargs):
     else:
         logger.info('Updating index setting index.routing.allocation.require.{0}={1}'.format(key,value))
         client.indices.put_settings(index=index_name, body='index.routing.allocation.require.{0}={1}'.format(key,value))
+
+### Shards Per Node
+def apply_shards_per_node(client, index_name, shards_per_node=-1, **kwargs):
+    """
+    Set total number of shards per node to an index.  See:
+    http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-allocation.html#_total_shards_per_node
+
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    :arg shards_per_node: Number of shards per node. -1 is default (unbounded), other valid values are > 0.
+    """
+    if index_closed(client, index_name):
+        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    else:
+        logger.info('Updating index setting index.routing.allocation.total_shards_per_node={0}'.format(shards_per_node))
+        client.indices.put_settings(index=index_name,
+              body='index.routing.allocation.total_shards_per_node={0}'.format(shards_per_node))
 
 ### Bloom
 def disable_bloom_filter(client, index_name, **kwargs):
@@ -595,6 +614,19 @@ def close_index(client, index_name, **kwargs):
     else:
         client.indices.flush(index=index_name)
         client.indices.close(index=index_name)
+
+### Open
+def open_index(client, index_name, **kwargs):
+    """
+    Open the indicated index.
+
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    """
+    if index_closed(client, index_name):
+        client.indices.open(index=index_name)
+    else:
+        logger.info('Skipping index {0}: Already open.'.format(index_name))
 
 ### Delete
 def delete_index(client, index_name, **kwargs):
@@ -876,6 +908,61 @@ def allocation(client, dry_run=False, **kwargs):
     _op_loop(client, matching_indices, op=apply_allocation_rule, dry_run=dry_run, **kwargs)
     logger.info(kwargs['prepend'] + 'Allocation/routing tags applied to specified indices.')
 
+
+## curator shardspernode
+def shards_per_node(client, dry_run=False, **kwargs):
+    """
+    Set total number of shards per node for indices ``older_than`` *n*
+    ``time_unit``\s, matching the given ``timestring``, ``prefix``, and
+    ``suffix`` by setting the provided values. Valid values are -1 (default,
+    unbounded), and values greater than zero. Zero is not valid.
+
+    .. note::
+       As this is an iterative function, default values are handled by the
+       target function(s).
+
+       Unless passed in `kwargs`, parameters other than ``client`` and
+       ``dry_run`` will have default values assigned by the functions being
+       called:
+
+       :py:func:`curator.curator.get_object_list`
+
+       :py:func:`curator.curator.filter_by_timestamp`
+
+       :py:func:`curator.curator.apply_shards_per_node`
+
+       These defaults are included here for documentation.
+
+    :arg client: The Elasticsearch client connection
+    :arg dry_run: If true, simulate, but do not perform the operation
+    :arg older_than: Indices older than the indicated number of whole
+        ``time_units`` will be operated on.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``.
+    :arg timestring: An strftime string to match the datestamp in an index name.
+    :arg prefix: A string that comes before the datestamp in an index name.
+        Can be empty. Wildcards acceptable.  Default is ``logstash-``.
+    :arg suffix: A string that comes after the datestamp of an index name.
+        Can be empty. Wildcards acceptable.  Default is empty, ``''``.
+    :arg shards_per_node: The number shards per node. -1 or > 0.
+    :arg exclude_pattern: Exclude indices matching the provided regular
+        expression.
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
+    """
+    kwargs['prepend'] = "DRY RUN: " if dry_run else ''
+    logging.info(kwargs['prepend'] + "Applying shards_per_node setting to indices...")
+
+    #sanity check
+    _s = kwargs['shards_per_node']
+    if _s < -1 or _s == 0:
+      logger.error("shards_per_node must be -1 or larger than zero.")
+      return
+    index_list = get_object_list(client, **kwargs)
+    matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
+    _op_loop(client, matching_indices, op=apply_shards_per_node, dry_run=dry_run, **kwargs)
+    logger.info(kwargs['prepend'] + 'Shards_per_node setting applied to specified indices.')
+
+
 ## curator bloom [ARGS]
 def bloom(client, dry_run=False, **kwargs):
     """
@@ -966,6 +1053,50 @@ def close(client, dry_run=False, **kwargs):
     matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
     _op_loop(client, matching_indices, op=close_index, dry_run=dry_run, **kwargs)
     logger.info(kwargs['prepend'] + 'Closed specified indices.')
+
+## curator open [ARGS]
+def open(client, dry_run=False, **kwargs):
+    """
+    Open indices ``older_than`` *n* ``time_unit``\s, matching the given
+    ``timestring``, ``prefix``, and ``suffix``.
+
+    .. note::
+       As this is an iterative function, default values are handled by the
+       target function(s).
+
+       Unless passed in `kwargs`, parameters other than ``client`` and
+       ``dry_run`` will have default values assigned by the functions being
+       called:
+
+       :py:func:`curator.curator.get_object_list`
+
+       :py:func:`curator.curator.filter_by_timestamp`
+
+       :py:func:`curator.curator.close_index`
+
+       These defaults are included here for documentation.
+
+    :arg client: The Elasticsearch client connection
+    :arg dry_run: If true, simulate, but do not perform the operation
+    :arg older_than: Indices older than the indicated number of whole
+        ``time_units`` will be operated on.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``.
+    :arg timestring: An strftime string to match the datestamp in an index name.
+    :arg prefix: A string that comes before the datestamp in an index name.
+        Can be empty. Wildcards acceptable.  Default is ``logstash-``.
+    :arg suffix: A string that comes after the datestamp of an index name.
+        Can be empty. Wildcards acceptable.  Default is empty, ``''``.
+    :arg exclude_pattern: Exclude indices matching the provided regular
+        expression.
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
+    """
+    kwargs['prepend'] = "DRY RUN:" if dry_run else ''
+    logging.info(kwargs['prepend'] + "Opening indices...")
+    index_list = get_object_list(client, **kwargs)
+    matching_indices = filter_by_timestamp(object_list=index_list, **kwargs)
+    _op_loop(client, matching_indices, op=open_index, dry_run=dry_run, **kwargs)
+    logger.info(kwargs['prepend'] + 'Opened specified indices.')
 
 ## curator delete [ARGS]
 def delete(client, dry_run=False, **kwargs):

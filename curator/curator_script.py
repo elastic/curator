@@ -135,6 +135,12 @@ def make_parser():
     delete_group.add_argument('--older-than', help='Delete indices older than n TIME_UNITs', type=int)
     delete_group.add_argument('--disk-space', help='Delete indices beyond DISK_SPACE gigabytes.', type=float)
 
+    # Open
+    parser_open = subparsers.add_parser('open', help='Open indices')
+    parser_open.set_defaults(func=curator.open)
+    add_common_args(parser_open)
+    parser_open.add_argument('--older-than', required=True, help='Open indices older than n TIME_UNITs', type=int)
+
     # Optimize
     parser_optimize = subparsers.add_parser('optimize', help='Optimize indices')
     parser_optimize.set_defaults(func=curator.optimize)
@@ -149,6 +155,13 @@ def make_parser():
     add_common_args(parser_replicas)
     parser_replicas.add_argument('--older-than', required=True, help='Change replica count for indices older than n TIME_UNITs', type=int)
     parser_replicas.add_argument('--count', dest='replicas', required=True, help='Number of replicas the indices should have', type=int, default=1)
+
+    # Shards per node
+    parser_shards_per_node = subparsers.add_parser('shardspernode', help='Set number of shards per node on indices')
+    parser_shards_per_node.set_defaults(func=curator.shards_per_node)
+    add_common_args(parser_shards_per_node)
+    parser_shards_per_node.add_argument('--older-than', required=True, help='set shards per node on indices older than n TIME_UNITs', type=int)
+    parser_shards_per_node.add_argument('--shards_per_node', help='Number of shards per node allowed', type=int)
 
     # Show indices
     parser_show = subparsers.add_parser('show', help='Show indices or snapshots')
