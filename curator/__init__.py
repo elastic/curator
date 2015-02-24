@@ -1,7 +1,7 @@
 import logging
 import elasticsearch
 
-from .._version import __version__
+from ._version import __version__
 
 logger = logging.getLogger(__name__)
 

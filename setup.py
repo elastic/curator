@@ -8,7 +8,7 @@ def fread(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 def get_version():
-    VERSIONFILE="_version.py"
+    VERSIONFILE="curator/_version.py"
     verstrline = fread(VERSIONFILE).strip()
     vsre = r"^__version__ = ['\"]([^'\"]*)['\"]"
     mo = re.search(vsre, verstrline, re.M)
@@ -23,10 +23,7 @@ def get_version():
 
 def get_install_requires():
     res = ['elasticsearch>=1.0.0,<2.0.0' ]
-    if sys.version_info < (2, 7):
-        res.append('argparse>=1.1.0')
-    if (3, 0) <= sys.version_info < (3, 2):
-        res.append('argparse>=1.1.0')
+    res.append('click>=3.3')
     return res
 
 setup(
@@ -44,8 +41,8 @@ setup(
     packages = ["curator"],
     include_package_data=True,
     entry_points = {
-        "console_scripts" : ["curator = curator.curator_script:main",
-                             "es_repo_mgr = curator.es_repo_mgr:main"]
+        "console_scripts" : ["curator = curator_click:main",
+                             "es_repo_mgr = es_repo_mgr:main"]
     },
     classifiers=[
         "Intended Audience :: Developers",

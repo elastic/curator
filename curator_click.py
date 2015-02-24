@@ -21,7 +21,7 @@ except ImportError:
         def emit(self, record):
             pass
 
-from ._version import __version__
+from curator import __version__
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
