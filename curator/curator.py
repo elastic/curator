@@ -20,6 +20,47 @@ DATE_REGEX = {
 }
 
 # Information retrieval
+
+def prune_kibana(indices):
+    """Remove any index named .kibana, kibana-int, or .marvel-kibana"""
+    if '.marvel-kibana' in indices:
+        indices.remove('.marvel-kibana')
+    if 'kibana-int' in indices:
+        indices.remove('kibana-int')
+    if '.kibana' in indices:
+        indices.remove('.kibana')
+    return indices
+
+def regex_iterate(indices, pattern, groupname=None, **kwargs):
+    """Iterate over all indices in the list and return a list of matches
+
+    """
+    logger.debug("regex_iterate: kwargs: {0}".format(kwargs))
+    object_type = kwargs['object_type'] if 'object_type' in kwargs else 'index'
+    result = []
+    p = re.compile(pattern)
+    for index in indices:
+        match = False
+        if groupname:
+            m = p.search(index)
+            if m:
+                if m.group(groupname):
+                    if groupname == "date":
+                        timestamp = m.group(groupname)
+                        # Get a boolean result
+                        match = timestamp_check(
+                            timestamp, timestring=kwargs['timestring'],
+                            time_unit=kwargs['time_unit'], method=kwargs['method'],
+                            value=kwargs['value'], object_type=object_type
+                            )
+        else:
+            m = p.match(index)
+            if m:
+                match = True
+        if match == True:
+            result.append(index)
+    return result
+
 ## Date & Time
 ### Date Regex
 def get_date_regex(timestring):
@@ -87,6 +128,39 @@ def get_target_month(month_count, utc_now=None):
     return datetime(target_date.year, target_date.month, target_date.day)
 
 ### Cutoff time
+def time_cutoff(unit_count=None, time_unit='days', utc_now=None):
+    """
+    Find the cutoff time based on ``unit_count`` and ``time_unit``.
+
+    :arg unit_count: ``time_unit`` multiplier
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
+    :rtype: Datetime object
+    """
+    if not unit_count:
+        logger.error("No value specified for unit_count.")
+        return
+    # time-injection for test purposes only
+    utc_now = utc_now if utc_now else datetime.utcnow()
+    # reset to start of the period to be sure we are not retiring a human by mistake
+    utc_now = utc_now.replace(minute=0, second=0, microsecond=0)
+
+    if time_unit == 'days':
+        utc_now = utc_now.replace(hour=0)
+    if time_unit == 'weeks':
+        # Since week math always uses Monday as the start of the week,
+        # this work-around resets utc_now to be Monday of the current week.
+        weeknow = utc_now.strftime('%Y-%W')
+        utc_now = get_index_time(weeknow, '%Y-%W')
+    if time_unit == 'months':
+        utc_now = utc_now.replace(hour=0)
+        cutoff = get_target_month(unit_count, utc_now=utc_now)
+    else:
+        # This cutoff must be a multiple of time_units
+        cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
+    return cutoff
+
 def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
     """
     Find the cutoff time based on ``older_than`` and ``time_unit``.
@@ -329,6 +403,51 @@ def get_object_list(client, data_type='index', prefix='logstash-', suffix='', re
 
 # Filtering
 ## By timestamp
+def timestamp_check(timestamp, timestring=None, time_unit='days',
+                    method='older_than', value=None, utc_now=None, **kwargs):
+    """
+    Check ``timestamp`` to see if it is ``value`` ``time_unit``s
+    ``method`` (older_than or newer_than) the calculated cutoff.
+
+    :arg timestamp: An strftime parsable date string.
+    :arg timestring: An strftime string to match against timestamp.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
+        is ``days``
+    :arg method: Whether the timestamp will be ``older_than`` or ``newer_than``
+        the indicated number of whole ``time_units`` will be operated on.
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
+    :rtype: Boolean
+    """
+    object_type = kwargs['object_type'] if 'object_type' in kwargs else 'index'
+    cutoff = time_cutoff(unit_count=value, time_unit=time_unit, utc_now=utc_now)
+
+    if object_type == 'index':
+        try:
+            object_time = get_index_time(timestamp, timestring)
+        except ValueError:
+            logger.error('Could not find a valid timestamp for timestring {0}'.format(timestring))
+
+    elif object_type == 'snapshot':
+        try:
+            object_time = datetime.utcfromtimestamp(float(timestamp)/1000.0)
+        except AttributeError as e:
+            logger.debug('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e))
+    else:
+        # This should not happen.  This is an error case.
+        logger.error("object_type is neither 'index' nor 'snapshot'.")
+        return
+
+    if method == "older_than":
+        if object_time < cutoff:
+            return True
+    elif method == "newer_than":
+        if object_time > cutoff:
+            return True
+    else:
+        logger.info('Timestamp "{0}" is within the threshold period ({1} {2}).'.format(timestamp, value, time_unit))
+    # If we've made it here, we failed.
+    return False
+
 def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
                         older_than=999999, prefix='logstash-', suffix='',
                         snapshot_prefix='curator-', utc_now=None, **kwargs):
