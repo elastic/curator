@@ -1,8 +1,20 @@
 ## Methods used for filtering indices
 
+from .utils import *
+
 import time
 import re
 from datetime import timedelta, datetime, date
+
+DATE_REGEX = {
+    'Y' : '4',
+    'y' : '2',
+    'm' : '2',
+    'W' : '2',
+    'U' : '2',
+    'd' : '2',
+    'H' : '2',
+}
 
 def regex_iterate(
     indices, pattern, groupname=None, object_type='index', timestring=None,

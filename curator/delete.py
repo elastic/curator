@@ -1,3 +1,4 @@
+from .utils import *
 
 def delete_indices(client, indices):
     """

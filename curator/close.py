@@ -1,3 +1,5 @@
+from .utils import *
+
 def close_indices(client, indices):
     """
     Close the indicated indices.  Flush before closing.

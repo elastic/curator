@@ -1,4 +1,5 @@
-### Bloom
+from .utils import *
+
 def disable_bloom_filter(client, indices):
     """
     Disable the bloom filter cache for the list of indices.

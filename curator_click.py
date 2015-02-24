@@ -21,18 +21,13 @@ except ImportError:
         def emit(self, record):
             pass
 
-__version__ = '3.0.0-dev'
+from ._version import __version__
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
 version_min = (1, 0, 0)
 
 logger = logging.getLogger(__name__)
-
-has_indices = False
-ilist = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
-slist = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
-
 
 DEFAULT_ARGS = {
     'host': 'localhost',
@@ -359,32 +354,32 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, exclude, nofilter):
         click.echo('ERROR: Cannot use "--disk-space" parameter for snapshot operations.')
         click.echo("Exiting...")
         sys.exit(1)
-    startlen = len(slist)
-    if nofilter:
-        click.echo('Will not filter.  Using all snapshots.')
-        return
-    if newer_than:
-        click.echo('Filter newer than {0}'.format(newer_than))
-        slist.pop(-1)
-    if older_than:
-        click.echo('Filter older than {0}'.format(older_than))
-        slist.pop(0)
-    if prefix:
-        click.echo('Include only prefix {0}'.format(prefix))
-        slist.pop(3)
-    if suffix:
-        click.echo('Include only suffix {0}'.format(suffix))
-        slist.pop(-3)
-    if exclude:
-        click.echo('Exclude snapshots matching {0}'.format(exclude))
-        slist.pop(-2)
-    if startlen == len(slist):
-        # No changes to the list, and nofilter isn't true.
-        # This means no args were passed :(
-        click.echo("ERROR: No filters applied, but nofilter was not selected.")
-        click.echo("Exiting...")
-        sys.exit(1)
-    print('We will do action: {0} with snapshot list: {1}'.format(ctx.parent.info_name, slist))
+    # startlen = len(slist)
+    # if nofilter:
+    #     click.echo('Will not filter.  Using all snapshots.')
+    #     return
+    # if newer_than:
+    #     click.echo('Filter newer than {0}'.format(newer_than))
+    #     slist.pop(-1)
+    # if older_than:
+    #     click.echo('Filter older than {0}'.format(older_than))
+    #     slist.pop(0)
+    # if prefix:
+    #     click.echo('Include only prefix {0}'.format(prefix))
+    #     slist.pop(3)
+    # if suffix:
+    #     click.echo('Include only suffix {0}'.format(suffix))
+    #     slist.pop(-3)
+    # if exclude:
+    #     click.echo('Exclude snapshots matching {0}'.format(exclude))
+    #     slist.pop(-2)
+    # if startlen == len(slist):
+    #     # No changes to the list, and nofilter isn't true.
+    #     # This means no args were passed :(
+    #     click.echo("ERROR: No filters applied, but nofilter was not selected.")
+    #     click.echo("Exiting...")
+    #     sys.exit(1)
+    # print('We will do action: {0} with snapshot list: {1}'.format(ctx.parent.info_name, slist))
 
 
 @click.group()

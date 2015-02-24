@@ -1,3 +1,4 @@
+from .utils import *
 
 def change_replicas(client, indices, replicas=None):
     """

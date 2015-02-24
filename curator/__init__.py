@@ -1,19 +1,9 @@
 import logging
 import elasticsearch
 
-__version__ = '3.0.0-dev'
+from .._version import __version__
 
 logger = logging.getLogger(__name__)
-
-DATE_REGEX = {
-    'Y' : '4',
-    'y' : '2',
-    'm' : '2',
-    'W' : '2',
-    'U' : '2',
-    'd' : '2',
-    'H' : '2',
-}
 
 from .utils import *
 from .filter import *

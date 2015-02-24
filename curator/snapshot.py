@@ -1,3 +1,5 @@
+from .utils import *
+
 def get_repository(client, repository=''):
     """
     Return configuration information for the indicated repository.

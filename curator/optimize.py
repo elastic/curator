@@ -1,3 +1,5 @@
+from .utils import *
+
 def optimize_index(client, index_name, max_num_segments=2, **kwargs):
     """
     Optimize (Lucene forceMerge) index to ``max_num_segments`` per shard
