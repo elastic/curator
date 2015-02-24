@@ -265,6 +265,8 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         )
     logger.debug("Full list of indices: {0}".format(_indices))
 
+    # Just to be sure we keep the original "full" index list pure,
+    # we'll work on a copy called filtered.
     filtered = _indices
 
     if all_indices:
@@ -284,7 +286,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         # It is possible to want to filter based on the presence
         # of a timestring, but not based on date, so we don't exit here.
         if timestring:
-            click.echo('Time string to match: {0}'.format(timestring))
+            logger.debug('Time string to match: {0}'.format(timestring))
 
         if newer_than or older_than:
             if not filtered:
