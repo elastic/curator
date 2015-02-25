@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 @click.option('--max_num_segments', type=int, default=2, show_default=True,
             expose_value=True,
             help='Merge to this number of segments per shard.')
+@click.option('--request_timeout', type=int, default=218600, show_default=True,
+            expose_value=True,
+            help='Allow this many seconds before the transaction times out.')
 @click.pass_context
 def optimize(ctx, delay):
     """Optimize Indices"""

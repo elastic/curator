@@ -9,12 +9,17 @@ from datetime import timedelta, datetime, date
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
 
-from curator import curator_script
-
 from unittest import SkipTest, TestCase
 from mock import Mock
 
 client = None
+
+DATEMAP = {
+    'months': '%Y.%m',
+    'weeks': '%Y.%W',
+    'days': '%Y.%m.%d',
+    'hours': '%Y.%m.%d.%H',
+}
 
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
@@ -50,13 +55,9 @@ class CuratorTestCase(TestCase):
         super(CuratorTestCase, self).setUp()
         self.client = get_client()
 
-        # make sure we can inject any parameters to the curator; since it takes
-        # all it's params from cmdline we have to resort to mocking
-        self._old_parse = curator_script.make_parser
-        curator_script.make_parser = Mock()
-        curator_script.make_parser.return_value = self
-        args = curator_script.DEFAULT_ARGS.copy()
+        args = {}
         args['host'], args['port'] = host, port
+        args['time_unit'] = 'days'
         self.args = args
         dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         self.args['location'] = tempfile.mkdtemp(suffix=dirname)
@@ -68,21 +69,16 @@ class CuratorTestCase(TestCase):
         self.delete_repositories()
         self.client.indices.delete(index='*')
         self.client.indices.delete_template(name='*', ignore=404)
-        curator_script.make_parser = self._old_parse
         if os.path.exists(self.args['location']):
             shutil.rmtree(self.args['location'])
 
     def parse_args(self):
         return Args(self.args)
 
-    def run_curator(self, **kwargs):
-        self.args.update(kwargs)
-        curator_script.main()
-
     def create_indices(self, count, unit=None):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
-        format = curator_script.DATEMAP[unit]
+        format = DATEMAP[unit]
         if not unit == 'months':
             step = timedelta(**{unit: 1})
             for x in range(count):
@@ -92,14 +88,14 @@ class CuratorTestCase(TestCase):
             now = date.today()
             d = date(now.year, now.month, 1)
             self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
-            
+
             for i in range(1, count):
                 if d.month == 1:
                     d = date(d.year-1, 12, 1)
                 else:
                     d = date(d.year, d.month-1, 1)
                 self.create_index(self.args['prefix'] + datetime(d.year, d.month, 1).strftime(format), wait_for_yellow=False)
-        
+
         self.client.cluster.health(wait_for_status='yellow')
 
     def create_index(self, name, shards=1, wait_for_yellow=True):

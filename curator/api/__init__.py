@@ -10,7 +10,9 @@ from .allocate import *
 from .bloom import *
 from .close import *
 from .delete import *
+from .opener import *
 from .optimize import *
 from .replicas import *
+from .show import *
 from .snapshot import *
 # from .curator import *

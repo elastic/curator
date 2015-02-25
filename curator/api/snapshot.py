@@ -90,7 +90,7 @@ def create_snapshot_body(indices, ignore_unavailable=False,
 def create_snapshot(client, indices='_all', snapshot_name=None,
                     snapshot_prefix='curator-', repository='',
                     ignore_unavailable=False, include_global_state=True,
-                    partial=False, wait_for_completion=True, **kwargs):
+                    partial=False, wait_for_completion=True, request_timeout=21600):
     """
     Create a snapshot of provided indices (or ``_all``) that are open.
 
@@ -132,7 +132,7 @@ def create_snapshot(client, indices='_all', snapshot_name=None,
         all_snaps = get_snaplist(client, repository=repository, snapshot_prefix=snapshot_prefix)
         if not snapshot_name in all_snaps and len(indices) > 0:
             try:
-                client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion)
+                client.snapshot.create(repository=repository, snapshot=snapshot_name, body=body, wait_for_completion=wait_for_completion, request_timeout=request_timeout)
             except elasticsearch.TransportError as e:
                 logger.error("Client raised a TransportError.  Error: {0}".format(e))
                 return True
