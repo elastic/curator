@@ -49,6 +49,6 @@ setup(
         "Intended Audience :: System Administrators",
         "License :: OSI Approved :: Apache Software License",
     ],
-    test_suite = "test_curator.run_tests.run_all",
+    test_suite = "test.run_tests.run_all",
     tests_require = ["mock", "nose", "coverage", "nosexcover"]
 )

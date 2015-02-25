@@ -4,10 +4,12 @@ import re
 import time
 import logging
 import json
-from .cli_utils import *
+from .utils import *
 
 import elasticsearch
-import curator
+from ..api import *
+
+logger = logging.getLogger(__name__)
 
 # Elasticsearch versions supported
 version_max  = (2, 0, 0)
@@ -55,7 +57,7 @@ def check_version(client):
 
     :arg client: The Elasticsearch client connection
     """
-    version_number = curator.get_version(client)
+    version_number = get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
         print('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
@@ -82,7 +84,7 @@ def get_client(ctx):
         # Verify the version is acceptable.
         check_version(client)
         # Verify "master_only" status, if applicable
-        if d["master_only"] and not curator.is_master_node(client):
+        if d["master_only"] and not is_master_node(client):
             logger.info('Master-only flag detected. Connected to non-master node. Aborting.')
             sys.exit(9)
         return client
@@ -174,7 +176,7 @@ def filter_callback(ctx, param, value):
         kwargs = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
                     "timestring": ctx.params['timestring'], "value": value,
                     "method": param.name }
-        date_regex = curator.get_date_regex(ctx.params['timestring'])
+        date_regex = get_date_regex(ctx.params['timestring'])
         regex = REGEX_MAP[param.name].format(date_regex)
     elif param.name == 'regex':
         regex = "r'{0}'".format(value)
@@ -188,7 +190,7 @@ def filter_callback(ctx, param, value):
             ctx.obj["filtered"] = list(filter(lambda x: not pattern.search(x), ctx.obj["filtered"]))
     else:
         logger.debug("REGEX = {0}".format(regex))
-        ctx.obj["filtered"] = curator.regex_iterate(ctx.obj["filtered"], regex, **kwargs)
+        ctx.obj["filtered"] = regex_iterate(ctx.obj["filtered"], regex, **kwargs)
     logger.debug("Filtered index list: {0}".format(ctx.obj["filtered"]))
     return value
 
@@ -202,9 +204,9 @@ def filter_timestring_only(ctx, timestring):
     # need to copy over ctx.obj['indices']
     if not ctx.obj["filtered"]:
         ctx.obj["filtered"] = ctx.obj["indices"]
-    date_regex = curator.get_date_regex(timestring)
+    date_regex = get_date_regex(timestring)
     regex = r'^.*{0}.*$'.format(date_regex)
-    ctx.obj["filtered"] = curator.regex_iterate(ctx.obj["filtered"], regex)
+    ctx.obj["filtered"] = regex_iterate(ctx.obj["filtered"], regex)
     logger.debug("Filtered index list: {0}".format(ctx.obj["filtered"]))
 
 def add_indices_callback(ctx, param, value):
