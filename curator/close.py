@@ -1,4 +1,5 @@
 from .utils import *
+import elasticsearch
 
 import logging
 logger = logging.getLogger(__name__)
@@ -10,6 +11,7 @@ def close_indices(client, indices):
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
+    :rtype: bool
     """
     indices = ensure_list(indices)
     try:
@@ -19,3 +21,14 @@ def close_indices(client, indices):
     except:
         logger.error("Error closing indices.  Check logs for more information.")
         return False
+
+def close(client, indices):
+    """
+    Helper method called by the script.
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :rtype: bool
+    """
+
+    return close_indices(client, indices)

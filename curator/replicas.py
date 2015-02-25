@@ -1,4 +1,5 @@
 from .utils import *
+import elasticsearch
 
 import logging
 logger = logging.getLogger(__name__)
@@ -11,6 +12,7 @@ def change_replicas(client, indices, replicas=None):
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
     :arg replicas: The number of replicas the indices should have
+    :rtype: bool
     """
     if replicas == None:
         logger.error('No replica count provided.')
@@ -26,3 +28,14 @@ def change_replicas(client, indices, replicas=None):
         except:
             logger.error("Error changing replica count.  Check logs for more information.")
             return False
+
+def replicas(client, indices, replicas=None):
+    """
+    Helper method called by the script.
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :arg replicas: The number of replicas the indices should have
+    :rtype: bool
+    """
+    return change_replicas(client, indices, replicas=replicas)

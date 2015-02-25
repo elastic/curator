@@ -137,7 +137,7 @@ def time_cutoff(unit_count=None, time_unit='days', utc_now=None):
     :rtype: Datetime object
     """
     if not unit_count:
-        logger.error("No value specified for unit_count.")
+        logger.error("Missing value for unit_count.")
         return
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
@@ -159,7 +159,7 @@ def time_cutoff(unit_count=None, time_unit='days', utc_now=None):
         cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
     return cutoff
 
-def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
+def get_cutoff(older_than=None, time_unit='days', utc_now=None):
     """
     Find the cutoff time based on ``older_than`` and ``time_unit``.
 
@@ -169,6 +169,10 @@ def get_cutoff(older_than=999999, time_unit='days', utc_now=None):
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     :rtype: Datetime object
     """
+    if not older_than:
+        logger.error("Missing value for older_than.")
+        return False
+
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
     # reset to start of the period to be sure we are not retiring a human by mistake
@@ -235,67 +239,67 @@ def timestamp_check(timestamp, timestring=None, time_unit='days',
     # If we've made it here, we failed.
     return False
 
-def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
-                    exclude_pattern=None, **kwargs):
-    """
-    Yield a list of indices to delete based on space consumed, starting with
-    the oldest.
-
-    :arg client: The Elasticsearch client connection
-    :arg disk_space: Delete indices over *n* gigabytes, starting from the
-        oldest indices.
-    :arg prefix: A string that comes before the datestamp in an index name.
-        Can be empty. Wildcards acceptable.  Default is ``logstash-``.
-    :arg suffix: A string that comes after the datestamp of an index name.
-        Can be empty. Wildcards acceptable.  Default is empty, ``''``.
-    :arg exclude_pattern: Exclude indices matching the provided regular
-        expression.
-    :rtype: generator object (list of strings)
-    """
-
-    disk_usage = 0.0
-    disk_limit = disk_space * 2**30
-
-    # Use of exclude_pattern here could be _very_ important if you don't
-    # want an index pruned even if it is old.
-    exclude_pattern = kwargs['exclude_pattern'] if 'exclude_pattern' in kwargs else ''
-
-    # These two lines allow us to use common filtering by regex before
-    # gathering stats.  However, there are still pitfalls.  You may still
-    # wind up deleting more of one kind of index than another if you have
-    # multiple kinds.  Also, it still won't work on closed indices, so we
-    # must filter them out.
-    all_indices = get_indices(client, prefix=prefix, suffix=suffix, exclude_pattern=exclude_pattern)
-    not_closed = [i for i in all_indices if not index_closed(client, i)]
-    # Because we're building a csv list of indices to pass, we need to ensure
-    # that we actually have at least one index before creating `csv_indices`
-    # as an empty variable.
-    #
-    # If csv_indices is empty, it will match _all indices, which is bad.
-    # See https://github.com/elasticsearch/curator/issues/254
-    logger.debug('List of indices found: {0}'.format(not_closed))
-    if not_closed:
-        csv_indices = ','.join(not_closed)
-
-        stats = client.indices.status(index=csv_indices)
-
-        sorted_indices = sorted(
-            (
-                (index_name, index_stats['index']['primary_size_in_bytes'])
-                for (index_name, index_stats) in stats['indices'].items()
-            ),
-            reverse=True
-        )
-
-        for index_name, index_size in sorted_indices:
-            disk_usage += index_size
-
-            if disk_usage > disk_limit:
-                yield index_name
-            else:
-                logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
-    else:
-        logger.warn('No indices found matching provided parameters!')
+# def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
+#                     exclude_pattern=None, **kwargs):
+#     """
+#     Yield a list of indices to delete based on space consumed, starting with
+#     the oldest.
+#
+#     :arg client: The Elasticsearch client connection
+#     :arg disk_space: Delete indices over *n* gigabytes, starting from the
+#         oldest indices.
+#     :arg prefix: A string that comes before the datestamp in an index name.
+#         Can be empty. Wildcards acceptable.  Default is ``logstash-``.
+#     :arg suffix: A string that comes after the datestamp of an index name.
+#         Can be empty. Wildcards acceptable.  Default is empty, ``''``.
+#     :arg exclude_pattern: Exclude indices matching the provided regular
+#         expression.
+#     :rtype: generator object (list of strings)
+#     """
+#
+#     disk_usage = 0.0
+#     disk_limit = disk_space * 2**30
+#
+#     # Use of exclude_pattern here could be _very_ important if you don't
+#     # want an index pruned even if it is old.
+#     exclude_pattern = kwargs['exclude_pattern'] if 'exclude_pattern' in kwargs else ''
+#
+#     # These two lines allow us to use common filtering by regex before
+#     # gathering stats.  However, there are still pitfalls.  You may still
+#     # wind up deleting more of one kind of index than another if you have
+#     # multiple kinds.  Also, it still won't work on closed indices, so we
+#     # must filter them out.
+#     all_indices = get_indices(client, prefix=prefix, suffix=suffix, exclude_pattern=exclude_pattern)
+#     not_closed = [i for i in all_indices if not index_closed(client, i)]
+#     # Because we're building a csv list of indices to pass, we need to ensure
+#     # that we actually have at least one index before creating `csv_indices`
+#     # as an empty variable.
+#     #
+#     # If csv_indices is empty, it will match _all indices, which is bad.
+#     # See https://github.com/elasticsearch/curator/issues/254
+#     logger.debug('List of indices found: {0}'.format(not_closed))
+#     if not_closed:
+#         csv_indices = ','.join(not_closed)
+#
+#         stats = client.indices.status(index=csv_indices)
+#
+#         sorted_indices = sorted(
+#             (
+#                 (index_name, index_stats['index']['primary_size_in_bytes'])
+#                 for (index_name, index_stats) in stats['indices'].items()
+#             ),
+#             reverse=True
+#         )
+#
+#         for index_name, index_size in sorted_indices:
+#             disk_usage += index_size
+#
+#             if disk_usage > disk_limit:
+#                 yield index_name
+#             else:
+#                 logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
+#     else:
+#         logger.warn('No indices found matching provided parameters!')
 
 # def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
 #                         older_than=999999, prefix='logstash-', suffix='',

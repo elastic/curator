@@ -1,4 +1,5 @@
 from .utils import *
+import elasticsearch
 
 import logging
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ def apply_allocation_rule(client, indices, rule=None):
     :arg rule: The routing allocation rule to apply, e.g. ``tag=ssd``.  Must be
         in the format of ``key=value``, and should match values declared on the
         correlating nodes in your cluster.
+    :rtype: bool
     """
     if not rule:
         logger.error('No rule provided for {0}.'.format(index_name))
@@ -30,3 +32,16 @@ def apply_allocation_rule(client, indices, rule=None):
     except:
         logger.error("Error in updating index settings with allocation rule.  Check logs for more information.")
         return False
+
+def allocation(client, indices, rule=None):
+    """
+    Helper method called by the script.
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :arg rule: The routing allocation rule to apply, e.g. ``tag=ssd``.  Must be
+        in the format of ``key=value``, and should match values declared on the
+        correlating nodes in your cluster.
+    :rtype: bool
+    """
+    return apply_allocation_rule(client, indices, rule=rule)

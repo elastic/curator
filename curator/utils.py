@@ -1,3 +1,4 @@
+import elasticsearch
 import time
 import re
 from datetime import timedelta, datetime, date
@@ -28,8 +29,10 @@ def to_csv(indices):
     indices = ensure_list(indices) # in case of a single value passed
     if len(indices) > 1:
         return ','.join(sorted(indices))
-    else:
+    elif len(indices) == 1:
         return indices[0]
+    else:
+        return None
 
 def check_csv(value):
     """
@@ -51,6 +54,7 @@ def prune_kibana(indices):
     """Remove any index named .kibana, kibana-int, or .marvel-kibana
 
     :arg indices: A list of indices to act upon.
+    :rtype: list
     """
     indices = ensure_list(indices)
     if '.marvel-kibana' in indices:
@@ -60,8 +64,6 @@ def prune_kibana(indices):
     if '.kibana' in indices:
         indices.remove('.kibana')
     return indices
-
-
 
 ### Index state
 def index_closed(client, index_name):
