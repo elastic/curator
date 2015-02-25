@@ -13,7 +13,6 @@ import curator
 version_max  = (2, 0, 0)
 version_min = (1, 0, 0)
 
-
 REGEX_MAP = {
     'timestring': r'^.*{0}.*$',
     'newer_than': r'^.*(?P<date>{0}).*$',
