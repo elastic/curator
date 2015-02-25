@@ -3,11 +3,12 @@
 import click
 import sys
 import os
+import re
 import time
 import logging
 from datetime import timedelta, datetime, date
 import json
-from collections import OrderedDict
+#from collections import OrderedDict
 
 import elasticsearch
 import curator
@@ -54,6 +55,14 @@ DEFAULT_ARGS = {
     'partial': False,
 }
 
+REGEX_MAP = {
+    'timestring': r'^.*{0}.*$',
+    'newer_than': r'^.*(?P<date>{0}).*$',
+    'older_than': r'^.*(?P<date>{0}).*$',
+    'prefix': r'^{0}.*$',
+    'suffix': r'^.*{0}$',
+}
+
 class LogstashFormatter(logging.Formatter):
     # The LogRecord attributes we want to carry over to the Logstash message,
     # mapped to the corresponding output key.
@@ -97,15 +106,14 @@ def check_version(client):
 
 def show_vars(ctx, param, value):
     """Showing the local variables passed"""
-    logger.debug("HEY! {0} has a value of {1}".format(param.name, value))
-    logger.debug("CTX! {0}".format(ctx.params))
+    logger.debug("CTX! {0} has a value of {1} and the CTX contains: {2}".format(param.name, value, ctx.params))
     return value
 
 def get_client(ctx):
     """Return an Elasticsearch client using context parameters
 
     """
-    d = ctx.parent.parent.params
+    d = ctx.params
     logger.debug("Client CTX: {0}".format(d))
 
     try:
@@ -155,35 +163,6 @@ def validate_timestring(timestring, time_unit):
         sys.exit(1)
     return
 
-def validate_args(ctx):
-    """
-    Validate possibly conflicting arguments
-    """
-    error = False
-    p = ctx.params
-    logger.debug("p = {0}".format(p))
-    if p['time_unit']:
-        if not p['timestring']:
-            logger.error("Must provide timestring with --time-unit")
-            error = True
-        else:
-            logger.debug('Time unit for filtering: {0}'.format(p['time_unit']))
-    if p['newer_than']:
-        if not p['timestring']:
-            logger.error("Must provide timestring with --newer-than")
-            error = True
-        if not p['time_unit']:
-            logger.error("Must provide time_unit with --newer-than")
-            error = True
-    if p['older_than']:
-        if not p['timestring']:
-            logger.error("Must provide timestring with --older-than")
-            error = True
-        if not p['time_unit']:
-            logger.error("Must provide time_unit with --older-than")
-            error = True
-    return error
-
 def validate_timeout(command, timeout, timeout_override=False):
     """Validate client connection args. Correct where necessary."""
     # Override the timestamp in case the end-user doesn't.
@@ -198,136 +177,172 @@ def validate_timeout(command, timeout, timeout_override=False):
         timeout = replacement_timeout
     return timeout
 
+def filter_any(param):
+    """Test all flags to see if any filtering is being done"""
+    retval = False
+    if param.name == "regex":
+        return True
+    if param.name == "prefix":
+        return True
+    if param.name == "suffix":
+        return True
+    if param.name == "newer_than":
+        return True
+    if param.name == "older_than":
+        return True
+    if param.name == "timestring":
+        return True
+    if param.name == "exclude":
+        return True
+    return retval
 
+def filter_callback(ctx, param, value):
+    """
+    Filter ctx.obj["filtered"] based on what shows up here.
+    """
+    # Stop here if None or empty value
+    if not value:
+        return value
+    else:
+        kwargs = {}
+
+    # If we're calling a filtered object and ctx.obj['filtered'] is empty we
+    # need to copy over ctx.obj['indices']
+    if not ctx.obj["filtered"]:
+        if filter_any(param):
+            ctx.obj["filtered"] = ctx.obj["indices"]
+
+    if param.name in ['older_than', 'newer_than']:
+        kwargs = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
+                    "timestring": ctx.params['timestring'], "value": value,
+                    "method": param.name }
+        date_regex = curator.get_date_regex(ctx.params['timestring'])
+        regex = REGEX_MAP[param.name].format(date_regex)
+    elif param.name == 'regex':
+        regex = "r'{0}'".format(value)
+    elif param.name in ['prefix', 'suffix']:
+        regex = REGEX_MAP[param.name].format(value)
+
+    if param.name == 'exclude':
+        for e in value:
+            logger.info('Excluding indices matching {0}'.format(e))
+            pattern = re.compile(e)
+            ctx.obj["filtered"] = list(filter(lambda x: not pattern.search(x), ctx.obj["filtered"]))
+    else:
+        logger.debug("REGEX = {0}".format(regex))
+        ctx.obj["filtered"] = curator.regex_iterate(ctx.obj["filtered"], regex, **kwargs)
+    logger.debug("Filtered index list: {0}".format(ctx.obj["filtered"]))
+    return value
+
+def filter_timestring_only(ctx, timestring):
+    """
+    Because Click will not allow option dependencies, this is a work-around
+    just in case someone is using timestamp filtering without using
+    ``older_than`` or ``newer_than``
+    """
+    # If we're calling a filtered object and ctx.obj['filtered'] is empty we
+    # need to copy over ctx.obj['indices']
+    if not ctx.obj["filtered"]:
+        ctx.obj["filtered"] = ctx.obj["indices"]
+    date_regex = curator.get_date_regex(timestring)
+    regex = r'^.*{0}.*$'.format(date_regex)
+    ctx.obj["filtered"] = curator.regex_iterate(ctx.obj["filtered"], regex)
+    logger.debug("Filtered index list: {0}".format(ctx.obj["filtered"]))
+
+def add_indices_callback(ctx, param, value):
+    """
+    Add indices (if they exist) to ctx.obj["add_indices"]
+    They will be added to the actionable list just before the action is executed.
+    """
+    # Only add an index if it actually exists, hence we check the original
+    # list here
+    for i in value:
+        if i in ctx.obj["indices"]:
+            logger.info('Adding index {0} from command-line argument'.format(i))
+            ctx.obj["add_indices"].append(i)
+        else:
+            logger.warn('Index {0} not found!'.format(i))
+    return value
 
 #######################################
 ### This is where the magic happens ###
 #######################################
-@click.command()
-@click.option('--newer-than', type=int,
+@click.command(short_help="Index selection.")
+@click.option('--newer-than', type=int, callback=filter_callback,
                 help='Include only indices newer than n time_units')
-@click.option('--older-than', type=int,
+@click.option('--older-than', type=int, callback=filter_callback,
                 help='Include only indices older than n time_units')
-@click.option('--prefix', type=str,
+@click.option('--prefix', type=str, callback=filter_callback,
                 help='Include only indices beginning with prefix.')
-@click.option('--suffix', type=str,
+@click.option('--suffix', type=str, callback=filter_callback,
                 help='Include only indices ending with suffix.')
-@click.option('--time-unit',
+@click.option('--time-unit', is_eager=True,
                 type=click.Choice(['hours', 'days', 'weeks', 'months']),
                 help='Unit of time to reckon by')
-@click.option('--timestring', type=str,
+@click.option('--timestring', type=str, is_eager=True,
                 help="Python strftime string to match your index definition, e.g. 2014.07.15 would be %%Y.%%m.%%d")
-@click.option('--regex', type=str,
-                help="Provide your own regex.  Must be in python re style, e.g. r'^prefix-.*-suffix$'")
-@click.option('--exclude', multiple=True,
+@click.option('--regex', type=str, callback=filter_callback,
+                help="Provide your own regex, e.g '^prefix-.*-suffix$'")
+@click.option('--exclude', multiple=True, callback=filter_callback,
                 help='Exclude matching indices. Can be invoked multiple times.')
-@click.option('--index', multiple=True,
+@click.option('--index', multiple=True, callback=add_indices_callback,
                 help='Include the provided index in the list. Can be invoked multiple times.')
 @click.option('--all-indices', is_flag=True,
                 help='Do not filter indices.  Act on all indices.')
 @click.pass_context
 def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             timestring, regex, exclude, index, all_indices):
-    """Provide a filtered list of indices."""
-    # This is also the action part of the script now, where an action requires
-    # a list of indices to act on.
+    """
+    Get a list of indices to act on from the provided arguments, then perform
+    the command [alias, allocation, bloom, close, delete, etc.] on the resulting
+    list.
 
-    # The primary args are the root-level ones, for Elasticsearch and the main
-    # program
-    primary_args = ctx.parent.parent.params
-    logging.debug("primary_args: {0}".format(primary_args))
-    # The action args are for the selected command
-    action_args = ctx.parent.params
-    logging.debug("action_args: {0}".format(action_args))
-    local_args = locals()
-    logging.debug("locals: {0}".format(local_args))
+    """
 
-    # Do simple exit conditions before connecting client
-    has_errors = validate_args(ctx)
-    if has_errors:
-        sys.exit(1)
+    action_list = []
 
-    logging.info("Job starting...")
+    # Work-around if filtering by timestring without older_than or newer_than
+    if timestring and not older_than and not newer_than:
+        filter_timestring_only(ctx, timestring)
 
-    if primary_args["dry_run"]:
-        logging.info("DRY RUN MODE.  No changes will be made.")
-
-    client = get_client(ctx)
-
-    # Get a master-list of indices
-    _indices = sorted(client.indices.get_settings(
-        index='*', params={'expand_wildcards': 'open,closed'}).keys()
-        )
-    logger.debug("Full list of indices: {0}".format(_indices))
-
-    # Just to be sure we keep the original "full" index list pure,
-    # we'll work on a copy called filtered.
-    filtered = _indices
-
+    # This effectively overrides any prior options and makes it use all indices.
     if all_indices:
         logger.info('Matching all indices. Ignoring flags other than --exclude.')
-    else:
-        if prefix:
-            logger.info('Include only prefix {0}'.format(prefix))
-            myregex = r'^{0}.*$'.format(prefix)
-            filtered = curator.regex_iterate(filtered, myregex)
-            logger.debug("Filtered index list: {0}".format(filtered))
-        if suffix:
-            logger.info('Include only suffix {0}'.format(suffix))
-            myregex = r'^.*{0}$'.format(suffix)
-            filtered = curator.regex_iterate(filtered, myregex)
-            logger.debug("Filtered index list: {0}".format(filtered))
+        ctx.obj["filtered"] = ctx.obj["indices"]
+        for e in exclude:
+            logger.info('Excluding indices matching {0}'.format(e))
+            pattern = re.compile(e)
+            ctx.obj["filtered"] = list(filter(lambda x: not pattern.search(x), ctx.obj["filtered"]))
 
-        # It is possible to want to filter based on the presence
-        # of a timestring, but not based on date, so we don't exit here.
-        if timestring:
-            logger.debug('Time string to match: {0}'.format(timestring))
-
-        if newer_than or older_than:
-            if not filtered:
-                filtered = _indices
-
-        if newer_than:
-            date_regex = curator.get_date_regex(timestring)
-            myregex = r'^.*(?P<date>{0}).*$'.format(date_regex)
-            filtered = curator.regex_iterate(
-                filtered, myregex, groupname="date", timestring=timestring,
-                time_unit=time_unit, method="newer_than", value=newer_than
-                )
-            logger.info('Filter newer than {0}'.format(newer_than))
-
-        if older_than:
-            date_regex = curator.get_date_regex(timestring)
-            myregex = r'^.*(?P<date>{0}).*$'.format(date_regex)
-            filtered = curator.regex_iterate(
-                filtered, myregex, groupname="date", timestring=timestring,
-                time_unit=time_unit, method="older_than", value=older_than
-                )
-            logger.info('Filter older than {0}'.format(older_than))
-
-    for e in exclude:
-        # Exclude on filtered
-        logger.info('Excluding indices matching {0}'.format(e))
-        pattern = re.compile(e)
-        filtered = list(filter(lambda x: not pattern.search(x), filtered))
-
-    filtered = sorted(list(OrderedDict.fromkeys(filtered)))
-    filtered = curator.prune_kibana(filtered)
-    logger.debug("Pruned list of indices: {0}".format(filtered))
+    if ctx.obj["filtered"]:
+        if ctx.parent.info_name == "delete": # Protect against accidental delete
+            logger.info("Pruning Kibana-related indices to prevent accidental deletion.")
+            ctx.obj["filtered"] = curator.prune_kibana(ctx.obj["filtered"])
+        action_list.extend(ctx.obj["filtered"])
 
     if index:
-        logger.debug("Manually adding indices specified by --index argument(s)")
-        filtered.extend(index)
+        action_list.extend(ctx.obj["add_indices"])
 
-    logger.debug('ACTION: {0} will be executed against the following indices: {1}'.format(ctx.parent.info_name, filtered))
-    # This goofy turnaround keeps the args looking sane, but makes sense
-    # programmatically
-    if ctx.parent.info_name == 'snapshot':
-        if 'no_wait_for_completion' in ctx.parent.params.keys():
-            wait_for_completion = False
-        else:
-            wait_for_completion = True
-            print("Wait for completion? : {0}".format(wait_for_completion))
+    if action_list:
+        # This ugly one liner makes a unique set, then into a sorted list of
+        # indices to prevent actions from hitting the same index twice.
+        action_list = sorted(list(set(action_list)))
+        logger.debug('ACTION: {0} will be executed against the following indices: {1}'.format(ctx.parent.info_name, action_list))
+
+        # This goofy turnaround keeps the args looking sane, but makes sense
+        # programmatically.
+        if ctx.parent.info_name == 'snapshot':
+            if 'no_wait_for_completion' in ctx.params:
+                wait_for_completion = False
+            else:
+                wait_for_completion = True
+
+        # Do action here!!!
+    else:
+        logger.warn('No indices matched provided args.')
+        click.echo(click.style('ERROR. No indices matched provided args.', fg='red', bold=True))
+        sys.exit(99)
+
 
 # Snapshots
 @click.command()
@@ -395,38 +410,56 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, exclude, nofilter):
 @click.option('--loglevel', help='Log level', default=DEFAULT_ARGS['log_level'])
 @click.option('--logfile', help='log file')
 @click.option('--logformat', help='Log output format [default|logstash].', default=DEFAULT_ARGS['logformat'])
+@click.version_option(version=__version__)
 @click.pass_context
 def cli(ctx, host, url_prefix, port, ssl, auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
     """Curator for Elasticsearch indices. See http://github.com/elasticsearch/curator/wiki
     """
-    # Setup logging
-    if debug:
-        numeric_log_level = logging.DEBUG
-        format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
-    else:
-        numeric_log_level = getattr(logging, loglevel.upper(), None)
-        format_string = '%(asctime)s %(levelname)-9s %(message)s'
-        if not isinstance(numeric_log_level, int):
-            raise ValueError('Invalid log level: {0}'.format(loglevel))
+    # Check for --help, because we want a client created here otherwise
+    args = " ".join(sys.argv)
+    pattern = re.compile(r'^.*\-\-help.*$')
+    wants_help = pattern.match(args)
 
-    handler = logging.StreamHandler(
-        open(logfile, 'a') if logfile else sys.stderr)
-    if logformat == 'logstash':
-        handler.setFormatter(LogstashFormatter())
-    else:
-        handler.setFormatter(logging.Formatter(format_string))
-    logging.root.addHandler(handler)
-    logging.root.setLevel(numeric_log_level)
+    if not wants_help:
+        # Setup logging
+        if debug:
+            numeric_log_level = logging.DEBUG
+            format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
+        else:
+            numeric_log_level = getattr(logging, loglevel.upper(), None)
+            format_string = '%(asctime)s %(levelname)-9s %(message)s'
+            if not isinstance(numeric_log_level, int):
+                raise ValueError('Invalid log level: {0}'.format(loglevel))
 
-    # Filter out logging from Elasticsearch and associated modules by default
-    if not debug:
-        for handler in logging.root.handlers:
-            handler.addFilter(Whitelist('root', '__main__', 'curator', 'curator.curator'))
+        handler = logging.StreamHandler(
+            open(logfile, 'a') if logfile else sys.stderr)
+        if logformat == 'logstash':
+            handler.setFormatter(LogstashFormatter())
+        else:
+            handler.setFormatter(logging.Formatter(format_string))
+        logging.root.addHandler(handler)
+        logging.root.setLevel(numeric_log_level)
 
-    # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
-    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
+        # Filter out logging from Elasticsearch and associated modules by default
+        if not debug:
+            for handler in logging.root.handlers:
+                handler.addFilter(Whitelist('root', '__main__', 'curator', 'curator.curator'))
 
+        # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
+        logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
 
+        logging.info("Job starting...")
+
+        if dry_run:
+            logging.info("DRY RUN MODE.  No changes will be made.")
+
+        ctx.obj["client"] = get_client(ctx)
+
+        # Get a master-list of indices
+        ctx.obj["indices"] = sorted(ctx.obj["client"].indices.get_settings(
+            index='*', params={'expand_wildcards': 'open,closed'}).keys()
+            )
+        logger.debug("All indices: {0}".format(ctx.obj["indices"]))
 
 @cli.group('alias')
 @click.option('--name', required=True, help="Alias name", type=str)
@@ -458,7 +491,7 @@ allocation.add_command(indices)
 @click.pass_context
 def bloom(ctx, delay):
     """Disable bloom filter cache"""
-    ctx.obj = {"timeout_override" : True}
+    ctx.obj["timeout_override"] = True
     logging.debug("ACTION: Disable bloom filter cache")
     if delay > 0:
         logging.debug("CONFIGURATION: Add a {0} second delay between iterations".format(delay))
@@ -479,7 +512,6 @@ def delete(ctx, disk_space):
     """Delete indices or snapshots"""
     logging.debug("ACTION: Delete indices")
     if disk_space:
-        #ctx.obj = {"disk_space" : True}
         logging.debug("CONFIGURATION: Delete by space")
     else:
         logging.debug("CONFIGURATION: Delete by filter")
@@ -492,7 +524,7 @@ delete.add_command(snapshots)
 @click.pass_context
 def optimize(ctx, delay):
     """Optimize Indices"""
-    ctx.obj = {"timeout_override" : True}
+    ctx.obj["timeout_override"] = True
     logging.debug("ACTION: Optimize Indices")
     if delay > 0:
         logging.debug("CONFIGURATION: Add a {0} second delay between iterations".format(delay))
@@ -523,7 +555,7 @@ replicas.add_command(indices)
 @click.pass_context
 def snapshot(ctx, repository, snapshot_name, snapshot_prefix, no_wait_for_completion, ignore_unavailable, include_global_state, partial):
     """Take snapshots of indices (Backup)"""
-    ctx.obj = {"timeout_override" : True}
+    ctx.obj["timeout_override"] = True
     logging.debug("ACTION: Take snapshots of indices (Backup)")
     if no_wait_for_completion:
         wait_for_completion = False
@@ -535,7 +567,7 @@ def main():
     start = time.time()
 
     # Run the CLI!
-    cli()
+    cli(obj={"filtered": [], "add_indices": []})
 
     logger.info('Done in {0}.'.format(timedelta(seconds=time.time()-start)))
 

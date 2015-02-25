@@ -2,9 +2,12 @@
 
 from .utils import *
 
+import logging
 import time
 import re
 from datetime import timedelta, datetime, date
+
+logger = logging.getLogger(__name__)
 
 DATE_REGEX = {
     'Y' : '4',
