@@ -2,6 +2,9 @@ import time
 import re
 from datetime import timedelta, datetime, date
 
+import logging
+logger = logging.getLogger(__name__)
+
 def ensure_list(indices):
     """
     Return a list, even if indices is a single value

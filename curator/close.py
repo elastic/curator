@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def close_indices(client, indices):
     """
     Close the indicated indices.  Flush before closing.

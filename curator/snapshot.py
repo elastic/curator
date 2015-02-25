@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def get_repository(client, repository=''):
     """
     Return configuration information for the indicated repository.

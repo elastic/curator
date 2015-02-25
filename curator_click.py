@@ -415,11 +415,12 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, exclude, nofilter):
 def cli(ctx, host, url_prefix, port, ssl, auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
     """Curator for Elasticsearch indices. See http://github.com/elasticsearch/curator/wiki
     """
-    # Check for --help, because we want a client created here otherwise
+    # Check for --help flag
     args = " ".join(sys.argv)
     pattern = re.compile(r'^.*\-\-help.*$')
     wants_help = pattern.match(args)
 
+    # If no --help flag, then begin in earnest...
     if not wants_help:
         # Setup logging
         if debug:

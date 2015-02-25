@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def delete_indices(client, indices):
     """
     Delete the indicated indices, including closed indices.

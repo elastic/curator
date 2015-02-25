@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def change_replicas(client, indices, replicas=None):
     """
     Change the number of replicas, more or less, for the indicated indices.

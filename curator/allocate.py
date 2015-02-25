@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def apply_allocation_rule(client, indices, rule=None):
     """
     Apply a required allocation rule to a list of indices.  See:

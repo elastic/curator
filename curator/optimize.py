@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def optimize_index(client, index_name, max_num_segments=2, **kwargs):
     """
     Optimize (Lucene forceMerge) index to ``max_num_segments`` per shard

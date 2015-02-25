@@ -1,5 +1,8 @@
 from .utils import *
 
+import logging
+logger = logging.getLogger(__name__)
+
 def get_alias(client, alias):
     """
     Return information about the specified alias.
