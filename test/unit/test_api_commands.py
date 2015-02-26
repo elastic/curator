@@ -24,18 +24,12 @@ aliases_retval = {
 indices_space  = { 'indices' : {
         'index1' : { 'index' : { 'primary_size_in_bytes': 1083741824 }},
         'index2' : { 'index' : { 'primary_size_in_bytes': 1083741824 }}}}
+shards         = { 'indices': { named_index: { 'shards': {
+        '0': [ { 'num_search_segments' : 15 }, { 'num_search_segments' : 21 } ],
+        '1': [ { 'num_search_segments' : 19 }, { 'num_search_segments' : 16 } ] }}}}
+optimize_tuple = (4, 71)
 
 class TestAlias(TestCase):
-    def test_get_alias_positive(self):
-        client = Mock()
-        client.indices.exists_alias.return_value = True
-        client.indices.get_alias.return_value = aliases_retval
-        retval = sorted(curator.get_alias(client, named_alias))
-        self.assertEqual(named_indices, retval)
-    def test_get_alias_negative(self):
-        client = Mock()
-        client.indices.exists_alias.return_value = False
-        self.assertFalse(curator.get_alias(client, named_alias))
     def test_add_to_alias_bad_csv(self):
         client = Mock()
         c = "a,b,c,d"
@@ -221,6 +215,69 @@ class TestOpen(TestCase):
         client = Mock()
         client.indices.open.side_effect = fake_fail
         self.assertFalse(curator.opener(client, named_indices))
+
+class TestOptimize(TestCase):
+    def test_optimize_index_bad_csv(self):
+        client = Mock()
+        self.assertFalse(curator.optimize_index(client, "a,b,c,d", max_num_segments=2))
+    def test_optimize_index_missing_arg(self):
+        client = Mock()
+        self.assertFalse(curator.optimize_index(client, named_index))
+    def test_optimize_index_closed(self):
+        client = Mock()
+        client.cluster.state.return_value = closed_index
+        self.assertTrue(curator.optimize_index(client, named_index, max_num_segments=2))
+    def test_optimize_index_positive(self):
+        client = Mock()
+        client.indices.segments.return_value = shards
+        client.cluster.state.return_value = open_index
+        client.indices.optimize.return_value = None
+        self.assertTrue(curator.optimize_index(client, named_index, max_num_segments=2))
+    def test_optimize_index_negative(self):
+        client = Mock()
+        client.indices.segments.return_value = shards
+        client.cluster.state.return_value = open_index
+        client.indices.optimize.side_effect = fake_fail
+        self.assertFalse(curator.optimize_index(client, named_index, max_num_segments=2))
+    def test_optimize_positive(self):
+        client = Mock()
+        client.indices.segments.return_value = shards
+        client.cluster.state.return_value = open_index
+        client.indices.optimize.return_value = None
+        self.assertTrue(curator.optimize(client, named_index, max_num_segments=2))
+    def test_optimize_negative(self):
+        client = Mock()
+        client.indices.segments.return_value = shards
+        client.cluster.state.return_value = open_index
+        client.indices.optimize.side_effect = fake_fail
+        self.assertFalse(curator.optimize(client, named_index, max_num_segments=2))
+
+class TestReplicas(TestCase):
+    def test_change_replicas_param_check(self):
+        client = Mock()
+        # Testing for the omission of the replicas param
+        self.assertFalse(curator.change_replicas(client, named_indices))
+    def test_change_replicas_positive(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.indices.put_settings.return_value = None
+        self.assertTrue(curator.change_replicas(client, named_indices, replicas=0))
+    def test_change_replicas_negative(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.indices.put_settings.side_effect = fake_fail
+        self.assertFalse(curator.change_replicas(client, named_indices, replicas=0))
+    def test_replicas_positive(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.indices.put_settings.return_value = None
+        self.assertTrue(curator.replicas(client, named_indices, replicas=0))
+    def test_replicas_negative(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.indices.put_settings.side_effect = fake_fail
+        self.assertFalse(curator.replicas(client, named_indices, replicas=0))
+
 
 class TestShow(TestCase):
     def setUp(self):

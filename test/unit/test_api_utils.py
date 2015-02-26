@@ -4,6 +4,25 @@ from mock import Mock
 
 from curator import api as curator
 
+named_indices  = [ "index1", "index2" ]
+named_alias    = 'alias_name'
+alias_retval   = { "pre_aliased_index": { "aliases" : { named_alias : { }}}}
+aliases_retval = {
+    "index1": { "aliases" : { named_alias : { } } },
+    "index2": { "aliases" : { named_alias : { } } },
+    }
+
+class TestGetAlias(TestCase):
+    def test_get_alias_positive(self):
+        client = Mock()
+        client.indices.exists_alias.return_value = True
+        client.indices.get_alias.return_value = aliases_retval
+        retval = sorted(curator.get_alias(client, named_alias))
+        self.assertEqual(named_indices, retval)
+    def test_get_alias_negative(self):
+        client = Mock()
+        client.indices.exists_alias.return_value = False
+        self.assertFalse(curator.get_alias(client, named_alias))
 
 class TestEnsureList(TestCase):
     def test_ensure_list_returns_lists(self):

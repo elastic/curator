@@ -19,13 +19,13 @@ def change_replicas(client, indices, replicas=None):
         return False
     else:
         indices = prune_closed(client, indices)
-        logger.info('Updating index setting number_of_replicas={0}'.format(replicas))
+        logger.info('Updating index setting: number_of_replicas={0}'.format(replicas))
         try:
             client.indices.put_settings(index=to_csv(indices),
                 body='number_of_replicas={0}'.format(replicas))
             return True
-        except:
-            logger.error("Error changing replica count.  Check logs for more information.")
+        except Exception as e:
+            logger.error("Error changing replica count.  Exception {0}  Check logs for more information.".format(e.message))
             return False
 
 def replicas(client, indices, replicas=None):

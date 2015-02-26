@@ -6,6 +6,20 @@ from datetime import timedelta, datetime, date
 import logging
 logger = logging.getLogger(__name__)
 
+def get_alias(client, alias):
+    """
+    Return information about the specified alias.
+
+    :arg client: The Elasticsearch client connection
+    :arg alias: Alias name to operate on.
+    :rtype: list of strings
+    """
+    if client.indices.exists_alias(alias):
+        return client.indices.get_alias(name=alias).keys()
+    else:
+        logger.error('Unable to find alias {0}.'.format(alias))
+        return False
+
 def get_indices(client):
     try:
         indices = client.indices.get_settings(
