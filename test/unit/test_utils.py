@@ -5,7 +5,118 @@ from mock import Mock
 from curator import api as curator
 
 
-class TestUtils(TestCase):
+class TestEnsureList(TestCase):
+    def test_ensure_list_returns_lists(self):
+        l = ["a", "b", "c", "d"]
+        e = ["a", "b", "c", "d"]
+        self.assertEqual(e, curator.ensure_list(l))
+        l = "abcd"
+        e = ["abcd"]
+        self.assertEqual(e, curator.ensure_list(l))
+        l = [["abcd","defg"], 1, 2, 3]
+        e = [["abcd","defg"], 1, 2, 3]
+        self.assertEqual(e, curator.ensure_list(l))
+        l = {"a":"b", "c":"d"}
+        e = [{"a":"b", "c":"d"}]
+        self.assertEqual(e, curator.ensure_list(l))
+
+class TestTo_CSV(TestCase):
+    def test_to_csv_will_return_csv(self):
+        l = ["a", "b", "c", "d"]
+        c = "a,b,c,d"
+        self.assertEqual(c, curator.to_csv(l))
+    def test_to_csv_will_return_single(self):
+        l = ["a"]
+        c = "a"
+        self.assertEqual(c, curator.to_csv(l))
+    def test_to_csv_will_return_None(self):
+        l = []
+        self.assertIsNone(curator.to_csv(l))
+
+class TestCheckCSV(TestCase):
+    def test_check_csv_positive(self):
+        c = "1,2,3"
+        self.assertTrue(curator.check_csv(c))
+    def test_check_csv_negative(self):
+        c = "12345"
+        self.assertFalse(curator.check_csv(c))
+    def test_check_csv_list(self):
+        l = ["1", "2", "3"]
+        self.assertTrue(curator.check_csv(l))
+    def test_check_csv_wrong_value(self):
+        v = 123
+        self.assertIsNone(curator.check_csv(v))
+
+class TestPruneKibana(TestCase):
+    def test_prune_kibana_positive(self):
+        l = [
+            "logstash-2015.02.25", "logstash-2015.02.24", ".kibana",
+            ".marvel-kibana", "kibana-int", ".marvel-2015.02.25",
+            ".marvel-2015.02.24",
+            ]
+        r = [
+            "logstash-2015.02.25", "logstash-2015.02.24", ".marvel-2015.02.25",
+            ".marvel-2015.02.24",
+            ]
+        self.assertEqual(r, curator.prune_kibana(l))
+    def test_prune_kibana_negative(self):
+        l = [
+            "logstash-2015.02.25", "logstash-2015.02.24", ".marvel-2015.02.25",
+            ".marvel-2015.02.24",
+            ]
+        r = [
+            "logstash-2015.02.25", "logstash-2015.02.24", ".marvel-2015.02.25",
+            ".marvel-2015.02.24",
+            ]
+        self.assertEqual(r, curator.prune_kibana(l))
+    def test_prune_kibana_empty(self):
+        l = [ ".kibana", ".marvel-kibana", "kibana-int", ]
+        r = []
+        self.assertEqual(r, curator.prune_kibana(l))
+
+class TestGetVersion(TestCase):
+    def test_positive(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '9.9.9'} }
+        version = curator.get_version(client)
+        self.assertEqual(version, (9,9,9))
+    def test_negative(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '9.9.9'} }
+        version = curator.get_version(client)
+        self.assertNotEqual(version, (8,8,8))
+    def test_dev_version_4_dots(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '9.9.9.dev'} }
+        version = curator.get_version(client)
+        self.assertEqual(version, (9,9,9))
+    def test_dev_version_with_dash(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '9.9.9-dev'} }
+        version = curator.get_version(client)
+        self.assertEqual(version, (9,9,9))
+
+class TestIsMasterNode(TestCase):
+    def test_positive(self):
+        client = Mock()
+        client.nodes.info.return_value = {
+            'nodes': { "foo" : "bar"}
+        }
+        client.cluster.state.return_value = {
+            "master_node" : "foo"
+        }
+        self.assertTrue(curator.is_master_node(client))
+    def test_negative(self):
+        client = Mock()
+        client.nodes.info.return_value = {
+            'nodes': { "bad" : "mojo"}
+        }
+        client.cluster.state.return_value = {
+            "master_node" : "foo"
+        }
+        self.assertFalse(curator.is_master_node(client))
+
+class TestGetIndexTime(TestCase):
     def test_get_index_time(self):
         for text, datestring, dt in [
             ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
@@ -18,59 +129,58 @@ class TestUtils(TestCase):
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
                 ]:
             self.assertEqual(dt, curator.get_index_time(text, datestring))
-
 # class TestShowIndices(TestCase):
-#     def test_show_indices(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'prefix-2014.01.03': True,
-#             'prefix-2014.01.02': True,
-#             'prefix-2014.01.01': True
-#         }
-#         indices = curator.get_indices(client, prefix='prefix-')
-#
-#         self.assertEquals([
-#                 'prefix-2014.01.01',
-#                 'prefix-2014.01.02',
-#                 'prefix-2014.01.03',
-#             ],
-#             indices
-#         )
-#
-#     def test_show_indices_with_suffix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'prefix-2014.01.03-suffix': True,
-#             'prefix-2014.01.02-suffix': True,
-#             'prefix-2014.01.01-suffix': True
-#         }
-#         indices = curator.get_indices(client, prefix='prefix-', suffix='-suffix')
-#
-#         self.assertEquals([
-#                 'prefix-2014.01.01-suffix',
-#                 'prefix-2014.01.02-suffix',
-#                 'prefix-2014.01.03-suffix',
-#             ],
-#             indices
-#         )
-#
-#     def test_show_indices_with_suffix_and_no_prefix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             '2014.01.03-suffix': True,
-#             '2014.01.02-suffix': True,
-#             '2014.01.01-suffix': True
-#         }
-#         indices = curator.get_indices(client, prefix='', suffix='-suffix')
-#
-#         self.assertEquals([
-#                 '2014.01.01-suffix',
-#                 '2014.01.02-suffix',
-#                 '2014.01.03-suffix',
-#             ],
-#             indices
-#         )
-#
+    # def test_show_indices(self):
+    #     client = Mock()
+    #     client.indices.get_settings.return_value = {
+    #         'prefix-2014.01.03': True,
+    #         'prefix-2014.01.02': True,
+    #         'prefix-2014.01.01': True
+    #     }
+    #     indices = curator.get_indices(client, prefix='prefix-')
+    #
+    #     self.assertEquals([
+    #             'prefix-2014.01.01',
+    #             'prefix-2014.01.02',
+    #             'prefix-2014.01.03',
+    #         ],
+    #         indices
+    #     )
+    #
+    # def test_show_indices_with_suffix(self):
+    #     client = Mock()
+    #     client.indices.get_settings.return_value = {
+    #         'prefix-2014.01.03-suffix': True,
+    #         'prefix-2014.01.02-suffix': True,
+    #         'prefix-2014.01.01-suffix': True
+    #     }
+    #     indices = curator.get_indices(client, prefix='prefix-', suffix='-suffix')
+    #
+    #     self.assertEquals([
+    #             'prefix-2014.01.01-suffix',
+    #             'prefix-2014.01.02-suffix',
+    #             'prefix-2014.01.03-suffix',
+    #         ],
+    #         indices
+    #     )
+    #
+    # def test_show_indices_with_suffix_and_no_prefix(self):
+    #     client = Mock()
+    #     client.indices.get_settings.return_value = {
+    #         '2014.01.03-suffix': True,
+    #         '2014.01.02-suffix': True,
+    #         '2014.01.01-suffix': True
+    #     }
+    #     indices = curator.get_indices(client, prefix='', suffix='-suffix')
+    #
+    #     self.assertEquals([
+    #             '2014.01.01-suffix',
+    #             '2014.01.02-suffix',
+    #             '2014.01.03-suffix',
+    #         ],
+    #         indices
+    #     )
+
 # class TestExpireIndices(TestCase):
 #     def test_all_daily_indices_found(self):
 #         client = Mock()

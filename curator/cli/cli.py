@@ -89,7 +89,9 @@ def cli(ctx, host, url_prefix, port, ssl, auth, timeout, master_only, dry_run, d
         ctx.obj["client"] = get_client(ctx)
 
         # Get a master-list of indices
-        ctx.obj["indices"] = sorted(ctx.obj["client"].indices.get_settings(
-            index='*', params={'expand_wildcards': 'open,closed'}).keys()
-            )
-        logger.debug("All indices: {0}".format(ctx.obj["indices"]))
+        indices = get_indices(ctx.obj["client"])
+        if indices:
+            ctx.obj["indices"] = indices
+        else:
+            click.echo(click.style('ERROR. Unable to get indices from Elasticsearch.', fg='red', bold=True))
+            sys.exit(1)

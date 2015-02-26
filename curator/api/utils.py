@@ -6,6 +6,16 @@ from datetime import timedelta, datetime, date
 import logging
 logger = logging.getLogger(__name__)
 
+def get_indices(client):
+    try:
+        indices = client.indices.get_settings(
+            index='*', params={'expand_wildcards': 'open,closed'}).keys()
+        logger.debug("All indices: {0}".format(indices))
+        return indices
+    except Exception as e:
+        logger.error("Failed to get indices. Exception: {0}".format(e.message))
+        return False
+
 def ensure_list(indices):
     """
     Return a list, even if indices is a single value
@@ -27,10 +37,11 @@ def to_csv(indices):
     :rtype: str
     """
     indices = ensure_list(indices) # in case of a single value passed
-    if len(indices) > 1:
-        return ','.join(sorted(indices))
-    elif len(indices) == 1:
-        return indices[0]
+    if indices:
+        if len(indices) > 1:
+            return ','.join(sorted(indices))
+        elif len(indices) == 1:
+            return indices[0]
     else:
         return None
 
@@ -44,11 +55,14 @@ def check_csv(value):
     """
     if type(value) is type(list()):
         return True
-    else:
+    elif type(value) is type(str()):
         if len(value.split(',')) > 1: # It's a csv string.
             return True
         else: # There's only one value here, so it's not a csv string
             return False
+    else:
+        logger.error("Value is not a list or a string")
+        return None
 
 def prune_kibana(indices):
     """Remove any index named .kibana, kibana-int, or .marvel-kibana
@@ -125,6 +139,7 @@ def get_version(client):
     :rtype: tuple
     """
     version = client.info()['version']['number']
+    version = version.split('-')[0]
     if len(version.split('.')) > 3:
         version = version.split('.')[:-1]
     else:
