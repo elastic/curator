@@ -27,7 +27,7 @@ def add_to_alias(client, index_name, alias=None):
     :arg alias: Alias name to operate on.
     :rtype: bool
     """
-    if csv_check(index_name):
+    if check_csv(index_name):
         logger.error("Must specify only a single index as an argument.")
         return False
     if not alias: # This prevents _all from being aliased by accident...
@@ -37,17 +37,17 @@ def add_to_alias(client, index_name, alias=None):
         logger.error('Skipping index {0}: Alias {1} does not exist.'.format(index_name, alias))
         return False
     else:
-        indices_in_alias = client.indices.get_alias(alias)
+        indices_in_alias = get_alias(client, alias)
         if not index_name in indices_in_alias:
             if index_closed(client, index_name):
-                logger.info('Skipping index {0}: Already closed.'.format(index_name))
-                return True
+                logger.error('Failed to add index {0} to alias {1} because it is closed.'.format(index_name, alias))
+                return False
             else:
                 try:
                     client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
                     return True
-                except:
-                    logger.error("Error adding index {0} to alias {1}.  Check logs for more information.".format(index_name, alias))
+                except Exception as e:
+                    logger.error("Error adding index {0} to alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e.message))
                     return False
         else:
             logger.info('Skipping index {0}: Index already exists in alias {1}...'.format(index_name, alias))
@@ -62,8 +62,11 @@ def remove_from_alias(client, index_name, alias=None):
     :arg alias: Alias name to operate on.
     :rtype: bool
     """
-    if csv_check(index_name):
+    if check_csv(index_name):
         logger.error("Must specify only a single index as an argument.")
+        return False
+    if not alias:
+        logger.error('No alias provided.')
         return False
     indices_in_alias = get_alias(client, alias)
     if not indices_in_alias:
@@ -73,8 +76,8 @@ def remove_from_alias(client, index_name, alias=None):
         try:
             client.indices.update_aliases(body={'actions': [{ 'remove': { 'index': index_name, 'alias': alias}}]})
             return True
-        except:
-            logger.error("Error removing index {0} from alias {1}.  Check logs for more information.".format(index_name, alias))
+        except Exception as e:
+            logger.error("Error removing index {0} from alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e.message))
             return False
     else:
         logger.warn('Index {0} does not exist in alias {1}; skipping.'.format(index_name, alias))
@@ -91,7 +94,7 @@ def alias(client, indices, alias=None, remove=False):
     :rtype: bool
     """
     retval = True
-    for i in indices:
+    for i in ensure_list(indices):
         if remove:
             success = remove_from_alias(client, i, alias=alias)
         else:

@@ -4,6 +4,87 @@ from mock import patch, Mock
 
 from . import CuratorTestCase
 
+class TestAlias(CuratorTestCase):
+    def test_add_to_alias_positive(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        curator.add_to_alias(self.client, 'foo', alias=alias)
+        self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
+    def test_add_to_alias_negative(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        self.assertFalse(curator.add_to_alias(self.client, 'foo', alias="ooga"))
+    def test_add_to_alias_with_closed(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        curator.close_indices(self.client, 'foo')
+        self.assertTrue(curator.index_closed(self.client, 'foo'))
+        curator.add_to_alias(self.client, 'foo', alias=alias)
+        self.assertFalse(curator.add_to_alias(self.client, 'foo', alias=alias))
+    def test_add_to_alias_idx_already_in_alias(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        curator.add_to_alias(self.client, 'foo', alias=alias)
+        self.assertTrue(curator.add_to_alias(self.client, 'foo', alias=alias))
+    def test_remove_from_alias_positive(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        curator.add_to_alias(self.client, 'foo', alias=alias)
+        curator.remove_from_alias(self.client, 'dummy', alias=alias)
+        self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
+    def test_remove_from_alias_negative(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.assertFalse(curator.remove_from_alias(self.client, 'dummy', alias="ooga"))
+    def test_full_alias_add_positive(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        self.assertTrue(curator.alias(self.client, 'foo', alias=alias))
+        self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
+    def test_full_alias_add_negative(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.assertFalse(curator.alias(self.client, 'foo', alias='ooga'))
+    def test_full_alias_remove_positive(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.create_index('foo')
+        curator.add_to_alias(self.client, 'foo', alias=alias)
+        curator.alias(self.client, 'dummy', alias=alias, remove=True)
+        self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
+    def test_full_alias_remove_negative(self):
+        alias = 'testalias'
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        self.assertFalse(curator.alias(self.client, 'dummy', alias="ooga", remove=True))
+
+#def alias(client, indices, alias=None, remove=False):
+# retval = True
+# for i in indices:
+#     if remove:
+#         success = remove_from_alias(client, i, alias=alias)
+#     else:
+#         success = add_to_alias(client, i, alias=alias)
+#     # if we fail once, we fail completely
+#     if not success:
+#         retval = False
+# return retval
+
 class TestChangeReplicas(CuratorTestCase):
     def test_index_replicas_can_be_modified(self):
         self.create_index('test_index')

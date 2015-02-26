@@ -15,9 +15,9 @@ def disable_bloom_filter(client, indices, delay=None):
     :arg delay: Pause *n* seconds after operating on each index
     :rtype: bool
     """
+    indices = prune_closed(client, ensure_list(indices))
     no_more_bloom = (1, 4, 0)
     version_number = get_version(client)
-    indices = prune_closed(client, ensure_list(indices))
     if version_number >= no_more_bloom:
         logger.warn('Bloom filters no longer exist for search in Elasticsearch since v1.4.0')
         return True
@@ -30,8 +30,8 @@ def disable_bloom_filter(client, indices, delay=None):
                 client.indices.put_settings(index=to_csv(indices),
                     body='index.codec.bloom.load=false')
                 return True
-        except:
-            logger.error("Error disabling bloom filters.  Check logs for more information.")
+        except Exception as e:
+            logger.error("Error disabling bloom filters.  Exception {0}  Check logs for more information.".format(e.message))
             return False
 
 def loop_bloom(client, indices, delay):

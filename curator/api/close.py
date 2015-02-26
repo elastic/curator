@@ -18,8 +18,8 @@ def close_indices(client, indices):
         client.indices.flush(index=to_csv(indices), ignore_unavailable=True)
         client.indices.close(index=to_csv(indices), ignore_unavailable=True)
         return True
-    except:
-        logger.error("Error closing indices.  Check logs for more information.")
+    except Exception as e:
+        logger.error("Error closing indices.  Exception {0}  Check logs for more information.".format(e.message))
         return False
 
 def close(client, indices):
