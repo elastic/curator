@@ -18,7 +18,7 @@ def change_replicas(client, indices, replicas=None):
         logger.error('No replica count provided.')
         return False
     else:
-        indices = prune_closed(client, ensure_list(indices))
+        indices = prune_closed(client, indices)
         logger.info('Updating index setting number_of_replicas={0}'.format(replicas))
         try:
             client.indices.put_settings(index=to_csv(indices),

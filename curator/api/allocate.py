@@ -8,7 +8,7 @@ def apply_allocation_rule(client, indices, rule=None):
     """
     Apply a required allocation rule to a list of indices.  See:
     http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-allocation.html#index-modules-allocation
-    This method will ignore unavailable (including closed) indices.
+    This method will ignore closed indices.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
@@ -18,16 +18,19 @@ def apply_allocation_rule(client, indices, rule=None):
     :rtype: bool
     """
     if not rule:
-        logger.error('No rule provided for {0}.'.format(index_name))
+        logger.error('Missing rule parameter')
         return False
     key = rule.split('=')[0]
     value = rule.split('=')[1]
-    indices = ensure_list(indices)
+    indices = prune_closed(client, indices)
+    if not indices:
+        logger.warn("No indices to act on.")
+        return False
     logger.info('Updating index setting index.routing.allocation.require.{0}={1}'.format(key,value))
     try:
         client.indices.put_settings(index=to_csv(indices),
             body='index.routing.allocation.require.{0}={1}'.format(key,value),
-            ignore_unavailable=True)
+            )
         return True
     except:
         logger.error("Error in updating index settings with allocation rule.  Check logs for more information.")

@@ -8,14 +8,14 @@ logger = logging.getLogger(__name__)
 def disable_bloom_filter(client, indices, delay=None):
     """
     Disable the bloom filter cache for the list of indices.
-    This method will ignore unavailable (including closed) indices.
+    This method will ignore closed indices.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
     :arg delay: Pause *n* seconds after operating on each index
     :rtype: bool
     """
-    indices = prune_closed(client, ensure_list(indices))
+    indices = prune_closed(client, indices)
     no_more_bloom = (1, 4, 0)
     version_number = get_version(client)
     if version_number >= no_more_bloom:
