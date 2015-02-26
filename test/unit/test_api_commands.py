@@ -88,29 +88,6 @@ class TestAlias(TestCase):
         index_name = "foo"
         self.assertFalse(curator.remove_from_alias(client, index_name, alias="abc"))
 
-
-class TestClose(TestCase):
-    def test_close_indices_positive(self):
-        client = Mock()
-        client.indices.flush.return_value = None
-        client.indices.close.return_value = None
-        self.assertTrue(curator.close_indices(client, "index"))
-    def test_close_indices_negative(self):
-        client = Mock()
-        client.indices.flush.side_effect = Exception('Simulated Failure')
-        client.indices.close.return_value = None
-        self.assertFalse(curator.close_indices(client, "index"))
-    def test_full_close_positive(self):
-        client = Mock()
-        client.indices.flush.return_value = None
-        client.indices.close.return_value = None
-        self.assertTrue(curator.close(client, "index"))
-    def test_full_close_negative(self):
-        client = Mock()
-        client.indices.flush.side_effect = Exception('Simulated Failure')
-        client.indices.close.return_value = None
-        self.assertFalse(curator.close(client, "index"))
-
 class TestBloom(TestCase):
     def test_disable_bloom_no_more_bloom_positive(self):
         client = Mock()
@@ -209,3 +186,71 @@ class TestBloom(TestCase):
         }
         client.indices.put_settings.side_effect = Exception('Simulated Failure')
         self.assertFalse(curator.bloom(client, "index_name"))
+
+class TestClose(TestCase):
+    def test_close_indices_positive(self):
+        client = Mock()
+        client.indices.flush.return_value = None
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close_indices(client, "index"))
+    def test_close_indices_negative(self):
+        client = Mock()
+        client.indices.flush.side_effect = Exception('Simulated Failure')
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close_indices(client, "index"))
+    def test_full_close_positive(self):
+        client = Mock()
+        client.indices.flush.return_value = None
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close(client, "index"))
+    def test_full_close_negative(self):
+        client = Mock()
+        client.indices.flush.side_effect = Exception('Simulated Failure')
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close(client, "index"))
+
+class TestDelete(TestCase):
+    def test_delete_indices_positive(self):
+        client = Mock()
+        client.indices.delete.return_value = None
+        self.assertTrue(curator.delete_indices(client, ["index1", "index2"]))
+    def test_delete_indices_negative(self):
+        client = Mock()
+        client.indices.delete.side_effect = Exception('Simulated Failure')
+        self.assertFalse(curator.delete_indices(client, ["index1", "index2"]))
+    def test_full_delete_positive(self):
+        client = Mock()
+        client.indices.delete.return_value = None
+        self.assertTrue(curator.delete(client, ["index1", "index2"]))
+    def test_full_delete_negative(self):
+        client = Mock()
+        client.indices.delete.side_effect = Exception('Simulated Failure')
+        self.assertFalse(curator.delete(client, ["index1", "index2"]))
+    def test_full_delete_with_disk_space(self):
+        client = Mock()
+        ds = 2.0
+        indices = ["logstash-2015.02.25", "logstash-2015.02.26"]
+        client.cluster.state.return_value = {
+            'metadata': {
+                'indices' : {
+                    'logstash-2015.02.25' : {
+                        'state' : 'open'
+                    },
+                    'logstash-2015.02.26' : {
+                        'state' : 'open'
+                    },
+                }
+            }
+        }
+        # Build return value of over 1G in size for each index
+        client.indices.status.return_value = {
+            'indices' : {
+                'logstash-2015.02.25' : {
+                    'index' : { 'primary_size_in_bytes': 1083741824 }
+                },
+                'logstash-2015.02.26' : {
+                    'index' : { 'primary_size_in_bytes': 1083741824 }
+                },
+            }
+        }
+        self.assertTrue(curator.delete(client, indices, disk_space=ds))

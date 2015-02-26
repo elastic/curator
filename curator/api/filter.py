@@ -239,6 +239,62 @@ def timestamp_check(timestamp, timestring=None, time_unit='days',
     # If we've made it here, we failed.
     return False
 
+def filter_by_space(client, indices, disk_space=None, reverse=True):
+    """
+    Remove indices from the provided list of indices based on space consumed,
+    sorted reverse-alphabetically, by default.  If you set `reverse` to false,
+    it will be sorted alphabetically.
+
+    With the default reverse sorting, if only one kind of index is provided--for
+    example, indices matching logstash-%Y.%m.%d--then alphabetically will mean
+    the oldest get removed first, because lower numbers in the dates mean older
+    indices.
+
+    By setting reverse=False, then index3 will be deleted before index2, which
+    will be deleted before index1
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :arg disk_space: Filter indices over *n* gigabytes, alphabetically sorted.
+    :rtype: list
+    """
+
+    if not disk_space:
+        logger.error("Mising value for disk_space.")
+        return False
+
+    disk_usage = 0.0
+    disk_limit = disk_space * 2**30
+    delete_list = []
+
+    not_closed = [i for i in indices if not index_closed(client, i)]
+    # Because we're building a csv list of indices to pass, we need to ensure
+    # that we actually have at least one index before calling
+    # client.indices.status, otherwise the call will match _all indices, which
+    # is very bad.
+    # See https://github.com/elasticsearch/curator/issues/254
+    logger.debug('List of indices found: {0}'.format(not_closed))
+    if not_closed:
+
+        stats = client.indices.status(index=to_csv(not_closed))
+
+        sorted_indices = sorted(
+            (
+                (index_name, index_stats['index']['primary_size_in_bytes'])
+                for (index_name, index_stats) in stats['indices'].items()
+            ),
+            reverse=reverse
+        )
+
+        for index_name, index_size in sorted_indices:
+            disk_usage += index_size
+
+            if disk_usage > disk_limit:
+                delete_list.append(index_name)
+            else:
+                logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
+    return delete_list
+
 # def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
 #                     exclude_pattern=None, **kwargs):
 #     """
