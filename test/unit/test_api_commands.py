@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
 from mock import Mock
+import sys
+from StringIO import StringIO
 
 from curator import api as curator
 
@@ -201,3 +203,31 @@ class TestDelete(TestCase):
         client.cluster.state.return_value = open_indices
         client.indices.status.return_value = indices_space
         self.assertTrue(curator.delete(client, named_indices, disk_space=ds))
+
+class TestOpen(TestCase):
+    def test_opener_positive(self):
+        client = Mock()
+        client.indices.open.return_value = None
+        self.assertTrue(curator.open_indices(client, named_indices))
+    def test_opener_negative(self):
+        client = Mock()
+        client.indices.open.side_effect = fake_fail
+        self.assertFalse(curator.open_indices(client, named_indices))
+    def test_full_opener_positive(self):
+        client = Mock()
+        client.indices.open.return_value = None
+        self.assertTrue(curator.opener(client, named_indices))
+    def test_full_opener_negative(self):
+        client = Mock()
+        client.indices.open.side_effect = fake_fail
+        self.assertFalse(curator.opener(client, named_indices))
+
+class TestShow(TestCase):
+    def setUp(self):
+        self.held, sys.stdout = sys.stdout, StringIO()
+    def test_show_positive(self):
+        curator.show(named_index)
+        self.assertEqual(sys.stdout.getvalue(),'index_name\n')
+    def test_show_positive_list(self):
+        curator.show(named_indices)
+        self.assertEqual(sys.stdout.getvalue(),'index1\nindex2\n')

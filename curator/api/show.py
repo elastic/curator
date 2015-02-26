@@ -4,7 +4,7 @@ import elasticsearch
 import logging
 logger = logging.getLogger(__name__)
 
-def show(client, object_list):
+def show(object_list):
     """
     Helper method called by the script.
 
@@ -12,6 +12,6 @@ def show(client, object_list):
     :arg object_list: A list of indices or snapshots to show
     :rtype: bool
     """
-    for o in object_list:
-        print('{0}'.format(o))
+    for obj in ensure_list(object_list):
+        print('{0}'.format(obj))
     return True
