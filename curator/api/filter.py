@@ -20,11 +20,11 @@ DATE_REGEX = {
 }
 
 def regex_iterate(
-    indices, pattern, groupname=None, object_type='index', timestring=None,
-    time_unit='days', method=None, value=None, utc_now=None):
+    items, pattern, groupname=None, timestring=None, time_unit='days',
+    method=None, value=None, utc_now=None):
     """Iterate over all indices in the list and return a list of matches
 
-    :arg indices: A list of indices to act on
+    :arg items: A list of indices or snapshots to act on
     :arg pattern: A regular expression to iterate all indices against
     :arg groupname: The name of a named capture in pattern.  Currently only acts
         on 'date'
@@ -40,12 +40,12 @@ def regex_iterate(
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
     result = []
-    indices = ensure_list(indices)
+    items = ensure_list(items)
     p = re.compile(pattern)
-    for index in indices:
+    for item in items:
         match = False
         if groupname:
-            m = p.search(index)
+            m = p.search(item)
             if m:
                 if m.group(groupname):
                     if groupname == "date":
@@ -54,15 +54,14 @@ def regex_iterate(
                         match = timestamp_check(
                             timestamp, timestring=timestring,
                             time_unit=time_unit, method=method,
-                            value=value, object_type=object_type,
-                            utc_now=utc_now,
+                            value=value, utc_now=utc_now,
                             )
         else:
-            m = p.match(index)
+            m = p.match(item)
             if m:
                 match = True
         if match == True:
-            result.append(index)
+            result.append(item)
     return result
 
 def get_date_regex(timestring):

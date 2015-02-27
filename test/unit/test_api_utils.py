@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
 from mock import Mock
+import elasticsearch
 
 from curator import api as curator
 
@@ -11,6 +12,50 @@ aliases_retval = {
     "index1": { "aliases" : { named_alias : { } } },
     "index2": { "aliases" : { named_alias : { } } },
     }
+fake_fail      = Exception('Simulated Failure')
+repo_name      = 'repo_name'
+test_repo      = {repo_name: {'type': 'fs', 'settings': {'compress': 'true', 'location': '/tmp/repos/repo_name'}}}
+test_repos     = {'TESTING': {'type': 'fs', 'settings': {'compress': 'true', 'location': '/tmp/repos/TESTING'}},
+                  repo_name: {'type': 'fs', 'settings': {'compress': 'true', 'location': '/rmp/repos/repo_name'}}}
+snap_name      = 'snap_name'
+snapshot       = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': snap_name, 'end_time': '2015-01-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    }]}
+snapshots       = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': snap_name, 'end_time': '2015-01-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    },
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:02.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': 'snapshot2', 'end_time': '2015-01-01T00:00:03.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    }]}
+snap_body_all   = {
+                    "ignore_unavailable": False,
+                    "include_global_state": True,
+                    "partial": False,
+                    "indices" : "_all"
+                  }
+snap_body       = {
+                    "ignore_unavailable": False,
+                    "include_global_state": True,
+                    "partial": False,
+                    "indices" : "index1,index2"
+                  }
 
 class TestGetAlias(TestCase):
     def test_get_alias_positive(self):
@@ -148,304 +193,78 @@ class TestGetIndexTime(TestCase):
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
                 ]:
             self.assertEqual(dt, curator.get_index_time(text, datestring))
-# class TestShowIndices(TestCase):
-    # def test_show_indices(self):
-    #     client = Mock()
-    #     client.indices.get_settings.return_value = {
-    #         'prefix-2014.01.03': True,
-    #         'prefix-2014.01.02': True,
-    #         'prefix-2014.01.01': True
-    #     }
-    #     indices = curator.get_indices(client, prefix='prefix-')
-    #
-    #     self.assertEquals([
-    #             'prefix-2014.01.01',
-    #             'prefix-2014.01.02',
-    #             'prefix-2014.01.03',
-    #         ],
-    #         indices
-    #     )
-    #
-    # def test_show_indices_with_suffix(self):
-    #     client = Mock()
-    #     client.indices.get_settings.return_value = {
-    #         'prefix-2014.01.03-suffix': True,
-    #         'prefix-2014.01.02-suffix': True,
-    #         'prefix-2014.01.01-suffix': True
-    #     }
-    #     indices = curator.get_indices(client, prefix='prefix-', suffix='-suffix')
-    #
-    #     self.assertEquals([
-    #             'prefix-2014.01.01-suffix',
-    #             'prefix-2014.01.02-suffix',
-    #             'prefix-2014.01.03-suffix',
-    #         ],
-    #         indices
-    #     )
-    #
-    # def test_show_indices_with_suffix_and_no_prefix(self):
-    #     client = Mock()
-    #     client.indices.get_settings.return_value = {
-    #         '2014.01.03-suffix': True,
-    #         '2014.01.02-suffix': True,
-    #         '2014.01.01-suffix': True
-    #     }
-    #     indices = curator.get_indices(client, prefix='', suffix='-suffix')
-    #
-    #     self.assertEquals([
-    #             '2014.01.01-suffix',
-    #             '2014.01.02-suffix',
-    #             '2014.01.03-suffix',
-    #         ],
-    #         indices
-    #     )
 
-# class TestExpireIndices(TestCase):
-#     def test_all_daily_indices_found(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'prefix-2014.01.03': True,
-#             'prefix-2014.01.02': True,
-#             'prefix-2014.01.01': True,
-#             'prefix-2013.12.31': True,
-#             'prefix-2013.12.30': True,
-#             'prefix-2013.12.29': True,
-#
-#             'prefix-2013.01.03': True,
-#             'prefix-2013.01.03.10': True,
-#             'prefix-2013.01': True,
-#             'prefix-2013.12': True,
-#             'prefix-2013.51': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='prefix-', suffix='')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 'prefix-2013.01.03',
-#                 'prefix-2013.12.29',
-#                 'prefix-2013.12.30',
-#             ],
-#             expired
-#         )
-#
-#     def test_all_daily_indices_found_with_suffix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'prefix-2014.01.03-suffix': True,
-#             'prefix-2014.01.02': True,
-#             'prefix-2014.01.01-suffix': True,
-#             'prefix-2013.12.31': True,
-#             'prefix-2013.12.30-suffix': True,
-#             'prefix-2013.12.29': True,
-#
-#             'prefix-2013.01.03-suffix': True,
-#             'prefix-2013.01.03.10': True,
-#             'prefix-2013.01': True,
-#             'prefix-2013.12-suffix': True,
-#             'prefix-2013.51': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='prefix-', suffix='-suffix')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='prefix-', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 'prefix-2013.01.03-suffix',
-#                 'prefix-2013.12.30-suffix',
-#             ],
-#             expired
-#         )
-#
-#     def test_all_daily_indices_found_with_suffix_and_no_prefix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             '2014.01.03-suffix': True,
-#             'prefix-2014.01.02': True,
-#             '2014.01.01-suffix': True,
-#             'prefix-2013.12.31': True,
-#             '2013.12.30-suffix': True,
-#             'prefix-2013.12.29': True,
-#
-#             '2013.01.03-suffix': True,
-#             '2013.01.03.10': True,
-#             'prefix-2013.01': True,
-#             'prefix-2013.12-suffix': True,
-#             'prefix-2013.51': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='', suffix='-suffix')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='-suffix', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 '2013.01.03-suffix',
-#                 '2013.12.30-suffix',
-#             ],
-#             expired
-#         )
-#
-#     def test_all_daily_indices_found_with_no_suffix_and_no_prefix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             '2014.01.03': True,
-#             '2014.01.02': True,
-#             '2014.01.01': True,
-#             '2013.12.31': True,
-#             '2013.12.30': True,
-#             '2013.12.29': True,
-#
-#             '2013.01.03': True,
-#             '2013.01.03.10': True,
-#             '2013.01': True,
-#             '2013.12': True,
-#             '2013.51': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='', suffix='')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 '2013.01.03',
-#                 '2013.12.29',
-#                 '2013.12.30',
-#             ],
-#             expired
-#         )
-#
-#     def test_all_daily_indices_found_with_wildcard_prefix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'log-2014.01.03': True,
-#             'log-2014.01.02': True,
-#             'log-2014.01.01': True,
-#             'log0-2013.12.31': True,
-#             'logstash-2013.12.30': True,
-#             'l-2013.12.29': True,
-#
-#             'prod-2013.01.03': True,
-#             'cert-2013.01.03.10': True,
-#             'test-2013.01': True,
-#             'fail-2013.12': True,
-#             'index-2013.51': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='l.*', suffix='')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 'l-2013.12.29',
-#                 'logstash-2013.12.30',
-#             ],
-#             expired
-#         )
-#
-#     def test_all_daily_indices_found_with_wildcard_prefix_and_suffix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'log-2014.01.03-bar': True,
-#             'log-2014.01.02-baz': True,
-#             'log-2014.01.01-b': True,
-#             'log0-2013.12.31-c': True,
-#             'logstash-2013.12.30-bigdata': True,
-#             'l-2013.12.29-closet': True,
-#
-#             'prod-2013.01.03-basketball': True,
-#             'cert-2013.01.03.10-a': True,
-#             'test-2013.01-d': True,
-#             'fail-2013.12-f': True,
-#             'index-2013.51-e': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='l.*', suffix='-b.*')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='l.*', suffix='-b.*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 'logstash-2013.12.30-bigdata',
-#             ],
-#             expired
-#         )
-#
-#     def test_all_daily_indices_found_with_star_prefix_and_suffix(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'log-2014.01.03-bar': True,
-#             'log-2014.01.02-baz': True,
-#             'log-2014.01.01-b': True,
-#             'log0-2013.12.31-c': True,
-#             'logstash-2013.12.30-bigdata': True,
-#             'l-2013.12.29-closet': True,
-#
-#             'prod-2013.01.03-basketball': True,
-#             'cert-2013.01.03.10-a': True,
-#             'test-2013.01-d': True,
-#             'fail-2013.12-f': True,
-#             'index-2013.51-e': True,
-#         }
-#         index_list = curator.get_object_list(client, prefix='*', suffix='*')
-#         expired = curator.filter_by_timestamp(object_list=index_list, time_unit='days', older_than=4, prefix='*', suffix='*', timestring='%Y.%m.%d', utc_now=datetime(2014, 1, 3))
-#
-#         expired = list(expired)
-#
-#         self.assertEquals([
-#                 'cert-2013.01.03.10-a',
-#                 'l-2013.12.29-closet',
-#                 'logstash-2013.12.30-bigdata',
-#                 'prod-2013.01.03-basketball',
-#             ],
-#             expired
-#         )
-#
-#     def test_size_based_finds_indices_over_threshold(self):
-#         client = Mock()
-#         client.indices.get_settings.return_value = {
-#             'logstash-2014.02.14': True,
-#             'logstash-2014.02.13': True,
-#             'logstash-2014.02.12': True,
-#             'logstash-2014.02.11': True,
-#             'logstash-2014.02.10': True,
-#         }
-#         client.cluster.state.return_value = {
-#             'metadata': {
-#                 'indices': {
-#                     'logstash-2014.02.14': {
-#                         'state' : 'open'
-#                     },
-#                     'logstash-2014.02.13': {
-#                          'state' : 'open'
-#                     },
-#                     'logstash-2014.02.12': {
-#                         'state' : 'open'
-#                     },
-#                     'logstash-2014.02.11': {
-#                         'state' : 'open'
-#                     },
-#                     'logstash-2014.02.10': {
-#                         'state' : 'open'
-#                     },
-#                 }
-#             }
-#         }
-#         client.indices.status.return_value = {
-#             'indices': {
-#                 'logstash-2014.02.14': {'index': {'primary_size_in_bytes': 3 * 2**30}},
-#                 'logstash-2014.02.13': {'index': {'primary_size_in_bytes': 2 * 2**30}},
-#                 'logstash-2014.02.12': {'index': {'primary_size_in_bytes': 1 * 2**30}},
-#                 'logstash-2014.02.11': {'index': {'primary_size_in_bytes': 3 * 2**30}},
-#                 'logstash-2014.02.10': {'index': {'primary_size_in_bytes': 3 * 2**30}},
-#             }
-#         }
-#         expired = curator.filter_by_space(client, disk_space=6)
-#         expired = list(expired)
-#
-#         self.assertEquals(
-#             [
-#                 'logstash-2014.02.11',
-#                 'logstash-2014.02.10',
-#             ],
-#             expired
-#         )
+class TestGetRepository(TestCase):
+    def test_get_repository_missing_arg(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = {}
+        self.assertEqual({}, curator.get_repository(client))
+    def test_get_repository_positive(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = test_repo
+        self.assertEqual(test_repo, curator.get_repository(client, repository=repo_name))
+    def test_get_repository_transporterror_negative(self):
+        client = Mock()
+        client.snapshot.get_repository.side_effect = elasticsearch.TransportError
+        self.assertFalse(curator.get_repository(client, repository=repo_name))
+    def test_get_repository_notfounderror_negative(self):
+        client = Mock()
+        client.snapshot.get_repository.side_effect = elasticsearch.NotFoundError
+        self.assertFalse(curator.get_repository(client, repository=repo_name))
+    def test_get_repository__all_positive(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = test_repos
+        self.assertEqual(test_repos, curator.get_repository(client))
+
+class TestGetSnapshot(TestCase):
+    def test_get_snapshot_missing_repository_arg(self):
+        client = Mock()
+        self.assertFalse(curator.get_snapshot(client, snapshot=snap_name))
+    def test_get_snapshot_missing_snapshot_arg(self):
+        client = Mock()
+        self.assertFalse(curator.get_snapshot(client, repository=repo_name))
+    def test_get_snapshot_positive(self):
+        client = Mock()
+        client.snapshot.get.return_value = snapshot
+        self.assertEqual(snapshot, curator.get_snapshot(client, repository=repo_name, snapshot=snap_name))
+    def test_get_snapshot_transporterror_negative(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = test_repo
+        client.snapshot.get.side_effect = elasticsearch.TransportError
+        self.assertFalse(curator.get_snapshot(client, repository=repo_name, snapshot=snap_name))
+    def test_get_snapshot_notfounderror_negative(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = test_repo
+        client.snapshot.get.side_effect = elasticsearch.NotFoundError
+        self.assertFalse(curator.get_snapshot(client, repository=repo_name, snapshot=snap_name))
+
+class TestGetSnapshots(TestCase):
+    def test_get_snapshots_missing_repository_arg(self):
+        client = Mock()
+        self.assertFalse(curator.get_snapshots(client))
+    def test_get_snapshots_positive(self):
+        client = Mock()
+        client.snapshot.get.return_value = snapshot
+        self.assertEqual(['snap_name'], curator.get_snapshots(client, repository=repo_name))
+    def test_get_snapshots_multiple_positive(self):
+        client = Mock()
+        client.snapshot.get.return_value = snapshots
+        self.assertEqual(['snap_name', 'snapshot2'], curator.get_snapshots(client, repository=repo_name))
+    def test_get_snapshots_transporterror_negative(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = test_repo
+        client.snapshot.get.side_effect = elasticsearch.TransportError
+        self.assertFalse(curator.get_snapshots(client, repository=repo_name))
+    def test_get_snapshots_notfounderror_negative(self):
+        client = Mock()
+        client.snapshot.get_repository.return_value = test_repo
+        client.snapshot.get.side_effect = elasticsearch.NotFoundError
+        self.assertFalse(curator.get_snapshots(client, repository=repo_name))
+
+class TestCreateSnapshotBody(TestCase):
+    def test_create_snapshot_body_empty_arg(self):
+        self.assertFalse(curator.create_snapshot_body([]))
+    def test_create_snapshot_body__all_positive(self):
+        self.assertEqual(snap_body_all, curator.create_snapshot_body('_all'))
+    def test_create_snapshot_body_positive(self):
+        self.assertEqual(snap_body, curator.create_snapshot_body(named_indices))
