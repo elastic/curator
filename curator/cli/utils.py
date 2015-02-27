@@ -17,8 +17,8 @@ version_min = (1, 0, 0)
 
 REGEX_MAP = {
     'timestring': r'^.*{0}.*$',
-    'newer_than': r'^.*(?P<date>{0}).*$',
-    'older_than': r'^.*(?P<date>{0}).*$',
+    'newer_than': r'(?P<date>{0})',
+    'older_than': r'(?P<date>{0})',
     'prefix': r'^{0}.*$',
     'suffix': r'^.*{0}$',
 }

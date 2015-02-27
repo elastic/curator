@@ -21,7 +21,7 @@ DATE_REGEX = {
 
 def regex_iterate(
     indices, pattern, groupname=None, object_type='index', timestring=None,
-    time_unit='days', method=None, value=None):
+    time_unit='days', method=None, value=None, utc_now=None):
     """Iterate over all indices in the list and return a list of matches
 
     :arg indices: A list of indices to act on
@@ -37,6 +37,7 @@ def regex_iterate(
         filtering.
     :arg value: Number of ``time_unit``s used to calculate time window. Only
         used for time-based filtering.
+    :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
     result = []
     indices = ensure_list(indices)
@@ -53,7 +54,8 @@ def regex_iterate(
                         match = timestamp_check(
                             timestamp, timestring=timestring,
                             time_unit=time_unit, method=method,
-                            value=value, object_type=object_type
+                            value=value, object_type=object_type,
+                            utc_now=utc_now,
                             )
         else:
             m = p.match(index)
@@ -80,8 +82,8 @@ def get_date_regex(timestring):
         else:
             regex += "\\" + curr
         prev = curr
+    logger.debug("regex = {0}".format(regex))
     return regex
-
 
 def get_index_time(index_timestamp, timestring):
     """
@@ -104,6 +106,7 @@ def get_index_time(index_timestamp, timestring):
         if not '%d' in timestring:
             timestring += '%d'
             index_timestamp += '1'
+    logger.debug("index_timestamp: {0}, timestring: {1}, return value: {2}".format(index_timestamp, timestring, datetime.strptime(index_timestamp, timestring)))
     return datetime.strptime(index_timestamp, timestring)
 
 def get_target_month(month_count, utc_now=None):
@@ -118,15 +121,21 @@ def get_target_month(month_count, utc_now=None):
     utc_now = date(utc_now.year, utc_now.month, 1) if utc_now else date.today()
     target_date = date(utc_now.year, utc_now.month, 1)
 
-    for i in range(0, month_count):
-        if target_date.month == 1:
-            target_date = date(target_date.year-1, 12, 1)
-        else:
-            target_date = date(target_date.year, target_date.month-1, 1)
-
+    if month_count < 0:
+        for i in range(0, month_count, -1):
+            if target_date.month == 12:
+                target_date = date(target_date.year+1, 1, 1)
+            else:
+                target_date = date(target_date.year, target_date.month+1, 1)
+    else:
+        for i in range(0, month_count):
+            if target_date.month == 1:
+                target_date = date(target_date.year-1, 12, 1)
+            else:
+                target_date = date(target_date.year, target_date.month-1, 1)
     return datetime(target_date.year, target_date.month, target_date.day)
 
-def time_cutoff(unit_count=None, time_unit='days', utc_now=None):
+def get_cutoff(unit_count=None, time_unit='days', utc_now=None):
     """
     Find the cutoff time based on ``unit_count`` and ``time_unit``.
 
@@ -138,7 +147,7 @@ def time_cutoff(unit_count=None, time_unit='days', utc_now=None):
     """
     if not unit_count:
         logger.error("Missing value for unit_count.")
-        return
+        return False
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
     # reset to start of the period to be sure we are not retiring a human by mistake
@@ -156,41 +165,11 @@ def time_cutoff(unit_count=None, time_unit='days', utc_now=None):
         cutoff = get_target_month(unit_count, utc_now=utc_now)
     else:
         # This cutoff must be a multiple of time_units
-        cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
-    return cutoff
-
-def get_cutoff(older_than=None, time_unit='days', utc_now=None):
-    """
-    Find the cutoff time based on ``older_than`` and ``time_unit``.
-
-    :arg older_than: ``time_unit`` multiplier
-    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
-        is ``days``
-    :arg utc_now: Used for testing.  Overrides current time with specified time.
-    :rtype: Datetime object
-    """
-    if not older_than:
-        logger.error("Missing value for older_than.")
-        return False
-
-    # time-injection for test purposes only
-    utc_now = utc_now if utc_now else datetime.utcnow()
-    # reset to start of the period to be sure we are not retiring a human by mistake
-    utc_now = utc_now.replace(minute=0, second=0, microsecond=0)
-
-    if time_unit == 'days':
-        utc_now = utc_now.replace(hour=0)
-    if time_unit == 'weeks':
-        # Since week math always uses Monday as the start of the week,
-        # this work-around resets utc_now to be Monday of the current week.
-        weeknow = utc_now.strftime('%Y-%W')
-        utc_now = get_index_time(weeknow, '%Y-%W')
-    if time_unit == 'months':
-        utc_now = utc_now.replace(hour=0)
-        cutoff = get_target_month(older_than, utc_now=utc_now)
-    else:
-        # This cutoff must be a multiple of time_units
-        cutoff = utc_now - timedelta(**{time_unit: (older_than - 1)})
+        if unit_count < 0:
+            cutoff = utc_now - timedelta(**{time_unit: (unit_count)})
+        else:
+            cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
+    logger.debug("time_cutoff: {0}".format(cutoff))
     return cutoff
 
 def timestamp_check(timestamp, timestring=None, time_unit='days',
@@ -210,19 +189,20 @@ def timestamp_check(timestamp, timestring=None, time_unit='days',
     :rtype: Boolean
     """
     object_type = kwargs['object_type'] if 'object_type' in kwargs else 'index'
-    cutoff = time_cutoff(unit_count=value, time_unit=time_unit, utc_now=utc_now)
+    cutoff = get_cutoff(unit_count=value, time_unit=time_unit, utc_now=utc_now)
 
     if object_type == 'index':
         try:
             object_time = get_index_time(timestamp, timestring)
         except ValueError:
-            logger.error('Could not find a valid timestamp for timestring {0}'.format(timestring))
-
+            logger.error('Could not extract a timestamp matching {0} from timestring {1}'.format(timestamp, timestring))
+            return False
     elif object_type == 'snapshot':
         try:
             object_time = datetime.utcfromtimestamp(float(timestamp)/1000.0)
         except AttributeError as e:
             logger.debug('Unable to compare time from snapshot {0}.  Error: {1}'.format(object_name, e))
+            return False
     else:
         # This should not happen.  This is an error case.
         logger.error("object_type is neither 'index' nor 'snapshot'.")

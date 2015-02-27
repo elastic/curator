@@ -278,7 +278,6 @@ class TestReplicas(TestCase):
         client.indices.put_settings.side_effect = fake_fail
         self.assertFalse(curator.replicas(client, named_indices, replicas=0))
 
-
 class TestShow(TestCase):
     def setUp(self):
         self.held, sys.stdout = sys.stdout, StringIO()
