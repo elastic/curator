@@ -41,8 +41,8 @@ setup(
     packages = ["curator"],
     include_package_data=True,
     entry_points = {
-        "console_scripts" : ["curator = curator_click:main",
-                             "es_repo_mgr = es_repo_mgr:main"]
+        "console_scripts" : ["curator = curator.curator:main",
+                             "es_repo_mgr = curator.es_repo_mgr:main"]
     },
     classifiers=[
         "Intended Audience :: Developers",
