@@ -136,31 +136,31 @@ class TestGetDateRegex(TestCase):
     def test_get_date_regex_arbitrary_with_percent(self):
         self.assertEqual('\\a\\a\\a\\a', curator.get_date_regex('%a%a%a%a'))
     def test_get_date_regex_date_map(self):
-        self.assertEqual('\\d{4}\\.\\d{2}\\.\\d{2}\\-\\d{2}\\-\\d{2}\\d{2}\\d{2}',
-            curator.get_date_regex('%Y.%y.%m-%W-%U%d%H'))
+        self.assertEqual('\\d{4}\\.\\d{2}\\.\\d{2}\\-\\d{2}\\-\\d{2}\\d{2}\\d{2}\\d{2}\\d{2}',
+            curator.get_date_regex('%Y.%y.%m-%W-%U%d%H%M%S'))
 
 
 class TestGetIndexTime(TestCase):
-    def test_get_index_time_week_fix_W(self):
+    def test_get_datetime_week_fix_W(self):
         utc_now  = datetime(2015, 2, 01, 2, 34, 56)
         expected = datetime(2015, 1, 26, 0, 00, 00)
         weeknow  = utc_now.strftime('%Y-%W')
-        self.assertEqual(expected, curator.get_index_time(weeknow, '%Y-%W'))
-    def test_get_index_time_week_fix_U(self):
+        self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%W'))
+    def test_get_datetime_week_fix_U(self):
         utc_now  = datetime(2015, 2, 21, 2, 34, 56)
         expected = datetime(2015, 2, 16, 0, 00, 00)
         weeknow  = utc_now.strftime('%Y-%U')
-        self.assertEqual(expected, curator.get_index_time(weeknow, '%Y-%U'))
-    def test_get_index_time_month_fix_positive(self):
+        self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%U'))
+    def test_get_datetime_month_fix_positive(self):
         utc_now  = datetime(2015, 2, 22, 2, 34, 56)
         expected = datetime(2015, 2, 01, 0, 00, 00)
         weeknow  = utc_now.strftime('%Y-%m')
-        self.assertEqual(expected, curator.get_index_time(weeknow, '%Y-%m'))
-    def test_get_index_time_month_fix_negative(self):
+        self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%m'))
+    def test_get_datetime_month_fix_negative(self):
         utc_now  = datetime(2015, 2, 22, 2, 34, 56)
         expected = datetime(2015, 2, 22, 0, 00, 00)
         weeknow  = utc_now.strftime('%Y-%m-%d')
-        self.assertEqual(expected, curator.get_index_time(weeknow, '%Y-%m-%d'))
+        self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%m-%d'))
 
 class TestGetTargetMonth(TestCase):
     def test_get_target_month_same_year(self):
@@ -200,3 +200,17 @@ class TestGetCutoff(TestCase):
         fakenow = datetime(2015, 2, 03, 4, 5, 6)
         cutoff  = datetime(2015, 7, 01, 0, 0, 0)
         self.assertEqual(cutoff, curator.get_cutoff(-5, time_unit='months', utc_now=fakenow))
+
+# This test should cover the "uncovered" lines for filter.py in the nose output...
+# ...but it doesn't :(
+class TestTimestampCheck(TestCase):
+    # Only the final else statement was not listed as "covered" by nose
+    def test_timestamp_check_else(self):
+        ts = '%Y.%m.%d'
+        tu = 'days'
+        m  = 'older_than'
+        v  = 30
+        timestamp = '2015.01.01'
+        utc_now = datetime(2015, 1, 5)
+        self.assertFalse(curator.timestamp_check(timestamp, timestring=ts,
+            time_unit=tu, method=m, value=v, utc_now=utc_now))

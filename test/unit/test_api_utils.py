@@ -181,7 +181,7 @@ class TestIsMasterNode(TestCase):
         self.assertFalse(curator.is_master_node(client))
 
 class TestGetIndexTime(TestCase):
-    def test_get_index_time(self):
+    def test_get_datetime(self):
         for text, datestring, dt in [
             ('2014.01.19', '%Y.%m.%d', datetime(2014, 1, 19)),
             ('14.01.19', '%y.%m.%d', datetime(2014, 1, 19)),
@@ -191,8 +191,9 @@ class TestGetIndexTime(TestCase):
             ('2011.01', '%Y.%m', datetime(2011, 1, 1)),
             ('2014-28', '%Y-%W', datetime(2014, 7, 14)),
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
+            ('2009101112136', '%Y%m%d%H%M%S', datetime(2009, 10, 11, 12, 13, 6)),
                 ]:
-            self.assertEqual(dt, curator.get_index_time(text, datestring))
+            self.assertEqual(dt, curator.get_datetime(text, datestring))
 
 class TestGetRepository(TestCase):
     def test_get_repository_missing_arg(self):
