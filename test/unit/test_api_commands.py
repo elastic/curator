@@ -4,6 +4,7 @@ from mock import Mock
 import sys
 from StringIO import StringIO
 
+import elasticsearch
 from curator import api as curator
 
 named_index    = 'index_name'
@@ -28,6 +29,47 @@ shards         = { 'indices': { named_index: { 'shards': {
         '0': [ { 'num_search_segments' : 15 }, { 'num_search_segments' : 21 } ],
         '1': [ { 'num_search_segments' : 19 }, { 'num_search_segments' : 16 } ] }}}}
 optimize_tuple = (4, 71)
+snap_name      = 'snap_name'
+repo_name      = 'repo_name'
+snapshot       = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': snap_name, 'end_time': '2015-01-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    }]}
+snapshots       = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': snap_name, 'end_time': '2015-01-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    },
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:02.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': 'snapshot2', 'end_time': '2015-01-01T00:00:03.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    }]}
+snap_body_all   = {
+                    "ignore_unavailable": False,
+                    "include_global_state": True,
+                    "partial": False,
+                    "indices" : "_all"
+                  }
+snap_body       = {
+                    "ignore_unavailable": False,
+                    "include_global_state": True,
+                    "partial": False,
+                    "indices" : "index1,index2"
+                  }
+verified_nodes  = {'nodes': {'nodeid1': {'name': 'node1'}, 'nodeid2': {'name': 'node2'}}}
 
 class TestAlias(TestCase):
     def test_add_to_alias_bad_csv(self):
@@ -287,3 +329,109 @@ class TestShow(TestCase):
     def test_show_positive_list(self):
         curator.show(named_indices)
         self.assertEqual(sys.stdout.getvalue(),'index1\nindex2\n')
+
+class TestSnapshot(TestCase):
+    def test_create_snapshot_missing_arg_repository(self):
+        client = Mock()
+        self.assertFalse(curator.create_snapshot(client, name=snap_name))
+    def test_create_snapshot_empty_arg_indices(self):
+        client = Mock()
+        self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
+    def test_create_snapshot_verify_nodes_positive(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        self.assertTrue(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_verify_nodes_negative(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.verify_repository.side_effect = fake_fail
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_name_collision(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        self.assertFalse(
+            self.assertFalse(
+                curator.create_snapshot(
+                    client,
+                    indices=named_indices,
+                    repository=repo_name,
+                    name=snap_name
+                )
+            )
+        )
+    def test_create_snapshot_exception(self):
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.create.side_effect = elasticsearch.TransportError
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+
+# def delete_snapshot(client, snapshot=None, repository=None):
+#     """
+#     Delete a single snapshot from a given repository by name
+#
+#     :arg client: The Elasticsearch client connection
+#     :arg snapshot: The snapshot name
+#     :arg repository: The Elasticsearch snapshot repository to use
+#     """
+#     if not repository:
+#         logger.error('Missing required repository parameter')
+#         return False
+#     if not snapshot:
+#         logger.error('Missing required snapshot parameter')
+#         return False
+#     if check_csv(snapshot):
+#         logger.error('Cannot delete multiple snapshots at once.  CSV value or list detected: {0}'.format(snapshot))
+#         return False
+#     try:
+#         client.snapshot.delete(repository=repository, snapshot=snap)
+#         return True
+#     except elasticsearch.RequestError as e:
+#         logger.error("Unable to delete snapshot {0} from repository {1}.  Exception: {2} Check logs for more information.".format(snapshot, repository, e.message))
+#         return False
+class TestDeleteSnapshot(TestCase):
+    def test_delete_snapshot_missing_arg_repository(self):
+        client = Mock()
+        self.assertFalse(curator.delete_snapshot(client, snapshot=snap_name))
+    def test_delete_snapshot_missing_arg_name(self):
+        client = Mock()
+        self.assertFalse(curator.delete_snapshot(client, repository=repo_name))
+    def test_delete_snapshot_snapshot_is_list(self):
+        client = Mock()
+        self.assertFalse(curator.delete_snapshot(client, repository=repo_name, snapshot=['snap1', 'snap2']))
+    def test_delete_snapshot_positive(self):
+        client = Mock()
+        client.snapshot.delete.return_value = None
+        self.assertTrue(curator.delete_snapshot(client, repository=repo_name, snapshot=snap_name))
+    def test_delete_snapshot_negative(self):
+        client = Mock()
+        client.snapshot.delete.side_effect = elasticsearch.RequestError
+        self.assertFalse(curator.delete_snapshot(client, repository=repo_name, snapshot=snap_name))
