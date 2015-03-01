@@ -60,120 +60,43 @@ def check_version(client):
     version_number = get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
-        print('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
-        print('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))))
+        click.echo(click.style('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))), fg='red'))
+        click.echo(click.style('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))), fg='red', bold=True))
         sys.exit(1)
 
-def show_vars(ctx, param, value):
-    """Showing the local variables passed"""
-    logger.debug("CTX! {0} has a value of {1} and the CTX contains: {2}".format(param.name, value, ctx.params))
-    return value
-
-def get_client(ctx):
-    """Return an Elasticsearch client using context parameters
+def get_client(**kwargs):
+    """Return an Elasticsearch client using the provided parameters
 
     """
-    d = ctx.params
-    logger.debug("Client CTX: {0}".format(d))
-
+    logger.debug("kwargs = {0}".format(kwargs))
     try:
         client = elasticsearch.Elasticsearch(
-            host=d["host"], http_auth=d["auth"], port=d["port"],
-            url_prefix=d["url_prefix"], timeout=d["timeout"], use_ssl=d["ssl"]
+            host=kwargs["host"], http_auth=kwargs["auth"], port=kwargs["port"],
+            url_prefix=kwargs["url_prefix"], timeout=kwargs["timeout"], use_ssl=kwargs["ssl"]
             )
         # Verify the version is acceptable.
         check_version(client)
         # Verify "master_only" status, if applicable
-        if d["master_only"] and not is_master_node(client):
+        if kwargs["master_only"] and not is_master_node(client):
             logger.info('Master-only flag detected. Connected to non-master node. Aborting.')
             sys.exit(9)
         return client
-    except:
-        print("ERROR: Connection failure.  Exiting.")
+    except Exception as e:
+        click.echo(click.style('ERROR: Connection failure.  Exception: {0}.'.format(e.message), fg='red', bold=True))
         sys.exit(1)
-
-def validate_timestring(timestring, time_unit):
-    """
-    Validate that the appropriate element(s) for time_unit are in the timestring.
-    e.g. If "weeks", we should see %U or %W, if hours %H, etc.
-
-    Exit with error on failure.
-
-    :arg timestring: An strftime string to match the datestamp in an index name.
-    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
-        is ``days``.
-    """
-    fail = True
-    if time_unit == 'hours':
-        if '%H' in timestring:
-            fail = False
-    elif time_unit == 'days':
-        if '%d' in timestring:
-            fail = False
-    elif time_unit == 'weeks':
-        if '%W' in timestring:
-            fail = False
-        elif '%U' in timestring:
-            fail = False
-    elif time_unit == 'months':
-        if '%m' in timestring:
-            fail = False
-    if fail:
-        print('Timestring {0} does not match time unit {1}'.format(timestring, time_unit))
-        sys.exit(1)
-    return
-
-def validate_timeout(command, timeout, timeout_override=False):
-    """Validate client connection args. Correct where necessary."""
-    # Override the timestamp in case the end-user doesn't.
-    replacement_timeout = 21600
-    # val is arbitrarily set at two hours right now.
-    if command == "optimize": # This is for Elasticsearch < 1.5
-        val = 7200
-    elif command == "snapshot":
-        val = 7200
-    if timeout_override and timeout < val:
-        logger.info('Timeout of {0} seconds is too low for command {1}.  Overriding to {2} seconds.'.format(timeout, command.upper(), replacement_timeout))
-        timeout = replacement_timeout
-    return timeout
-
-def filter_any(param):
-    """Test all flags to see if any filtering is being done"""
-    retval = False
-    if param.name == "regex":
-        return True
-    if param.name == "prefix":
-        return True
-    if param.name == "suffix":
-        return True
-    if param.name == "newer_than":
-        return True
-    if param.name == "older_than":
-        return True
-    if param.name == "timestring":
-        return True
-    if param.name == "exclude":
-        return True
-    return retval
 
 def filter_callback(ctx, param, value):
     """
-    Filter ctx.obj["filtered"] based on what shows up here.
+    Append a dict to ctx.obj['filters'] based on the arguments
     """
     # Stop here if None or empty value
     if not value:
         return value
     else:
-        kwargs = {}
-
-    # If we're calling a filtered object and ctx.obj['filtered'] is empty we
-    # need to copy over ctx.obj['indices']
-    if not ctx.obj["filtered"]:
-        if filter_any(param):
-            ctx.obj["filtered"] = ctx.obj["indices"]
+        argdict = {}
 
     if param.name in ['older_than', 'newer_than']:
-        kwargs = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
+        argdict = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
                     "timestring": ctx.params['timestring'], "value": value,
                     "method": param.name }
         date_regex = get_date_regex(ctx.params['timestring'])
@@ -186,40 +109,35 @@ def filter_callback(ctx, param, value):
     if param.name == 'exclude':
         for e in value:
             logger.info('Excluding indices matching {0}'.format(e))
-            pattern = re.compile(e)
-            ctx.obj["filtered"] = list(filter(lambda x: not pattern.search(x), ctx.obj["filtered"]))
+            argdict['pattern'] = '{0}'.format(e)
+            argdict['exclude'] = True
+            ctx.obj['filters'].append(argdict)
     else:
         logger.debug("REGEX = {0}".format(regex))
-        ctx.obj["filtered"] = regex_iterate(ctx.obj["filtered"], regex, **kwargs)
-    logger.debug("Filtered index list: {0}".format(ctx.obj["filtered"]))
+        argdict['pattern'] = regex
+        ctx.obj['filters'].append(argdict)
+    logger.debug("Added filter: {0}".format(argdict))
     return value
 
-def filter_timestring_only(ctx, timestring):
+def in_list(values, source_list):
     """
-    Because Click will not allow option dependencies, this is a work-around
-    just in case someone is using timestamp filtering without using
-    ``older_than`` or ``newer_than``
-    """
-    # If we're calling a filtered object and ctx.obj['filtered'] is empty we
-    # need to copy over ctx.obj['indices']
-    if not ctx.obj["filtered"]:
-        ctx.obj["filtered"] = ctx.obj["indices"]
-    date_regex = get_date_regex(timestring)
-    regex = r'^.*{0}.*$'.format(date_regex)
-    ctx.obj["filtered"] = regex_iterate(ctx.obj["filtered"], regex)
-    logger.debug("Filtered index list: {0}".format(ctx.obj["filtered"]))
+    Return a list of values found inside source_list.
 
-def add_indices_callback(ctx, param, value):
+    While a list comprehension is faster, it doesn't log failures.
+
+    :arg values: A list of items to compare to the ``source_list``
+    :arg source_list: A list of items
     """
-    Add indices (if they exist) to ctx.obj["add_indices"]
-    They will be added to the actionable list just before the action is executed.
-    """
-    # Only add an index if it actually exists, hence we check the original
-    # list here
-    for i in value:
-        if i in ctx.obj["indices"]:
-            logger.info('Adding index {0} from command-line argument'.format(i))
-            ctx.obj["add_indices"].append(i)
+    retval = []
+    for v in values:
+        if v in source_list:
+            logger.info('Adding {0} from command-line argument'.format(v))
+            retval.append(v)
         else:
-            logger.warn('Index {0} not found!'.format(i))
+            logger.warn('{0} not found!'.format(v))
+    return retval
+
+def show_vars(ctx, param, value):
+    """Showing the local variables passed"""
+    logger.debug("CTX! {0} has a value of {1} and the CTX contains: {2}".format(param.name, value, ctx.params))
     return value

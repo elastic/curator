@@ -22,15 +22,15 @@ DATE_REGEX = {
 }
 
 def regex_iterate(
-    items, pattern, groupname=None, timestring=None, time_unit='days',
-    method=None, value=None, utc_now=None):
+    items, pattern=None, exclude=False, groupname=None, timestring=None,
+    time_unit='days', method=None, value=None, utc_now=None):
     """Iterate over all items in the list and return a list of matches
 
     :arg items: A list of indices or snapshots to act on
-    :arg pattern: A regular expression to iterate all indices against
+    :arg pattern: A regular expression to iterate all indices against.
+    :arg exclude: If true, exclude matches rather than include
     :arg groupname: The name of a named capture in pattern.  Currently only acts
         on 'date'
-    :arg object_type: Either 'index' or 'snapshot'
     :arg timestring: An strftime string to match the datestamp in an index name.
         Only used for time-based filtering.
     :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
@@ -41,9 +41,14 @@ def regex_iterate(
         used for time-based filtering.
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     """
+    if not pattern:
+        logger.error("Missing required pattern parameter.")
+        return None
+    p = re.compile(pattern)
+    if exclude:
+        return list(filter(lambda x: not p.search(x), items))
     result = []
     items = ensure_list(items)
-    p = re.compile(pattern)
     for item in items:
         match = False
         if groupname:
@@ -107,7 +112,7 @@ def get_datetime(index_timestamp, timestring):
         if not '%d' in timestring:
             timestring += '%d'
             index_timestamp += '1'
-    logger.debug("index_timestamp: {0}, timestring: {1}, return value: {2}".format(index_timestamp, timestring, datetime.strptime(index_timestamp, timestring)))
+    #logger.debug("index_timestamp: {0}, timestring: {1}, return value: {2}".format(index_timestamp, timestring, datetime.strptime(index_timestamp, timestring)))
     return datetime.strptime(index_timestamp, timestring)
 
 def get_target_month(month_count, utc_now=None):
@@ -170,7 +175,7 @@ def get_cutoff(unit_count=None, time_unit='days', utc_now=None):
             cutoff = utc_now - timedelta(**{time_unit: (unit_count)})
         else:
             cutoff = utc_now - timedelta(**{time_unit: (unit_count - 1)})
-    logger.debug("time_cutoff: {0}".format(cutoff))
+    #logger.debug("time_cutoff: {0}".format(cutoff))
     return cutoff
 
 def timestamp_check(timestamp, timestring=None, time_unit='days',
@@ -203,9 +208,9 @@ def timestamp_check(timestamp, timestring=None, time_unit='days',
     elif method == "newer_than":
         if object_time > cutoff:
             return True
-    else:
-        logger.info('Timestamp "{0}" is within the threshold period ({1} {2}).'.format(timestamp, value, time_unit))
-        return False
+
+    logger.info('Timestamp "{0}" is within the threshold period ({1} {2}).'.format(timestamp, value, time_unit))
+    return False
 
 def filter_by_space(client, indices, disk_space=None, reverse=True):
     """

@@ -100,23 +100,21 @@ class TestAlias(TestCase):
         client = Mock()
         client.indices.exists_alias.return_value = False
         self.assertFalse(curator.remove_from_alias(client, named_index, alias=named_alias))
-    # The next two should cover the lines NOSE says are not covered.
-    # They pass but I am confused, because NOSE says no coverage. :(
     def test_remove_from_alias_exception_raised(self):
         client = Mock()
         client.indices.exists_alias.return_value = True
-        client.indices.get_alias.return_value = alias_retval
+        client.indices.get_alias.return_value = aliases_retval
         client.indices.update_aliases.side_effect = fake_fail
         self.assertRaises(Exception, curator.remove_from_alias(client, "index1", alias=named_alias))
     def test_remove_from_alias_exception_return_false(self):
         client = Mock()
         client.indices.exists_alias.return_value = True
-        client.indices.get_alias.return_value = alias_retval
+        client.indices.get_alias.return_value = aliases_retval
         client.indices.update_aliases.side_effect = fake_fail
         self.assertFalse(curator.remove_from_alias(client, "index1", alias=named_alias))
     def test_remove_from_alias_index_not_found_in_alias(self):
         client = Mock()
-        client.indices.exists_alias.return_value = False
+        client.indices.exists_alias.return_value = True
         client.indices.get_alias.return_value = aliases_retval
         self.assertFalse(curator.remove_from_alias(client, "foo", alias=named_alias))
 

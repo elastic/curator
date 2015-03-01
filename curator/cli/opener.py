@@ -1,5 +1,5 @@
 import click
-from .indices import *
+from .index_selection import *
 
 import logging
 logger = logging.getLogger(__name__)
@@ -8,5 +8,4 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def _open(ctx):
     """Open indices"""
-    logging.debug("ACTION: Open indices")
 _open.add_command(indices)

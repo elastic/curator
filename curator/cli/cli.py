@@ -47,51 +47,37 @@ DEFAULT_ARGS = {
 def cli(ctx, host, url_prefix, port, ssl, auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
     """Curator for Elasticsearch indices. See http://github.com/elasticsearch/curator/wiki
     """
-    # Check for --help flag
-    args = " ".join(sys.argv)
-    pattern = re.compile(r'^.*\-\-help.*$')
-    wants_help = pattern.match(args)
 
-    # If no --help flag, then begin in earnest...
-    if not wants_help:
-        # Setup logging
-        if debug:
-            numeric_log_level = logging.DEBUG
-            format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
-        else:
-            numeric_log_level = getattr(logging, loglevel.upper(), None)
-            format_string = '%(asctime)s %(levelname)-9s %(message)s'
-            if not isinstance(numeric_log_level, int):
-                raise ValueError('Invalid log level: {0}'.format(loglevel))
+    # Setup logging
+    if debug:
+        numeric_log_level = logging.DEBUG
+        format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
+    else:
+        numeric_log_level = getattr(logging, loglevel.upper(), None)
+        format_string = '%(asctime)s %(levelname)-9s %(message)s'
+        if not isinstance(numeric_log_level, int):
+            raise ValueError('Invalid log level: {0}'.format(loglevel))
 
-        handler = logging.StreamHandler(
-            open(logfile, 'a') if logfile else sys.stderr)
-        if logformat == 'logstash':
-            handler.setFormatter(LogstashFormatter())
-        else:
-            handler.setFormatter(logging.Formatter(format_string))
-        logging.root.addHandler(handler)
-        logging.root.setLevel(numeric_log_level)
+    handler = logging.StreamHandler(
+        open(logfile, 'a') if logfile else sys.stderr)
+    if logformat == 'logstash':
+        handler.setFormatter(LogstashFormatter())
+    else:
+        handler.setFormatter(logging.Formatter(format_string))
+    logging.root.addHandler(handler)
+    logging.root.setLevel(numeric_log_level)
 
-        # Filter out logging from Elasticsearch and associated modules by default
-        if not debug:
-            for handler in logging.root.handlers:
-                handler.addFilter(Whitelist('root', '__main__', 'curator', 'curator.curator', 'curator.api', 'curator.cli'))
+    # Filter out logging from Elasticsearch and associated modules by default
+    if not debug:
+        for handler in logging.root.handlers:
+            handler.addFilter(
+                Whitelist(
+                    'root', '__main__', 'curator', 'curator.curator',
+                    'curator.api', 'curator.cli', 'curator.curator.api',
+                    'curator.curator.cli'
+                )
+            )
 
-        # Setting up NullHandler to handle nested elasticsearch.trace Logger instance in elasticsearch python client
-        logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
-
-        logging.info("Job starting...")
-
-        if dry_run:
-            logging.info("DRY RUN MODE.  No changes will be made.")
-
-        ctx.obj["client"] = get_client(ctx)
-
-        # Get a master-list of indices
-        indices = get_indices(ctx.obj["client"])
-        if indices:
-            ctx.obj["indices"] = indices
-        else:
-            click.echo(click.style('ERROR. Unable to get indices from Elasticsearch.', fg='red', bold=True))
-            sys.exit(1)
+    # Setting up NullHandler to handle nested elasticsearch.trace Logger
+    # instance in elasticsearch python client
+    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())

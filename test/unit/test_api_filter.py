@@ -63,18 +63,27 @@ class FilterBySpace(TestCase):
         self.assertEqual(["index2"], curator.filter_by_space(client, named_indices, disk_space=ds, reverse=False))
 
 class TestRegexIterate(TestCase):
+    def test_regex_iterate_missing_param_pattern(self):
+        self.assertFalse(curator.regex_iterate(re_test_indices))
     # The regex_iterate method filters a list of indices based on regex patterns
     def test_regex_iterate_filter_none(self):
         pattern = r'.*'
-        self.assertEqual(re_test_indices, curator.regex_iterate(re_test_indices, pattern))
+        self.assertEqual(
+            re_test_indices, curator.regex_iterate(re_test_indices,
+            pattern=pattern)
+        )
     def test_regex_iterate_prefix(self):
         pattern = r'^foo.*$'
         expected = [ 'foo', 'foo-logstash', 'foologstash' ]
-        self.assertEqual(expected, curator.regex_iterate(re_test_indices, pattern))
+        self.assertEqual(
+            expected, curator.regex_iterate(re_test_indices, pattern=pattern)
+        )
     def test_regex_iterate_suffix(self):
         pattern = r'^.*foo$'
         expected = [ 'foo', 'logstash-foo', 'logstashfoo' ]
-        self.assertEqual(expected, curator.regex_iterate(re_test_indices, pattern))
+        self.assertEqual(
+            expected, curator.regex_iterate(re_test_indices, pattern=pattern)
+        )
     def test_regex_iterate_timestring(self):
         pattern = r'^.*\d{4}.\d{2}.\d{2}.*$'
         expected = [
@@ -84,7 +93,10 @@ class TestRegexIterate(TestCase):
             '2014.10.30-buh', '2014.10.29-buh', '2015-01-01', '2015-01-02',
             '2015-01-03',
             ]
-        self.assertEqual(expected, curator.regex_iterate(re_test_indices, pattern))
+        self.assertEqual(
+            expected, curator.regex_iterate(re_test_indices,
+            pattern=pattern)
+        )
     def test_regex_iterate_newer_than(self):
         pattern = r'(?P<date>\d{4}.\d{2}.\d{2})'
         expected = [
@@ -94,9 +106,11 @@ class TestRegexIterate(TestCase):
             ]
         t = datetime(2014, 12, 01, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(re_test_indices, pattern, groupname='date',
-                timestring='%Y.%m.%d', time_unit='days', method='newer_than',
-                value=2, utc_now=t))
+            curator.regex_iterate(re_test_indices, pattern=pattern,
+                groupname='date', timestring='%Y.%m.%d', time_unit='days',
+                method='newer_than', value=2, utc_now=t
+            )
+        )
     def test_regex_iterate_newer_than_negative_value(self):
         pattern = r'(?P<date>\d{4}.\d{2}.\d{2})'
         expected = [
@@ -104,9 +118,12 @@ class TestRegexIterate(TestCase):
             ]
         t = datetime(2014, 12, 01, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(re_test_indices, pattern, groupname='date',
+            curator.regex_iterate(
+                re_test_indices, pattern=pattern, groupname='date',
                 timestring='%Y.%m.%d', time_unit='days', method='newer_than',
-                value=-30, utc_now=t))
+                value=-30, utc_now=t
+            )
+        )
     def test_regex_iterate_older_than_date_only(self):
         pattern = r'(?P<date>\d{4}-\d{2}-\d{2})'
         expected = [
@@ -114,9 +131,12 @@ class TestRegexIterate(TestCase):
             ]
         t = datetime(2015, 2, 1, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(re_test_indices, pattern, groupname='date',
+            curator.regex_iterate(
+                re_test_indices, pattern=pattern, groupname='date',
                 timestring='%Y-%m-%d', time_unit='days', method='older_than',
-                value=2, utc_now=t))
+                value=2, utc_now=t
+            )
+        )
     def test_regex_iterate_older_than_with_prefix_and_suffix(self):
         pattern = r'(?P<date>\d{4}.\d{2}.\d{2})'
         expected = [
@@ -126,9 +146,19 @@ class TestRegexIterate(TestCase):
             ]
         t = datetime(2015, 2, 1, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(re_test_indices, pattern, groupname='date',
+            curator.regex_iterate(
+                re_test_indices, pattern=pattern, groupname='date',
                 timestring='%Y.%m.%d', time_unit='days', method='older_than',
-                value=2, utc_now=t))
+                value=2, utc_now=t
+            )
+        )
+    def test_regex_iterate_exclude(self):
+        pattern = r'201|logstash'
+        expected = ['foo', 'bar', 'baz', 'neeble']
+        self.assertEqual(
+            expected, curator.regex_iterate(re_test_indices,
+            pattern=pattern, exclude=True)
+        )
 
 class TestGetDateRegex(TestCase):
     def test_get_date_regex_arbitrary(self):
@@ -201,16 +231,13 @@ class TestGetCutoff(TestCase):
         cutoff  = datetime(2015, 7, 01, 0, 0, 0)
         self.assertEqual(cutoff, curator.get_cutoff(-5, time_unit='months', utc_now=fakenow))
 
-# This test should cover the "uncovered" lines for filter.py in the nose output...
-# ...but it doesn't :(
 class TestTimestampCheck(TestCase):
     # Only the final else statement was not listed as "covered" by nose
     def test_timestamp_check_else(self):
         ts = '%Y.%m.%d'
         tu = 'days'
-        m  = 'older_than'
         v  = 30
         timestamp = '2015.01.01'
         utc_now = datetime(2015, 1, 5)
         self.assertFalse(curator.timestamp_check(timestamp, timestring=ts,
-            time_unit=tu, method=m, value=v, utc_now=utc_now))
+            time_unit=tu, value=v, utc_now=utc_now))

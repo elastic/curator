@@ -1,5 +1,5 @@
 import click
-from .indices import *
+from .index_selection import *
 
 import logging
 logger = logging.getLogger(__name__)
@@ -16,8 +16,4 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def optimize(ctx, delay):
     """Optimize Indices"""
-    ctx.obj["timeout_override"] = True
-    logging.debug("ACTION: Optimize Indices")
-    if delay > 0:
-        logging.debug("CONFIGURATION: Add a {0} second delay between iterations".format(delay))
 optimize.add_command(indices)

@@ -1,5 +1,6 @@
 import click
-from .indices import *
+from .index_selection import *
+from .snapshot_selection import *
 
 import logging
 logger = logging.getLogger(__name__)
@@ -10,10 +11,5 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def delete(ctx, disk_space):
     """Delete indices or snapshots"""
-    logging.debug("ACTION: Delete indices")
-    if disk_space:
-        logging.debug("CONFIGURATION: Delete by space")
-    else:
-        logging.debug("CONFIGURATION: Delete by filter")
 delete.add_command(indices)
 delete.add_command(snapshots)
