@@ -147,6 +147,25 @@ def index_closed(client, index_name):
     )
     return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
+## Is the index already has the allocation rule to be set?
+def index_allocated(client, index_name, attribute, value):
+    """
+    Return `True` if the indicated index has allocation `attribute` set to `value`
+
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    :arg attribute: The allocation attribute to check for
+    :arg value: The attribute value to check for
+    :rtype: bool
+    """
+    index_routing = client.indices.get_settings(
+        index=index_name,
+    )
+    try:
+        return index_routing[index_name]['settings']['index']['routing']['allocation']['require'][attribute] == value
+    except KeyError:
+        return False
+
 ## Get matching indices
 def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
     """
@@ -533,6 +552,9 @@ def apply_allocation_rule(client, index_name, rule=None, **kwargs):
     value = rule.split('=')[1]
     if index_closed(client, index_name):
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    elif index_allocated(client, index_name, key, value):
+        logger.info('Skipping index {0}: Already allocated.'.format(index_name))
         return True
     else:
         logger.info('Updating index setting index.routing.allocation.require.{0}={1}'.format(key,value))
