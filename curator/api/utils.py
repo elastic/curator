@@ -131,6 +131,33 @@ def prune_closed(client, indices):
             logger.info('Skipping index {0}: Already closed.'.format(idx))
     return sorted(retval)
 
+def prune_allocated(client, indices, key, value):
+    """
+    Return list of indices that do not have the routing allocation rule of
+    ``key=value``
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :arg key: The allocation attribute to check for
+    :arg value: The value to check for
+    :rtype: list
+    """
+    indices = prune_closed(client, indices)
+    retval = []
+    for idx in indices:
+        settings = client.indices.get_settings(
+            index=idx,
+        )
+        try:
+            has_routing = settings[idx]['settings']['index']['routing']['allocation']['require'][key] == value
+        except KeyError:
+            has_routing = False
+        if has_routing:
+            logger.debug('Skipping index {0}: Already has allocation rule {1} applied.'.format(idx, key + "=" + value))
+        else:
+            retval.append(idx)
+    return sorted(retval)
+
 def get_segmentcount(client, index_name):
     """
     Return a tuple of ``(shardcount, segmentcount)`` from the provided

@@ -22,7 +22,7 @@ def apply_allocation_rule(client, indices, rule=None):
         return False
     key = rule.split('=')[0]
     value = rule.split('=')[1]
-    indices = prune_closed(client, indices)
+    indices = prune_allocated(client, indices, key, value)
     if not indices:
         logger.warn("No indices to act on.")
         return False

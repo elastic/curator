@@ -17,6 +17,8 @@ closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
                                                'index2' : { 'state' : 'close' }}}}
 fake_fail      = Exception('Simulated Failure')
 named_alias    = 'alias_name'
+allocation_in  = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'foo': 'bar'}}}}}}}
+allocation_out = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'not': 'foo'}}}}}}}
 alias_retval   = { "pre_aliased_index": { "aliases" : { named_alias : { }}}}
 aliases_retval = {
     "index1": { "aliases" : { named_alias : { } } },
@@ -125,13 +127,15 @@ class TestAllocate(TestCase):
         self.assertFalse(curator.apply_allocation_rule(client, named_indices))
     def test_allocation_rule_positive(self):
         client = Mock()
+        client.indices.get_settings.return_value = allocation_out
         client.cluster.state.return_value = open_index
         client.indices.put_settings.return_value = None
         self.assertTrue(curator.apply_allocation_rule(client, named_index, rule="foo=bar"))
     def test_apply_allocation_rule_negative(self):
         client = Mock()
         client.cluster.state.return_value = open_index
-        client.indices.put_settings.side_effect = fake_fail
+        client.indices.get_settings.return_value = allocation_in
+        client.indices.put_settings.return_value = None
         self.assertFalse(curator.apply_allocation_rule(client, named_index, rule="foo=bar"))
     def test_apply_allocation_rule_empty_list(self):
         client = Mock()
@@ -139,11 +143,13 @@ class TestAllocate(TestCase):
     def test_allocation_positive(self):
         client = Mock()
         client.cluster.state.return_value = open_index
+        client.indices.get_settings.return_value = allocation_out
         client.indices.put_settings.return_value = None
         self.assertTrue(curator.allocation(client, named_index, rule="foo=bar"))
-    def test_allocation_negative(self):
+    def test_allocation_negative_exception(self):
         client = Mock()
         client.cluster.state.return_value = open_index
+        client.indices.get_settings.return_value = allocation_out
         client.indices.put_settings.side_effect = fake_fail
         self.assertFalse(curator.allocation(client, named_index, rule="foo=bar"))
 
