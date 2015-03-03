@@ -3,6 +3,7 @@
 *.py[co]
 build
 dist
+scratch
 docs/_build
 *.egg
 elasticsearch_curator.egg-info
