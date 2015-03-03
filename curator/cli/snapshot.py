@@ -30,7 +30,10 @@ DEFAULT_ARGS = {
             expose_value=True,
             help='Allow this many seconds before the transaction times out.')
 @click.pass_context
-def snapshot(ctx, repository, name, prefix, wait_for_completion, ignore_unavailable, include_global_state, partial):
+def snapshot(
+        ctx, repository, name, prefix, wait_for_completion, ignore_unavailable,
+        include_global_state, partial, request_timeout
+    ):
     """Take snapshots of indices (Backup)"""
     if not repository:
         click.echo('{0}'.format(ctx.get_help()))

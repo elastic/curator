@@ -1,4 +1,5 @@
-from . import *
+from ..cli import *
+from ..api import *
 import elasticsearch
 import click
 import re
@@ -38,14 +39,18 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     list.
 
     """
-    logging.info("Job starting...")
+    if not all_indices and not ctx.obj['filters']:
+        click.echo('{0}'.format(ctx.get_help()))
+        click.echo(click.style('ERROR. At least one filter must be supplied.', fg='red', bold=True))
+        sys.exit(1)
 
+    logger.info("Job starting...")
+    logger.debug("Params: {0}".format(ctx.parent.parent.params))
     # Base and client args are in the grandparent tier of the context
-    if ctx.parent.parent.params['dry_run']:
-        logging.info("DRY RUN MODE.  No changes will be made.")
     client = get_client(**ctx.parent.parent.params)
     # Get a master-list of indices
     indices = get_indices(client)
+    logger.debug("Full list of indices: {0}".format(indices))
     if indices:
         working_list = indices
     else:
@@ -54,13 +59,13 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
     if all_indices:
         logger.info('Matching all indices. Ignoring flags other than --exclude.')
-    else:
-        logger.debug('All filters: {0}'.format(ctx.obj['filters']))
+
+    logger.debug('All filters: {0}'.format(ctx.obj['filters']))
 
     for f in ctx.obj['filters']:
         if all_indices and not f['exclude']:
             continue
-        click.echo('Filter: {0}'.format(f))
+        logger.debug('Filter: {0}'.format(f))
         working_list = regex_iterate(working_list, **f)
 
     if ctx.parent.info_name == "delete": # Protect against accidental delete
@@ -76,6 +81,21 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         logger.debug('ACTION: {0} will be executed against the following indices: {1}'.format(ctx.parent.info_name, working_list))
 
         # Do action here!!! Don't forget to account for DRY_RUN!!!
+        if ctx.parent.info_name == 'show':
+            show(working_list)
+        else:
+            if ctx.parent.parent.params['dry_run']:
+                logging.info("DRY RUN MODE.  No changes will be made.")
+                logging.info("The following indices would have been altered:")
+                show(working_list)
+            else:
+                try:
+                    retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
+                    sys.exit(0) if retval else sys.exit(1)
+                except Exception as e:
+                    logger.error("Unable to complete: {0}  Exception: {1}".format(ctx.parent.info_name, e.message))
+                    sys.exit(1)
+
     else:
         logger.warn('No indices matched provided args.')
         click.echo(click.style('ERROR. No indices matched provided args.', fg='red', bold=True))

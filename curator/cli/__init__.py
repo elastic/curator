@@ -5,7 +5,7 @@ from ..api import *
 from .utils import *
 from .cli import *
 from .alias import *
-from .allocate import *
+from .allocation import *
 from .bloom import *
 from .close import *
 from .delete import *

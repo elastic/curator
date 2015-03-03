@@ -23,7 +23,7 @@ DATE_REGEX = {
 
 def regex_iterate(
     items, pattern=None, exclude=False, groupname=None, timestring=None,
-    time_unit='days', method=None, value=None, utc_now=None):
+    time_unit=None, method=None, value=None, utc_now=None):
     """Iterate over all items in the list and return a list of matches
 
     :arg items: A list of indices or snapshots to act on
@@ -178,7 +178,7 @@ def get_cutoff(unit_count=None, time_unit='days', utc_now=None):
     #logger.debug("time_cutoff: {0}".format(cutoff))
     return cutoff
 
-def timestamp_check(timestamp, timestring=None, time_unit='days',
+def timestamp_check(timestamp, timestring=None, time_unit=None,
                     method='older_than', value=None, utc_now=None):
     """
     Check ``timestamp`` to see if it is ``value`` ``time_unit``s
@@ -209,7 +209,8 @@ def timestamp_check(timestamp, timestring=None, time_unit='days',
         if object_time > cutoff:
             return True
 
-    logger.info('Timestamp "{0}" is within the threshold period ({1} {2}).'.format(timestamp, value, time_unit))
+    logger.debug('Timestamp "{0}" is outside the cutoff period ({1} {2} {3}).'.format(
+                        timestamp, method.replace('_', ' '), value, time_unit))
     return False
 
 def filter_by_space(client, indices, disk_space=None, reverse=True):

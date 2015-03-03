@@ -1,6 +1,7 @@
 import elasticsearch
 import time
 import re
+import sys
 from datetime import timedelta, datetime, date
 
 import logging
@@ -69,14 +70,19 @@ def check_csv(value):
     """
     if type(value) is type(list()):
         return True
-    elif type(value) is type(str()):
+    string = False
+    if type(value) is type(str()):
+        string = True
+    if type(value) is type(unicode()):
+        string = True
+    if string:
         if len(value.split(',')) > 1: # It's a csv string.
             return True
         else: # There's only one value here, so it's not a csv string
             return False
     else:
-        logger.error("Value is not a list or a string")
-        return None
+        logger.error("Passed value: {0} is not a list or a string but is of type {1}".format(value, type(value)))
+        sys.exit(1)
 
 def prune_kibana(indices):
     """Remove any index named .kibana, kibana-int, or .marvel-kibana

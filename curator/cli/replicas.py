@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def replicas(ctx, count):
     """Replica Count Per-shard"""
-    if not count:
+    if count == None: # Have to do this since 0 is valid
         click.echo('{0}'.format(ctx.get_help()))
         click.echo(click.style('Missing required parameter --count', fg='red', bold=True))
         sys.exit(1)

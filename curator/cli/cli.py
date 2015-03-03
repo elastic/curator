@@ -20,21 +20,21 @@ DEFAULT_ARGS = {
     'host': 'localhost',
     'url_prefix': '',
     'port': 9200,
-    'auth': None,
-    'ssl': False,
+    'http_auth': None,
+    'use_ssl': False,
     'timeout': 30,
     'dry_run': False,
     'debug': False,
     'log_level': 'INFO',
-    'logformat': 'Default',
+    'logformat': 'default',
 }
 
 @click.group()
 @click.option('--host', help='Elasticsearch host.', default=DEFAULT_ARGS['host'])
 @click.option('--url_prefix', help='Elasticsearch http url prefix.', default=DEFAULT_ARGS['url_prefix'])
 @click.option('--port', help='Elasticsearch port.', default=DEFAULT_ARGS['port'], type=int)
-@click.option('--ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=DEFAULT_ARGS['ssl'])
-@click.option('--auth', help='Use Basic Authentication ex: user:pass', default=DEFAULT_ARGS['auth'])
+@click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=DEFAULT_ARGS['use_ssl'])
+@click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=DEFAULT_ARGS['http_auth'])
 @click.option('--timeout', help='Connection timeout in seconds.', default=DEFAULT_ARGS['timeout'], type=int)
 @click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
 @click.option('--dry-run', is_flag=True, help='Do not perform any changes.', default=DEFAULT_ARGS['dry_run'])
@@ -44,7 +44,7 @@ DEFAULT_ARGS = {
 @click.option('--logformat', help='Log output format [default|logstash].', default=DEFAULT_ARGS['logformat'])
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, host, url_prefix, port, ssl, auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
+def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
     """Curator for Elasticsearch indices. See http://github.com/elasticsearch/curator/wiki
     """
 

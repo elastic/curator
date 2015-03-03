@@ -28,6 +28,7 @@ def delete(client, indices, disk_space=None, reverse=True):
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
     :arg disk_space: Delete indices over *n* gigabytes, alphabetically sorted.
+    :arg reverse: Reverse the order.
     """
 
     if disk_space:

@@ -14,6 +14,6 @@ logger = logging.getLogger(__name__)
             expose_value=True,
             help='Allow this many seconds before the transaction times out.')
 @click.pass_context
-def optimize(ctx, delay):
+def optimize(ctx, delay, max_num_segments, request_timeout):
     """Optimize Indices"""
 optimize.add_command(indices)

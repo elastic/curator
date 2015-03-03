@@ -1,4 +1,5 @@
 from . import *
+from ..api import *
 import elasticsearch
 import click
 import re
@@ -43,7 +44,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
     if not repository:
         click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('Missing required repository --parameter.', fg='red', bold=True))
+        click.echo(click.style('Missing required --repository parameter.', fg='red', bold=True))
         sys.exit(1)
 
     logging.info("Job starting...")
@@ -79,8 +80,13 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         # Make a sorted, unique list of indices
         working_list = sorted(list(set(working_list)))
         logger.debug('ACTION: {0} will be executed against the following snapshots: {1}'.format(ctx.parent.info_name, working_list))
-
-        # Do action here!!! Be sure to compensate for DRY RUN
+        try:
+            for snap in working_list:
+                delete_snapshot(client, snapshot=snap, repository=repository)
+            sys.exit(0)
+        except Exception as e:
+            logger.error("Unable to delete snapshots. Exception {0}".format(e.message))
+            sys.exit(1)
     else:
         logger.warn('No snapshots matched provided args.')
         click.echo(click.style('ERROR. No snapshots matched provided args.', fg='red', bold=True))

@@ -58,6 +58,7 @@ class CuratorTestCase(TestCase):
         args = {}
         args['host'], args['port'] = host, port
         args['time_unit'] = 'days'
+        args['prefix'] = 'logstash-'
         self.args = args
         dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         self.args['location'] = tempfile.mkdtemp(suffix=dirname)

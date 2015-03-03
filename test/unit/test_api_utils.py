@@ -107,9 +107,14 @@ class TestCheckCSV(TestCase):
     def test_check_csv_list(self):
         l = ["1", "2", "3"]
         self.assertTrue(curator.check_csv(l))
+    def test_check_csv_unicode(self):
+        u = u'test'
+        self.assertFalse(curator.check_csv(u))
     def test_check_csv_wrong_value(self):
         v = 123
-        self.assertIsNone(curator.check_csv(v))
+        with self.assertRaises(SystemExit) as cm:
+            curator.check_csv(v)
+        self.assertEqual(cm.exception.code, 1)
 
 class TestPruneKibana(TestCase):
     def test_prune_kibana_positive(self):
