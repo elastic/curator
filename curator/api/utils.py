@@ -99,8 +99,8 @@ def index_closed(client, index_name):
 
 def get_segmentcount(client, index_name):
     """
-    Return a tuple of ``(shardcount, segmentcount)`` from the provided
-    ``index_name``.
+    Return a tuple of `(shardcount, segmentcount)` from the provided
+    `index_name`.
 
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
@@ -206,11 +206,12 @@ def create_snapshot_body(indices, ignore_unavailable=False,
 
     :arg indices: A single index, or list of indices to snapshot.
     :arg ignore_unavailable: Boolean. Ignore unavailable shards/indices.
-        Default is `False`
+        (default: `False`)
     :arg include_global_state: Boolean. Store cluster global state with snapshot.
-        Default is `True`
-    :arg partial: Boolean. Do not fail if primary shard is unavailable. Default
-        is `False`
+        (default: `True`)
+    :arg partial: Boolean. Do not fail if primary shard is unavailable.
+        (default: `False`)
+    :rtype: dict
     """
     if not indices:
         logger.error('Missing required repository parameter')
@@ -227,7 +228,7 @@ def create_snapshot_body(indices, ignore_unavailable=False,
     return body
 
 def prune_kibana(indices):
-    """Remove any index named .kibana, kibana-int, or .marvel-kibana
+    """Remove any index named `.kibana`, `kibana-int`, or `.marvel-kibana`
 
     :arg indices: A list of indices to act upon.
     :rtype: list
@@ -261,7 +262,7 @@ def prune_closed(client, indices):
 def prune_allocated(client, indices, key, value):
     """
     Return list of indices that do not have the routing allocation rule of
-    ``key=value``
+    `key=value`
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

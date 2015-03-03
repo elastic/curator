@@ -1,4 +1,4 @@
-.. _api:
+.. _filters:
 
 Filter Methods
 ==============

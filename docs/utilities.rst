@@ -1,4 +1,4 @@
-.. _api:
+.. _utilities:
 
 Utility & Helper Methods
 ========================

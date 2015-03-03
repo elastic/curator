@@ -1,23 +1,23 @@
-.. _api:
+.. _commands:
 
 Command Methods
 ===============
 
 Sections
 
-* `Alias`_
-* `Allocation`_
-* `Bloom`_
-* `Close`_
-* `Delete`_
-* `Open`_
-* `Optimize`_
-* `Replicas`_
-* `Show`_
-* `Snapshot`_
+* `Aliasing Indices`_
+* `Index Routing Allocation`_
+* `Disabling Bloom Filters`_
+* `Closing Indices`_
+* `Deleting Indices`_
+* `Opening Indices`_
+* `Optimizing Indices`_
+* `Changing Index Replica Count`_
+* `Show Indices`_
+* `Snapshot Indices`_
 
-Alias
------
+Aliasing Indices
+----------------
 
 alias
 +++++
@@ -31,8 +31,8 @@ remove_from_alias
 +++++++++++++++++
 .. automethod:: curator.api.remove_from_alias
 
-Allocation
-----------
+Index Routing Allocation
+------------------------
 
 allocation
 ++++++++++
@@ -43,8 +43,8 @@ apply_allocation_rule
 .. automethod:: curator.api.apply_allocation_rule
 
 
-Bloom
------
+Disabling Bloom Filters
+-----------------------
 
 bloom
 +++++
@@ -59,8 +59,8 @@ loop_bloom
 .. automethod:: curator.api.loop_bloom
 
 
-Close
------
+Closing Indices
+---------------
 
 close
 +++++
@@ -71,8 +71,8 @@ close_indices
 .. automethod:: curator.api.close_indices
 
 
-Delete
-------
+Deleting Indices
+----------------
 
 delete
 ++++++
@@ -83,8 +83,8 @@ delete_indices
 .. automethod:: curator.api.delete_indices
 
 
-Open
-----
+Opening Indices
+---------------
 
 opener
 ++++++
@@ -95,8 +95,8 @@ open_indices
 .. automethod:: curator.api.open_indices
 
 
-Optimize
---------
+Optimizing Indices
+------------------
 
 optimize
 ++++++++
@@ -107,8 +107,8 @@ optimize_index
 .. automethod:: curator.api.optimize_index
 
 
-Replicas
---------
+Changing Index Replica Count
+----------------------------
 
 replicas
 ++++++++
@@ -119,8 +119,16 @@ change_replicas
 .. automethod:: curator.api.change_replicas
 
 
-Snapshot
---------
+Show Indices
+------------
+
+show
+++++
+.. automethod:: curator.api.show
+
+
+Snapshot Indices
+----------------
 
 create_snapshot
 +++++++++++++++

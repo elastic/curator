@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 def optimize_index(client, index_name, max_num_segments=None,
                 request_timeout=21600):
     """
-    Optimize (Lucene forceMerge) index to ``max_num_segments`` per shard
+    Optimize (Lucene forceMerge) index to `max_num_segments` per shard
 
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name

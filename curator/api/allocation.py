@@ -5,8 +5,7 @@ logger = logging.getLogger(__name__)
 
 def apply_allocation_rule(client, indices, rule=None):
     """
-    Apply a required allocation rule to a list of indices.  See:
-    http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-allocation.html#index-modules-allocation
+    Apply a required allocation rule to a list of indices.
     This method will ignore closed indices.
 
     :arg client: The Elasticsearch client connection
@@ -15,6 +14,10 @@ def apply_allocation_rule(client, indices, rule=None):
         in the format of ``key=value``, and should match values declared on the
         correlating nodes in your cluster.
     :rtype: bool
+
+    .. note::
+        See:
+        http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-allocation.html#index-modules-allocation
     """
     if not rule:
         logger.error('Missing rule parameter')

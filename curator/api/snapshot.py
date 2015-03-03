@@ -11,22 +11,22 @@ def create_snapshot(client, indices='_all', name=None,
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to snapshot. Default is ``_all``
-    :arg name: What to name the snapshot. ``prefix`` +
+    :arg name: What to name the snapshot. `prefix` +
         datestamp if omitted.
     :arg prefix: Override the default with this value. Defaults to
         ``curator-``
     :arg repository: The Elasticsearch snapshot repository to use
     :arg wait_for_completion: Wait (or not) for the operation
-        to complete before returning.  Default: ``True``
+        to complete before returning.  (default: `True`)
     :type wait_for_completion: bool
     :arg ignore_unavailable: Ignore unavailable shards/indices.
-        Default is ``False``
+        (default: `False`)
     :type ignore_unavailable: bool
     :arg include_global_state: Store cluster global state with snapshot.
-        Default is ``True``
+        (default: `True`)
     :type include_global_state: bool
-    :arg partial: Do not fail if primary shard is unavailable. Default
-        is ``False``
+    :arg partial: Do not fail if primary shard is unavailable. (default:
+        `False`)
     :type partial: bool
     :rtype bool:
     """
