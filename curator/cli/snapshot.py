@@ -17,14 +17,14 @@ DEFAULT_ARGS = {
 @click.option('--name', help='Override default name.', expose_value=True)
 @click.option('--prefix', help='Override default prefix.',
             expose_value=True, default=DEFAULT_ARGS['snapshot_prefix'])
-@click.option('--wait_for_completion', type=bool,
+@click.option('--wait_for_completion', type=bool, show_default=True,
             default=DEFAULT_ARGS['wait_for_completion'], expose_value=True,
             help='Wait for snapshot to complete before returning.')
-@click.option('--ignore_unavailable', is_flag=True, show_default=True, expose_value=True,
+@click.option('--ignore_unavailable', is_flag=True, expose_value=True,
             help='Ignore unavailable shards/indices.', default=DEFAULT_ARGS['ignore_unavailable'])
-@click.option('--include_global_state', is_flag=True, show_default=True,
+@click.option('--include_global_state', is_flag=True,
             expose_value=True, help='Store cluster global state with snapshot.')
-@click.option('--partial', is_flag=True, show_default=True, expose_value=True,
+@click.option('--partial', is_flag=True, expose_value=True,
             help='Do not fail if primary shard is unavailable.')
 @click.option('--request_timeout', type=int, default=218600, show_default=True,
             expose_value=True,
