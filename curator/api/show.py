@@ -1,12 +1,8 @@
 from .utils import *
-import elasticsearch
-
-import logging
-logger = logging.getLogger(__name__)
 
 def show(object_list):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg object_list: A list of indices or snapshots to show

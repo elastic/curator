@@ -1,6 +1,5 @@
 from .utils import *
 import elasticsearch
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ def remove_from_alias(client, index_name, alias=None):
 
 def alias(client, indices, alias=None, remove=False):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

@@ -39,7 +39,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     list.
 
     """
-    if not all_indices and not ctx.obj['filters']:
+    if not all_indices and not ctx.obj['filters'] and not index:
         click.echo('{0}'.format(ctx.get_help()))
         click.echo(click.style('ERROR. At least one filter must be supplied.', fg='red', bold=True))
         sys.exit(1)
@@ -51,13 +51,17 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     # Get a master-list of indices
     indices = get_indices(client)
     logger.debug("Full list of indices: {0}".format(indices))
-    if indices:
-        working_list = indices
+    if index and not ctx.obj['filters']:
+        working_list = []
     else:
-        click.echo(click.style('ERROR. Unable to get indices from Elasticsearch.', fg='red', bold=True))
-        sys.exit(1)
+        if indices:
+            working_list = indices
+        else:
+            click.echo(click.style('ERROR. Unable to get indices from Elasticsearch.', fg='red', bold=True))
+            sys.exit(1)
 
     if all_indices:
+        working_list = indices
         logger.info('Matching all indices. Ignoring flags other than --exclude.')
 
     logger.debug('All filters: {0}'.format(ctx.obj['filters']))

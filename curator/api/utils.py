@@ -1,9 +1,8 @@
+from datetime import timedelta, datetime, date
 import elasticsearch
 import time
 import re
 import sys
-from datetime import timedelta, datetime, date
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -84,22 +83,6 @@ def check_csv(value):
         logger.error("Passed value: {0} is not a list or a string but is of type {1}".format(value, type(value)))
         sys.exit(1)
 
-def prune_kibana(indices):
-    """Remove any index named .kibana, kibana-int, or .marvel-kibana
-
-    :arg indices: A list of indices to act upon.
-    :rtype: list
-    """
-    indices = ensure_list(indices)
-    if '.marvel-kibana' in indices:
-        indices.remove('.marvel-kibana')
-    if 'kibana-int' in indices:
-        indices.remove('kibana-int')
-    if '.kibana' in indices:
-        indices.remove('.kibana')
-    return indices
-
-### Index state
 def index_closed(client, index_name):
     """
     Return `True` if the indicated index is closed.
@@ -113,50 +96,6 @@ def index_closed(client, index_name):
         metric='metadata',
     )
     return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
-
-def prune_closed(client, indices):
-    """
-    Return list of indices that are not closed.
-
-    :arg client: The Elasticsearch client connection
-    :arg indices: A list of indices to act on
-    :rtype: list
-    """
-    indices = ensure_list(indices)
-    retval = []
-    for idx in indices:
-        if not index_closed(client, idx):
-            retval.append(idx)
-        else:
-            logger.info('Skipping index {0}: Already closed.'.format(idx))
-    return sorted(retval)
-
-def prune_allocated(client, indices, key, value):
-    """
-    Return list of indices that do not have the routing allocation rule of
-    ``key=value``
-
-    :arg client: The Elasticsearch client connection
-    :arg indices: A list of indices to act on
-    :arg key: The allocation attribute to check for
-    :arg value: The value to check for
-    :rtype: list
-    """
-    indices = prune_closed(client, indices)
-    retval = []
-    for idx in indices:
-        settings = client.indices.get_settings(
-            index=idx,
-        )
-        try:
-            has_routing = settings[idx]['settings']['index']['routing']['allocation']['require'][key] == value
-        except KeyError:
-            has_routing = False
-        if has_routing:
-            logger.debug('Skipping index {0}: Already has allocation rule {1} applied.'.format(idx, key + "=" + value))
-        else:
-            retval.append(idx)
-    return sorted(retval)
 
 def get_segmentcount(client, index_name):
     """
@@ -176,7 +115,6 @@ def get_segmentcount(client, index_name):
             totalshards += 1
     return totalshards, segmentcount
 
-## Client state
 def get_version(client):
     """
     Return the ES version number as a tuple.
@@ -287,3 +225,62 @@ def create_snapshot_body(indices, ignore_unavailable=False,
     else:
         body["indices"] = to_csv(indices)
     return body
+
+def prune_kibana(indices):
+    """Remove any index named .kibana, kibana-int, or .marvel-kibana
+
+    :arg indices: A list of indices to act upon.
+    :rtype: list
+    """
+    indices = ensure_list(indices)
+    if '.marvel-kibana' in indices:
+        indices.remove('.marvel-kibana')
+    if 'kibana-int' in indices:
+        indices.remove('kibana-int')
+    if '.kibana' in indices:
+        indices.remove('.kibana')
+    return indices
+
+def prune_closed(client, indices):
+    """
+    Return list of indices that are not closed.
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :rtype: list
+    """
+    indices = ensure_list(indices)
+    retval = []
+    for idx in indices:
+        if not index_closed(client, idx):
+            retval.append(idx)
+        else:
+            logger.info('Skipping index {0}: Already closed.'.format(idx))
+    return sorted(retval)
+
+def prune_allocated(client, indices, key, value):
+    """
+    Return list of indices that do not have the routing allocation rule of
+    ``key=value``
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :arg key: The allocation attribute to check for
+    :arg value: The value to check for
+    :rtype: list
+    """
+    indices = prune_closed(client, indices)
+    retval = []
+    for idx in indices:
+        settings = client.indices.get_settings(
+            index=idx,
+        )
+        try:
+            has_routing = settings[idx]['settings']['index']['routing']['allocation']['require'][key] == value
+        except KeyError:
+            has_routing = False
+        if has_routing:
+            logger.debug('Skipping index {0}: Already has allocation rule {1} applied.'.format(idx, key + "=" + value))
+        else:
+            retval.append(idx)
+    return sorted(retval)

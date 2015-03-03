@@ -1,7 +1,6 @@
 from .utils import *
 import elasticsearch
 import time
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ def loop_bloom(client, indices, delay):
 
 def bloom(client, indices, delay=None):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

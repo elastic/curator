@@ -1,6 +1,5 @@
 from .utils import *
 import elasticsearch
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ def close_indices(client, indices):
 
 def close(client, indices):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

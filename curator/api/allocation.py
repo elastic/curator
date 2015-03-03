@@ -1,6 +1,5 @@
 from .utils import *
 import elasticsearch
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ def apply_allocation_rule(client, indices, rule=None):
 
 def allocation(client, indices, rule=None):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

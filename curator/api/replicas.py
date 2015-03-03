@@ -1,6 +1,5 @@
 from .utils import *
 import elasticsearch
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,7 @@ def change_replicas(client, indices, replicas=None):
 
 def replicas(client, indices, replicas=None):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

@@ -1,12 +1,8 @@
-## Methods used for filtering indices
-
 from .utils import *
-
-import logging
+from datetime import timedelta, datetime, date
 import time
 import re
-from datetime import timedelta, datetime, date
-
+import logging
 logger = logging.getLogger(__name__)
 
 DATE_REGEX = {
@@ -216,20 +212,21 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
 def filter_by_space(client, indices, disk_space=None, reverse=True):
     """
     Remove indices from the provided list of indices based on space consumed,
-    sorted reverse-alphabetically, by default.  If you set `reverse` to false,
+    sorted reverse-alphabetically, by default.  If you set ``reverse`` to false,
     it will be sorted alphabetically.
 
     With the default reverse sorting, if only one kind of index is provided--for
-    example, indices matching logstash-%Y.%m.%d--then alphabetically will mean
-    the oldest get removed first, because lower numbers in the dates mean older
-    indices.
+    example, indices matching ``logstash-%Y.%m.%d``--then alphabetically will
+    mean the oldest get removed first, because lower numbers in the dates mean
+    older indices.
 
-    By setting reverse=False, then index3 will be deleted before index2, which
-    will be deleted before index1
+    By setting reverse=False, then ``index3`` will be deleted before ``index2``,
+    which will be deleted before ``index1``
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
-    :arg disk_space: Filter indices over *n* gigabytes, alphabetically sorted.
+    :arg disk_space: Filter indices over *n* gigabytes
+    :arg reverse: The filtering direction. Default=True
     :rtype: list
     """
 

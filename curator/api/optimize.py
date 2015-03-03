@@ -1,7 +1,6 @@
 from .utils import *
 import elasticsearch
 import time
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ def optimize_index(client, index_name, max_num_segments=None,
 
 def optimize(client, indices, max_num_segments=None, delay=0, request_timeout=21600):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

@@ -1,7 +1,6 @@
 from .utils import *
 from .filter import *
 import elasticsearch
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -23,7 +22,7 @@ def delete_indices(client, indices):
 
 def delete(client, indices, disk_space=None, reverse=True):
     """
-    Helper method called by the script.
+    Helper method called by the CLI.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
