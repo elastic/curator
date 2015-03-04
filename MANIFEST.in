@@ -1,6 +1,5 @@
-include CHANGELOG
+include Changelog.rst
 include CONTRIBUTORS
-include VERSION
 include LICENSE.txt
 include README.md
 

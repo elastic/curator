@@ -1,0 +1,16 @@
+[float]
+[[replicas]]
+==== Replicas command --help
+
+-----
+Usage: curator replicas [OPTIONS] COMMAND [ARGS]...
+
+  Replica Count Per-shard
+
+Options:
+  --count INTEGER  Number of replicas the indices should have.
+  --help           Show this message and exit.
+
+Commands:
+  indices  Index selection.
+-----

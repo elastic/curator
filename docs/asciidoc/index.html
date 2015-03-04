@@ -1,0 +1,1415 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.6.9" />
+<title></title>
+<style type="text/css">
+/* Shared CSS for AsciiDoc xhtml11 and html5 backends */
+
+/* Default font. */
+body {
+  font-family: Georgia,serif;
+}
+
+/* Title font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+#toctitle,
+#author, #revnumber, #revdate, #revremark,
+#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+h5 {
+  font-size: 1.0em;
+}
+
+div.sectionbody {
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
+
+.monospaced, code, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: inherit;
+  color: navy;
+  padding: 0;
+  margin: 0;
+}
+pre {
+  white-space: pre-wrap;
+}
+
+#author {
+  color: #527bbd;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+#email {
+}
+#revnumber, #revdate, #revremark {
+}
+
+#footer {
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
+  padding: 0.5em;
+}
+
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
+  margin-right: 10%;
+  border-left: 5px solid #f0f0f0;
+  color: #888;
+}
+
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock > pre.content {
+  font-family: inherit;
+  font-size: inherit;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 3px solid #dddddd;
+}
+
+div.exampleblock > div.content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+span.image img { border-style: none; vertical-align: text-bottom; }
+a.image:visited { color: white; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
+
+@media print {
+  #footer-badges { display: none; }
+}
+
+#toc {
+  margin-bottom: 2.5em;
+}
+
+#toctitle {
+  color: #527bbd;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel0, div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+
+span.aqua { color: aqua; }
+span.black { color: black; }
+span.blue { color: blue; }
+span.fuchsia { color: fuchsia; }
+span.gray { color: gray; }
+span.green { color: green; }
+span.lime { color: lime; }
+span.maroon { color: maroon; }
+span.navy { color: navy; }
+span.olive { color: olive; }
+span.purple { color: purple; }
+span.red { color: red; }
+span.silver { color: silver; }
+span.teal { color: teal; }
+span.white { color: white; }
+span.yellow { color: yellow; }
+
+span.aqua-background { background: aqua; }
+span.black-background { background: black; }
+span.blue-background { background: blue; }
+span.fuchsia-background { background: fuchsia; }
+span.gray-background { background: gray; }
+span.green-background { background: green; }
+span.lime-background { background: lime; }
+span.maroon-background { background: maroon; }
+span.navy-background { background: navy; }
+span.olive-background { background: olive; }
+span.purple-background { background: purple; }
+span.red-background { background: red; }
+span.silver-background { background: silver; }
+span.teal-background { background: teal; }
+span.white-background { background: white; }
+span.yellow-background { background: yellow; }
+
+span.big { font-size: 2em; }
+span.small { font-size: 0.6em; }
+
+span.underline { text-decoration: underline; }
+span.overline { text-decoration: overline; }
+span.line-through { text-decoration: line-through; }
+
+div.unbreakable { page-break-inside: avoid; }
+
+
+/*
+ * xhtml11 specific
+ *
+ * */
+
+div.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead, p.table.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overriden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+/*
+ * html5 specific
+ *
+ * */
+
+table.tableblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+thead, p.tableblock.header {
+  font-weight: bold;
+  color: #527bbd;
+}
+p.tableblock {
+  margin-top: 0;
+}
+table.tableblock {
+  border-width: 3px;
+  border-spacing: 0px;
+  border-style: solid;
+  border-color: #527bbd;
+  border-collapse: collapse;
+}
+th.tableblock, td.tableblock {
+  border-width: 1px;
+  padding: 4px;
+  border-style: solid;
+  border-color: #527bbd;
+}
+
+table.tableblock.frame-topbot {
+  border-left-style: hidden;
+  border-right-style: hidden;
+}
+table.tableblock.frame-sides {
+  border-top-style: hidden;
+  border-bottom-style: hidden;
+}
+table.tableblock.frame-none {
+  border-style: hidden;
+}
+
+th.tableblock.halign-left, td.tableblock.halign-left {
+  text-align: left;
+}
+th.tableblock.halign-center, td.tableblock.halign-center {
+  text-align: center;
+}
+th.tableblock.halign-right, td.tableblock.halign-right {
+  text-align: right;
+}
+
+th.tableblock.valign-top, td.tableblock.valign-top {
+  vertical-align: top;
+}
+th.tableblock.valign-middle, td.tableblock.valign-middle {
+  vertical-align: middle;
+}
+th.tableblock.valign-bottom, td.tableblock.valign-bottom {
+  vertical-align: bottom;
+}
+
+
+/*
+ * manpage specific
+ *
+ * */
+
+body.manpage h1 {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  border-top: 2px solid silver;
+  border-bottom: 2px solid silver;
+}
+body.manpage h2 {
+  border-style: none;
+}
+body.manpage div.sectionbody {
+  margin-left: 3em;
+}
+
+@media print {
+  body.manpage div#toc { display: none; }
+}
+
+
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+
+// toclevels = 1..4.
+toc: function (toclevels) {
+
+  function getText(el) {
+    var text = "";
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([1-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
+      }
+    }
+    iterate(el);
+    return result;
+  }
+
+  var toc = document.getElementById("toc");
+  if (!toc) {
+    return;
+  }
+
+  // Delete existing TOC entries in case we're reloading the TOC.
+  var tocEntriesToRemove = [];
+  var i;
+  for (i = 0; i < toc.childNodes.length; i++) {
+    var entry = toc.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div'
+     && entry.getAttribute("class")
+     && entry.getAttribute("class").match(/^toclevel/))
+      tocEntriesToRemove.push(entry);
+  }
+  for (i = 0; i < tocEntriesToRemove.length; i++) {
+    toc.removeChild(tocEntriesToRemove[i]);
+  }
+
+  // Rebuild TOC entries.
+  var entries = tocEntries(document.getElementById("content"), toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "_toc_" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  // Delete existing footnote entries in case we're reloading the footnodes.
+  var i;
+  var noteholder = document.getElementById("footnotes");
+  if (!noteholder) {
+    return;
+  }
+  var entriesToRemove = [];
+  for (i = 0; i < noteholder.childNodes.length; i++) {
+    var entry = noteholder.childNodes[i];
+    if (entry.nodeName.toLowerCase() == 'div' && entry.getAttribute("class") == "footnote")
+      entriesToRemove.push(entry);
+  }
+  for (i = 0; i < entriesToRemove.length; i++) {
+    noteholder.removeChild(entriesToRemove[i]);
+  }
+
+  // Rebuild footnote entries.
+  var cont = document.getElementById("content");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      var note = spans[i].getAttribute("data-note");
+      if (!note) {
+        // Use [\s\S] in place of . so multi-line matches work.
+        // Because JavaScript has no s (dotall) regex flag.
+        note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+        spans[i].innerHTML =
+          "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+        spans[i].setAttribute("data-note", note);
+      }
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+},
+
+install: function(toclevels) {
+  var timerId;
+
+  function reinstall() {
+    asciidoc.footnotes();
+    if (toclevels) {
+      asciidoc.toc(toclevels);
+    }
+  }
+
+  function reinstallAndRemoveTimer() {
+    clearInterval(timerId);
+    reinstall();
+  }
+
+  timerId = setInterval(reinstall, 500);
+  if (document.addEventListener)
+    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
+  else
+    window.onload = reinstallAndRemoveTimer;
+}
+
+}
+asciidoc.install();
+/*]]>*/
+</script>
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="elasticsearch-curator">Elasticsearch Curator CLI</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This document shows how to use the Elasticsearch CLI.  If you wish to learn
+about the Elasticsearch Curator API, please visit
+<a href="http://curator.readthedocs.org/">http://curator.readthedocs.org/</a></p></div>
+<h3 id="_click_based_cli" class="float">Click-based CLI</h3>
+<div class="paragraph"><p>Curator now uses <a href="http://click.pocoo.org/3/">Click</a> for its command-line library.
+This has made the code cleaner, and easier to read and extend.  The end result
+should not look very different from previous versions.</p></div>
+<h4 id="_nested_command_structure" class="float">Nested command structure</h4>
+<div class="paragraph"><p>Commands may require their own arguments, which must come <em>before</em>
+subsequent nested commands.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>$ curator --host 10.0.0.2 show indices --all-indices</code></pre>
+</div></div>
+<div class="paragraph"><p>In this instancewe see that the base command has the <code>--host</code> parameter set. The
+nested command <code>show</code> follows with no argument before the command <code>indices</code>,
+which has the <code>--all-indices</code> parameter.</p></div>
+<div class="paragraph"><p>You can use <code>--help</code> after <em>any</em> command.  If <code>--help</code> were inserted between
+the <code>show</code> command and <code>indices</code>, it would display the help output for the
+<code>show</code> command, and exit.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content"><code>--help</code> is your friend.  Consult <code>--help</code> early and often.</td>
+</tr></table>
+</div>
+<h3 id="_curator_command_tree" class="float">Curator Command "tree"</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>$ curator
+    ├── alias
+    │     └── indices
+    ├── allocation
+    │     └── indices
+    ├── bloom
+    │     └── indices
+    ├── close
+    │     └── indices
+    ├── delete
+    │     └── indices
+    │     └── snapshots
+    ├── open
+    │     └── indices
+    ├── optimize
+    │     └── indices
+    ├── replicas
+    │     └── indices
+    ├── show
+    │     └── indices
+    │     └── snapshots
+    └── snapshot
+          └── indices</code></pre>
+</div></div>
+<div class="paragraph"><p>Each command and subcommand in the tree will have different options (or none!).</p></div>
+<div class="sect2">
+<h3 id="_commands_and_arguments">Commands and Arguments</h3>
+<div class="paragraph"><p>The root command structure looks like this:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator [OPTIONS] COMMAND [ARGS]...
+
+  Curator for Elasticsearch indices. See
+  http://github.com/elasticsearch/curator/wiki
+
+Options:
+  --host TEXT        Elasticsearch host.
+  --url_prefix TEXT  Elasticsearch http url prefix.
+  --port INTEGER     Elasticsearch port.
+  --use_ssl          Connect to Elasticsearch through SSL.
+  --http_auth TEXT   Use Basic Authentication ex: user:pass
+  --timeout INTEGER  Connection timeout in seconds.
+  --master-only      Only operate on elected master node.
+  --dry-run          Do not perform any changes.
+  --debug            Debug mode
+  --loglevel TEXT    Log level
+  --logfile TEXT     log file
+  --logformat TEXT   Log output format [default|logstash].
+  --version          Show the version and exit.
+  --help             Show this message and exit.
+
+Commands:
+  alias       Index Aliasing
+  allocation  Index Allocation
+  bloom       Disable bloom filter cache
+  close       Close indices
+  delete      Delete indices or snapshots
+  open        Open indices
+  optimize    Optimize Indices
+  replicas    Replica Count Per-shard
+  show        Show indices or snapshots
+  snapshot    Take snapshots of indices (Backup)</code></pre>
+</div></div>
+<div class="paragraph"><p>The <code>--help</code> output of the other commands can be seen here:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<a href="#alias">[alias]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#allocation">[allocation]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#bloom">[bloom]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#close">[close]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#delete">[delete]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#open">[open]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#optimize">[optimize]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#replicas">[replicas]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#show">[show]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#snapshot">[snapshot]</a>
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Subcommands:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<a href="#indices">[indices]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#snapshots">[snapshots]</a>
+</p>
+</li>
+</ul></div>
+<h3 id="_using_the_a_href_indices_indices_a_and_a_href_snapshots_snapshots_a_subcommands" class="float">Using the <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> subcommands</h3>
+<div class="paragraph"><p>Beginning with Curator v3, index filtering flags can be combined.  The flags
+which allow this are:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+<a href="#older-than">[older-than]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#newer-than">[newer-than]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#prefix">[prefix]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#suffix">[suffix]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#regex">[regex]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#exclude">[exclude]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#index">[index]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#snapshot-flag">[snapshot-flag]</a>
+</p>
+</li>
+<li>
+<p>
+<a href="#timestring">[timestring]</a>
+</p>
+</li>
+</ul></div>
+<h4 id="_examples" class="float">Examples</h4>
+<div class="ulist"><ul>
+<li>
+<p>
+Delete <em>all</em> indices with matching <a href="#timestring">[timestring]</a> which are older than 30 days
+</p>
+<div class="listingblock">
+<div class="content">
+<pre><code>curator --host 10.0.0.2 delete indices --older-than 30 --time-unit days \
+   --timestring '%Y.%m.%d'</code></pre>
+</div></div>
+<div class="paragraph"><p>In previous versions of Curator, you would have needed as many runs of the
+command-line as you had prefixes, no matter the matching pattern.  Not so any
+more!  With this example, <em>all</em> indices with a pattern of <code>%Y.%m.%d</code> inside will
+be deleted.  This is useful for managing both Logstash and Marvel indices with
+a single command, if you want the same retention period.</p></div>
+</li>
+</ul></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">Kibana indices are omitted from deletion by default.</td>
+</tr></table>
+</div>
+<div class="ulist"><ul>
+<li>
+<p>
+Alias a subset of indices
+</p>
+<div class="listingblock">
+<div class="content">
+<pre><code>curator --host 10.0.0.2 alias --name lastmonth indices --newer-than 60 \
+   --older-than 30 --timestring '%Y.%m.%d' --time-unit days --prefix logstash</code></pre>
+</div></div>
+<div class="paragraph"><p>In this example, logstash indices older than 30 days&#8212;but newer than 60&#8212;are
+added to alias <code>lastmonth</code>.  Please note that Curator does not create aliases.
+It can only add to them or remove from them.  Let&#8217;s take this example further,
+though.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><code>curator --host 10.0.0.2 alias --name lastmonth --remove indices --older-than 60 \
+   --timestring '%Y.%m.%d' --time-unit days --prefix logstash
+curator --host 10.0.0.2 alias --name lastmonth indices --newer-than 60 \
+   --older-than 30 --timestring '%Y.%m.%d' --time-unit days --prefix logstash</code></pre>
+</div></div>
+<div class="paragraph"><p>The updated, 2 line example now <em>removes</em> indices older than 60 days first, and
+then proceeds to make sure that everything between 30 and 60 days is in the
+alias.  Note that Curator will not re-alias if the index is already in the
+alias.</p></div>
+</li>
+<li>
+<p>
+Optimize only the specified indices
+</p>
+<div class="listingblock">
+<div class="content">
+<pre><code>curator --host 10.0.0.2 optimize --max_num_segments 1 --delay 120 \
+   --index indexname1 --index indexname2</code></pre>
+</div></div>
+<div class="paragraph"><p>This command will <em>only</em> operate on the named indices, <code>indexname1</code> and
+<code>indexname2</code>.  It will pause for <code>120</code> seconds after optimizing each index.</p></div>
+</li>
+<li>
+<p>
+Show only indices with a timestring
+</p>
+<div class="listingblock">
+<div class="content">
+<pre><code>curator --host 10.0.0.2 show indices --timestring '%Y.%m.%d'</code></pre>
+</div></div>
+<div class="paragraph"><p>While timestring may nearly always be seen alongside <a href="#older-than">[older-than]</a>,
+<a href="#newer-than">[newer-than]</a>, and <a href="#time-unit">[time-unit]</a>, there may be cases when you just want to act
+on indices with a timestamp in the name.</p></div>
+</li>
+<li>
+<p>
+Close all indices, excepting those matching patterns <code>kibana</code> and
+<code>logstash-2015.03</code>
+</p>
+<div class="listingblock">
+<div class="content">
+<pre><code>curator --host 10.0.0.2 close indices --exclude kibana --exclude logstash-2015.03</code></pre>
+</div></div>
+<div class="paragraph"><p>In this case, all indices saving those matching pattern <code>kibana</code>, or all
+Logstash indices for the month of March 2015 will be closed.</p></div>
+</li>
+</ul></div>
+<h3 id="_flags" class="float">Flags</h3>
+<h3 id="prefix" class="float">prefix</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--prefix TEXT                   Include only items beginning with
+                                prefix.</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<h3 id="suffix" class="float">suffix</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--suffix TEXT                   Include only items ending with suffix.</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<h3 id="regex" class="float">regex</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--regex TEXT                    Provide your own regex, e.g
+                                '^prefix-.*-suffix$'</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>These may be able to be quite complex.  Your imagination may be the limit.  Be
+sure to test with <a href="#show">[show]</a> first, or use the <code>--dry_run</code> flag.</p></div>
+<h3 id="exclude" class="float">exclude</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--exclude TEXT                  Exclude matching items. Can be invoked
+                                multiple times.</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>You can exclude multiple patterns by invoking <code>--exclude</code> multiple times.</p></div>
+<h3 id="index" class="float">index</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--index TEXT                    Include the provided index in the list. Can
+                                be invoked multiple times.</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> nested command
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>You can include multiple indices by invoking <code>--index</code> multiple times.</p></div>
+<h3 id="snapshot-flag" class="float">snapshot (flag)</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--snapshot TEXT                 Include the provided snapshot in the list.
+                                Can be invoked multiple times.</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#snapshots">[snapshots]</a> nested command
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>You can include multiple snapshots by invoking <code>--snapshot</code> multiple times.</p></div>
+<h3 id="older-than" class="float">older-than</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--older-than INTEGER            Include only items older than n
+                                time_units</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>This flag is dependent on both <a href="#time-unit">[time-unit]</a> and <a href="#timestring">[timestring]</a></p></div>
+<h3 id="newer-than" class="float">newer-than</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--newer-than INTEGER            Include only items newer than n
+                                time_units</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>This flag is dependent on both <a href="#time-unit">[time-unit]</a> and <a href="#timestring">[timestring]</a></p></div>
+<h3 id="timestring" class="float">timestring</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--timestring TEXT               Python strftime string to match your item
+                                definition, e.g. 2014.07.15 would be
+                                %Y.%m.%d</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Learn more about
+<a href="https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior">strftime</a>.</p></div>
+<h3 id="time-unit" class="float">time-unit</h3>
+<div class="listingblock">
+<div class="content">
+<pre><code>--time-unit [hours|days|weeks|months]
+                                Unit of time to reckon by</code></pre>
+</div></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Appears in <a href="#indices">[indices]</a> and <a href="#snapshots">[snapshots]</a> nested commands
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p><a href="#newer-than">[newer-than]</a> or <a href="#older-than">[older-than]</a> is used as a multiplier of <code>--time-unit</code>.  If
+<code>--older-than</code> is 5 and <code>--time-unit</code> is days, the calculated time period will
+be "5 days."</p></div>
+<h3 id="_help_output" class="float">Help output</h3>
+<h4 id="alias" class="float">Alias command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator alias [OPTIONS] COMMAND [ARGS]...
+
+  Index Aliasing
+
+Options:
+  --name TEXT  Alias name
+  --remove     Remove from alias rather than add.  [default: False]
+  --help       Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="allocation" class="float">Allocation command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator allocation [OPTIONS] COMMAND [ARGS]...
+
+  Index Allocation
+
+Options:
+  --rule TEXT  Routing allocation rule to apply, e.g. tag=ssd
+  --help       Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="bloom" class="float">Bloom command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator bloom [OPTIONS] COMMAND [ARGS]...
+
+  Disable bloom filter cache
+
+Options:
+  --delay INTEGER            Pause *n* seconds after disabling bloom filter
+                             cache of an index  [default: 0]
+  --request_timeout INTEGER  Allow this many seconds before the transaction
+                             times out.  [default: 218600]
+  --help                     Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="close" class="float">Close command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator close [OPTIONS] COMMAND [ARGS]...
+
+  Close indices
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="delete" class="float">Delete command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator delete [OPTIONS] COMMAND [ARGS]...
+
+  Delete indices or snapshots
+
+Options:
+  --disk-space FLOAT  Delete indices beyond DISK_SPACE gigabytes.
+  --reverse BOOLEAN   Only valid with --disk-space. Affects sort order of the
+                      indices.  True means reverse-alphabetical (if dates are
+                      involved, older is deleted first).  [default: True]
+  --help              Show this message and exit.
+
+Commands:
+  indices    Index selection.
+  snapshots  Snapshot selection.</code></pre>
+</div></div>
+<h4 id="open" class="float">Open command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator open [OPTIONS] COMMAND [ARGS]...
+
+  Open indices
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="optimize" class="float">Optimize command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator optimize [OPTIONS] COMMAND [ARGS]...
+
+  Optimize Indices
+
+Options:
+  --delay INTEGER             Pause *n* seconds after optimizing an index.
+                              [default: 0]
+  --max_num_segments INTEGER  Merge to this number of segments per shard.
+                              [default: 2]
+  --request_timeout INTEGER   Allow this many seconds before the transaction
+                              times out.  [default: 218600]
+  --help                      Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="replicas" class="float">Replicas command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator replicas [OPTIONS] COMMAND [ARGS]...
+
+  Replica Count Per-shard
+
+Options:
+  --count INTEGER  Number of replicas the indices should have.
+  --help           Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="show" class="float">Show command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: run_curator.py show [OPTIONS] COMMAND [ARGS]...
+
+  Show indices or snapshots
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  indices    Index selection.
+  snapshots  Snapshot selection.</code></pre>
+</div></div>
+<h4 id="snapshot" class="float">Snapshot command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator snapshot [OPTIONS] COMMAND [ARGS]...
+
+  Take snapshots of indices (Backup)
+
+Options:
+  --repository TEXT              Repository name.
+  --name TEXT                    Override default name.
+  --prefix TEXT                  Override default prefix.
+  --wait_for_completion BOOLEAN  Wait for snapshot to complete before
+                                 returning.  [default: True]
+  --ignore_unavailable           Ignore unavailable shards/indices.
+  --include_global_state         Store cluster global state with snapshot.
+  --partial                      Do not fail if primary shard is unavailable.
+  --request_timeout INTEGER      Allow this many seconds before the
+                                 transaction times out.  [default: 218600]
+  --help                         Show this message and exit.
+
+Commands:
+  indices  Index selection.</code></pre>
+</div></div>
+<h4 id="indices" class="float">indices nested command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator COMMAND indices [OPTIONS]
+
+  Get a list of indices to act on from the provided arguments, then perform
+  the command [alias, allocation, bloom, close, delete, etc.] on the
+  resulting list.
+
+Options:
+  --newer-than INTEGER            Include only indices newer than n time_units
+  --older-than INTEGER            Include only indices older than n time_units
+  --prefix TEXT                   Include only indices beginning with prefix.
+  --suffix TEXT                   Include only indices ending with suffix.
+  --time-unit [hours|days|weeks|months]
+                                  Unit of time to reckon by
+  --timestring TEXT               Python strftime string to match your index
+                                  definition, e.g. 2014.07.15 would be
+                                  %Y.%m.%d
+  --regex TEXT                    Provide your own regex, e.g
+                                  '^prefix-.*-suffix$'
+  --exclude TEXT                  Exclude matching indices. Can be invoked
+                                  multiple times.
+  --index TEXT                    Include the provided index in the list. Can
+                                  be invoked multiple times.
+  --all-indices                   Do not filter indices.  Act on all indices.
+  --help                          Show this message and exit.</code></pre>
+</div></div>
+<h4 id="snapshots" class="float">snapshots nested command --help</h4>
+<div class="listingblock">
+<div class="content">
+<pre><code>Usage: curator COMMAND snapshots [OPTIONS]
+
+  Get a list of snapshots to act on from the provided arguments, then
+  perform the command [delete, show] on the resulting list.
+
+Options:
+  --newer-than INTEGER            Include only snapshots newer than n
+                                  time_units
+  --older-than INTEGER            Include only snapshots older than n
+                                  time_units
+  --prefix TEXT                   Include only snapshots beginning with
+                                  prefix.
+  --suffix TEXT                   Include only snapshots ending with suffix.
+  --time-unit [hours|days|weeks|months]
+                                  Unit of time to reckon by
+  --timestring TEXT               Python strftime string to match your
+                                  snapshot's definition, e.g. 20140715020304
+                                  would be %Y%m%d%H%M%S
+  --regex TEXT                    Provide your own regex, e.g
+                                  '^prefix-.*-suffix$'
+  --exclude TEXT                  Exclude matching snapshots. Can be invoked
+                                  multiple times.
+  --snapshot TEXT                 Include the provided snapshot in the list.
+                                  Can be invoked multiple times.
+  --all-snapshots                 Do not filter snapshots.  Act on all
+                                  snapshots.
+  --repository TEXT               Repository name.
+  --help                          Show this message and exit.</code></pre>
+</div></div>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2015-03-03 17:24:22 MST
+</div>
+</div>
+</body>
+</html>

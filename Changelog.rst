@@ -3,18 +3,42 @@
 Changelog
 =========
 
-2.1.x (? ? ?)
+3.0.0 (? ? ?)
+-------------
 
 **General**
 
+ * **Breaking changes to the API.**  Because this is a major point revision,
+   changes to the API have been made which are non-reverse compatible.  Before
+   upgrading, be sure to update your scripts and test them thoroughly.
+ * **New CLI library.** Using Click now. http://click.pocoo.org/3/
+ * **Pipelined filtering!** You can now use ``--older-than`` & ``--newer-than``
+   in the same command!  You can also provide your own regex via the ``--regex``
+   parameter.  You can use multiple instances of the ``--exclude`` flag.
+ * **Manually include indices!** With the ``--index`` paramter, you can add an
+   index to the working list.  You can provide multiple instances of the
+   ``--index`` parameter as well!
+ * **Tests!** So many tests now.  Unit test coverage of the API methods is at
+   100% now.  This doesn't mean that all of the tests are perfect, or that I
+   haven't missed some scenarios.  It does mean that any new functionality will
+   need to also have tests, now.
+ * Methods now only iterate through each index when appropriate!
+ * Improved packaging!  Hopefully the ``entry_point`` issues some users have had
+   will be addressed by this.  Methods have been moved into categories of
+   ``api`` and ``cli``, and further broken out into individual modules to help
+   them be easier to find and read.
+ * Check for allocation before potentially re-applying an allocation rule.
+   #273 (ferki)
+
 **Bug fixes**
 
- * Fix edge case where trying to optimize an empty index causes an error. #265 (untergeek)
- * Bloom filters were disabled in ES 1.4, rather than delayed to 1.5. Reported in #267 (untergeek)
+ * Don't accidentally delete ``.kibana`` index. #261 (malagoli)
+ * Fix segment count for empty indices. #265 (untergeek)
+ * Change bloom filter cutoff Elasticsearch version to 1.4. Reported in #267 (untergeek)
 
 
 2.1.2 (22 January 2015)
--------------
+-----------------------
 
 **Bug fixes**
 
@@ -23,14 +47,14 @@ Changelog
  * Fix bug in `filter_by_space()` which would match all indices if the provided patterns found no matches. Reported in #254 (untergeek)
 
 2.1.1 (30 December 2014)
--------------
+------------------------
 
 **Bug fixes**
 
  * Renamed unnecessarily redundant ``--replicas`` to ``--count`` in args for ``curator_script.py``
 
 2.1.0 (30 December 2014)
--------------
+------------------------
 
 **General**
 

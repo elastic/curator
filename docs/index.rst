@@ -1,14 +1,14 @@
 Elasticsearch Curator Python API
 ================================
 
-The Elasticsearch Curator Python API helps you manage time-series indices and
+The Elasticsearch Curator Python API helps you manage your indices and
 snapshots.
 
 .. note::
 
-   This documentation is for the Elasticsearch Curator Python API.  Documentation 
-   for the Elasticsearch Curator *script*, which uses this API and is installed as
-   part of the package is available on the `the wiki`_.
+   This documentation is for the Elasticsearch Curator Python API.  Documentation
+   for the Elasticsearch Curator *CLI* -- which uses this API and is installed
+   as an entry_point as part of the package -- is available on the `the wiki`_.
 
 .. _the wiki: http://github.com/elasticsearch/curator/wiki
 
@@ -25,22 +25,22 @@ Example Usage
 
     import elasticsearch
     import curator
-    
+
     client = elasticsearch.Elasticsearch()
-    
-    curator.close_index(client, 'logstash-2014.08.16')
+
+    curator.close_indices(client, ['logstash-2014.08.16','logstash-2014.08.17'])
     curator.disable_bloom_filter(client, 'logstash-2014.08.31')
     curator.optimize_index(client, 'logstash-2014.08.31')
-    curator.delete(client, older_than=30, time_unit='days', prefix='logstash-')
+    curator.delete(client, ['logstash-2014.07.16', 'logstash-2014.07.17'])
 
 Features
 --------
 
 The API methods fall into the following categories:
 
-* :doc:`Iterative methods </iterative>` run against all of the indices on your cluster matching given patterns. You can restrict these matches to indices before a specified time.
-* :doc:`Non-iterative methods </non-iterative>` operate against a single index or snapshot at a time.
-* :doc:`Helper methods </helpers>` provide information and values that the iterative and non-iterative methods need to complete.
+* :doc:`Commands </commands>` take a single index, or in some cases a list of indices and perform an action on them.
+* :doc:`Filters </filters>` are there to filter indices or snapshots based on provided criteria.
+* :doc:`Utilities </utilities>` are helper methods for commands and filters.
 
 Logging
 ~~~~~~~
@@ -61,15 +61,15 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   iterative
-   non-iterative
-   helpers
+   commands
+   filters
+   utilities
    Changelog
 
 License
 -------
 
-Copyright 2013-2014 Elasticsearch
+Copyright 2013–2015 Elasticsearch
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -89,4 +89,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`search`
-

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from setuptools import setup
 
@@ -7,7 +8,14 @@ def fread(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 def get_version():
-    VERSION = fread("VERSION").strip()
+    VERSIONFILE="curator/_version.py"
+    verstrline = fread(VERSIONFILE).strip()
+    vsre = r"^__version__ = ['\"]([^'\"]*)['\"]"
+    mo = re.search(vsre, verstrline, re.M)
+    if mo:
+        VERSION = mo.group(1)
+    else:
+        raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
     build_number = os.environ.get('CURATOR_BUILD_NUMBER', None)
     if build_number:
         return VERSION + "b{}".format(build_number)
@@ -15,10 +23,7 @@ def get_version():
 
 def get_install_requires():
     res = ['elasticsearch>=1.0.0,<2.0.0' ]
-    if sys.version_info < (2, 7):
-        res.append('argparse>=1.1.0')
-    if (3, 0) <= sys.version_info < (3, 2):
-        res.append('argparse>=1.1.0')
+    res.append('click>=3.3')
     return res
 
 setup(
@@ -26,7 +31,7 @@ setup(
     version = get_version(),
     author = "Aaron Mildenstein",
     author_email = "aaron@mildensteins.com",
-    description = "Tending your time-series indices in Elasticsearch",
+    description = "Tending your Elasticsearch indices",
     long_description=fread('README.md'),
     url = "http://github.com/elasticsearch/curator",
     download_url = "https://github.com/elasticsearch/curator/tarball/v" + get_version(),
@@ -36,7 +41,7 @@ setup(
     packages = ["curator"],
     include_package_data=True,
     entry_points = {
-        "console_scripts" : ["curator = curator.curator_script:main",
+        "console_scripts" : ["curator = curator.curator:main",
                              "es_repo_mgr = curator.es_repo_mgr:main"]
     },
     classifiers=[
@@ -44,6 +49,6 @@ setup(
         "Intended Audience :: System Administrators",
         "License :: OSI Approved :: Apache Software License",
     ],
-    test_suite = "test_curator.run_tests.run_all",
+    test_suite = "test.run_tests.run_all",
     tests_require = ["mock", "nose", "coverage", "nosexcover"]
 )

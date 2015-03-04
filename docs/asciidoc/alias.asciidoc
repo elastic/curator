@@ -1,0 +1,17 @@
+[float]
+[[alias]]
+==== Alias command --help
+
+-----
+Usage: curator alias [OPTIONS] COMMAND [ARGS]...
+
+  Index Aliasing
+
+Options:
+  --name TEXT  Alias name
+  --remove     Remove from alias rather than add.  [default: False]
+  --help       Show this message and exit.
+
+Commands:
+  indices  Index selection.
+-----
