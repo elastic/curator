@@ -6,7 +6,9 @@ dist
 scratch
 docs/_build
 *.egg
+.eggs
 elasticsearch_curator.egg-info
+elasticsearch_curator_dev.egg-info
 .coverage
 .idea
 coverage.xml

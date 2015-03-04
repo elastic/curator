@@ -29,14 +29,14 @@ def disable_bloom_filter(client, indices, delay=None):
                 client.indices.put_settings(index=to_csv(indices),
                     body='index.codec.bloom.load=false')
                 return True
-        except Exception as e:
-            logger.error("Error disabling bloom filters.  Exception {0}  Check logs for more information.".format(e.message))
+        except Exception:
+            logger.error("Error disabling bloom filters.  Check logs for more information.")
             return False
 
 def loop_bloom(client, indices, delay):
     """
     Iterate over list of indices.  Only called from within
-    :py:func:`curator.api.disable_bloom_filter` 
+    :py:func:`curator.api.disable_bloom_filter`
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on

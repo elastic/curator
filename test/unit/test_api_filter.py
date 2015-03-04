@@ -104,7 +104,7 @@ class TestRegexIterate(TestCase):
             '.marvel-2015.12.31', '.marvel-2015.12.30', '.marvel-2015.12.29',
             '2014.12.28',
             ]
-        t = datetime(2014, 12, 01, 2, 34, 56)
+        t = datetime(2014, 12, 1, 2, 34, 56)
         self.assertEqual(expected,
             curator.regex_iterate(re_test_indices, pattern=pattern,
                 groupname='date', timestring='%Y.%m.%d', time_unit='days',
@@ -116,7 +116,7 @@ class TestRegexIterate(TestCase):
         expected = [
             '.marvel-2015.12.31', '.marvel-2015.12.30', '.marvel-2015.12.29'
             ]
-        t = datetime(2014, 12, 01, 2, 34, 56)
+        t = datetime(2014, 12, 1, 2, 34, 56)
         self.assertEqual(expected,
             curator.regex_iterate(
                 re_test_indices, pattern=pattern, groupname='date',
@@ -172,7 +172,7 @@ class TestGetDateRegex(TestCase):
 
 class TestGetIndexTime(TestCase):
     def test_get_datetime_week_fix_W(self):
-        utc_now  = datetime(2015, 2, 01, 2, 34, 56)
+        utc_now  = datetime(2015, 2, 1, 2, 34, 56)
         expected = datetime(2015, 1, 26, 0, 00, 00)
         weeknow  = utc_now.strftime('%Y-%W')
         self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%W'))
@@ -183,7 +183,7 @@ class TestGetIndexTime(TestCase):
         self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%U'))
     def test_get_datetime_month_fix_positive(self):
         utc_now  = datetime(2015, 2, 22, 2, 34, 56)
-        expected = datetime(2015, 2, 01, 0, 00, 00)
+        expected = datetime(2015, 2, 1, 0, 00, 00)
         weeknow  = utc_now.strftime('%Y-%m')
         self.assertEqual(expected, curator.get_datetime(weeknow, '%Y-%m'))
     def test_get_datetime_month_fix_negative(self):
@@ -194,20 +194,20 @@ class TestGetIndexTime(TestCase):
 
 class TestGetTargetMonth(TestCase):
     def test_get_target_month_same_year(self):
-        before = datetime(2015, 2, 01, 2, 34, 56)
-        after  = datetime(2015, 1, 01, 0, 0, 0)
+        before = datetime(2015, 2, 1, 2, 34, 56)
+        after  = datetime(2015, 1, 1, 0, 0, 0)
         self.assertEqual(after, curator.get_target_month(1, utc_now=before))
     def test_get_target_negative_value_month_same_year(self):
-        before = datetime(2015, 2, 01, 2, 34, 56)
-        after  = datetime(2015, 3, 01, 0, 0, 0)
+        before = datetime(2015, 2, 1, 2, 34, 56)
+        after  = datetime(2015, 3, 1, 0, 0, 0)
         self.assertEqual(after, curator.get_target_month(-1, utc_now=before))
     def test_get_target_month_previous_year(self):
-        before = datetime(2015, 2, 01, 2, 34, 56)
-        after  = datetime(2014, 12, 01, 0, 0, 0)
+        before = datetime(2015, 2, 1, 2, 34, 56)
+        after  = datetime(2014, 12, 1, 0, 0, 0)
         self.assertEqual(after, curator.get_target_month(2, utc_now=before))
     def test_get_target_negative_value_month_next_year(self):
-        before = datetime(2015, 2, 01, 2, 34, 56)
-        after  = datetime(2016, 1, 01, 0, 0, 0)
+        before = datetime(2015, 2, 1, 2, 34, 56)
+        after  = datetime(2016, 1, 1, 0, 0, 0)
         self.assertEqual(after, curator.get_target_month(-11, utc_now=before))
 
 class TestGetCutoff(TestCase):
@@ -215,20 +215,20 @@ class TestGetCutoff(TestCase):
         # Testing for the omission of the unit_count param
         self.assertFalse(curator.get_cutoff())
     def test_get_cutoff_weeks(self):
-        fakenow = datetime(2015, 2, 03, 4, 5, 6)
-        cutoff  = datetime(2015, 2, 02, 0, 0, 0)
+        fakenow = datetime(2015, 2, 3, 4, 5, 6)
+        cutoff  = datetime(2015, 2, 2, 0, 0, 0)
         self.assertEqual(cutoff, curator.get_cutoff(1, time_unit='weeks', utc_now=fakenow))
     def test_get_cutoff_months(self):
-        fakenow = datetime(2015, 2, 03, 4, 5, 6)
-        cutoff  = datetime(2015, 1, 01, 0, 0, 0)
+        fakenow = datetime(2015, 2, 3, 4, 5, 6)
+        cutoff  = datetime(2015, 1, 1, 0, 0, 0)
         self.assertEqual(cutoff, curator.get_cutoff(1, time_unit='months', utc_now=fakenow))
     def test_get_cutoff_negtive_value_weeks(self):
-        fakenow = datetime(2015, 2, 03, 4, 5, 6)
+        fakenow = datetime(2015, 2, 3, 4, 5, 6)
         cutoff  = datetime(2015, 3, 9, 0, 0, 0)
         self.assertEqual(cutoff, curator.get_cutoff(-5, time_unit='weeks', utc_now=fakenow))
     def test_get_cutoff_negtive_value_months(self):
-        fakenow = datetime(2015, 2, 03, 4, 5, 6)
-        cutoff  = datetime(2015, 7, 01, 0, 0, 0)
+        fakenow = datetime(2015, 2, 3, 4, 5, 6)
+        cutoff  = datetime(2015, 7, 1, 0, 0, 0)
         self.assertEqual(cutoff, curator.get_cutoff(-5, time_unit='months', utc_now=fakenow))
 
 class TestTimestampCheck(TestCase):

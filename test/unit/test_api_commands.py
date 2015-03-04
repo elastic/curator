@@ -2,7 +2,10 @@ from datetime import datetime, timedelta
 from unittest import TestCase
 from mock import Mock
 import sys
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 import elasticsearch
 from curator import api as curator

@@ -31,8 +31,8 @@ def optimize_index(client, index_name, max_num_segments=None,
             try:
                 client.indices.optimize(index=index_name, max_num_segments=max_num_segments, request_timeout=request_timeout)
                 return True
-            except Exception as e:
-                logger.error("Error optimizing index {0}.  Exception {1}  Check logs for more information.".format(index_name, e.message))
+            except Exception:
+                logger.error("Error optimizing index {0}.  Check logs for more information.".format(index_name))
                 return False
         else:
             logger.info('Skipping index {0}: Already optimized.'.format(index_name))

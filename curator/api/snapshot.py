@@ -42,8 +42,8 @@ def create_snapshot(client, indices='_all', name=None,
     try:
         nodes = client.snapshot.verify_repository(repository=repository)['nodes']
         logger.debug('Nodes with verified repository access: {0}'.format(nodes))
-    except Exception as e:
-        logger.error('Failed to verify all nodes have repository access.  Exception: {0}'.format(e.message))
+    except Exception:
+        logger.error('Failed to verify all nodes have repository access.')
         return False
     body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable,
                                 include_global_state=include_global_state,
@@ -59,8 +59,8 @@ def create_snapshot(client, indices='_all', name=None,
                                 wait_for_completion=wait_for_completion,
                                 request_timeout=request_timeout)
         return True
-    except elasticsearch.TransportError as e:
-        logger.error("Client raised a TransportError.  Error: {0}".format(e.message))
+    except elasticsearch.TransportError:
+        logger.error("Client raised a TransportError.")
         return False
 
 def delete_snapshot(client, snapshot=None, repository=None):
@@ -84,5 +84,5 @@ def delete_snapshot(client, snapshot=None, repository=None):
         client.snapshot.delete(repository=repository, snapshot=snapshot)
         return True
     except elasticsearch.RequestError as e:
-        logger.error("Unable to delete snapshot {0} from repository {1}.  Exception: {2} Check logs for more information.".format(snapshot, repository, e.message))
+        logger.error("Unable to delete snapshot {0} from repository {1}.  Check logs for more information.".format(snapshot, repository))
         return False
