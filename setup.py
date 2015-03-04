@@ -38,7 +38,7 @@ setup(
     license = "Apache License, Version 2.0",
     install_requires = get_install_requires(),
     keywords = "elasticsearch time-series indexed index-expiry",
-    packages = ["curator"],
+    packages = ["curator", "curator.api", "curator.cli"],
     include_package_data=True,
     entry_points = {
         "console_scripts" : ["curator = curator.curator:main",

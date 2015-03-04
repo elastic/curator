@@ -1,7 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
-
-from ..api import *
 from .utils import *
 from .cli import *
 from .alias import *
