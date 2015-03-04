@@ -32,7 +32,7 @@ class TestCLIShow(CuratorTestCase):
         expected = sorted(indices, reverse=True)[:4]
         env = TestFileEnvironment('./scratch')
         script = os.path.join(os.path.dirname(__file__), '../../run_curator.py')
-        result = env.run("python " + script + " --logfile /dev/null --host localhost --port 9200 show indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days")
+        result = env.run("python " + script + " --logfile /dev/null --host " + host + " --port " + str(port) + " show indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days")
         output = sorted(result.stdout.splitlines(), reverse=True)
         self.assertEqual(expected, output)
 
@@ -41,7 +41,7 @@ class TestCLIAlias(CuratorTestCase):
         # Testing for failure because --name is omitted.  An exit code of 1 is validated.
         env = TestFileEnvironment('./scratch')
         script = os.path.join(os.path.dirname(__file__), '../../run_curator.py')
-        result = env.run("python " + script + " --logfile /dev/null --host localhost --port 9200 alias indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
+        result = env.run("python " + script + " --logfile /dev/null --host " + host + " --port " + str(port) + " alias indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
         self.assertEqual(1, result.returncode)
 
 class TestCLIAllocate(CuratorTestCase):
@@ -49,7 +49,7 @@ class TestCLIAllocate(CuratorTestCase):
         # Testing for failure because --rule is omitted.  An exit code of 1 is validated.
         env = TestFileEnvironment('./scratch')
         script = os.path.join(os.path.dirname(__file__), '../../run_curator.py')
-        result = env.run("python " + script + " --logfile /dev/null --host localhost --port 9200 allocation indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
+        result = env.run("python " + script + " --logfile /dev/null --host " + host + " --port " + str(port) + " allocation indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
         self.assertEqual(1, result.returncode)
 
 class TestCLIReplicas(CuratorTestCase):
@@ -57,7 +57,7 @@ class TestCLIReplicas(CuratorTestCase):
         # Testing for failure because --count is omitted.  An exit code of 1 is validated.
         env = TestFileEnvironment('./scratch')
         script = os.path.join(os.path.dirname(__file__), '../../run_curator.py')
-        result = env.run("python " + script + " --logfile /dev/null --host localhost --port 9200 replicas indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
+        result = env.run("python " + script + " --logfile /dev/null --host " + host + " --port " + str(port) + " replicas indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
         self.assertEqual(1, result.returncode)
 
 class TestCLISnapshot(CuratorTestCase):
@@ -65,5 +65,5 @@ class TestCLISnapshot(CuratorTestCase):
         # Testing for failure because --repository is omitted.  An exit code of 1 is validated.
         env = TestFileEnvironment('./scratch')
         script = os.path.join(os.path.dirname(__file__), '../../run_curator.py')
-        result = env.run("python " + script + " --logfile /dev/null --host localhost --port 9200 snapshot indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
+        result = env.run("python " + script + " --logfile /dev/null --host " + host + " --port " + str(port) + " snapshot indices --newer-than 5 --timestring '%Y.%m.%d' --time-unit days", expect_error=True)
         self.assertEqual(1, result.returncode)
