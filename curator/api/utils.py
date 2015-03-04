@@ -272,7 +272,7 @@ def prune_allocated(client, indices, key, value):
     :arg value: The value to check for
     :rtype: list
     """
-    indices = prune_closed(client, indices)
+    indices = ensure_list(indices)
     retval = []
     for idx in indices:
         settings = client.indices.get_settings(
