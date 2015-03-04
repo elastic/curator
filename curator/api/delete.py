@@ -16,8 +16,8 @@ def delete_indices(client, indices):
     try:
         client.indices.delete(index=to_csv(indices))
         return True
-    except Exception as e:
-        logger.error("Error deleting indices.  Exception {0}  Check logs for more information.".format(e.message))
+    except Exception:
+        logger.error("Error deleting indices.  Check logs for more information.")
         return False
 
 def delete(client, indices, disk_space=None, reverse=True):

@@ -16,8 +16,8 @@ def open_indices(client, indices):
         # Opening an already open index has no effect.
         client.indices.open(index=to_csv(indices))
         return True
-    except Exception as e:
-        logger.error("Error opening indices: {0} Check logs for more information.".format(e.message))
+    except Exception:
+        logger.error("Error opening indices.  Check logs for more information.")
         return False
 
 def opener(client, indices):

@@ -22,12 +22,12 @@ def get_alias(client, alias):
 
 def get_indices(client):
     try:
-        indices = client.indices.get_settings(
-            index='*', params={'expand_wildcards': 'open,closed'}).keys()
+        indices = list(client.indices.get_settings(
+            index='*', params={'expand_wildcards': 'open,closed'}))
         logger.debug("All indices: {0}".format(indices))
         return indices
-    except Exception as e:
-        logger.error("Failed to get indices. Exception: {0}".format(e.message))
+    except Exception:
+        logger.error("Failed to get indices.")
         return False
 
 def ensure_list(indices):
@@ -70,11 +70,11 @@ def check_csv(value):
     if type(value) is type(list()):
         return True
     string = False
+    # Python3 hack because it doesn't recognize unicode as a type anymore
+    if sys.version_info < (3, 0):
+        if type(value) is type(unicode()):
+            value = str(value)
     if type(value) is type(str()):
-        string = True
-    if type(value) is type(unicode()):
-        string = True
-    if string:
         if len(value.split(',')) > 1: # It's a csv string.
             return True
         else: # There's only one value here, so it's not a csv string
@@ -139,7 +139,7 @@ def is_master_node(client):
     :arg client: The Elasticsearch client connection
     :rtype: bool
     """
-    my_node_id = client.nodes.info('_local')['nodes'].keys()[0]
+    my_node_id = list(client.nodes.info('_local')['nodes'])[0]
     master_node_id = client.cluster.state(metric='master_node')['master_node']
     return my_node_id == master_node_id
 
@@ -153,8 +153,8 @@ def get_repository(client, repository=''):
     """
     try:
         return client.snapshot.get_repository(repository=repository)
-    except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        logger.error("Repository {0} not found.  Error: {1}".format(repository, e.message))
+    except (elasticsearch.TransportError, elasticsearch.NotFoundError):
+        logger.error("Repository {0} not found.".format(repository))
         return False
 
 def get_snapshot(client, repository='', snapshot=''):
@@ -176,8 +176,8 @@ def get_snapshot(client, repository='', snapshot=''):
         return False
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
-    except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        logger.error("Snapshot: {0} or repository: {1} not found.  Exception: {2}".format(snapshot, repository, e.message))
+    except (elasticsearch.TransportError, elasticsearch.NotFoundError):
+        logger.error("Snapshot: {0} or repository: {1} not found.".format(snapshot, repository))
         return False
 
 def get_snapshots(client, repository=None):
@@ -194,8 +194,8 @@ def get_snapshots(client, repository=None):
     try:
         allsnaps = client.snapshot.get(repository=repository, snapshot="_all")['snapshots']
         return [snap['snapshot'] for snap in allsnaps if 'snapshot' in snap.keys()]
-    except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        logger.error("Unable to find all snapshots in repository: {0}  Exception: {1}".format(repository, e.message))
+    except (elasticsearch.TransportError, elasticsearch.NotFoundError):
+        logger.error("Unable to find all snapshots in repository: {0}".format(repository))
         return False
 
 def create_snapshot_body(indices, ignore_unavailable=False,
@@ -251,8 +251,10 @@ def prune_closed(client, indices):
     :rtype: list
     """
     indices = ensure_list(indices)
+    logger.debug("BUH! indices = {0}".format(indices))
     retval = []
-    for idx in indices:
+    for idx in list(indices):
+        logger.debug("HEY! idx = {0}".format(idx))
         if not index_closed(client, idx):
             retval.append(idx)
         else:

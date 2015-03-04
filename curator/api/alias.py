@@ -32,7 +32,7 @@ def add_to_alias(client, index_name, alias=None):
                     client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
                     return True
                 except Exception as e:
-                    logger.error("Error adding index {0} to alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e.message))
+                    logger.error("Error adding index {0} to alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e))
                     return False
         else:
             logger.info('Skipping index {0}: Index already exists in alias {1}...'.format(index_name, alias))
@@ -62,7 +62,7 @@ def remove_from_alias(client, index_name, alias=None):
             client.indices.update_aliases(body={'actions': [{ 'remove': { 'index': index_name, 'alias': alias}}]})
             return True
         except Exception as e:
-            logger.error("Error removing index {0} from alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e.message))
+            logger.error("Error removing index {0} from alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e))
             return False
     else:
         logger.warn('Index {0} does not exist in alias {1}; skipping.'.format(index_name, alias))

@@ -86,8 +86,8 @@ def get_client(**kwargs):
         # Verify "master_only" status, if applicable
         check_master(client, master_only=master_only)
         return client
-    except Exception as e:
-        click.echo(click.style('ERROR: Connection failure.  Exception: {0}.'.format(e.message), fg='red', bold=True))
+    except Exception:
+        click.echo(click.style('ERROR: Connection failure.', fg='red', bold=True))
         sys.exit(1)
 
 def filter_callback(ctx, param, value):
