@@ -102,6 +102,31 @@ class TestChangeReplicas(CuratorTestCase):
 
         self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
 
+    def test_closed_index_replicas_can_be_modified(self):
+        self.create_index('test_index')
+
+        self.client.indices.close(index='test_index')
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata',
+        )
+        self.assertEquals('close', index_metadata['metadata']['indices']['test_index']['state'])
+
+        self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+
+        curator.change_replicas(self.client, 'test_index', replicas=1)
+
+        self.assertEquals('1', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+
+        self.client.indices.open(index='test_index')
+        index_metadata = self.client.cluster.state(
+            index='test_index',
+            metric='metadata',
+        )
+        self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
+
+        self.assertEquals('1', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+ 
 class TestChangeAllocation(CuratorTestCase):
     def test_index_allocation_can_be_modified(self):
         self.create_index('test_index')
