@@ -1,8 +1,3 @@
-import logging
-import elasticsearch
-
-logger = logging.getLogger(__name__)
-
 from .utils import *
 from .filter import *
 from .alias import *
