@@ -1,0 +1,25 @@
+[float]
+[[snapshot]]
+==== Snapshot command --help
+
+-----
+Usage: curator snapshot [OPTIONS] COMMAND [ARGS]...
+
+  Take snapshots of indices (Backup)
+
+Options:
+  --repository TEXT              Repository name.
+  --name TEXT                    Override default name.
+  --prefix TEXT                  Override default prefix.
+  --wait_for_completion BOOLEAN  Wait for snapshot to complete before
+                                 returning.  [default: True]
+  --ignore_unavailable           Ignore unavailable shards/indices.
+  --include_global_state         Store cluster global state with snapshot.
+  --partial                      Do not fail if primary shard is unavailable.
+  --request_timeout INTEGER      Allow this many seconds before the
+                                 transaction times out.  [default: 218600]
+  --help                         Show this message and exit.
+
+Commands:
+  indices  Index selection.
+-----

@@ -1,0 +1,16 @@
+[float]
+[[show]]
+==== Show command --help
+
+-----
+Usage: run_curator.py show [OPTIONS] COMMAND [ARGS]...
+
+  Show indices or snapshots
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  indices    Index selection.
+  snapshots  Snapshot selection.
+-----

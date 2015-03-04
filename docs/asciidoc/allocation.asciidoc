@@ -1,0 +1,16 @@
+[float]
+[[allocation]]
+==== Allocation command --help
+
+-----
+Usage: curator allocation [OPTIONS] COMMAND [ARGS]...
+
+  Index Allocation
+
+Options:
+  --rule TEXT  Routing allocation rule to apply, e.g. tag=ssd
+  --help       Show this message and exit.
+
+Commands:
+  indices  Index selection.
+-----

@@ -119,15 +119,17 @@ def filter_callback(ctx, param, value):
 
     if param.name == 'exclude':
         for e in value:
-            logger.info('Excluding indices matching {0}'.format(e))
+            argdict = {}
             argdict['pattern'] = '{0}'.format(e)
             argdict['exclude'] = True
             ctx.obj['filters'].append(argdict)
+            logger.debug("Added filter: {0}".format(argdict))
     else:
         logger.debug("REGEX = {0}".format(regex))
         argdict['pattern'] = regex
         ctx.obj['filters'].append(argdict)
-    logger.debug("Added filter: {0}".format(argdict))
+        logger.debug("Added filter: {0}".format(argdict))
+    logger.debug("New list of filters: {0}".format(ctx.obj['filters']))
     return value
 
 def in_list(values, source_list):

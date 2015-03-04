@@ -1,0 +1,20 @@
+[float]
+[[delete]]
+==== Delete command --help
+
+-----
+Usage: curator delete [OPTIONS] COMMAND [ARGS]...
+
+  Delete indices or snapshots
+
+Options:
+  --disk-space FLOAT  Delete indices beyond DISK_SPACE gigabytes.
+  --reverse BOOLEAN   Only valid with --disk-space. Affects sort order of the
+                      indices.  True means reverse-alphabetical (if dates are
+                      involved, older is deleted first).  [default: True]
+  --help              Show this message and exit.
+
+Commands:
+  indices    Index selection.
+  snapshots  Snapshot selection.
+-----

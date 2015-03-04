@@ -39,6 +39,12 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     list.
 
     """
+    # This top 'if' statement catches an edge-case I cannot depend upon click
+    # to resolve.  I cannot make options depend upon each other (yet), so I
+    # have to test for this case here and act accordingly.
+    if timestring and not ctx.obj['filters']:
+        regex = r'^.*{0}.*$'.format(get_date_regex(timestring))
+        ctx.obj['filters'].append({ 'pattern': regex })
     if not all_indices and not ctx.obj['filters'] and not index:
         click.echo('{0}'.format(ctx.get_help()))
         click.echo(click.style('ERROR. At least one filter must be supplied.', fg='red', bold=True))
