@@ -342,7 +342,7 @@ https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior[s
 
 - Appears in <<indices>> and <<snapshots>> nested commands
 
-<<newer-than>> or <<older-than>> is used as a multiplier of `--time-unit`.  If
+<<newer-than>> or <<older-than>> are used as a multiplier of `--time-unit`.  If
 `--older-than` is 5 and `--time-unit` is days, the calculated time period will
 be "5 days."
 

@@ -35,6 +35,7 @@ See `curator --help` for usage specifics.
 
 ## [Documentation & Examples](http://github.com/elasticsearch/curator/wiki)
 
+Try the new asciidoc [documentation for the CLI](https://github.com/elasticsearch/curator/blob/master/docs/asciidoc/index.asciidoc).
 See the [Curator Wiki](http://github.com/elasticsearch/curator/wiki) on Github
 for more documentation
 
