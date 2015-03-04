@@ -25,7 +25,7 @@ DATE_REGEX = {
 def get_date_regex(timestring):
     """
     Return a regex string based on a provided strftime timestring.
-    
+
     :arg timestring: An strftime pattern
     :rtype: Regex as string
     """
@@ -70,7 +70,7 @@ def get_target_month(month_count, utc_now=None):
     """
     Return datetime object for # of *full* months older than ``month_count`` from
     now, or ``utc_now``, if provided.
-    
+
     :arg month_count: Number of *full* months
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     :rtype: Datetime object
@@ -147,12 +147,31 @@ def index_closed(client, index_name):
     )
     return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
+## Is the index already has the allocation rule to be set?
+def index_allocated(client, index_name, attribute, value):
+    """
+    Return `True` if the indicated index has allocation `attribute` set to `value`
+
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    :arg attribute: The allocation attribute to check for
+    :arg value: The attribute value to check for
+    :rtype: bool
+    """
+    index_routing = client.indices.get_settings(
+        index=index_name,
+    )
+    try:
+        return index_routing[index_name]['settings']['index']['routing']['allocation']['require'][attribute] == value
+    except KeyError:
+        return False
+
 ## Get matching indices
 def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
     """
     Return a sorted list of indices matching ``prefix`` and ``suffix`` and
     optionally filtered by ``exclude_pattern``.
-    
+
     :arg client: The Elasticsearch client connection
     :arg prefix: A string that comes before the datestamp in an index name.
         Can be empty. Wildcards acceptable.  Default is ``logstash-``.
@@ -174,6 +193,8 @@ def get_indices(client, prefix='logstash-', suffix='', exclude_pattern=None):
         _indices.remove('.marvel-kibana')
     if 'kibana-int' in _indices:
         _indices.remove('kibana-int')
+    if '.kibana' in _indices:
+        _indices.remove('.kibana')
     if exclude_pattern:
         pattern = re.compile(exclude_pattern)
         return list(filter(lambda x: not pattern.search(x), _indices))
@@ -186,7 +207,7 @@ def get_snaplist(client, repository='', snapshot_prefix='curator-'):
     """
     Get ``_all`` snapshots containing ``snapshot_prefix`` from repository and
     return a list.
-    
+
     :arg client: The Elasticsearch client connection
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot_prefix: Override the default with this value. Defaults to
@@ -242,7 +263,7 @@ def get_version(client):
     """
     Return the ES version number as a tuple.
     Omits trailing tags like -dev, or Beta
-    
+
     :arg client: The Elasticsearch client connection
     :rtype: tuple
     """
@@ -263,13 +284,17 @@ def get_segmentcount(client, index_name):
     :arg index_name: The index name
     :rtype: tuple
     """
-    shards = client.indices.segments(index=index_name)['indices'][index_name]['shards']
     segmentcount = 0
     totalshards = 0 # We will increment this manually to capture all replicas...
-    for shardnum in shards:
-        for shard in range(0,len(shards[shardnum])):
-            segmentcount += shards[shardnum][shard]['num_search_segments']
-            totalshards += 1
+    if client.indices.segments(index=index_name)['indices']:
+        # This is to fix:
+        # https://github.com/elasticsearch/curator/issues/264
+        # See: https://github.com/elasticsearch/curator/issues/259#issuecomment-72548931
+        shards = client.indices.segments(index=index_name)['indices'][index_name]['shards']
+        for shardnum in shards:
+            for shard in range(0,len(shards[shardnum])):
+                segmentcount += shards[shardnum][shard]['num_search_segments']
+                totalshards += 1
     return totalshards, segmentcount
 
 ## Is the current node the elected master?
@@ -277,7 +302,7 @@ def is_master_node(client):
     """
     Return `True` if the connected client node is the elected master node in
     the Elasticsearch cluster, otherwise return `False`.
-    
+
     :arg client: The Elasticsearch client connection
     :rtype: bool
     """
@@ -290,10 +315,10 @@ def get_object_list(client, data_type='index', prefix='logstash-', suffix='', re
     """
     Return a list of indices matching ``prefix`` and ``suffix`` or snapshots
     matching ``snapshot_prefix``.
-    
+
     Can optionally exclude by regular expression pattern with
     ``exclude_pattern``.
-    
+
     :arg client: The Elasticsearch client connection
     :arg data_type: Either ``index`` or ``snapshot``
     :arg prefix: A string that comes before the datestamp in an index name.
@@ -334,7 +359,7 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
     Pass in a list of indices or snapshots. Return a list of objects older
     than *n* ``time_unit``\s matching ``prefix``, ``timestring``, and
     ``suffix``.
-    
+
     :arg object_list: A list of indices or snapshots
     :arg timestring: An strftime string to match the datestamp in an index name.
     :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.  Default
@@ -364,7 +389,7 @@ def filter_by_timestamp(object_list=[], timestring=None, time_unit='days',
         regex = "(" + "^" + snapshot_prefix + '.*' + ")"
 
     cutoff = get_cutoff(older_than=older_than, time_unit=time_unit, utc_now=utc_now)
-    
+
     for object_name in object_list:
         retval = object_name
         if object_type == 'index':
@@ -401,7 +426,7 @@ def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
     """
     Yield a list of indices to delete based on space consumed, starting with
     the oldest.
-    
+
     :arg client: The Elasticsearch client connection
     :arg disk_space: Delete indices over *n* gigabytes, starting from the
         oldest indices.
@@ -428,10 +453,10 @@ def filter_by_space(client, disk_space=2097152.0, prefix='logstash-', suffix='',
     # must filter them out.
     all_indices = get_indices(client, prefix=prefix, suffix=suffix, exclude_pattern=exclude_pattern)
     not_closed = [i for i in all_indices if not index_closed(client, i)]
-    # Because we're building a csv list of indices to pass, we need to ensure 
-    # that we actually have at least one index before creating `csv_indices` 
+    # Because we're building a csv list of indices to pass, we need to ensure
+    # that we actually have at least one index before creating `csv_indices`
     # as an empty variable.
-    # 
+    #
     # If csv_indices is empty, it will match _all indices, which is bad.
     # See https://github.com/elasticsearch/curator/issues/254
     logger.debug('List of indices found: {0}'.format(not_closed))
@@ -528,6 +553,9 @@ def apply_allocation_rule(client, index_name, rule=None, **kwargs):
     if index_closed(client, index_name):
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
+    elif index_allocated(client, index_name, key, value):
+        logger.info('Skipping index {0}: Already allocated.'.format(index_name))
+        return True
     else:
         logger.info('Updating index setting index.routing.allocation.require.{0}={1}'.format(key,value))
         client.indices.put_settings(index=index_name, body='index.routing.allocation.require.{0}={1}'.format(key,value))
@@ -540,14 +568,14 @@ def disable_bloom_filter(client, index_name, **kwargs):
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     """
-    no_more_bloom = (1, 5, 0)
+    no_more_bloom = (1, 4, 0)
     version_number = get_version(client)
     if index_closed(client, index_name): # Don't try to disable bloom filter on a closed index.  It will re-open them
         logger.info('Skipping index {0}: Already closed.'.format(index_name))
         return True
     else:
         if version_number >= no_more_bloom:
-            logger.info('Skipping index {0}: Bloom filters no longer exist in Elasticsearch since v1.5.0'.format(index_name))
+            logger.info('Skipping index {0}: Bloom filters no longer exist in Elasticsearch since v1.4.0'.format(index_name))
         else:
             client.indices.put_settings(index=index_name, body='index.codec.bloom.load=false')
 
@@ -555,7 +583,7 @@ def disable_bloom_filter(client, index_name, **kwargs):
 def change_replicas(client, index_name, replicas=None, **kwargs):
     """
     Change the number of replicas, more or less, for the indicated index.
-    
+
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     :arg replicas: The number of replicas the index should have
@@ -600,7 +628,7 @@ def change_replicas(client, index_name, replicas=None, **kwargs):
 def close_index(client, index_name, **kwargs):
     """
     Close the indicated index.  Flush before closing.
-    
+
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     """
@@ -615,7 +643,7 @@ def close_index(client, index_name, **kwargs):
 def delete_index(client, index_name, **kwargs):
     """
     Delete the indicated index.
-    
+
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     """
@@ -625,7 +653,7 @@ def delete_index(client, index_name, **kwargs):
 def optimize_index(client, index_name, max_num_segments=2, **kwargs):
     """
     Optimize (Lucene forceMerge) index to ``max_num_segments`` per shard
-    
+
     :arg client: The Elasticsearch client connection
     :arg index_name: The index name
     :arg max_num_segments: Merge to this number of segments per shard.
@@ -755,12 +783,12 @@ def delete_snapshot(client, snap, **kwargs):
 def _op_loop(client, object_list, op=None, dry_run=False, **kwargs):
     """
     Perform the ``op`` on indices or snapshots in the ``object_list``
-    
+
     .. note::
        All kwargs are passed on to the specified ``op``.
-       
+
        Any arg the ``op`` needs *must* be passed in **kwargs**.
-    
+
     :arg client: The Elasticsearch client connection
     :arg object_list: The list of indices or snapshots
     :arg op: The operation to perform on each object in ``object_list``
@@ -789,28 +817,28 @@ def _op_loop(client, object_list, op=None, dry_run=False, **kwargs):
 def alias(client, dry_run=False, **kwargs):
     """
     Multiple use cases:
-    
+
     1. Add indices ``alias_older_than`` *n* ``time_unit``\s, matching the given ``timestring``, ``prefix``, and ``suffix`` to ``alias``.
     2. Remove indices ``unalias_older_than`` *n* ``time_unit``\s, matching the given ``timestring``, ``prefix``, and ``suffix`` to ``alias``.
 
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-    
+
        :py:func:`curator.curator.get_object_list`
-    
+
        :py:func:`curator.curator.filter_by_timestamp`
-    
+
        :py:func:`curator.curator.add_to_alias`
 
        :py:func:`curator.curator.add_to_alias`
-    
+
     These defaults are included here for documentation.
-    
+
     :arg client: The Elasticsearch client connection
     :arg dry_run: If true, simulate, but do not perform the operation
     :arg alias: Alias name to operate on.
@@ -849,21 +877,21 @@ def allocation(client, dry_run=False, **kwargs):
     Change shard/routing allocation for indices ``older_than`` *n*
     ``time_unit``\s, matching the given ``timestring``, ``prefix``, and
     ``suffix`` by updating/applying the provided ``rule``.
-    
+
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-    
+
        :py:func:`curator.curator.get_object_list`
-    
+
        :py:func:`curator.curator.filter_by_timestamp`
-    
+
        :py:func:`curator.curator.apply_allocation_rule`
-    
+
        These defaults are included here for documentation.
 
     :arg client: The Elasticsearch client connection
@@ -902,17 +930,17 @@ def bloom(client, dry_run=False, **kwargs):
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-    
+
        :py:func:`curator.curator.get_object_list`
-    
+
        :py:func:`curator.curator.filter_by_timestamp`
-    
+
        :py:func:`curator.curator.disable_bloom_filter`
-    
+
        These defaults are included here for documentation.
 
     :arg client: The Elasticsearch client connection
@@ -943,21 +971,21 @@ def close(client, dry_run=False, **kwargs):
     """
     Close indices ``older_than`` *n* ``time_unit``\s, matching the given
     ``timestring``, ``prefix``, and ``suffix``.
-    
+
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-    
+
        :py:func:`curator.curator.get_object_list`
-    
+
        :py:func:`curator.curator.filter_by_timestamp`
-    
+
        :py:func:`curator.curator.close_index`
-    
+
        These defaults are included here for documentation.
 
     :arg client: The Elasticsearch client connection
@@ -986,14 +1014,14 @@ def close(client, dry_run=False, **kwargs):
 def delete(client, dry_run=False, **kwargs):
     """
     Two use cases for deleting indices:
-    
+
     1. Delete indices ``older_than`` *n* ``time_unit``\s, matching the given ``timestring``, ``prefix``, and ``suffix``.
     2. Delete indices in excess of ``disk_space`` gigabytes if the ``disk_space`` kwarg is present, beginning from the oldest.  Indices must still match ``prefix`` and ``suffix``.  This amount spans all nodes and shards and must be calculated accordingly.  This is not a recommended use-case.
 
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
@@ -1043,21 +1071,21 @@ def optimize(client, dry_run=False, **kwargs):
     Optimize indices ``older_than`` *n* ``time_unit``\s, matching the given
     ``timestring``, ``prefix``, and ``suffix`` to ``max_num_segments`` segments
     per shard.
-    
+
     Can optionally ``delay`` a given number of seconds after each optimization.
-    
+
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-       
+
        :py:func:`curator.curator.get_object_list`
-       
+
        :py:func:`curator.curator.filter_by_timestamp`
-       
+
        :py:func:`curator.curator.optimize_index`
 
        These defaults are included here for documentation.
@@ -1089,23 +1117,23 @@ def optimize(client, dry_run=False, **kwargs):
 ## curator (change) replicas [ARGS]
 def replicas(client, dry_run=False, **kwargs):
     """
-    Change replica count for indices ``older_than`` *n* ``time_unit``\s, 
+    Change replica count for indices ``older_than`` *n* ``time_unit``\s,
     matching the given ``timestring``, ``prefix``, and ``suffix``.
-    
+
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-    
+
        :py:func:`curator.curator.get_object_list`
-    
+
        :py:func:`curator.curator.filter_by_timestamp`
-    
+
        :py:func:`curator.curator.close_index`
-    
+
        These defaults are included here for documentation.
 
     :arg client: The Elasticsearch client connection
@@ -1135,7 +1163,7 @@ def replicas(client, dry_run=False, **kwargs):
 def snapshot(client, dry_run=False, **kwargs):
     """
     Multiple use cases:
-    
+
     1. Snapshot indices ``older_than`` *n* ``time_unit``\s, matching the given ``timestring``, ``prefix``, and ``suffix`` into ``repository``.
     2. Snapshot *n* ``most_recent`` indices matching ``prefix`` and ``suffix`` into ``repository``.
     3. ``delete_older_than`` *n* ``time_units`` matching the given ``timestring``, ``prefix``, and ``suffix`` from ``repository``.
@@ -1144,19 +1172,19 @@ def snapshot(client, dry_run=False, **kwargs):
     .. note::
        As this is an iterative function, default values are handled by the
        target function(s).
-       
+
        Unless passed in `kwargs`, parameters other than ``client`` and
        ``dry_run`` will have default values assigned by the functions being
        called:
-       
+
        :py:func:`curator.curator.get_object_list`
-       
+
        :py:func:`curator.curator.filter_by_timestamp`
-       
+
        :py:func:`curator.curator.create_snapshot`
-       
+
        :py:func:`curator.curator.delete_snapshot`
-       
+
        These defaults are included here for documentation.
 
     :arg client: The Elasticsearch client connection

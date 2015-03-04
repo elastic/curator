@@ -63,8 +63,8 @@ class TestBloomIndex(CuratorTestCase):
     def test_bloom_filter_will_be_disabled(self):
         self.create_index('test_index')
         self.assertIsNone(curator.disable_bloom_filter(self.client, 'test_index'))
-        # Bloom filters have been removed from the 1.x branch after 1.5.0
-        no_more_bloom = (1, 5, 0)
+        # Bloom filters have been removed from the 1.x branch after 1.4.0
+        no_more_bloom = (1, 4, 0)
         version_number = curator.get_version(self.client)
         if version_number < no_more_bloom:
             settings = self.client.indices.get_settings(index='test_index')
