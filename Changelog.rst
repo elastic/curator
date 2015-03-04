@@ -3,8 +3,27 @@
 Changelog
 =========
 
-3.0.0 (? ? ?)
--------------
+3.0.0b3 (4 March 2015)
+--------------------------
+
+**Bug fixes**
+
+ * setup.py was lacking the new packages "curator.api" and "curator.cli"  The
+   package works now.
+ * Python3 suggested I had to normalize the beta tag to just b3, so that's also
+   changed.
+ * Cleaned out superfluous imports and logger references from the __init__.py
+   files.
+
+3.0.0-beta2 (3 March 2015)
+--------------------------
+
+**Bug fixes**
+
+ * Python3 issues resolved.  Tests now pass on both Python2 and Python3
+
+3.0.0-beta1 (3 March 2015)
+--------------------------
 
 **General**
 
