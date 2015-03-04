@@ -113,7 +113,7 @@ def filter_callback(ctx, param, value):
         date_regex = get_date_regex(ctx.params['timestring'])
         regex = REGEX_MAP[param.name].format(date_regex)
     elif param.name == 'regex':
-        regex = "r'{0}'".format(value)
+        regex = r'{0}'.format(value)
     elif param.name in ['prefix', 'suffix']:
         regex = REGEX_MAP[param.name].format(value)
 
