@@ -1,0 +1,15 @@
+[float]
+[[close]]
+==== Close command --help
+
+-----
+Usage: curator close [OPTIONS] COMMAND [ARGS]...
+
+  Close indices
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  indices  Index selection.
+-----

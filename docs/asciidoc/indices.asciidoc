@@ -1,0 +1,30 @@
+[float]
+[[indices]]
+==== indices nested command --help
+
+-----
+Usage: curator COMMAND indices [OPTIONS]
+
+  Get a list of indices to act on from the provided arguments, then perform
+  the command [alias, allocation, bloom, close, delete, etc.] on the
+  resulting list.
+
+Options:
+  --newer-than INTEGER            Include only indices newer than n time_units
+  --older-than INTEGER            Include only indices older than n time_units
+  --prefix TEXT                   Include only indices beginning with prefix.
+  --suffix TEXT                   Include only indices ending with suffix.
+  --time-unit [hours|days|weeks|months]
+                                  Unit of time to reckon by
+  --timestring TEXT               Python strftime string to match your index
+                                  definition, e.g. 2014.07.15 would be
+                                  %Y.%m.%d
+  --regex TEXT                    Provide your own regex, e.g
+                                  '^prefix-.*-suffix$'
+  --exclude TEXT                  Exclude matching indices. Can be invoked
+                                  multiple times.
+  --index TEXT                    Include the provided index in the list. Can
+                                  be invoked multiple times.
+  --all-indices                   Do not filter indices.  Act on all indices.
+  --help                          Show this message and exit.
+-----
