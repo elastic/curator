@@ -14,6 +14,7 @@ accomplish similar goals, or even new and different things with the [Curator API
 ## [Curator CLI Documentation (GitHub wiki)](http://github.com/elasticsearch/curator/wiki)
 
 See the [Documentation Wiki](http://github.com/elasticsearch/curator/wiki)!
+Try the new asciidoc [documentation for the CLI](https://github.com/elasticsearch/curator/blob/master/docs/asciidoc/index.asciidoc).
 
 ## Versioning
 
