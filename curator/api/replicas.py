@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 def change_replicas(client, indices, replicas=None):
     """
     Change the number of replicas, more or less, for the indicated indices.
-    This method will ignore closed indices.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
@@ -17,7 +16,7 @@ def change_replicas(client, indices, replicas=None):
         logger.error('No replica count provided.')
         return False
     else:
-        indices = prune_closed(client, indices)
+        indices = ensure_list(indices)
         logger.info('Updating index setting: number_of_replicas={0}'.format(replicas))
         try:
             client.indices.put_settings(index=to_csv(indices),
