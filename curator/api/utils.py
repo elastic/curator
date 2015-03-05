@@ -171,9 +171,6 @@ def get_snapshot(client, repository='', snapshot=''):
     if not repository:
         logger.error('Missing required repository parameter')
         return False
-    if not snapshot:
-        logger.error('Missing required snapshot parameter')
-        return False
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
     except (elasticsearch.TransportError, elasticsearch.NotFoundError):

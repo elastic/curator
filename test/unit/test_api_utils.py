@@ -226,9 +226,6 @@ class TestGetSnapshot(TestCase):
     def test_get_snapshot_missing_repository_arg(self):
         client = Mock()
         self.assertFalse(curator.get_snapshot(client, snapshot=snap_name))
-    def test_get_snapshot_missing_snapshot_arg(self):
-        client = Mock()
-        self.assertFalse(curator.get_snapshot(client, repository=repo_name))
     def test_get_snapshot_positive(self):
         client = Mock()
         client.snapshot.get.return_value = snapshot

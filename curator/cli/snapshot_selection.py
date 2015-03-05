@@ -59,7 +59,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
     if snapshots:
         working_list = snapshots
     else:
-        click.echo(click.style('ERROR. Unable to get snapshots from Elasticsearch.', fg='red', bold=True))
+        click.echo(click.style('ERROR. No snapshots found in Elasticsearch.', fg='red', bold=True))
         sys.exit(1)
 
     if all_snapshots:
@@ -68,7 +68,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         logger.debug('All filters: {0}'.format(ctx.obj['filters']))
 
     for f in ctx.obj['filters']:
-        if all_snapshots and not f['exclude']:
+        if all_snapshots and not 'exclude' in f:
             continue
         logger.debug('Filter: {0}'.format(f))
         working_list = regex_iterate(working_list, **f)
@@ -80,13 +80,20 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         # Make a sorted, unique list of indices
         working_list = sorted(list(set(working_list)))
         logger.debug('ACTION: {0} will be executed against the following snapshots: {1}'.format(ctx.parent.info_name, working_list))
-        try:
+        if ctx.parent.info_name == 'show':
+            show(working_list)
+        elif ctx.parent.parent.params['dry_run']:
+            logger.warn('DRY RUN: Will not perform {0} action'.format(ctx.parent.info_name))
+            show(working_list)
+        elif ctx.parent.info_name == 'delete':
+            success = True
             for snap in working_list:
-                delete_snapshot(client, snapshot=snap, repository=repository)
-            sys.exit(0)
-        except Exception as e:
-            logger.error("Unable to delete snapshots. Exception {0}".format(e.message))
-            sys.exit(1)
+                retval = delete_snapshot(client, snapshot=snap, repository=repository)
+                # If we fail once, we fail completely
+                if not retval:
+                    success = False
+            sys.exit(0) if success else sys.exit(1)
+
     else:
         logger.warn('No snapshots matched provided args.')
         click.echo(click.style('ERROR. No snapshots matched provided args.', fg='red', bold=True))

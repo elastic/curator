@@ -63,7 +63,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         if indices:
             working_list = indices
         else:
-            click.echo(click.style('ERROR. Unable to get indices from Elasticsearch.', fg='red', bold=True))
+            click.echo(click.style('ERROR. No indices found in Elasticsearch.', fg='red', bold=True))
             sys.exit(1)
 
     if all_indices:
@@ -73,7 +73,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     logger.debug('All filters: {0}'.format(ctx.obj['filters']))
 
     for f in ctx.obj['filters']:
-        if all_indices and not f['exclude']:
+        if all_indices and not 'exclude' in f:
             continue
         logger.debug('Filter: {0}'.format(f))
         working_list = regex_iterate(working_list, **f)
@@ -99,12 +99,8 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
                 logging.info("The following indices would have been altered:")
                 show(working_list)
             else:
-                try:
-                    retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
-                    sys.exit(0) if retval else sys.exit(1)
-                except Exception as e:
-                    logger.error("Unable to complete: {0}  Exception: {1}".format(ctx.parent.info_name, e.message))
-                    sys.exit(1)
+                retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
+                sys.exit(0) if retval else sys.exit(1)
 
     else:
         logger.warn('No indices matched provided args.')

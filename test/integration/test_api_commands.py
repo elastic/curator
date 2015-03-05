@@ -126,7 +126,7 @@ class TestChangeReplicas(CuratorTestCase):
         self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
 
         self.assertEquals('1', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
- 
+
 class TestChangeAllocation(CuratorTestCase):
     def test_index_allocation_can_be_modified(self):
         self.create_index('test_index')
@@ -191,13 +191,3 @@ class TestOptimizeIndex(CuratorTestCase):
         self.client.create(index='test_index', doc_type='log', body={'message':'TEST DOCUMENT'})
         # Will only have 1 segment
         self.assertTrue(curator.optimize_index(self.client, 'test_index', max_num_segments=4))
-
-    # def test_unoptimized_index_will_be_optimized(self):
-    #     self.create_index('test_index')
-    #     for i in range(1, 11):
-    #         self.client.create(index='test_index', doc_type='log' + str(i), body={'message':'TEST DOCUMENT'})
-    #         curator.optimize(self.client, "test_index", max_num_segments=10, delay=1)
-    #     # Make sure we have more than 4 segments before the optimize
-    #     self.assertGreater(curator.get_segmentcount(self.client, "test_index")[1], 4 )
-    #     self.assertTrue(curator.optimize_index(self.client, 'test_index', max_num_segments=1))
-    #     self.assertEqual(1, curator.get_segmentcount(self.client, "test_index")[1] )

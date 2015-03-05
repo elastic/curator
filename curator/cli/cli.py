@@ -73,8 +73,8 @@ def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, d
             handler.addFilter(
                 Whitelist(
                     'root', '__main__', 'curator', 'curator.curator',
-                    'curator.api', 'curator.cli', 'curator.curator.api',
-                    'curator.curator.cli'
+                    'curator.api', 'curator.cli', 'curator.api',
+                    'curator.cli'
                 )
             )
 
