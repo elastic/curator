@@ -23,3 +23,36 @@ class TestGetClient(CuratorTestCase):
         with self.assertRaises(SystemExit) as cm:
             curator.get_client(**client_args)
         self.assertEqual(cm.exception.code, 1)
+
+class TestCLIUtilsFilterCallback(CuratorTestCase):
+    def test_filter_callback_without_timestring(self):
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+    def test_filter_callback_without_timeunit(self):
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'show',
+                        'indices',
+                        '--newer-than', '5',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+    

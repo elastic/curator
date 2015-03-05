@@ -83,6 +83,6 @@ def delete_snapshot(client, snapshot=None, repository=None):
     try:
         client.snapshot.delete(repository=repository, snapshot=snapshot)
         return True
-    except elasticsearch.RequestError as e:
+    except elasticsearch.RequestError:
         logger.error("Unable to delete snapshot {0} from repository {1}.  Check logs for more information.".format(snapshot, repository))
         return False

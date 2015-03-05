@@ -155,35 +155,36 @@ def do_command(client, command, indices, params=None):
     Do the command.
     """
     if command == "alias":
-        alias(client, indices, alias=params['name'], remove=params['remove'])
+        return alias(
+                client, indices, alias=params['name'], remove=params['remove']
+               )
     if command == "allocation":
-        allocation(client, indices, rule=params['rule'])
+        return allocation(client, indices, rule=params['rule'])
     if command == "bloom":
-        bloom(client, indices, delay=params['delay'])
+        return bloom(client, indices, delay=params['delay'])
     if command == "close":
-        close(client, indices)
+        return close(client, indices)
     if command == "delete":
-        click.echo("params = {0}, indices = {1}".format(params, indices))
-        delete(
-            client, indices, disk_space=params['disk_space'],
-            reverse=params['reverse']
-        )
+        return delete(
+                client, indices, disk_space=params['disk_space'],
+                reverse=params['reverse']
+               )
     if command == "open":
-        opener(client, indices)
+        return opener(client, indices)
     if command == "optimize":
-        optimize(
-            client, indices, max_num_segments=params['max_num_segments'],
-            delay=params['delay'], request_timeout=params['request_timeout']
-        )
+        return optimize(
+                client, indices, max_num_segments=params['max_num_segments'],
+                delay=params['delay'], request_timeout=params['request_timeout']
+               )
     if command == "replicas":
-        replicas(client, indices, replicas=params['count'])
+        return replicas(client, indices, replicas=params['count'])
     if command == "snapshot":
-        create_snapshot(
-            client, indices=indices, name=params['name'],
-            prefix=params['prefix'], repository=params['repository'],
-            ignore_unavailable=params['ignore_unavailable'],
-            include_global_state=params['include_global_state'],
-            partial=params['partial'],
-            wait_for_completion=params['wait_for_completion'],
-            request_timeout=params['request_timeout'],
-        )
+        return create_snapshot(
+                client, indices=indices, name=params['name'],
+                prefix=params['prefix'], repository=params['repository'],
+                ignore_unavailable=params['ignore_unavailable'],
+                include_global_state=params['include_global_state'],
+                partial=params['partial'],
+                wait_for_completion=params['wait_for_completion'],
+                request_timeout=params['request_timeout'],
+               )

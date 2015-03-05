@@ -3,8 +3,26 @@
 Changelog
 =========
 
+3.0.0b4 (5 March 2015)
+----------------------
+
+**Notes**
+
+Integration testing!  Because I finally figured out how to use the Click
+Testing API, I now have a good collection of command-line simulations,
+complete with a real back-end.  This testing found a few bugs (this is why
+testing exists, right?), and fixed a few of them.
+
+**Bug fixes**
+
+ * HUGE! `curator show snapshots` would _delete_ snapshots.  This is fixed.
+ * Return values are now being sent from the commands.
+ * `scripttest` is no longer necessary (click.Test works!)
+ * Calling `get_snapshot` without a snapshot name returns all snapshots
+ 
+
 3.0.0b3 (4 March 2015)
---------------------------
+----------------------
 
 **Bug fixes**
 
