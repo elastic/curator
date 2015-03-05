@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 def apply_allocation_rule(client, indices, rule=None):
     """
     Apply a required allocation rule to a list of indices.
-    This method will ignore closed indices.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
