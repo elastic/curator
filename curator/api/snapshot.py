@@ -39,12 +39,15 @@ def create_snapshot(client, indices='_all', name=None,
     if not indices:
         logger.error("No indices provided.")
         return False
-    try:
-        nodes = client.snapshot.verify_repository(repository=repository)['nodes']
-        logger.debug('Nodes with verified repository access: {0}'.format(nodes))
-    except Exception:
-        logger.error('Failed to verify all nodes have repository access.')
-        return False
+    repo_access = (1, 4, 0)
+    version_number = get_version(client)
+    if version_number >= repo_access:
+        try:
+            nodes = client.snapshot.verify_repository(repository=repository)['nodes']
+            logger.debug('Nodes with verified repository access: {0}'.format(nodes))
+        except Exception:
+            logger.error('Failed to verify all nodes have repository access.')
+            return False
     body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable,
                                 include_global_state=include_global_state,
                                 partial=partial)

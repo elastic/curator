@@ -248,10 +248,8 @@ def prune_closed(client, indices):
     :rtype: list
     """
     indices = ensure_list(indices)
-    logger.debug("BUH! indices = {0}".format(indices))
     retval = []
     for idx in list(indices):
-        logger.debug("HEY! idx = {0}".format(idx))
         if not index_closed(client, idx):
             retval.append(idx)
         else:
