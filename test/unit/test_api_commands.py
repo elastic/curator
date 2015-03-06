@@ -346,6 +346,7 @@ class TestSnapshot(TestCase):
         self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
     def test_create_snapshot_verify_nodes_positive(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         client.cluster.state.return_value = open_indices
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
@@ -359,6 +360,7 @@ class TestSnapshot(TestCase):
         )
     def test_create_snapshot_verify_nodes_negative(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         client.cluster.state.return_value = open_indices
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
@@ -373,6 +375,7 @@ class TestSnapshot(TestCase):
         )
     def test_create_snapshot_name_collision(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         client.cluster.state.return_value = open_indices
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
@@ -388,6 +391,7 @@ class TestSnapshot(TestCase):
         )
     def test_create_snapshot_exception(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         client.cluster.state.return_value = open_indices
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
