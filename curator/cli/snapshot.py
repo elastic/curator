@@ -26,7 +26,7 @@ DEFAULT_ARGS = {
             expose_value=True, help='Store cluster global state with snapshot.')
 @click.option('--partial', is_flag=True, expose_value=True,
             help='Do not fail if primary shard is unavailable.')
-@click.option('--request_timeout', type=int, default=218600, show_default=True,
+@click.option('--request_timeout', type=int, default=21600, show_default=True,
             expose_value=True,
             help='Allow this many seconds before the transaction times out.')
 @click.pass_context
