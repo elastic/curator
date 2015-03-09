@@ -16,16 +16,6 @@ accomplish similar goals, or even new and different things with the [Curator API
 See the [Documentation Wiki](http://github.com/elasticsearch/curator/wiki)!
 Try the new asciidoc [documentation for the CLI](https://github.com/elasticsearch/curator/blob/master/docs/asciidoc/index.asciidoc).
 
-## Versioning
-
-There are two branches for development - `master` and `0.6`. Master branch is
-used to track all the changes for Elasticsearch 1.0 and beyond whereas 0.6
-tracks Elasticsearch 0.90 and the corresponding `elasticsearch-py` version.
-
-Releases with major versions greater than 1 (X.Y.Z, where X is > 1) are to be
-used with Elasticsearch 1.0 and later, 0.6 releases are meant to work with
-Elasticsearch 0.90.X.
-
 ## Usage
 
 Install using pip
@@ -45,6 +35,7 @@ for more documentation
 
 * fork the repo
 * make changes in your fork
+* add tests to cover your changes (if necessary)
 * run tests
 * sign the [CLA](http://www.elasticsearch.org/contributor-agreement/)
 * send a pull request!
@@ -66,6 +57,16 @@ The tests will try to connect to your local elasticsearch instance and run
 integration tests against it. This will delete all the data stored there! You
 can use the env variable `TEST_ES_SERVER` to point to a different instance (for
 example 'otherhost:9203').
+
+## Versioning
+
+There are two branches for development - `master` and `0.6`. Master branch is
+used to track all the changes for Elasticsearch 1.0 and beyond whereas 0.6
+tracks Elasticsearch 0.90 and the corresponding `elasticsearch-py` version.
+
+Releases with major versions greater than 1 (X.Y.Z, where X is > 1) are to be
+used with Elasticsearch 1.0 and later, 0.6 releases are meant to work with
+Elasticsearch 0.90.X.
 
 ## Origins
 
