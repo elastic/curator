@@ -294,7 +294,7 @@ class TestCLIClose(CuratorTestCase):
         self.assertEqual(0, result.exit_code)
 
 class TestCLIDelete(CuratorTestCase):
-    def test_delete_indics_skip_kibana(self):
+    def test_delete_indices_skip_kibana(self):
         self.create_index('my_index')
         self.create_index('.kibana')
         self.create_index('kibana-int')
@@ -313,6 +313,49 @@ class TestCLIDelete(CuratorTestCase):
                     obj={"filters":[]})
         l = curator.get_indices(self.client)
         self.assertEqual(sorted(['.kibana', '.marvel-kibana', 'kibana-int']), sorted(l))
+    def test_delete_indices_dry_run(self):
+        self.create_indices(9)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--dry-run',
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'delete',
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        l = curator.get_indices(self.client)
+        self.assertEquals(9, len(l))
+        output = sorted(result.output.splitlines(), reverse=True)[:9]
+        self.assertEqual(sorted(l, reverse=True), output)
+    def test_delete_indices_by_space_dry_run(self):
+        for i in range(1,10):
+            self.client.create(
+                index="index" + str(i), doc_type='log',
+                body={'message':'TEST DOCUMENT'},
+            )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--dry-run',
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'delete',
+                        '--disk-space', '0.0000001',
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        l = curator.get_indices(self.client)
+        self.assertEquals(9, len(l))
+        output = sorted(result.output.splitlines(), reverse=True)[:9]
+        self.assertEqual(sorted(l, reverse=True), output)
 
 class TestCLIOpen(CuratorTestCase):
     def test_open_cli(self):

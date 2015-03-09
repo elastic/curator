@@ -85,10 +85,19 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     # If there are manually added indices, we will add them here
     working_list.extend(in_list(index, indices))
 
+    if working_list and ctx.parent.info_name == 'delete':
+        # If filter by disk space, filter the working_list by space:
+        if ctx.parent.params['disk_space']:
+            working_list = filter_by_space(
+                                client, working_list,
+                                disk_space=ctx.parent.params['disk_space'],
+                                reverse=ctx.parent.params['reverse']
+                           )
+
     if working_list:
         # Make a sorted, unique list of indices
         working_list = sorted(list(set(working_list)))
-        logger.debug('ACTION: {0} will be executed against the following indices: {1}'.format(ctx.parent.info_name, working_list))
+        logger.debug('ACTION: {0}. INDICES: {1}'.format(ctx.parent.info_name, working_list))
 
         # Do action here!!! Don't forget to account for DRY_RUN!!!
         if ctx.parent.info_name == 'show':
@@ -104,5 +113,5 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
     else:
         logger.warn('No indices matched provided args.')
-        click.echo(click.style('ERROR. No indices matched provided args.', fg='red', bold=True))
+        click.echo(click.style('No indices matched provided args.', fg='red', bold=True))
         sys.exit(99)
