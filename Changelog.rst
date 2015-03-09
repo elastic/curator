@@ -3,6 +3,66 @@
 Changelog
 =========
 
+3.0.0 (9 March 2015)
+--------------------
+
+**Release Notes**
+
+The full release of Curator 3.0 is out!  Check out all of the changes here!
+
+*Note:* This release is _not_ reverse compatible with any previous version.
+
+Because 3.0 is a major point release, there have been some major changes to both
+the API as well as the CLI arguments and structure.
+
+Be sure to read the updated command-line specific docs in the
+[wiki](https://github.com/elasticsearch/curator/wiki) and change your
+command-line arguments accordingly.
+
+The API docs are still at http://curator.readthedocs.org.  Be sure to read the
+latest docs, or select the docs for 3.0.0.
+
+**General**
+
+ * **Breaking changes to the API.**  Because this is a major point revision,
+   changes to the API have been made which are non-reverse compatible.  Before
+   upgrading, be sure to update your scripts and test them thoroughly.
+ * **Python 3 support** Somewhere along the line, Curator would no longer work
+   with curator.  All tests now pass for both Python2 and Python3, with 99% code
+   coverage in both environments.
+ * **New CLI library.** Using Click now. http://click.pocoo.org/3/
+   This change is especially important as it allows very easy CLI integration
+   testing.
+ * **Pipelined filtering!** You can now use ``--older-than`` & ``--newer-than``
+   in the same command!  You can also provide your own regex via the ``--regex``
+   parameter.  You can use multiple instances of the ``--exclude`` flag.
+ * **Manually include indices!** With the ``--index`` paramter, you can add an
+   index to the working list.  You can provide multiple instances of the
+   ``--index`` parameter as well!
+ * **Tests!** So many tests now.  Test coverage of the API methods is at 100%
+   now, and at 99% for the CLI methods.  This doesn't mean that all of the tests
+   are perfect, or that I haven't missed some scenarios.  It does mean, however,
+   that it will be much easier to write tests if something turns up missed.  It
+   also means that any new functionality will now need to have tests.
+ * **Iteration changes** Methods now only iterate through each index when
+   appropriate!  In fact, the only commands that iterate are `alias` and
+   `optimize`.  The `bloom` command will iterate, but only if you have added the
+   `--delay` flag with a value greater than zero.
+ * **Improved packaging!**  Methods have been moved into categories of
+   ``api`` and ``cli``, and further broken out into individual modules to help
+   them be easier to find and read.
+ * Check for allocation before potentially re-applying an allocation rule.
+   #273 (ferki)
+ * Assigning replica count and routing allocation rules _can_ be done to closed
+   indices. #283 (ferki)
+
+**Bug fixes**
+
+ * Don't accidentally delete ``.kibana`` index. #261 (malagoli)
+ * Fix segment count for empty indices. #265 (untergeek)
+ * Change bloom filter cutoff Elasticsearch version to 1.4. Reported in #267
+   (untergeek)
+
 3.0.0rc1 (5 March 2015)
 -----------------------
 
