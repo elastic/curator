@@ -356,6 +356,24 @@ class TestCLIDelete(CuratorTestCase):
         self.assertEquals(9, len(l))
         output = sorted(result.output.splitlines(), reverse=True)[:9]
         self.assertEqual(sorted(l, reverse=True), output)
+    def test_delete_indices_huge_list(self):
+        self.create_indices(365)
+        pre = curator.get_indices(self.client)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'delete',
+                        'indices',
+                        '--all-indices',
+                        '--exclude', pre[0],
+                    ],
+                    obj={"filters":[]})
+        post = curator.get_indices(self.client)
+        self.assertEquals(1, len(post))
 
 class TestCLIOpen(CuratorTestCase):
     def test_open_cli(self):

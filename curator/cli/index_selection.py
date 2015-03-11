@@ -104,12 +104,22 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             show(working_list)
         else:
             if ctx.parent.parent.params['dry_run']:
-                logging.info("DRY RUN MODE.  No changes will be made.")
-                logging.info("The following indices would have been altered:")
+                logger.info("DRY RUN MODE.  No changes will be made.")
+                logger.info("The following indices would have been altered:")
                 show(working_list)
             else:
-                retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
-                sys.exit(0) if retval else sys.exit(1)
+                if len(to_csv(working_list)) > 3072:
+                    logger.warn('Very large list of indices.  Breaking it up into smaller chunks.')
+                    index_lists = chunk_index_list(working_list)
+                    success = True
+                    for l in index_lists:
+                        retval = do_command(client, ctx.parent.info_name, l, ctx.parent.params)
+                        if not retval:
+                            success = False
+                    sys.exit(0) if success else sys.exit(1)
+                else:
+                    retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
+                    sys.exit(0) if retval else sys.exit(1)
 
     else:
         logger.warn('No indices matched provided args.')

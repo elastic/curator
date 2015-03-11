@@ -52,10 +52,7 @@ def to_csv(indices):
     """
     indices = ensure_list(indices) # in case of a single value passed
     if indices:
-        if len(indices) > 1:
-            return ','.join(sorted(indices))
-        elif len(indices) == 1:
-            return indices[0]
+        return ','.join(sorted(indices))
     else:
         return None
 
