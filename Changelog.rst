@@ -3,6 +3,19 @@
 Changelog
 =========
 
+3.0.1 (? ? ?)
+-------------
+
+**Bug fixes**
+
+ * Refactored to show `--dry-run` info for `--disk-space` calls. Reported in
+   #290 (untergeek)
+ * Added list chunking so acting on huge lists of indices won't result in a URL
+   bigger than 4096 bytes (Elasticsearch's default limit.)  Reported in
+   https://github.com/elastic/curator/issues/245#issuecomment-77916081
+ * Refactored `to_csv()` method to be simpler.
+ * Added and removed tests according to changes.  Code coverage still at 99%
+
 3.0.0 (9 March 2015)
 --------------------
 

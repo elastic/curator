@@ -240,12 +240,6 @@ class TestDelete(TestCase):
         client = Mock()
         client.indices.delete.side_effect = fake_fail
         self.assertFalse(curator.delete(client, named_indices))
-    def test_full_delete_with_disk_space(self):
-        client = Mock()
-        ds = 2.0
-        client.cluster.state.return_value = open_indices
-        client.indices.status.return_value = indices_space
-        self.assertTrue(curator.delete(client, named_indices, disk_space=ds))
 
 class TestOpen(TestCase):
     def test_opener_positive(self):

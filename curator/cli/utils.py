@@ -150,6 +150,28 @@ def in_list(values, source_list):
             logger.warn('{0} not found!'.format(v))
     return retval
 
+def chunk_index_list(indices):
+    """
+    This utility chunks very large index lists into 3KB chunks
+    It measures the size as a csv string, then converts back into a list
+    for the return value.
+
+    :arg indices: A list of indices to act on.
+    """
+    chunks = []
+    chunk = ""
+    for index in indices:
+        if len(chunk) < 3072:
+            if not chunk:
+                chunk = index
+            else:
+                chunk += "," + index
+        else:
+            chunks.append(chunk.split(','))
+            chunk = index
+    chunks.append(chunk.split(','))
+    return chunks
+
 def do_command(client, command, indices, params=None):
     """
     Do the command.
@@ -165,10 +187,7 @@ def do_command(client, command, indices, params=None):
     if command == "close":
         return close(client, indices)
     if command == "delete":
-        return delete(
-                client, indices, disk_space=params['disk_space'],
-                reverse=params['reverse']
-               )
+        return delete(client, indices)
     if command == "open":
         return opener(client, indices)
     if command == "optimize":
