@@ -11,8 +11,8 @@ Filter indices by prefix
 
 This example will generate a list of indices matching the prefix, 'logstash'.
 The effective regular expression would be: `^logstash.*$`
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
-`apply_filter`.  Filter's contents: ``{'pattern': '^logstash.*$'}``
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`apply_filter`.  `_filter`'s contents: ``{'pattern': '^logstash.*$'}``
 
 ::
 
@@ -22,8 +22,8 @@ The effective regular expression would be: `^logstash.*$`
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(kindOf='prefix', value='logstash')
-    working_list = curator.apply_filter(indices, **filter)
+    _filter = curator.build_filter(kindOf='prefix', value='logstash')
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices matching the `prefix`.
 
@@ -33,8 +33,8 @@ Filter indices by suffix
 
 This example will generate a list of indices matching the suffix, '-prod'.
 The effective regular expression would be: `^.*-prod$`
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
-`apply_filter`.  Filter's contents: ``{'pattern': '^.*-prod$'}``
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`apply_filter`.  `_filter`'s contents: ``{'pattern': '^.*-prod$'}``
 
 ::
 
@@ -44,8 +44,8 @@ The effective regular expression would be: `^.*-prod$`
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(kindOf='suffix', value='-prod')
-    working_list = curator.apply_filter(indices, **filter)
+    _filter = curator.build_filter(kindOf='suffix', value='-prod')
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices matching the `suffix`.
 
@@ -59,10 +59,10 @@ This example will generate a list of indices matching the following criteria:
 * Use `days` as the unit of time measurement
 * Filter indices `older_than` 5 `days`
 
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
 `apply_filter`.
 
-The resulting `filter` dictionary will be:
+The resulting `_filter` dictionary will be:
 
 ::
 
@@ -80,8 +80,8 @@ The resulting `filter` dictionary will be:
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(kindOf='suffix', value='-prod')
-    working_list = curator.apply_filter(indices, **filter)
+    _filter = curator.build_filter(kindOf='suffix', value='-prod')
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices matching these
 criteria.
@@ -96,10 +96,10 @@ This example will generate a list of indices matching the following criteria:
 * Use `days` as the unit of time measurement
 * Filter indices `newer_than` 5 `days`
 
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
 `apply_filter`.
 
-The resulting `filter` dictionary will be:
+The resulting `_filter` dictionary will be:
 
 ::
 
@@ -117,11 +117,11 @@ The resulting `filter` dictionary will be:
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(
+    _filter = curator.build_filter(
                 kindOf='newer_than', value=5, time_unit='days',
                 timestring='%Y.%d.%m'
              )
-    working_list = curator.apply_filter(indices, **filter)
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices matching these
 criteria.
@@ -135,8 +135,8 @@ expression ``(your expression)``.
 
 ``(your expression)`` needs to be a valid regular expression.
 
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
-`apply_filter`.  Filter's contents: ``{'pattern': (your expression)}``
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`apply_filter`.  `_filter`'s contents: ``{'pattern': (your expression)}``
 
 ::
 
@@ -146,8 +146,8 @@ expression ``(your expression)``.
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(kindOf='regex', value=(your expression))
-    working_list = curator.apply_filter(indices, **filter)
+    _filter = curator.build_filter(kindOf='regex', value=(your expression))
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices matching
 (your expression)
@@ -161,8 +161,8 @@ This example will generate a list of all indices `not` matching the pattern,
 
 The effective regular expression would be: `^dev-.*$`
 
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
-`apply_filter`.  Filter's contents: ``{'pattern': 'dev-', 'exclude': True}``
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`apply_filter`.  `_filter`'s contents: ``{'pattern': 'dev-', 'exclude': True}``
 
 ::
 
@@ -172,8 +172,8 @@ The effective regular expression would be: `^dev-.*$`
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(kindOf='exclude', value='dev-')
-    working_list = curator.apply_filter(indices, **filter)
+    _filter = curator.build_filter(kindOf='exclude', value='dev-')
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then be all indices not matching the
 pattern, 'dev-'.
@@ -181,7 +181,7 @@ pattern, 'dev-'.
 .. note::
 
     Any filter can become an `exclude` by adding ``'exclude':True`` to the
-    `filter` dictionary.
+    `_filter` dictionary.
 
 Filter indices by time string as a pattern
 ++++++++++++++++++++++++++++++++++++++++++
@@ -189,8 +189,8 @@ Filter indices by time string as a pattern
 This example will generate a list of indices having a matching time string,
 where `value` must be a valid python strftime string.
 
-`filter` is a dictionary object.  We send it as key word arguments (kwargs) to
-`apply_filter`.  Filter's contents:
+`_filter` is a dictionary object.  We send it as key word arguments (kwargs) to
+`apply_filter`.  `_filter`'s contents:
 ``{'pattern': '(?P<date>\\d{4}\\.\\d{2}\\.\\d{2})'}``
 
 ::
@@ -201,8 +201,8 @@ where `value` must be a valid python strftime string.
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    filter = curator.build_filter(kindOf='timestring', value='%Y.%m.%d')
-    working_list = curator.apply_filter(indices, **filter)
+    _filter = curator.build_filter(kindOf='timestring', value='%Y.%m.%d')
+    working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices having a matching
 time string.
@@ -238,5 +238,5 @@ This example will show time-series indices matching `prefix`, `older_than` 30
     )
     working_list = indices
     for filter in filter_list:
-        working_list = apply_filter(working_list, **filter)
+        working_list = apply_filter(working_list, **_filter)
     curator.show(working_list)
