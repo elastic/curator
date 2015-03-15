@@ -12,9 +12,13 @@ Sections
 Regex
 -----
 
-regex_iterate
+build_filter
+++++++++++++
+.. automethod:: curator.api.build_filter
+
+apply_filter
 +++++++++++++
-.. automethod:: curator.api.regex_iterate
+.. automethod:: curator.api.apply_filter
 
 get_date_regex
 ++++++++++++++
