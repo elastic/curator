@@ -6,6 +6,12 @@ Changelog
 3.0.1 (? ? ?)
 -------------
 
+**General**
+
+ * Renamed horribly named `regex_iterate` method to `apply_filter`
+ * Added `build_filter` method to mimic CLI calls.
+ * Added Examples page in the API documentation.
+
 **Bug fixes**
 
  * Refactored to show `--dry-run` info for `--disk-space` calls. Reported in

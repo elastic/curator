@@ -62,29 +62,81 @@ class FilterBySpace(TestCase):
         client.indices.status.return_value = indices_space
         self.assertEqual(["index2"], curator.filter_by_space(client, named_indices, disk_space=ds, reverse=False))
 
+class TestBuildFilter(TestCase):
+    def test_build_filter_missing_param_kindOf(self):
+        self.assertEqual({}, curator.build_filter())
+    def test_build_filter_missing_param_value(self):
+        self.assertEqual({}, curator.build_filter(kindOf='regex'))
+    def test_build_filter_missing_param_time_unit(self):
+        self.assertEqual({}, curator.build_filter(kindOf='older_than', value=5))
+    def test_build_filter_missing_param_timestring(self):
+        self.assertEqual(
+            {},
+            curator.build_filter(
+                kindOf='older_than', value=5, time_unit='days'
+            ),
+        )
+    def test_build_filter_newer_than_positive(self):
+        self.assertEqual(
+            {
+                'pattern': '(?P<date>\\d{4}\\.\\d{2}\\.\\d{2})', 'value': 5,
+                'groupname': 'date', 'time_unit': 'days',
+                'timestring': '%Y.%d.%m', 'method': 'newer_than'
+            },
+            curator.build_filter(
+                kindOf='newer_than', value=5, time_unit='days',
+                timestring='%Y.%d.%m',
+            ),
+        )
+    def test_build_filter_regex_positive(self):
+        self.assertEqual(
+            {'pattern': '^logs'},
+            curator.build_filter(kindOf='regex', value='^logs'),
+        )
+    def test_build_filter_exclude_positive(self):
+        self.assertEqual(
+            {'pattern': '^logs', 'exclude': True},
+            curator.build_filter(kindOf='exclude', value='^logs'),
+        )
+    def test_build_filter_prefix_positive(self):
+        self.assertEqual(
+            {'pattern': '^logs.*$'},
+            curator.build_filter(kindOf='prefix', value='logs'),
+        )
+    def test_build_filter_suffix_positive(self):
+        self.assertEqual(
+            {'pattern': '^.*logs$'},
+            curator.build_filter(kindOf='suffix', value='logs'),
+        )
+    def test_build_filter_timestring_positive(self):
+        self.assertEqual(
+            {'pattern': '^.*\\d{4}\\.\\d{2}\\.\\d{2}.*$'},
+            curator.build_filter(kindOf='timestring', value='%Y.%m.%d'),
+        )
+
 class TestRegexIterate(TestCase):
-    def test_regex_iterate_missing_param_pattern(self):
-        self.assertFalse(curator.regex_iterate(re_test_indices))
-    # The regex_iterate method filters a list of indices based on regex patterns
-    def test_regex_iterate_filter_none(self):
+    def test_apply_filter_missing_param_pattern(self):
+        self.assertFalse(curator.apply_filter(re_test_indices))
+    # The apply_filter method filters a list of indices based on regex patterns
+    def test_apply_filter_filter_none(self):
         pattern = r'.*'
         self.assertEqual(
-            re_test_indices, curator.regex_iterate(re_test_indices,
+            re_test_indices, curator.apply_filter(re_test_indices,
             pattern=pattern)
         )
-    def test_regex_iterate_prefix(self):
+    def test_apply_filter_prefix(self):
         pattern = r'^foo.*$'
         expected = [ 'foo', 'foo-logstash', 'foologstash' ]
         self.assertEqual(
-            expected, curator.regex_iterate(re_test_indices, pattern=pattern)
+            expected, curator.apply_filter(re_test_indices, pattern=pattern)
         )
-    def test_regex_iterate_suffix(self):
+    def test_apply_filter_suffix(self):
         pattern = r'^.*foo$'
         expected = [ 'foo', 'logstash-foo', 'logstashfoo' ]
         self.assertEqual(
-            expected, curator.regex_iterate(re_test_indices, pattern=pattern)
+            expected, curator.apply_filter(re_test_indices, pattern=pattern)
         )
-    def test_regex_iterate_timestring(self):
+    def test_apply_filter_timestring(self):
         pattern = r'^.*\d{4}.\d{2}.\d{2}.*$'
         expected = [
             'logstash-2014.12.31', 'logstash-2014.12.30', 'logstash-2014.12.29',
@@ -94,10 +146,10 @@ class TestRegexIterate(TestCase):
             '2015-01-03',
             ]
         self.assertEqual(
-            expected, curator.regex_iterate(re_test_indices,
+            expected, curator.apply_filter(re_test_indices,
             pattern=pattern)
         )
-    def test_regex_iterate_newer_than(self):
+    def test_apply_filter_newer_than(self):
         pattern = r'(?P<date>\d{4}.\d{2}.\d{2})'
         expected = [
             'logstash-2014.12.31', 'logstash-2014.12.30', 'logstash-2014.12.29',
@@ -106,38 +158,38 @@ class TestRegexIterate(TestCase):
             ]
         t = datetime(2014, 12, 1, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(re_test_indices, pattern=pattern,
+            curator.apply_filter(re_test_indices, pattern=pattern,
                 groupname='date', timestring='%Y.%m.%d', time_unit='days',
                 method='newer_than', value=2, utc_now=t
             )
         )
-    def test_regex_iterate_newer_than_negative_value(self):
+    def test_apply_filter_newer_than_negative_value(self):
         pattern = r'(?P<date>\d{4}.\d{2}.\d{2})'
         expected = [
             '.marvel-2015.12.31', '.marvel-2015.12.30', '.marvel-2015.12.29'
             ]
         t = datetime(2014, 12, 1, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(
+            curator.apply_filter(
                 re_test_indices, pattern=pattern, groupname='date',
                 timestring='%Y.%m.%d', time_unit='days', method='newer_than',
                 value=-30, utc_now=t
             )
         )
-    def test_regex_iterate_older_than_date_only(self):
+    def test_apply_filter_older_than_date_only(self):
         pattern = r'(?P<date>\d{4}-\d{2}-\d{2})'
         expected = [
             '2015-01-01', '2015-01-02', '2015-01-03',
             ]
         t = datetime(2015, 2, 1, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(
+            curator.apply_filter(
                 re_test_indices, pattern=pattern, groupname='date',
                 timestring='%Y-%m-%d', time_unit='days', method='older_than',
                 value=2, utc_now=t
             )
         )
-    def test_regex_iterate_older_than_with_prefix_and_suffix(self):
+    def test_apply_filter_older_than_with_prefix_and_suffix(self):
         pattern = r'(?P<date>\d{4}.\d{2}.\d{2})'
         expected = [
             'logstash-2014.12.31', 'logstash-2014.12.30', 'logstash-2014.12.29',
@@ -146,17 +198,17 @@ class TestRegexIterate(TestCase):
             ]
         t = datetime(2015, 2, 1, 2, 34, 56)
         self.assertEqual(expected,
-            curator.regex_iterate(
+            curator.apply_filter(
                 re_test_indices, pattern=pattern, groupname='date',
                 timestring='%Y.%m.%d', time_unit='days', method='older_than',
                 value=2, utc_now=t
             )
         )
-    def test_regex_iterate_exclude(self):
+    def test_apply_filter_exclude(self):
         pattern = r'201|logstash'
         expected = ['foo', 'bar', 'baz', 'neeble']
         self.assertEqual(
-            expected, curator.regex_iterate(re_test_indices,
+            expected, curator.apply_filter(re_test_indices,
             pattern=pattern, exclude=True)
         )
 

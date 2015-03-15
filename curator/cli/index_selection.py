@@ -76,7 +76,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         if all_indices and not 'exclude' in f:
             continue
         logger.debug('Filter: {0}'.format(f))
-        working_list = regex_iterate(working_list, **f)
+        working_list = apply_filter(working_list, **f)
 
     if ctx.parent.info_name == "delete": # Protect against accidental delete
         logger.info("Pruning Kibana-related indices to prevent accidental deletion.")

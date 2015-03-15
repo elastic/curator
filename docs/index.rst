@@ -33,6 +33,9 @@ Example Usage
     curator.optimize_index(client, 'logstash-2014.08.31')
     curator.delete(client, ['logstash-2014.07.16', 'logstash-2014.07.17'])
 
+.. TIP::
+    See more examples in the :doc:`Examples </examples>` page.
+
 Features
 --------
 
@@ -41,6 +44,8 @@ The API methods fall into the following categories:
 * :doc:`Commands </commands>` take a single index, or in some cases a list of indices and perform an action on them.
 * :doc:`Filters </filters>` are there to filter indices or snapshots based on provided criteria.
 * :doc:`Utilities </utilities>` are helper methods for commands and filters.
+
+Filtering indices is now handled by the :py:func:`curator.api.build_filter` method.
 
 Logging
 ~~~~~~~
@@ -64,6 +69,7 @@ Contents
    commands
    filters
    utilities
+   examples
    Changelog
 
 License

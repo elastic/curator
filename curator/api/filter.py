@@ -5,6 +5,14 @@ import re
 import logging
 logger = logging.getLogger(__name__)
 
+REGEX_MAP = {
+    'timestring': r'^.*{0}.*$',
+    'newer_than': r'(?P<date>{0})',
+    'older_than': r'(?P<date>{0})',
+    'prefix': r'^{0}.*$',
+    'suffix': r'^.*{0}$',
+}
+
 DATE_REGEX = {
     'Y' : '4',
     'y' : '2',
@@ -17,7 +25,66 @@ DATE_REGEX = {
     'S' : '2',
 }
 
-def regex_iterate(
+def build_filter(
+        kindOf=None, time_unit=None, timestring=None,
+        groupname='date', value=None, exclude=False,
+    ):
+    """
+    Return a filter object based on the arguments.
+
+    :arg kindOf: Can be one of:
+        [older_than|newer_than|suffix|prefix|regex|timestring].
+        This option defines what kind of filter you will be building.
+    :arg exclude: If `True`, exclude matches rather than include
+    :arg groupname: The name of a named capture in pattern.  Currently only acts
+        on 'date'
+    :arg timestring: An strftime string to match the datestamp in an index name.
+        Only used for time-based filtering.
+    :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.
+        (default: ``days``). Only used for time-based filtering.
+    :arg value: Depends on `kindOf`. It's a time-unit multiplier for
+        `older_than` and `newer_than`.  It is the strftime string if `kindOf` is
+        `timestring`. It's used to build the regular expression for other kinds.
+    """
+    if kindOf not in [  'older_than', 'newer_than', 'regex',
+                    'exclude', 'prefix', 'suffix', 'timestring'   ]:
+        logger.error('{0}: Invalid value for kindOf'.format(kindOf))
+        return {}
+    # Stop here if None or empty value
+    if not value:
+        return {}
+    else:
+        argdict = {}
+
+    if kindOf in ['older_than', 'newer_than']:
+        if not time_unit:
+            logger.error("older_than and newer_than require time_unit parameter")
+            return {}
+        if not timestring:
+            logger.error("older_than and newer_than require timestring parameter")
+            return {}
+        argdict = {  "groupname":groupname, "time_unit":time_unit,
+                    "timestring": timestring, "value": value,
+                    "method": kindOf }
+        date_regex = get_date_regex(timestring)
+        regex = REGEX_MAP[kindOf].format(date_regex)
+    elif kindOf == 'timestring':
+        regex = r'^.*{0}.*$'.format(get_date_regex(value))
+    elif kindOf == 'regex':
+        regex = r'{0}'.format(value)
+    elif kindOf in ['prefix', 'suffix']:
+        regex = REGEX_MAP[kindOf].format(value)
+
+    if kindOf == 'exclude':
+        regex = r'{0}'.format(value)
+        argdict['exclude'] = True
+
+    logger.debug("REGEX = {0}".format(regex))
+    argdict['pattern'] = regex
+    logger.debug("Added filter: {0}".format(argdict))
+    return argdict
+
+def apply_filter(
     items, pattern=None, exclude=False, groupname=None, timestring=None,
     time_unit=None, method=None, value=None, utc_now=None):
     """Iterate over all items in the list and return a list of matches
