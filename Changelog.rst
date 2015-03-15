@@ -8,9 +8,9 @@ Changelog
 
 **General**
 
- * Renamed horribly named `regex_iterate` method to `apply_filter`
- * Added `build_filter` method to mimic CLI calls.
- * Added Examples page in the API documentation.
+ * Renamed horribly named `regex_iterate` method to `apply_filter` #298 (untergeek)
+ * Added `build_filter` method to mimic CLI calls. #298 (untergeek)
+ * Added Examples page in the API documentation. #298 (untergeek)
 
 **Bug fixes**
 
