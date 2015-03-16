@@ -1,4 +1,4 @@
-# Curator
+# Curator [![Build Status](http://build-eu-00.elastic.co/job/es-curator_core/badge/icon)](http://build-eu-00.elastic.co/job/es-curator_core/)
 
 Have indices in Elasticsearch? This is the tool for you!
 
