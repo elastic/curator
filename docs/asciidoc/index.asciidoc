@@ -72,7 +72,7 @@ The root command structure looks like this:
 Usage: curator [OPTIONS] COMMAND [ARGS]...
 
   Curator for Elasticsearch indices. See
-  http://github.com/elasticsearch/curator/wiki
+  http://github.com/elastic/curator/wiki
 
 Options:
   --host TEXT        Elasticsearch host.

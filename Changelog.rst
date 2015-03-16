@@ -15,6 +15,7 @@ Props to @SegFaultAX for pointing this out.
 
 **General**
 
+ * In conjunction with the rebrand to Elastic, URLs and documentation were updated.
  * Renamed horribly named `regex_iterate` method to `apply_filter` #298 (untergeek)
  * Added `build_filter` method to mimic CLI calls. #298 (untergeek)
  * Added Examples page in the API documentation. #298 (untergeek)

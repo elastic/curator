@@ -16,7 +16,7 @@ def apply_allocation_rule(client, indices, rule=None):
 
     .. note::
         See:
-        http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/index-modules-allocation.html#index-modules-allocation
+        http://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-allocation.html#index-modules-allocation
     """
     if not rule:
         logger.error('Missing rule parameter')
