@@ -308,7 +308,7 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
     # that we actually have at least one index before calling
     # client.indices.status, otherwise the call will match _all indices, which
     # is very bad.
-    # See https://github.com/elasticsearch/curator/issues/254
+    # See https://github.com/elastic/curator/issues/254
     logger.debug('List of indices found: {0}'.format(not_closed))
     if not_closed:
 

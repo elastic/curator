@@ -45,7 +45,7 @@ DEFAULT_ARGS = {
 @click.version_option(version=__version__)
 @click.pass_context
 def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
-    """Curator for Elasticsearch indices. See http://github.com/elasticsearch/curator/wiki
+    """Curator for Elasticsearch indices. See http://github.com/elastic/curator/wiki
     """
 
     # Setup logging

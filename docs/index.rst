@@ -10,7 +10,7 @@ snapshots.
    for the Elasticsearch Curator *CLI* -- which uses this API and is installed
    as an entry_point as part of the package -- is available on the `the wiki`_.
 
-.. _the wiki: http://github.com/elasticsearch/curator/wiki
+.. _the wiki: http://github.com/elastic/curator/wiki
 
 Compatibility
 -------------
