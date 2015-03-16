@@ -3,8 +3,15 @@
 Changelog
 =========
 
-3.0.1 (? ? ?)
--------------
+3.0.1 (16 Mar 2015)
+-------------------
+
+**Announcement**
+
+The ``regex_iterate`` method was horribly named.  It has been renamed to
+``apply_filter``.  Methods have been added to allow API users to build a
+filtered list of indices similarly to how the CLI does.  This was an oversight.
+Props to @SegFaultAX for pointing this out.
 
 **General**
 
