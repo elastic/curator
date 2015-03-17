@@ -7,9 +7,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_ARGS = {
     'snapshot_prefix': 'curator-',
     'wait_for_completion': True,
-    'ignore_unavailable': False,
     'include_global_state': True,
-    'partial': False,
 }
 
 @cli.group('snapshot')
@@ -21,9 +19,10 @@ DEFAULT_ARGS = {
             default=DEFAULT_ARGS['wait_for_completion'], expose_value=True,
             help='Wait for snapshot to complete before returning.')
 @click.option('--ignore_unavailable', is_flag=True, expose_value=True,
-            help='Ignore unavailable shards/indices.', default=DEFAULT_ARGS['ignore_unavailable'])
-@click.option('--include_global_state', is_flag=True,
-            expose_value=True, help='Store cluster global state with snapshot.')
+            help='Ignore unavailable shards/indices.')
+@click.option('--include_global_state', type=bool, show_default=True,
+            default=DEFAULT_ARGS['include_global_state'], expose_value=True, 
+            help='Store cluster global state with snapshot.')
 @click.option('--partial', is_flag=True, expose_value=True,
             help='Do not fail if primary shard is unavailable.')
 @click.option('--request_timeout', type=int, default=21600, show_default=True,

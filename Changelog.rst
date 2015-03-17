@@ -3,6 +3,13 @@
 Changelog
 =========
 
+3.1.0 (? ? ?)
+-------------
+
+**Bug fixes**
+
+ * Purge unneeded constants, and clean up config options for snapshot. Reported in #303 (untergeek)
+
 3.0.1 (16 Mar 2015)
 -------------------
 
