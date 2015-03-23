@@ -88,6 +88,18 @@ class TestBuildFilter(TestCase):
                 timestring='%Y.%d.%m',
             ),
         )
+    def test_build_filter_newer_than_zero(self):
+        self.assertEqual(
+            {
+                'pattern': '(?P<date>\\d{4}\\.\\d{2}\\.\\d{2})', 'value': 0,
+                'groupname': 'date', 'time_unit': 'days',
+                'timestring': '%Y.%d.%m', 'method': 'newer_than'
+            },
+            curator.build_filter(
+                kindOf='newer_than', value=0, time_unit='days',
+                timestring='%Y.%d.%m',
+            ),
+        )
     def test_build_filter_regex_positive(self):
         self.assertEqual(
             {'pattern': '^logs'},
@@ -261,11 +273,17 @@ class TestGetTargetMonth(TestCase):
         before = datetime(2015, 2, 1, 2, 34, 56)
         after  = datetime(2016, 1, 1, 0, 0, 0)
         self.assertEqual(after, curator.get_target_month(-11, utc_now=before))
+    def test_month_bump_exception(self):
+        datestamp = datetime(2015, 2, 1, 2, 34, 56)
+        self.assertRaises(ValueError, curator.month_bump,datestamp, sign='foo')
+
 
 class TestGetCutoff(TestCase):
     def test_get_cutoff_param_check(self):
         # Testing for the omission of the unit_count param
         self.assertFalse(curator.get_cutoff())
+    def test_get_cutoff_non_integer(self):
+        self.assertFalse(curator.get_cutoff(unit_count='foo'))
     def test_get_cutoff_weeks(self):
         fakenow = datetime(2015, 2, 3, 4, 5, 6)
         cutoff  = datetime(2015, 2, 2, 0, 0, 0)

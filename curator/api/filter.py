@@ -50,8 +50,11 @@ def build_filter(
                     'exclude', 'prefix', 'suffix', 'timestring'   ]:
         logger.error('{0}: Invalid value for kindOf'.format(kindOf))
         return {}
-    # Stop here if None or empty value
-    if not value:
+    # Stop here if None or empty value, but zero is okay
+    if value == 0:
+        logger.info("I found a zero value")
+        argdict = {}
+    elif not value:
         return {}
     else:
         argdict = {}
@@ -178,6 +181,28 @@ def get_datetime(index_timestamp, timestring):
     #logger.debug("index_timestamp: {0}, timestring: {1}, return value: {2}".format(index_timestamp, timestring, datetime.strptime(index_timestamp, timestring)))
     return datetime.strptime(index_timestamp, timestring)
 
+def month_bump(datestamp, sign='positive'):
+    """
+    This method returns either the next or previous month based on the value of
+    sign.
+
+    :arg datestamp: A datetime datestamp
+    :arg sign: Either `positive` or `negative`
+    :rtype: Datetime object
+    """
+    if sign is not 'positive' and sign is not 'negative':
+        raise ValueError
+    if sign == 'positive':
+        if datestamp.month == 1:
+            return date(datestamp.year-1, 12, 1)
+        else:
+            return date(datestamp.year, datestamp.month-1, 1)
+    else:
+        if datestamp.month == 12:
+            return date(datestamp.year+1, 1, 1)
+        else:
+            return date(datestamp.year, datestamp.month+1, 1)
+
 def get_target_month(month_count, utc_now=None):
     """
     Return datetime object for number of *full* months older than
@@ -192,16 +217,10 @@ def get_target_month(month_count, utc_now=None):
 
     if month_count < 0:
         for i in range(0, month_count, -1):
-            if target_date.month == 12:
-                target_date = date(target_date.year+1, 1, 1)
-            else:
-                target_date = date(target_date.year, target_date.month+1, 1)
-    else:
+            target_date = month_bump(target_date, sign='negative')
+    elif month_count > 0:
         for i in range(0, month_count):
-            if target_date.month == 1:
-                target_date = date(target_date.year-1, 12, 1)
-            else:
-                target_date = date(target_date.year, target_date.month-1, 1)
+            target_date = month_bump(target_date)
     return datetime(target_date.year, target_date.month, target_date.day)
 
 def get_cutoff(unit_count=None, time_unit='days', utc_now=None):
@@ -214,8 +233,11 @@ def get_cutoff(unit_count=None, time_unit='days', utc_now=None):
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     :rtype: Datetime object
     """
-    if not unit_count:
+    if unit_count == None:
         logger.error("Missing value for unit_count.")
+        return False
+    if type(unit_count) != type(int()):
+        logger.error("Non-integer value for unit_count.")
         return False
     # time-injection for test purposes only
     utc_now = utc_now if utc_now else datetime.utcnow()
