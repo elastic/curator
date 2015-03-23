@@ -3,13 +3,19 @@
 Changelog
 =========
 
-3.1.0 (? ? ?)
--------------
+3.0.2 (23 Mar 2015)
+-------------------
+
+**Announcement**
+
+This is a bug fix release.  #307 and #309 were big enough to warrant an
+expedited release.
 
 **Bug fixes**
 
  * Purge unneeded constants, and clean up config options for snapshot. Reported in #303 (untergeek)
  * Don't split large index list if performing snapshots. Reported in #307 (untergeek)
+ * Act correctly if a zero value for `--older-than` or `--newer-than` is provided. #309 (untergeek)
 
 3.0.1 (16 Mar 2015)
 -------------------
