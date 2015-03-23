@@ -9,6 +9,7 @@ Changelog
 **Bug fixes**
 
  * Purge unneeded constants, and clean up config options for snapshot. Reported in #303 (untergeek)
+ * Don't split large index list if performing snapshots. Reported in #307 (untergeek)
 
 3.0.1 (16 Mar 2015)
 -------------------

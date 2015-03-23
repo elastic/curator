@@ -108,7 +108,9 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
                 logger.info("The following indices would have been altered:")
                 show(working_list)
             else:
-                if len(to_csv(working_list)) > 3072:
+                # The snapshot command should get the full list, otherwise
+                # the index list may need to be segmented.
+                if len(to_csv(working_list)) > 3072 and not ctx.parent.info_name == 'snapshot':
                     logger.warn('Very large list of indices.  Breaking it up into smaller chunks.')
                     index_lists = chunk_index_list(working_list)
                     success = True

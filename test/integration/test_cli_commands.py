@@ -502,6 +502,30 @@ class TestCLISnapshot(CuratorTestCase):
                    )
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
+    def test_cli_snapshot_huge_list(self):
+        self.create_indices(365)
+        self.create_repository()
+        snap_name = 'snapshot1'
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'snapshot',
+                        '--repository', self.args['repository'],
+                        '--name', snap_name,
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        snapshot = curator.get_snapshot(
+                    self.client, self.args['repository'], '_all'
+                   )
+        self.assertEqual(1, len(snapshot['snapshots']))
+        self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
+        self.assertEqual(365, len(snapshot['snapshots'][0]['indices']))
 
 
 class TestCLISnapshotSelection(CuratorTestCase):
