@@ -533,6 +533,7 @@ class TestCLISnapshot(CuratorTestCase):
                         '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
+                        '--timeout', 600,
                         'snapshot',
                         '--repository', self.args['repository'],
                         '--name', snap_name,
