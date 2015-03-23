@@ -94,8 +94,10 @@ def filter_callback(ctx, param, value):
     """
     Append a dict to ctx.obj['filters'] based on the arguments
     """
-    # Stop here if None or empty value
-    if not value:
+    # Stop here if None or empty value, but zero values are okay
+    if value == 0:
+        argdict = {}
+    elif not value:
         return value
     else:
         argdict = {}

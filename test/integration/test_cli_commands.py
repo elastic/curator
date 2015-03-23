@@ -461,6 +461,26 @@ class TestCLIShow(CuratorTestCase):
                     obj={"filters":[]})
         output = sorted(result.output.splitlines(), reverse=True)[:4]
         self.assertEqual(expected, output)
+    def test_cli_show_indices_older_than_zero(self):
+        self.create_indices(10)
+        indices = curator.get_indices(self.client)
+        expected = sorted(indices, reverse=True)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'show',
+                        'indices',
+                        '--older-than', '0',
+                        '--timestring', '%Y.%m.%d',
+                        '--time-unit', 'days'
+                    ],
+                    obj={"filters":[]})
+        output = sorted(result.output.splitlines(), reverse=True)
+        self.assertEqual(expected, output)
 
 class TestCLISnapshot(CuratorTestCase):
     def test_snapshot_no_repository_param(self):
