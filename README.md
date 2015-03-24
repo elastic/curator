@@ -11,10 +11,10 @@ Since Curator 3.0, curator ships with both an API and wrapper scripts (which are
 actually defined as entry points).  This allows you to write your own scripts to
 accomplish similar goals, or even new and different things with the [Curator API](http://curator.readthedocs.org/), and the [Elasticsearch Python API](http://elasticsearch-py.readthedocs.org/).
 
-## [Curator CLI Documentation (GitHub wiki)](http://github.com/elasticsearch/curator/wiki)
+## [Curator CLI Documentation (GitHub wiki)](http://github.com/elastic/curator/wiki)
 
-See the [Documentation Wiki](http://github.com/elasticsearch/curator/wiki)!
-Try the new asciidoc [documentation for the CLI](https://github.com/elasticsearch/curator/blob/master/docs/asciidoc/index.asciidoc).
+See the [Documentation Wiki](http://github.com/elastic/curator/wiki)!
+Try the new asciidoc [documentation for the CLI](https://github.com/elastic/curator/blob/master/docs/asciidoc/index.asciidoc).
 
 ## Usage
 
@@ -24,10 +24,10 @@ Install using pip
 
 See `curator --help` for usage specifics.
 
-## [Documentation & Examples](http://github.com/elasticsearch/curator/wiki)
+## [Documentation & Examples](http://github.com/elastic/curator/wiki)
 
-Try the new asciidoc [documentation for the CLI](https://github.com/elasticsearch/curator/blob/master/docs/asciidoc/index.asciidoc).
-See the [Curator Wiki](http://github.com/elasticsearch/curator/wiki) on Github
+Try the new asciidoc [documentation for the CLI](https://github.com/elastic/curator/blob/master/docs/asciidoc/index.asciidoc).
+See the [Curator Wiki](http://github.com/elastic/curator/wiki) on Github
 for more documentation
 
 
@@ -37,7 +37,7 @@ for more documentation
 * make changes in your fork
 * add tests to cover your changes (if necessary)
 * run tests
-* sign the [CLA](http://www.elasticsearch.org/contributor-agreement/)
+* sign the [CLA](http://elastic.co/contributor-agreement/)
 * send a pull request!
 
 To run from source, use the `run_curator.py` and `run_es_repo_mgr.py` scripts
@@ -72,9 +72,9 @@ Elasticsearch 0.90.X.
 
 Curator was first called `clearESindices.py` [1] and was almost immediately
 renamed to `logstash_index_cleaner.py` [1].  After a time it was migrated under
-the [logstash](https://github.com/elasticsearch/logstash) repository as
+the [logstash](https://github.com/elastic/logstash) repository as
 `expire_logs`.  Soon thereafter, Jordan Sissel was hired by Elasticsearch, as
 was the original author of this tool.  It became Elasticsearch Curator after
-that and is now hosted at <https://github.com/elasticsearch/curator>
+that and is now hosted at <https://github.com/elastic/curator>
 
 [1] <https://logstash.jira.com/browse/LOGSTASH-211>
