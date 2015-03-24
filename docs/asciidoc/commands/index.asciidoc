@@ -1,0 +1,28 @@
+[[commands]]
+= Commands
+
+[partintro]
+--
+
+* <<alias>>
+* <<allocation>>
+* <<bloom>>
+* <<close>>
+* <<delete>>
+* <<open>>
+* <<optimize>>
+* <<replicas>>
+* <<show>>
+* <<snapshot>>
+--
+
+include::alias.asciidoc[]
+include::allocation.asciidoc[]
+include::bloom.asciidoc[]
+include::close.asciidoc[]
+include::delete.asciidoc[]
+include::open.asciidoc[]
+include::optimize.asciidoc[]
+include::replicas.asciidoc[]
+include::show.asciidoc[]
+include::snapshot.asciidoc[]

@@ -1,0 +1,8 @@
+[[upgrading]]
+== Upgrading
+
+If Curator has been installed via `pip`, the preferred way to upgrade is:
+
+-------------------------------------
+ pip install -U elasticsearch-curator
+-------------------------------------

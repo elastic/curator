@@ -1,0 +1,79 @@
+[[installation]]
+== Installation
+
+
+[float]
+Summary
+~~~~~~~
+
+There are a few ways to install curator. This document covers a few of them. If
+you are trying to upgrade curator, please see <<upgrading>>.
+
+[float]
+Installation: Recommended
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The recommended installation procedure utilizes
+https://pip.pypa.io/en/latest/installing.html[python pip]:
+
+---------------------------------
+pip install elasticsearch-curator
+---------------------------------
+
+&nbsp;
+
+[float]
+PIP installation of a specific version:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are still using Elasticsearch 0.90.x, you need to install curator
+version 0.6.2:
+
+----------------------------------------
+pip install elasticsearch-curator==0.6.2
+----------------------------------------
+
+&nbsp;
+
+Any other version-sepecific installation will follow this basic pattern.
+
+[float]
+Installation: PIP installation from source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Download and install https://pypi.python.org/pypi/urllib3[urllib3]
+
+---------------------------------------------------------------------------
+wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.8.3.tar.gz
+pip install urllib3-1.8.3.tar.gz
+---------------------------------------------------------------------------
+
+&nbsp;
+
+Download and install
+https://github.com/elasticsearch/elasticsearch-py/archive/master.zip[elasticsearch-py]
+
+-------------------------------------------------------------------------------------------------
+wget https://github.com/elasticsearch/elasticsearch-py/archive/master.zip -O elasticsearch-py.zip
+pip install elasticsearch-py.zip
+-------------------------------------------------------------------------------------------------
+
+&nbsp;
+
+Download and install
+https://pypi.python.org/packages/source/c/click/click-3.3.tar.gz[click]
+
+-----------------------------------------------------------------------------------------
+wget https://pypi.python.org/packages/source/c/click/click-3.3.tar.gz -O click-3.3.tar.gz
+pip install click-3.3.tar.gz
+-----------------------------------------------------------------------------------------
+
+&nbsp;
+
+Download and install
+https://github.com/elasticsearch/curator/archive/master.zip[curator]
+
+---------------------------------------------------------------------------------------------
+wget https://github.com/elasticsearch/curator/archive/master.zip -O elasticsearch-curator.zip
+pip install elasticsearch-curator.zip
+---------------------------------------------------------------------------------------------

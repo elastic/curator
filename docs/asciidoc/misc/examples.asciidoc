@@ -1,0 +1,82 @@
+[[examples]]
+== Examples
+
+=== Delete _all_ indices with matching <<timestring>> which are older than 30 days
+
+-----
+curator --host 10.0.0.2 delete indices --older-than 30 --time-unit days \
+   --timestring '%Y.%m.%d'
+-----
+
+&nbsp;
+
+In previous versions of Curator, you would have needed as many runs of the
+command-line as you had prefixes, no matter the matching pattern.  Not so any
+more!  With this example, _all_ indices with a pattern of `%Y.%m.%d` inside will
+be deleted.  This is useful for managing both Logstash and Marvel indices with
+a single command, if you want the same retention period.
+
+NOTE: Kibana indices are omitted from deletion by default.
+
+=== Alias a subset of indices
+
+-----
+curator --host 10.0.0.2 alias --name lastmonth indices --newer-than 60 \
+   --older-than 30 --timestring '%Y.%m.%d' --time-unit days --prefix logstash
+-----
+
+&nbsp;
+
+In this example, logstash indices older than 30 days--but newer than 60--are
+added to alias `lastmonth`.  Please note that Curator does not create aliases.
+It can only add to them or remove from them.  Let's take this example further,
+though.
+
+-----
+curator --host 10.0.0.2 alias --name lastmonth --remove indices --older-than 60 \
+   --timestring '%Y.%m.%d' --time-unit days --prefix logstash
+curator --host 10.0.0.2 alias --name lastmonth indices --newer-than 60 \
+   --older-than 30 --timestring '%Y.%m.%d' --time-unit days --prefix logstash
+-----
+
+&nbsp;
+
+The updated, 2 line example now _removes_ indices older than 60 days first, and
+then proceeds to make sure that everything between 30 and 60 days is in the
+alias.  Note that Curator will not re-alias if the index is already in the
+alias.
+
+=== Optimize only the specified indices
+
+-----
+curator --host 10.0.0.2 optimize --max_num_segments 1 --delay 120 \
+   --index indexname1 --index indexname2
+-----
+
+&nbsp;
+
+This command will _only_ operate on the named indices, `indexname1` and
+`indexname2`.  It will pause for `120` seconds after optimizing each index.
+
+=== Show only indices with a timestring
+
+-----
+curator --host 10.0.0.2 show indices --timestring '%Y.%m.%d'
+-----
+
+&nbsp;
+
+While timestring may nearly always be seen alongside <<older-than>>,
+<<newer-than>>, and <<time-unit>>, there may be cases when you just want to act
+on indices with a timestamp in the name.
+
+=== Close all indices, excepting those matching patterns `do-not-touch` and `logstash-2015.03`
+
+-----
+curator --host 10.0.0.2 close indices --exclude do-not-touch --exclude logstash-2015.03
+-----
+
+&nbsp;
+
+In this case, all indices saving those matching pattern `kibana`, or all
+Logstash indices for the month of March 2015 will be closed.
