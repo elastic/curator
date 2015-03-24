@@ -1,0 +1,53 @@
+[[show]]
+== show
+
+[float]
+Summary
+~~~~~~~
+
+This command allows you to see any indices (or snapshots) matching
+<<index-selection,index selection>> or
+<<snapshot-selection,snapshot selection>>.
+
+[float]
+Flags
+~~~~~
+
+------------------------------------------
+$ curator show [OPTIONS] COMMAND [ARGS]...
+
+  Show indices or snapshots
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  indices    Index selection.
+  snapshots  Snapshot selection.
+------------------------------------------
+
+&nbsp;
+
+IMPORTANT: This command requires either the <<indices-subcommand,indices>>
+<<subcommand,subcommand>> for <<index-selection,index selection>>, or the
+<<snapshots-subcommand,snapshots>> <<subcommand,subcommand>> for
+<<snapshot-selection,snapshot selection>>.
+
+[float]
+Examples
+~~~~~~~~
+
+Display a list of indices matching the selection parameters:
+
+------------------------------------------------------------------
+curator show --show-indices indices <<index selection parameters>>
+------------------------------------------------------------------
+
+&nbsp;
+
+Display a list of snapshots in the named repository matching the selection
+parameters:
+
+------------------------------------------------------------------------------------------------------
+curator show --show-snapshots --repository REPOSITORY_NAME snapshots <<snapshot selection parameters>>
+------------------------------------------------------------------------------------------------------

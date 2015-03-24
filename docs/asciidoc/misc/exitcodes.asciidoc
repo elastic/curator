@@ -1,0 +1,10 @@
+[[exit-codes]]
+== Exit Codes
+
+New in Curator version 3, exit codes will indicate success or failure.
+
+* `0` — Success
+* `1` — Failure
+* `99` — No indices to act on, but otherwise no failure. This condition can
+occur if your filters remove all indices, or if none match the provided
+criteria.

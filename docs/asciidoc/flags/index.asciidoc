@@ -1,0 +1,70 @@
+[[flags]]
+= Flags
+
+[partintro]
+--
+
+* <<debug,--debug>>
+* <<dry-run,--dry-run>>
+* <<help,--help>>
+* <<host,--host>>
+* <<http_auth,--http_auth>>
+* <<logfile,--logfile>>
+* <<logformat,--logformat>>
+* <<loglevel,--loglevel>>
+* <<master-only,--master-only>>
+* <<port,--port>>
+* <<url_prefix,--url_prefix>>
+* <<use_ssl,--use_ssl>>
+* <<version,--version>>
+
+_Index and Snapshot Selection_
+
+* <<newer-than,--newer-than>>
+* <<older-than,--older-than>>
+* <<prefix,--prefix>>
+* <<suffix,--suffix>>
+* <<time-unit,--time-unit>>
+* <<timestring,--timestring>>
+* <<regex,--regex>>
+* <<exclude,--exclude>>
+
+_Index selection only_
+
+* <<index_flag,--index>>
+* <<all-indices,--all-indices>>
+
+_Snapshot selection only_
+
+* <<snapshot_flag,--snapshot>>
+* <<all-snapshots,--all-snapshots>>
+* <<repository,--repository>>
+--
+
+include::debug.asciidoc[]
+include::dry-run.asciidoc[]
+include::help.asciidoc[]
+include::host.asciidoc[]
+include::http_auth.asciidoc[]
+include::logfile.asciidoc[]
+include::logformat.asciidoc[]
+include::loglevel.asciidoc[]
+include::master-only.asciidoc[]
+include::port.asciidoc[]
+include::url_prefix.asciidoc[]
+include::use_ssl.asciidoc[]
+include::version.asciidoc[]
+
+include::newer-than.asciidoc[]
+include::older-than.asciidoc[]
+include::prefix.asciidoc[]
+include::suffix.asciidoc[]
+include::time-unit.asciidoc[]
+include::timestring.asciidoc[]
+include::regex.asciidoc[]
+include::exclude.asciidoc[]
+include::index_flag.asciidoc[]
+include::all-indices.asciidoc[]
+include::snapshot_flag.asciidoc[]
+include::all-snapshots.asciidoc[]
+include::repository.asciidoc[]

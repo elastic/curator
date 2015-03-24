@@ -1,0 +1,24 @@
+[[version]]
+== --version
+
+[float]
+Summary
+~~~~~~~
+
+Show the curator version release number, then exit.
+
+[float]
+Flags
+~~~~~
+
+* `--version` Show the version number.
+
+[float]
+Example
+~~~~~~~
+
+Show the curator version number:
+
+-----------------
+curator --version
+-----------------
