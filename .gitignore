@@ -14,3 +14,4 @@ elasticsearch_curator_dev.egg-info
 coverage.xml
 nosetests.xml
 index.html
+docs/asciidoc/html_docs
