@@ -31,8 +31,9 @@ The output of `curator --help`:
 $ curator --help
 Usage: curator [OPTIONS] COMMAND [ARGS]...
 
-  Curator for Elasticsearch indices. See
-  http://github.com/elasticsearch/curator/wiki
+  Curator for Elasticsearch indices.
+
+  See http://elastic.co/guide/en/elasticsearch/client/curator/current
 
 Options:
   --host TEXT        Elasticsearch host.
