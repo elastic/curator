@@ -4,16 +4,16 @@
 [partintro]
 --
 
-* <<alias>>
-* <<allocation>>
-* <<bloom>>
-* <<close>>
-* <<delete>>
-* <<open>>
-* <<optimize>>
-* <<replicas>>
-* <<show>>
-* <<snapshot>>
+* <<alias,alias>>
+* <<allocation,allocation>>
+* <<bloom,bloom>>
+* <<close,close>>
+* <<delete,delete>>
+* <<open,open>>
+* <<optimize,optimize>>
+* <<replicas,replicas>>
+* <<show,show>>
+* <<snapshot,snapshot>>
 --
 
 include::alias.asciidoc[]

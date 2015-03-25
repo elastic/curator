@@ -8,9 +8,10 @@ snapshots.
 
    This documentation is for the Elasticsearch Curator Python API.  Documentation
    for the Elasticsearch Curator *CLI* -- which uses this API and is installed
-   as an entry_point as part of the package -- is available on the `the wiki`_.
+   as an entry_point as part of the package -- is available in the
+   `Elastic guide`_.
 
-.. _the wiki: http://github.com/elastic/curator/wiki
+.. _Elastic guide: http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
 
 Compatibility
 -------------
@@ -75,7 +76,7 @@ Contents
 License
 -------
 
-Copyright 2013–2015 Elasticsearch
+Copyright 2013–2015 Elastic <http://elastic.co> and contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

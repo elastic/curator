@@ -5,31 +5,34 @@ Have indices in Elasticsearch? This is the tool for you!
 Like a museum curator manages the exhibits and collections on display,
 Elasticsearch Curator helps you curate, or manage your indices.
 
-## [Curator API Documentation](http://curator.readthedocs.org/) (External)
+## [Curator API Documentation](http://curator.readthedocs.org/)
 
-Since Curator 3.0, curator ships with both an API and wrapper scripts (which are
+Since version 2.0, Curator ships with both an API and wrapper scripts (which are
 actually defined as entry points).  This allows you to write your own scripts to
-accomplish similar goals, or even new and different things with the [Curator API](http://curator.readthedocs.org/), and the [Elasticsearch Python API](http://elasticsearch-py.readthedocs.org/).
+accomplish similar goals, or even new and different things with the [Curator API](http://curator.readthedocs.org/),
+and the [Elasticsearch Python API](http://elasticsearch-py.readthedocs.org/).
 
-## [Curator CLI Documentation (GitHub wiki)](http://github.com/elastic/curator/wiki)
+## [Curator CLI Documentation](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html)
 
-See the [Documentation Wiki](http://github.com/elastic/curator/wiki)!
-Try the new asciidoc [documentation for the CLI](https://github.com/elastic/curator/blob/master/docs/asciidoc/index.asciidoc).
+The Curator CLI Documentation is now a part of the document repository at
+http://elastic.co/guide at http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
 
-## Usage
+
+## Getting Started
 
 Install using pip
 
     pip install elasticsearch-curator
 
-See `curator --help` for usage specifics.
+Run `curator --help` for usage specifics.
 
-## [Documentation & Examples](http://github.com/elastic/curator/wiki)
+## [Documentation & Examples](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html)
 
-Try the new asciidoc [documentation for the CLI](https://github.com/elastic/curator/blob/master/docs/asciidoc/index.asciidoc).
-See the [Curator Wiki](http://github.com/elastic/curator/wiki) on Github
-for more documentation
+The documentation for the CLI is now part of the document repository at http://elastic.co/guide
+at http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
 
+The [Curator Wiki](http://github.com/elastic/curator/wiki) on Github is now a
+place to add your own examples and ideas.
 
 ## Contributing
 
@@ -43,7 +46,7 @@ for more documentation
 To run from source, use the `run_curator.py` and `run_es_repo_mgr.py` scripts
 in the root directory of the project.
 
-### Running tests
+### Running Tests
 
 To run the test suite just run `python setup.py test`
 
