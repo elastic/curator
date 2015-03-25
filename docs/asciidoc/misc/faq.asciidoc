@@ -6,6 +6,14 @@
 This section will be updated as more frequently asked questions arise
 --
 
+== Q: How can I report an error in the documentation?
+
+[float]
+A: Use the "Edit" link on any page
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See <<site-corrections,Site Corrections>>.
+
 == Q: Can I delete only certain data from within indices?
 
 [float]

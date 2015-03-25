@@ -25,3 +25,6 @@ A brief overview of the steps
 * run tests
 * sign the http://elastic.co/contributor-agreement/[CLA]
 * send a pull request!
+
+TIP: To submit documentation fixes for this site, see
+<<site-corrections,Site Corrections>>

@@ -1,8 +1,9 @@
 [glossary]
 = Glossary of terms
 
-This is a glossary of terms used here.  It is by no means complete.  If you'd
-like to see a term defined here, please let us know.
+
+TIP: If you'd like to see a term defined here, use the "Edit" link to the
+right. See <<site-corrections,Site Corrections>>.
 
 [glossary]
 alias::
