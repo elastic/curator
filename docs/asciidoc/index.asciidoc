@@ -1,5 +1,5 @@
 [[curator-reference]]
-= Reference
+= Curator Reference
 
 :curator_version: 3.0.2
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/current
