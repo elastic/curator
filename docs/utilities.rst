@@ -58,6 +58,10 @@ index_closed
 ++++++++++++
 .. automethod:: curator.api.index_closed
 
+optimized
++++++++++
+.. automethod:: curator.api.optimized
+
 is_master_node
 ++++++++++++++
 .. automethod:: curator.api.is_master_node
