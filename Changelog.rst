@@ -6,6 +6,14 @@ Changelog
 3.1.0 (? ? ?)
 -------------
 
+**General**
+
+ * Documentation for the CLI converted to Asciidoc and moved to
+   http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
+
+**Bug fixes**
+
+ * No more --delay with optimized indices. Reported in #319 (untergeek)
 
 3.0.2 (23 Mar 2015)
 -------------------

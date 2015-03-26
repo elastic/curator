@@ -112,6 +112,32 @@ def get_segmentcount(client, index_name):
             totalshards += 1
     return totalshards, segmentcount
 
+def optimized(client, index_name, max_num_segments=None):
+    """
+    Check if an index is optimized.
+
+    :arg client: The Elasticsearch client connection
+    :arg index_name: The index name
+    :arg max_num_segments: Merge to this number of segments per shard.
+    :rtype: bool
+    """
+    if not max_num_segments:
+        logger.error("Mising value for max_num_segments.")
+        raise ValueError
+    if check_csv(index_name):
+        logger.error("Must specify only a single index as an argument.")
+        raise ValueError
+    if index_closed(client, index_name): # Don't try to optimize a closed index
+        logger.debug('Skipping index {0}: Already closed.'.format(index_name))
+        return True
+    shards, segmentcount = get_segmentcount(client, index_name)
+    logger.debug('Index {0} has {1} shards and {2} segments total.'.format(index_name, shards, segmentcount))
+    if segmentcount > (shards * max_num_segments):
+        return False
+    else:
+        logger.info('Skipping index {0}: Already optimized.'.format(index_name))
+        return True
+
 def get_version(client):
     """
     Return the ES version number as a tuple.

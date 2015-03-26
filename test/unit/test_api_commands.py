@@ -260,16 +260,6 @@ class TestOpen(TestCase):
         self.assertFalse(curator.opener(client, named_indices))
 
 class TestOptimize(TestCase):
-    def test_optimize_index_bad_csv(self):
-        client = Mock()
-        self.assertFalse(curator.optimize_index(client, "a,b,c,d", max_num_segments=2))
-    def test_optimize_index_missing_arg(self):
-        client = Mock()
-        self.assertFalse(curator.optimize_index(client, named_index))
-    def test_optimize_index_closed(self):
-        client = Mock()
-        client.cluster.state.return_value = closed_index
-        self.assertTrue(curator.optimize_index(client, named_index, max_num_segments=2))
     def test_optimize_index_positive(self):
         client = Mock()
         client.indices.segments.return_value = shards
