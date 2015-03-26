@@ -90,6 +90,17 @@ def get_client(**kwargs):
         click.echo(click.style('ERROR: Connection failure.', fg='red', bold=True))
         sys.exit(1)
 
+def override_timeout(ctx):
+    """
+    Override the default timeout for optimize and snapshot operations if the
+    default value of 30 is provided at the command-line.
+    """
+    timeout = 21600
+    if ctx.parent.info_name in ['optimize', 'snapshot']:
+        if ctx.parent.parent.params['timeout'] == 30:
+            logger.warn('Overriding default connection timeout.  New timeout: {0}'.format(timeout))
+            ctx.parent.parent.params['timeout'] = timeout
+
 def filter_callback(ctx, param, value):
     """
     Append a dict to ctx.obj['filters'] based on the arguments

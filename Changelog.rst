@@ -14,7 +14,10 @@ Changelog
 **Bug fixes**
 
  * Fix links to repository in setup.py. Reported in #318 (untergeek)
- * No more --delay with optimized indices. Reported in #319 (untergeek)
+ * No more ``--delay`` with optimized indices. Reported in #319 (untergeek)
+ * ``--request_timeout`` not working as expected.  Reinstate the version 2
+   timeout override feature to prevent default timeouts for ``optimize`` and
+   ``snapshot`` operations. Reported in #320 (untergeek)
 
 3.0.2 (23 Mar 2015)
 -------------------

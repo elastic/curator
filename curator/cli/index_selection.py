@@ -53,6 +53,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     logger.info("Job starting...")
     logger.debug("Params: {0}".format(ctx.parent.parent.params))
     # Base and client args are in the grandparent tier of the context
+    override_timeout(ctx)
     client = get_client(**ctx.parent.parent.params)
     # Get a master-list of indices
     indices = get_indices(client)
