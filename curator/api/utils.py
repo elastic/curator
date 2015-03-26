@@ -135,7 +135,7 @@ def optimized(client, index_name, max_num_segments=None):
     if segmentcount > (shards * max_num_segments):
         return False
     else:
-        logger.debug('Skipping index {0}: Already optimized.'.format(index_name))
+        logger.info('Skipping index {0}: Already optimized.'.format(index_name))
         return True
 
 def get_version(client):
