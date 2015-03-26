@@ -14,29 +14,16 @@ def optimize_index(client, index_name, max_num_segments=None,
     :arg max_num_segments: Merge to this number of segments per shard.
     :rtype: bool
     """
-    if not max_num_segments:
-        logger.error("Mising value for max_num_segments.")
-        return False
-    if check_csv(index_name):
-        logger.error("Must specify only a single index as an argument.")
-        return False
-    if index_closed(client, index_name): # Don't try to optimize a closed index
-        logger.info('Skipping index {0}: Already closed.'.format(index_name))
+    if optimized(client, index_name, max_num_segments):
         return True
     else:
-        shards, segmentcount = get_segmentcount(client, index_name)
-        logger.debug('Index {0} has {1} shards and {2} segments total.'.format(index_name, shards, segmentcount))
-        if segmentcount > (shards * max_num_segments):
-            logger.info('Optimizing index {0} to {1} segments per shard.  Please wait...'.format(index_name, max_num_segments))
-            try:
-                client.indices.optimize(index=index_name, max_num_segments=max_num_segments, request_timeout=request_timeout)
-                return True
-            except Exception:
-                logger.error("Error optimizing index {0}.  Check logs for more information.".format(index_name))
-                return False
-        else:
-            logger.info('Skipping index {0}: Already optimized.'.format(index_name))
+        logger.info('Optimizing index {0} to {1} segments per shard.  Please wait...'.format(index_name, max_num_segments))
+        try:
+            client.indices.optimize(index=index_name, max_num_segments=max_num_segments, request_timeout=request_timeout)
             return True
+        except Exception:
+            logger.error("Error optimizing index {0}.  Check logs for more information.".format(index_name))
+            return False
 
 def optimize(client, indices, max_num_segments=None, delay=0, request_timeout=21600):
     """
@@ -49,9 +36,11 @@ def optimize(client, indices, max_num_segments=None, delay=0, request_timeout=21
     """
     retval = True
     for i in ensure_list(indices):
+        wait = True if delay > 0 and not optimized(client, i, max_num_segments) else False
         # If we fail once, we fail completely
         success = optimize_index(client, i, max_num_segments=max_num_segments, request_timeout=request_timeout)
         if not success:
             retval = False
-        time.sleep(delay)
+        if wait:
+            time.sleep(delay)
     return retval

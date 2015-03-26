@@ -408,6 +408,30 @@ class TestCLIOptimize(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         self.assertEqual(0, result.exit_code)
+    def test_optimize_with_delay_cli(self):
+        self.create_index("index_name")
+        for i in ["1", "2", "3"]:
+            self.client.create(
+                index="index_name", doc_type='log',
+                body={"doc" + i :'TEST DOCUMENT'},
+            )
+            # This should force each doc to be in its own segment.
+            self.client.indices.flush(index="index_name", force=True, full=True)
+
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'optimize',
+                        '--delay', 1,
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(0, result.exit_code)
 
 class TestCLIReplicas(CuratorTestCase):
     def test_replicas_no_count_param(self):

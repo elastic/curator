@@ -5,6 +5,8 @@ import elasticsearch
 
 from curator import api as curator
 
+named_index    = 'index_name'
+closed_index   = {'metadata': {'indices' : { named_index : {'state' : 'close'}}}}
 named_indices  = [ "index1", "index2" ]
 named_alias    = 'alias_name'
 alias_retval   = { "pre_aliased_index": { "aliases" : { named_alias : { }}}}
@@ -164,6 +166,18 @@ class TestGetVersion(TestCase):
         client.info.return_value = {'version': {'number': '9.9.9-dev'} }
         version = curator.get_version(client)
         self.assertEqual(version, (9,9,9))
+
+class TestOptimized(TestCase):
+    def test_optimized_index_bad_csv(self):
+        client = Mock()
+        self.assertRaises(ValueError, curator.optimized, client, "a,b,c,d", max_num_segments=2)
+    def test_optimized_index_missing_arg(self):
+        client = Mock()
+        self.assertRaises(ValueError, curator.optimized, client, named_index)
+    def test_optimized_index_closed(self):
+        client = Mock()
+        client.cluster.state.return_value = closed_index
+        self.assertTrue(curator.optimized(client, named_index, max_num_segments=2))
 
 class TestIsMasterNode(TestCase):
     def test_positive(self):
