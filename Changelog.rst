@@ -18,6 +18,11 @@ Changelog
  * ``--request_timeout`` not working as expected.  Reinstate the version 2
    timeout override feature to prevent default timeouts for ``optimize`` and
    ``snapshot`` operations. Reported in #320 (untergeek)
+ * Reduce index count to 200 for
+   test.integration.test_cli_commands.TestCLISnapshot.test_cli_snapshot_huge_list
+   in order to reduce or eliminate Jenkins CI test timeouts.
+   Reported in #324 (untergeek)
+
 
 3.0.2 (23 Mar 2015)
 -------------------
