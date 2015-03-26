@@ -13,6 +13,7 @@ Changelog
 
 **Bug fixes**
 
+ * Fix links to repository in setup.py. Reported in #318 (untergeek)
  * No more --delay with optimized indices. Reported in #319 (untergeek)
 
 3.0.2 (23 Mar 2015)
