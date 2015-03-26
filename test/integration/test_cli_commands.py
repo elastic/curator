@@ -547,7 +547,7 @@ class TestCLISnapshot(CuratorTestCase):
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
     def test_cli_snapshot_huge_list(self):
-        self.create_indices(365)
+        self.create_indices(200)
         self.create_repository()
         snap_name = 'snapshot1'
         test = clicktest.CliRunner()
@@ -570,7 +570,7 @@ class TestCLISnapshot(CuratorTestCase):
                    )
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
-        self.assertEqual(365, len(snapshot['snapshots'][0]['indices']))
+        self.assertEqual(200, len(snapshot['snapshots'][0]['indices']))
 
 
 class TestCLISnapshotSelection(CuratorTestCase):
