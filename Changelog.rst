@@ -3,8 +3,16 @@
 Changelog
 =========
 
-3.1.0 (? ? ?)
--------------
+3.0.3 (27 Mar 2015)
+-------------------
+
+**Announcement**
+
+This is a bug fix release. #319 and #320 are affecting a few users, so this
+release is being expedited.
+
+Test count: 228
+Code coverage: 99%
 
 **General**
 
