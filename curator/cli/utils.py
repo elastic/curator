@@ -51,6 +51,25 @@ class Whitelist(logging.Filter):
     def filter(self, record):
         return any(f.filter(record) for f in self.whitelist)
 
+def exit_msg(success):
+    """
+    Display a message corresponding to whether the job completed successfully or
+    not, then exit.
+    """
+    if success:
+        logger.info("Job completed successfully.")
+    else:
+        logger.warn("Job did not complete successfully.")
+    sys.exit(0) if success else sys.exit(1)
+
+def show_dry_run(items, command):
+    """
+    Log dry run output with the command which would have been executed.
+    """
+    logger.info("DRY RUN MODE.  No changes will be made.")
+    for item in items:
+        logger.info("DRY RUN: {0}: {1}".format(command, item))
+
 def check_version(client):
     """
     Verify version is within acceptable range.  Exit with error if it is not.
