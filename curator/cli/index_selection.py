@@ -50,7 +50,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         click.echo(click.style('ERROR. At least one filter must be supplied.', fg='red', bold=True))
         sys.exit(1)
 
-    logger.info("Job starting...")
+    logger.info("Job starting: {0} indices".format(ctx.parent.info_name))
     logger.debug("Params: {0}".format(ctx.parent.parent.params))
     # Base and client args are in the grandparent tier of the context
     override_timeout(ctx)
@@ -105,9 +105,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             show(working_list)
         else:
             if ctx.parent.parent.params['dry_run']:
-                logger.info("DRY RUN MODE.  No changes will be made.")
-                logger.info("The following indices would have been altered:")
-                show(working_list)
+                show_dry_run(working_list, ctx.parent.info_name)
             else:
                 # The snapshot command should get the full list, otherwise
                 # the index list may need to be segmented.
@@ -119,12 +117,12 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
                         retval = do_command(client, ctx.parent.info_name, l, ctx.parent.params)
                         if not retval:
                             success = False
-                    sys.exit(0) if success else sys.exit(1)
+                    exit_msg(success)
                 else:
                     retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
-                    sys.exit(0) if retval else sys.exit(1)
+                    exit_msg(retval)
 
     else:
-        logger.warn('No indices matched provided args.')
+        logger.warn('No indices matched provided args: {0}'.format(ctx.params))
         click.echo(click.style('No indices matched provided args.', fg='red', bold=True))
         sys.exit(99)

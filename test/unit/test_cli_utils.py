@@ -62,6 +62,16 @@ snap_body       = {
                     "indices" : "index1,index2"
                   }
 
+class TestExitMsg(TestCase):
+    def test_exit_msg_positive(self):
+        with self.assertRaises(SystemExit) as cm:
+            curator.exit_msg(True)
+        self.assertEqual(cm.exception.code, 0)
+    def test_exit_msg_negative(self):
+        with self.assertRaises(SystemExit) as cm:
+            curator.exit_msg(False)
+        self.assertEqual(cm.exception.code, 1)
+
 class TestCheckVersion(TestCase):
     def test_check_version_positive(self):
         client = Mock()

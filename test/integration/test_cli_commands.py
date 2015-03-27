@@ -160,7 +160,6 @@ class TestCLIIndexSelection(CuratorTestCase):
                     curator.cli,
                     [
                         '--dry-run',
-                        '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
                         'alias', '--name', 'dummy_alias',
@@ -170,7 +169,11 @@ class TestCLIIndexSelection(CuratorTestCase):
                         '--time-unit', 'days'
                     ],
                     obj={"filters":[]})
-        output = sorted(result.output.splitlines(), reverse=True)[:4]
+        output = sorted(result.output.splitlines(), reverse=True)
+        # I tried doing a nested, double list comprehension here.
+        # It works in the interpreter, but not here for some reason.
+        output = [ x.split(' ')[-1:] for x in output ]
+        output = [ x[0] for x in output if x[0].startswith('logstash') ]
         self.assertEqual(expected, output)
     def test_cli_no_indices_after_filtering(self):
         self.create_indices(10)
@@ -320,7 +323,6 @@ class TestCLIDelete(CuratorTestCase):
                     curator.cli,
                     [
                         '--dry-run',
-                        '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
                         'delete',
@@ -330,7 +332,11 @@ class TestCLIDelete(CuratorTestCase):
                     obj={"filters":[]})
         l = curator.get_indices(self.client)
         self.assertEquals(9, len(l))
-        output = sorted(result.output.splitlines(), reverse=True)[:9]
+        output = sorted(result.output.splitlines(), reverse=True)
+        # I tried doing a nested, double list comprehension here.
+        # It works in the interpreter, but not here for some reason.
+        output = [ x.split(' ')[-1:] for x in output ]
+        output = [ x[0] for x in output if x[0].startswith('logstash') ]
         self.assertEqual(sorted(l, reverse=True), output)
     def test_delete_indices_by_space_dry_run(self):
         for i in range(1,10):
@@ -343,7 +349,6 @@ class TestCLIDelete(CuratorTestCase):
                     curator.cli,
                     [
                         '--dry-run',
-                        '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
                         'delete',
@@ -354,7 +359,11 @@ class TestCLIDelete(CuratorTestCase):
                     obj={"filters":[]})
         l = curator.get_indices(self.client)
         self.assertEquals(9, len(l))
-        output = sorted(result.output.splitlines(), reverse=True)[:9]
+        output = sorted(result.output.splitlines(), reverse=True)
+        # I tried doing a nested, double list comprehension here.
+        # It works in the interpreter, but not here for some reason.
+        output = [ x.split(' ')[-1:] for x in output ]
+        output = [ x[0] for x in output if x[0].startswith('index') ]
         self.assertEqual(sorted(l, reverse=True), output)
     def test_delete_indices_huge_list(self):
         self.create_indices(365)
@@ -730,7 +739,6 @@ class TestCLISnapshotSelection(CuratorTestCase):
                     curator.cli,
                     [
                         '--dry-run',
-                        '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
                         'delete',
@@ -740,7 +748,12 @@ class TestCLISnapshotSelection(CuratorTestCase):
                         '--exclude', '2',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(['snapshot1'], result.output.splitlines()[:1])
+        output = sorted(result.output.splitlines(), reverse=True)[:4]
+        # I tried doing a nested, double list comprehension here.
+        # It works in the interpreter, but not here for some reason.
+        output = [ x.split(' ')[-1:] for x in output ]
+        output = [ x[0] for x in output if x[0].startswith('snapshot1') ]
+        self.assertEqual(['snapshot1'], output)
     def test_snapshot_selection_delete_snapshot(self):
         self.create_repository()
         for i in ["1", "2"]:

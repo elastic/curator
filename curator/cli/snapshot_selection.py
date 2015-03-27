@@ -47,7 +47,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         click.echo(click.style('Missing required --repository parameter.', fg='red', bold=True))
         sys.exit(1)
 
-    logging.info("Job starting...")
+    logger.info("Job starting: {0} snapshots".format(ctx.parent.info_name))
 
     # Base and client args are in the grandparent tier of the context
     if ctx.parent.parent.params['dry_run']:
@@ -83,8 +83,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         if ctx.parent.info_name == 'show':
             show(working_list)
         elif ctx.parent.parent.params['dry_run']:
-            logger.warn('DRY RUN: Will not perform {0} action'.format(ctx.parent.info_name))
-            show(working_list)
+            show_dry_run(working_list, ctx.parent.info_name)
         elif ctx.parent.info_name == 'delete':
             success = True
             for snap in working_list:
@@ -92,7 +91,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
                 # If we fail once, we fail completely
                 if not retval:
                     success = False
-            sys.exit(0) if success else sys.exit(1)
+            exit_msg(success)
 
     else:
         logger.warn('No snapshots matched provided args.')

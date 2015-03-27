@@ -10,6 +10,10 @@ Changelog
 
  * Documentation for the CLI converted to Asciidoc and moved to
    http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
+ * Improved logging, and refactored a few methods to help with this.
+ * Dry-run output is now more like v2, with the index or snapshot in the log
+   line, along with the command.  Several tests needed refactoring with this
+   change, along with a bit of documentation.
 
 **Bug fixes**
 
@@ -22,6 +26,8 @@ Changelog
    test.integration.test_cli_commands.TestCLISnapshot.test_cli_snapshot_huge_list
    in order to reduce or eliminate Jenkins CI test timeouts.
    Reported in #324 (untergeek)
+ * ``--dry-run`` no longer calls ``show``, but will show output in the log, as
+   in v2. This was a recurring complaint.  See #328 (untergeek)
 
 
 3.0.2 (23 Mar 2015)
