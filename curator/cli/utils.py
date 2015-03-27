@@ -62,13 +62,16 @@ def exit_msg(success):
         logger.warn("Job did not complete successfully.")
     sys.exit(0) if success else sys.exit(1)
 
-def show_dry_run(items, command):
+def show_dry_run(client, items, command, type=None):
     """
     Log dry run output with the command which would have been executed.
     """
     logger.info("DRY RUN MODE.  No changes will be made.")
     for item in items:
-        logger.info("DRY RUN: {0}: {1}".format(command, item))
+        if type == 'indices':
+            logger.info("DRY RUN: {0}: {1}{2}".format(command, item, ' (CLOSED)' if index_closed(client, item) else ''))
+        else:
+            logger.info("DRY RUN: {0}: {1}".format(command, item))
 
 def check_version(client):
     """
