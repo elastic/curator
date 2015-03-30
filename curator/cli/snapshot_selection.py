@@ -81,9 +81,9 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         working_list = sorted(list(set(working_list)))
         logger.debug('ACTION: {0} will be executed against the following snapshots: {1}'.format(ctx.parent.info_name, working_list))
         if ctx.parent.info_name == 'show':
-            show(working_list)
+            show(client, working_list)
         elif ctx.parent.parent.params['dry_run']:
-            show_dry_run(working_list, ctx.parent.info_name)
+            show_dry_run(client, working_list, ctx.parent.info_name)
         elif ctx.parent.info_name == 'delete':
             success = True
             for snap in working_list:

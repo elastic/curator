@@ -102,10 +102,10 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
         # Do action here!!! Don't forget to account for DRY_RUN!!!
         if ctx.parent.info_name == 'show':
-            show(working_list)
+            show(client, working_list, type='indices')
         else:
             if ctx.parent.parent.params['dry_run']:
-                show_dry_run(working_list, ctx.parent.info_name)
+                show_dry_run(client, working_list, ctx.parent.info_name, type='indices')
             else:
                 # The snapshot command should get the full list, otherwise
                 # the index list may need to be segmented.

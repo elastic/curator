@@ -315,10 +315,14 @@ class TestShow(TestCase):
     def setUp(self):
         self.held, sys.stdout = sys.stdout, StringIO()
     def test_show_positive(self):
-        curator.show(named_index)
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        curator.show(client, named_index)
         self.assertEqual(sys.stdout.getvalue(),'index_name\n')
     def test_show_positive_list(self):
-        curator.show(named_indices)
+        client = Mock()
+        client.cluster.state.return_value = open_indices
+        curator.show(client, named_indices)
         self.assertEqual(sys.stdout.getvalue(),'index1\nindex2\n')
 
 class TestSnapshot(TestCase):
