@@ -6,6 +6,10 @@ Changelog
 3.1.0 (? ? ?)
 -------------
 
+** Bug fixes**
+
+ * If an index is closed, indicate in ``show`` and ``--dry-run`` output.
+   Reported in #327. (untergeek)
 
 3.0.3 (27 Mar 2015)
 -------------------
