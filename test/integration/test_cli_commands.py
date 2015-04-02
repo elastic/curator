@@ -887,7 +887,7 @@ class TestCLIRepositoryCreate(CuratorTestCase):
                         'create',
                         'fs',
                         '--repository', self.args['repository'],
-                        '--location', '/tmp'
+                        '--location', self.args['location']
                     ],
                     obj={"filters":[]})
         self.assertTrue(1, len(self.client.snapshot.get_repository(repository=self.args['repository'])))
