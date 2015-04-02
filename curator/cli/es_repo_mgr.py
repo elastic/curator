@@ -146,7 +146,7 @@ def fs(
     """
     Create a filesystem repository.
     """
-    client = get_client(**ctx.parent.params)
+    client = get_client(**ctx.parent.parent.params)
     success = create_repository(client, repo_type='fs', **ctx.params)
     if not success:
         sys.exit(1)
@@ -180,7 +180,7 @@ def s3(
     """
     Create an S3 repository.
     """
-    client = get_client(**ctx.parent.params)
+    client = get_client(**ctx.parent.parent.params)
     success = create_repository(client, repo_type='s3', **ctx.params)
     if not success:
         sys.exit(1)
