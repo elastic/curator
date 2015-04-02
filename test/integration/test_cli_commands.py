@@ -881,7 +881,6 @@ class TestCLIRepositoryCreate(CuratorTestCase):
         result = test.invoke(
                     curator.repomgrcli,
                     [
-                        '--debug',
                         '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
