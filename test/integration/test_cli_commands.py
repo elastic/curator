@@ -874,3 +874,21 @@ class TestCLILogging(CuratorTestCase):
                     obj={"filters":[]})
         output = sorted(result.output.splitlines(), reverse=True)[:4]
         self.assertEqual(expected, output)
+
+class TestCLIRepositoryCreate(CuratorTestCase):
+    def test_create_fs_repository(self):
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.repomgrcli,
+                    [
+                        '--debug',
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'create',
+                        'fs',
+                        '--repository', self.args['repository'],
+                        '--location', '/tmp'
+                    ],
+                    obj={"filters":[]})
+        self.assertTrue(1, len(self.client.snapshot.get_repository(repository=self.args['repository'])))

@@ -12,3 +12,4 @@ from .show import *
 from .snapshot import *
 from .index_selection import *
 from .snapshot_selection import *
+from .es_repo_mgr import *
