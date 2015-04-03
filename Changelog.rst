@@ -10,7 +10,8 @@ Changelog
 
  * If an index is closed, indicate in ``show`` and ``--dry-run`` output.
    Reported in #327. (untergeek)
- * Fix issue where CLI parameters were not being passed to sub-commands.
+ * Fix issue where CLI parameters were not being passed to the ``es_repo_mgr``
+   create sub-command.
    Reported in #337. (feltnerm)
 
 3.0.3 (27 Mar 2015)
