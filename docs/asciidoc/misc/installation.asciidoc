@@ -41,39 +41,29 @@ Any other version-sepecific installation will follow this basic pattern.
 Installation: PIP installation from source
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Download and install https://pypi.python.org/pypi/urllib3[urllib3]
+Download and install the https://github.com/shazow/urllib3[urllib3] dependency:
 
----------------------------------------------------------------------------
-wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.8.3.tar.gz
-pip install urllib3-1.8.3.tar.gz
----------------------------------------------------------------------------
+. `wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.8.3.tar.gz`
+. `pip install urllib3-1.8.3.tar.gz`
 
 &nbsp;
 
-Download and install
-https://github.com/elasticsearch/elasticsearch-py/archive/master.zip[elasticsearch-py]
+Download and install the http://click.pocoo.org/[click] dependency:
 
--------------------------------------------------------------------------------------------------
-wget https://github.com/elasticsearch/elasticsearch-py/archive/master.zip -O elasticsearch-py.zip
-pip install elasticsearch-py.zip
--------------------------------------------------------------------------------------------------
+. `wget https://pypi.python.org/packages/source/c/click/click-3.3.tar.gz -O click-3.3.tar.gz`
+. `pip install click-3.3.tar.gz`
+
 
 &nbsp;
 
-Download and install
-https://pypi.python.org/packages/source/c/click/click-3.3.tar.gz[click]
+Download and install the https://github.com/elastic/elasticsearch-py[elasticsearch-py] dependency:
 
------------------------------------------------------------------------------------------
-wget https://pypi.python.org/packages/source/c/click/click-3.3.tar.gz -O click-3.3.tar.gz
-pip install click-3.3.tar.gz
------------------------------------------------------------------------------------------
+. `wget https://github.com/elastic/elasticsearch-py/archive/`+pass:attributes[{es_py_version}].tar.gz -O elasticsearch-py.tar.gz+
+. `pip install elasticsearch-py.tar.gz`
 
 &nbsp;
 
-Download and install
-https://github.com/elasticsearch/curator/archive/master.zip[curator]
+Download and install Curator:
 
----------------------------------------------------------------------------------------------
-wget https://github.com/elasticsearch/curator/archive/master.zip -O elasticsearch-curator.zip
-pip install elasticsearch-curator.zip
----------------------------------------------------------------------------------------------
+. `wget https://github.com/elastic/curator/archive/v`+pass:attributes[{curator_version}].tar.gz -O elasticsearch-curator.tar.gz+
+. `pip install elasticsearch-curator.tar.gz`
