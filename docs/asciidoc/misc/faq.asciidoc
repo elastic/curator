@@ -14,6 +14,15 @@ A: Use the "Edit" link on any page
 
 See <<site-corrections,Site Corrections>>.
 
+== Q: How can I delete logstash indexes older then 35 days?
+
+A: Like this:
+~~~~~~~~~~~~~~~~~~~
+
+```
+$ curator delete indices --older-than 35 --time-unit  days --timestring '%Y.%m.%d'
+```
+
 == Q: Can I delete only certain data from within indices?
 
 [float]
