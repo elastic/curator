@@ -96,6 +96,15 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
                            )
 
     if working_list:
+        ### Issue #348
+        # I don't care about using only --timestring if it's a `show` or `dry_run`
+        if timestring and not newer_than and not older_than \
+          and not (ctx.parent.info_name == 'show') \
+          and not ctx.parent.parent.params['dry_run']:
+            click.echo(click.style('You are using --timestring without --older-than or --newer-than.', fg='yellow', bold=True))
+            click.echo('This could result in actions being performed on all indices matching {0}'.format(timestring))
+            click.echo(click.style('Press CTRL-C to exit Curator before the timer expires:', fg='red', bold=True))
+            countdown(10)
         # Make a sorted, unique list of indices
         working_list = sorted(list(set(working_list)))
         logger.debug('ACTION: {0}. INDICES: {1}'.format(ctx.parent.info_name, working_list))

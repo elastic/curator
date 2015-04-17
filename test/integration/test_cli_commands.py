@@ -28,7 +28,7 @@ class TestCLIIndexSelection(CuratorTestCase):
     def test_index_selection_only_timestamp_filter(self):
         self.create_indices(10)
         indices = curator.get_indices(self.client)
-        expected = sorted(indices, reverse=True)[:4]
+        # expected = sorted(indices, reverse=True)[:4]
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -36,13 +36,12 @@ class TestCLIIndexSelection(CuratorTestCase):
                         '--logfile', os.devnull,
                         '--host', host,
                         '--port', str(port),
-                        'show',
+                        'close',
                         'indices',
                         '--timestring', '%Y.%m.%d',
                     ],
                     obj={"filters":[]})
-        output = sorted(result.output.splitlines(), reverse=True)[:4]
-        self.assertEqual(expected, output)
+        self.assertEqual(0, result.exit_code)
     def test_index_selection_no_filters(self):
         self.create_indices(1)
         test = clicktest.CliRunner()
