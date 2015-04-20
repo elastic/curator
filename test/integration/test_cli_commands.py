@@ -1,6 +1,8 @@
 import elasticsearch
 import curator
 import os
+import json
+import string, random, tempfile
 import click
 from click import testing as clicktest
 from mock import patch, Mock
@@ -874,19 +876,23 @@ class TestCLILogging(CuratorTestCase):
         output = sorted(result.output.splitlines(), reverse=True)[:4]
         self.assertEqual(expected, output)
 
-class TestCLIRepositoryCreate(CuratorTestCase):
-    def test_create_fs_repository(self):
+class TestCLIOptions(CuratorTestCase):
+    def test_logstash_formatting(self):
+        dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        logfile = tempfile.mkdtemp(suffix=dirname) + 'logfile'
+        self.create_indices(1)
         test = clicktest.CliRunner()
         result = test.invoke(
-                    curator.repomgrcli,
+                    curator.cli,
                     [
-                        '--logfile', os.devnull,
+                        '--logformat', 'logstash',
+                        '--debug',
                         '--host', host,
                         '--port', str(port),
-                        'create',
-                        'fs',
-                        '--repository', self.args['repository'],
-                        '--location', self.args['location']
+                        'show',
+                        'indices', '--all-indices'
                     ],
                     obj={"filters":[]})
-        self.assertTrue(1, len(self.client.snapshot.get_repository(repository=self.args['repository'])))
+        d = json.loads(result.output.splitlines()[:1][0])
+        keys = sorted(list(d.keys()))
+        self.assertEqual(['@timestamp','function','linenum','loglevel','message','name'], keys)
