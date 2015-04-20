@@ -24,7 +24,7 @@ DEFAULT_ARGS = {
     'port': 9200,
     'http_auth': None,
     'use_ssl': False,
-    'timeout': 30,
+    'timeout': 300,
     'dry_run': False,
     'debug': False,
     'log_level': 'INFO',
