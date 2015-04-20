@@ -23,6 +23,13 @@ REGEX_MAP = {
     'suffix': r'^.*{0}$',
 }
 
+def countdown(seconds):
+    """Display an inline countdown to stdout."""
+    for i in range(seconds,0,-1):
+        sys.stdout.write(str(i) + ' ')
+        sys.stdout.flush()
+        time.sleep(1)
+
 class LogstashFormatter(logging.Formatter):
     # The LogRecord attributes we want to carry over to the Logstash message,
     # mapped to the corresponding output key.

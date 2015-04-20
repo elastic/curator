@@ -31,20 +31,6 @@ DEFAULT_ARGS = {
     'logformat': 'default',
 }
 
-
-def get_repository(client, repository=''):
-    """
-    Return configuration information for the indicated repository.
-    :arg client: The Elasticsearch client connection
-    :arg repository: The Elasticsearch snapshot repository to use
-    :rtype: dict
-    """
-    try:
-        return client.snapshot.get_repository(repository=repository)
-    except elasticsearch.NotFoundError:
-        logger.debug("Repository {0} not found.".format(repository))
-        return None
-
 def show_repos(client):
     for repository in sorted(get_repository(client, '_all').keys()):
         print('{0}'.format(repository))
@@ -96,21 +82,29 @@ def create_repository(client, **kwargs):
 
     try:
         body = create_repo_body(**kwargs)
-        logging.info("Checking if repository {0} already exists...".format(repository))
+        logger.info("Checking if repository {0} already exists...".format(repository))
         result = get_repository(client, repository=repository)
+        logger.debug("Result = {0}".format(result))
         if not result:
-            logging.info("Repository {0} not in Elasticsearch. Continuing...".format(repository))
+            logger.info("Repository {0} not in Elasticsearch. Continuing...".format(repository))
             client.snapshot.create_repository(repository=repository, body=body)
         elif result is not None and repository not in result:
-            logging.info("Repository {0} not in Elasticsearch. Continuing...".format(repository))
+            logger.info("Repository {0} not in Elasticsearch. Continuing...".format(repository))
             client.snapshot.create_repository(repository=repository, body=body)
         else:
             logger.error("Unable to create repository {0}.  A repository with that name already exists.".format(repository))
-            sys.exit(0)
-    except Exception as e:
-        logger.error("Unable to create repository {0}.  Exception {1}  Check logs for more information.".format(repository, e.message))
+            sys.exit(1)
+    except Exception:
+        logger.error("Unable to create repository {0}.  Check curator and elasticsearch logs for more information.".format(repository))
         return False
     logger.info("Repository {0} creation initiated...".format(repository))
+    return True
+
+def verify_repository(client, repository=None):
+    """Verify repository existence"""
+    if not repository:
+        click.echo(click.style('Missing required parameter --repository', fg='red', bold=True))
+        sys.exit(1)
     test_result = get_repository(client, repository)
     if repository in test_result:
         logger.info("Repository {0} creation validated.".format(repository))
@@ -147,7 +141,9 @@ def fs(
     Create a filesystem repository.
     """
     client = get_client(**ctx.parent.parent.params)
-    success = create_repository(client, repo_type='fs', **ctx.params)
+    success = False
+    if create_repository(client, repo_type='fs', **ctx.params):
+        success = verify_repository(repository)
     if not success:
         sys.exit(1)
 
@@ -181,7 +177,9 @@ def s3(
     Create an S3 repository.
     """
     client = get_client(**ctx.parent.parent.params)
-    success = create_repository(client, repo_type='s3', **ctx.params)
+    success = False
+    if create_repository(client, repo_type='s3', **ctx.params):
+        success = verify_repository(repository)
     if not success:
         sys.exit(1)
 
@@ -251,10 +249,6 @@ def show(ctx):
     Show all repositories
     """
     client = get_client(**ctx.parent.params)
-    if not isinstance(client, elasticsearch.client.Elasticsearch):
-        click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('ERROR. Unable to establish connection to Elasticsearch.  Please check your settings.', fg='red', bold=True))
-        sys.exit(1)
     show_repos(client)
 
 @repomgrcli.command('delete')
@@ -269,12 +263,6 @@ def _delete(ctx, repository):
         logger.info('Deleting repository {0}...'.format(repository))
         client.snapshot.delete_repository(repository=repository)
         sys.exit(0)
-    except elasticsearch.NotFoundError as e:
-        logger.error("Unable to delete repository: {0}  Exception: {1}".format(repository, e.message))
+    except elasticsearch.NotFoundError:
+        logger.error("Unable to delete repository: {0}  Not Found.".format(repository))
         sys.exit(1)
-
-def main():
-    repomgrcli()
-
-if __name__ == '__main__':
-     main()
