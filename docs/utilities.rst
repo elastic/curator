@@ -93,3 +93,7 @@ Other
 create_snapshot_body
 ++++++++++++++++++++
 .. automethod:: curator.api.create_snapshot_body
+
+chunk_index_list
+++++++++++++++++
+.. automethod:: curator.api.chunk_index_list

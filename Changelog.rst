@@ -6,8 +6,22 @@ Changelog
 3.1.0 (? ? ?)
 -------------
 
+**General**
+
+ * Moved ``chunk_index_list`` from cli to api utils as it's now also used by ``filter.py``
+ * Added a warning and 10 second timer countdown if you use ``--timestring`` to filter
+   indices, but do not use ``--older-than`` or ``--newer-than`` in conjunction with it.
+   This is to address #348, which behavior isn't a bug, but prevents accidental
+   action against all of your time-series indices.  The warning and timer are
+   not displayed for ``show`` and ``--dry-run`` operations.
+ * Added tests for ``es_repo_mgr`` in #350
+ * Doc fixes
+
 ** Bug fixes**
 
+ * delete-by-space needed the same fix used for #245. Fixed in #353 (untergeek)
+ * Increase default client timeout for ``es_repo_mgr`` as node discovery and
+   availability checks for S3 repositories can take a bit.  Fixed in #352 (untergeek)
  * If an index is closed, indicate in ``show`` and ``--dry-run`` output.
    Reported in #327. (untergeek)
  * Fix issue where CLI parameters were not being passed to the ``es_repo_mgr``
