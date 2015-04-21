@@ -165,3 +165,31 @@ curator delete indices --regex '.*e$'
 --------
 
 '''''
+
+[[entrypoint-fix]]
+== Q: I'm getting `DistributionNotFound` and `entry_point` errors when I try to run Curator.  What am I doing wrong?
+
+[float]
+A: You likely need to upgrade `setuptools`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are still unable to install, or get strange errors about dependencies you
+know you've installed, or messages mentioning `entry_point`, you may need to
+upgrade the `setuptools` package.  This is especially common with RHEL and
+CentOS installs, and their variants, as they depend on Python 2.6.
+
+If you can run `pip install -U setuptools`, it should correct the problem.
+
+You may also be able to download and install manually:
+
+. `wget https://pypi.python.org/packages/source/s/setuptools/setuptools-15.1.tar.gz -O setuptools-15.1.tar.gz`
+. `pip install setuptools-15.1.tar.gz`
+
+Any dependencies this version of setuptools may require will have to be manually
+acquired and installed for your platform.
+
+For more information about setuptools, see https://pypi.python.org/pypi/setuptools
+
+This fix originally appeared https://github.com/elastic/curator/issues/56#issuecomment-77843587[here].
+
+'''''
