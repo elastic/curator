@@ -23,6 +23,16 @@ shard) it will skip optimizing that index. In this manner, indices are not
 optimized repeatedly.
 
 [float]
+Extra disk space required
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Performing this forceMerge requires a lot of extra disk space:
+https://issues.apache.org/jira/browse/LUCENE-6386?focusedCommentId=14392125&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-14392125[3x
+what the original segments consume].  Fortunately, this extra space is only
+needed during the forceMerge operation.  Be sure to keep enough disk space
+available so that this does not become an issue for you.
+
+[float]
 A word about timeouts
 ^^^^^^^^^^^^^^^^^^^^^
 
