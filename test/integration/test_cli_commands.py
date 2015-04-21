@@ -389,13 +389,13 @@ class TestCLIDelete(CuratorTestCase):
         self.assertEquals(1, len(post))
 
     def test_delete_indices_by_space_dry_run_huge_list(self):
-        for i in range(100,325):
+        for i in range(100,150):
             self.client.create(
-                index="superlongindexname" + str(i), doc_type='log',
+                index="superlongindexnamebyanystandardyouchoosethisissillyhowbigcanthisgetbeforeitbreaks" + str(i), doc_type='log',
                 body={'message':'TEST DOCUMENT'},
             )
         l = curator.get_indices(self.client)
-        self.assertEquals(225, len(l))
+        self.assertEquals(50, len(l))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
