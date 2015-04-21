@@ -47,7 +47,7 @@ DEFAULT_ARGS = {
 def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
     """
     Curator for Elasticsearch indices.
-    
+
     See http://elastic.co/guide/en/elasticsearch/client/curator/current
     """
 

@@ -112,6 +112,28 @@ def get_segmentcount(client, index_name):
             totalshards += 1
     return totalshards, segmentcount
 
+def chunk_index_list(indices):
+    """
+    This utility chunks very large index lists into 3KB chunks
+    It measures the size as a csv string, then converts back into a list
+    for the return value.
+
+    :arg indices: A list of indices to act on.
+    """
+    chunks = []
+    chunk = ""
+    for index in indices:
+        if len(chunk) < 3072:
+            if not chunk:
+                chunk = index
+            else:
+                chunk += "," + index
+        else:
+            chunks.append(chunk.split(','))
+            chunk = index
+    chunks.append(chunk.split(','))
+    return chunks
+    
 def optimized(client, index_name, max_num_segments=None):
     """
     Check if an index is optimized.

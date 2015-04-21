@@ -317,6 +317,13 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
     :rtype: list
     """
 
+    def get_stat_list(stats):
+        retval = list(
+            (index_name, index_stats['index']['primary_size_in_bytes'])
+            for (index_name, index_stats) in stats['indices'].items()
+        )
+        return retval
+
     if not disk_space:
         logger.error("Mising value for disk_space.")
         return False
@@ -331,18 +338,18 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
     # client.indices.status, otherwise the call will match _all indices, which
     # is very bad.
     # See https://github.com/elastic/curator/issues/254
-    logger.debug('List of indices found: {0}'.format(not_closed))
+    logger.debug('List of open indices: {0}'.format(sorted(not_closed)))
     if not_closed:
+        if len(to_csv(not_closed)) > 3072:
+            logger.warn('Very large list of indices.  Breaking it up into smaller chunks.')
+            index_lists = chunk_index_list(not_closed)
+            statlist = []
+            for l in index_lists:
+                statlist.extend(get_stat_list(client.indices.status(index=to_csv(l))))
+        else:
+            statlist = get_stat_list(client.indices.status(index=to_csv(not_closed)))
 
-        stats = client.indices.status(index=to_csv(not_closed))
-
-        sorted_indices = sorted(
-            (
-                (index_name, index_stats['index']['primary_size_in_bytes'])
-                for (index_name, index_stats) in stats['indices'].items()
-            ),
-            reverse=reverse
-        )
+        sorted_indices = sorted(statlist, reverse=reverse)
 
         for index_name, index_size in sorted_indices:
             disk_usage += index_size
