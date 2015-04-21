@@ -317,6 +317,7 @@ class TestCLIDelete(CuratorTestCase):
                     obj={"filters":[]})
         l = curator.get_indices(self.client)
         self.assertEqual(sorted(['.kibana', '.marvel-kibana', 'kibana-int']), sorted(l))
+
     def test_delete_indices_dry_run(self):
         self.create_indices(9)
         test = clicktest.CliRunner()
@@ -339,6 +340,7 @@ class TestCLIDelete(CuratorTestCase):
         output = [ x.split(' ')[-1:] for x in output ]
         output = [ x[0] for x in output if x[0].startswith('logstash') ]
         self.assertEqual(sorted(l, reverse=True), output)
+
     def test_delete_indices_by_space_dry_run(self):
         for i in range(1,10):
             self.client.create(
@@ -366,6 +368,7 @@ class TestCLIDelete(CuratorTestCase):
         output = [ x.split(' ')[-1:] for x in output ]
         output = [ x[0] for x in output if x[0].startswith('index') ]
         self.assertEqual(sorted(l, reverse=True), output)
+
     def test_delete_indices_huge_list(self):
         self.create_indices(365)
         pre = curator.get_indices(self.client)
@@ -384,6 +387,34 @@ class TestCLIDelete(CuratorTestCase):
                     obj={"filters":[]})
         post = curator.get_indices(self.client)
         self.assertEquals(1, len(post))
+
+    def test_delete_indices_by_space_dry_run_huge_list(self):
+        for i in range(100,325):
+            self.client.create(
+                index="superlongindexname" + str(i), doc_type='log',
+                body={'message':'TEST DOCUMENT'},
+            )
+        l = curator.get_indices(self.client)
+        self.assertEquals(225, len(l))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--dry-run',
+                        '--host', host,
+                        '--port', str(port),
+                        'delete',
+                        '--disk-space', '0.0000001',
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        output = sorted(result.output.splitlines(), reverse=True)
+        # # I tried doing a nested, double list comprehension here.
+        # # It works in the interpreter, but not here for some reason.
+        output = [ x.split(' ')[-1:] for x in output ]
+        output = [ x[0] for x in output if x[0].startswith('superlongindexname') ]
+        self.assertEqual(sorted(l, reverse=True), output)
 
 class TestCLIOpen(CuratorTestCase):
     def test_open_cli(self):
