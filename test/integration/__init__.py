@@ -29,7 +29,7 @@ def get_client():
     if client is not None:
         return client
 
-    client = Elasticsearch([os.environ.get('TEST_ES_SERVER', {})])
+    client = Elasticsearch([os.environ.get('TEST_ES_SERVER', {})], timeout=300)
 
     # wait for yellow status
     for _ in range(100):
