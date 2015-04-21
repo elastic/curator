@@ -193,3 +193,37 @@ For more information about setuptools, see https://pypi.python.org/pypi/setuptoo
 This fix originally appeared https://github.com/elastic/curator/issues/56#issuecomment-77843587[here].
 
 '''''
+
+== Q: Snapshots seem to be working. Why am I getting `SnapshotMissingException` messages?
+
+[float]
+A: A load balancer, or other network fixture could be timing out your connection.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A gateway, proxy, or load balancer timeout will usually result in
+http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html[504 HTTP responses]:
+
+504 Gateway Timeout::
+    The server, while acting as a gateway or proxy, did not receive a timely
+    response from the upstream server specified by the URI (e.g. HTTP, FTP,
+    LDAP) or some other auxiliary server (e.g. DNS) it needed to access in
+    attempting to complete the request.
+
+
+An easy way to check is to turn on <<debug,--debug>> logging and look for 504
+errors and long requests, like these:
+
+[source,txt]
+-------
+2015-04-02 13:18:37,702 DEBUG     urllib3.connectionpool          _make_request:368  "PUT /_snapshot/my_backup_s3_repository/curator-20150402121735?wait_for_completion=true HTTP/1.1" 504 0
+2015-04-02 13:18:37,703 WARNING            elasticsearch       log_request_fail:81   PUT /_snapshot/my_backup_s3_repository/curator-20150402121735?wait_for_completion=true [status:504 request:59.777s]
+-------
+
+Note the `status:504` and the `request:59.777s` at the right end of the line.
+
+In the case of these error messages, it turned out to be an AWS load balancer
+that had a 60 second timeout for connections.  The fix was to increase the
+timeout.  Another potential resolution would be to have Curator connect to a
+client directly, rather than through a load balancer or proxy.
+
+'''''
