@@ -26,6 +26,10 @@ Install using pip
 
 Run `curator --help` for usage specifics.
 
+### [Frequently Asked Questions](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/faq.html)
+
+Encountering issues like `DistributionNotFound`? See the [FAQ](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/entrypoint-fix.html) for help.
+
 ## [Documentation & Examples](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html)
 
 The documentation for the CLI is now part of the document repository at http://elastic.co/guide
