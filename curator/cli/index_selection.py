@@ -111,6 +111,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
         # Do action here!!! Don't forget to account for DRY_RUN!!!
         if ctx.parent.info_name == 'show':
+            logger.info('Matching indices:')
             show(client, working_list, type='indices')
         else:
             if ctx.parent.parent.params['dry_run']:
