@@ -81,6 +81,7 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
         working_list = sorted(list(set(working_list)))
         logger.debug('ACTION: {0} will be executed against the following snapshots: {1}'.format(ctx.parent.info_name, working_list))
         if ctx.parent.info_name == 'show':
+            logger.info('Matching snapshots:')
             show(client, working_list)
         elif ctx.parent.parent.params['dry_run']:
             show_dry_run(client, working_list, ctx.parent.info_name)
