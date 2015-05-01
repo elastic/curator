@@ -15,7 +15,7 @@ indices must also have a <<timestring>>.
 Flags
 ~~~~~
 
-* `--newer-than` Include only indices older than _n_ <<time-unit,time-units>>
+* `--newer-than` Include only indices newer than _n_ <<time-unit,time-units>>
 * <<time-unit,`--time-unit`>> Unit of time to reckon by. Can be one of `hours`,
 `days`, `weeks`, or `months`
 * <<timestring,`--timestring`>> http://strftime.org[Python strftime] string to
