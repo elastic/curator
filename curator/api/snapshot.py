@@ -84,6 +84,7 @@ def delete_snapshot(client, snapshot=None, repository=None):
         logger.error('Cannot delete multiple snapshots at once.  CSV value or list detected: {0}'.format(snapshot))
         return False
     try:
+        logger.info("Deleting snapshot {0}".format(snapshot))
         client.snapshot.delete(repository=repository, snapshot=snapshot)
         return True
     except elasticsearch.RequestError:

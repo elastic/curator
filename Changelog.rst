@@ -8,6 +8,8 @@ Changelog
 
 **General**
 
+ * Logs individual deletes per index, even though they happen in batch mode.
+   Also log individual snapshot deletions. Reported in #372 (untergeek)
  * Moved ``chunk_index_list`` from cli to api utils as it's now also used by ``filter.py``
  * Added a warning and 10 second timer countdown if you use ``--timestring`` to filter
    indices, but do not use ``--older-than`` or ``--newer-than`` in conjunction with it.

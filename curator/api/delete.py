@@ -14,10 +14,13 @@ def delete_indices(client, indices):
     """
     indices = ensure_list(indices)
     try:
+        logger.info("Deleting indices as a batch operation:")
+        for i in indices:
+            logger.info("---deleting index {0}".format(i))
         client.indices.delete(index=to_csv(indices))
         return True
     except Exception:
-        logger.error("Error deleting indices.  Check logs for more information.")
+        logger.error("Error deleting one or more indices.  Check logs for more information.")
         return False
 
 def delete(client, indices):
