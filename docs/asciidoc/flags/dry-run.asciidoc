@@ -8,6 +8,8 @@ Summary
 This flag allows you to test your command-line options. It can help you see
 which indices will be caught by operations without actually performing those
 operations.
+Starting in v3.1.0, the term `(CLOSED)` will appear next to indices which are
+in a closed state.
 
 [float]
 Flags
