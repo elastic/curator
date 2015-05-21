@@ -4,7 +4,7 @@ Changelog
 =========
 
 3.1.0 (21 May 2015)
--------------
+-------------------
 
 **General**
 
@@ -22,7 +22,7 @@ Changelog
  * Added tests for ``es_repo_mgr`` in #350
  * Doc fixes
 
-** Bug fixes**
+**Bug fixes**
 
  * delete-by-space needed the same fix used for #245. Fixed in #353 (untergeek)
  * Increase default client timeout for ``es_repo_mgr`` as node discovery and
