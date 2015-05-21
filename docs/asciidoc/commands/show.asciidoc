@@ -8,6 +8,8 @@ Summary
 This command allows you to see any indices (or snapshots) matching
 <<index-selection,index selection>> or
 <<snapshot-selection,snapshot selection>>.
+Starting in v3.1.0, the term `(CLOSED)` will appear next to indices which are
+in a closed state.
 
 [float]
 Flags
