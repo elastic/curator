@@ -34,7 +34,7 @@ def create_snapshot(client, indices='_all', name=None,
     if not repository:
         logger.error('Missing required repository parameter')
         return False
-    in_progress = client.snapshot.status()['snapshots']
+    in_progress = client.snapshot.status(repository='_all')['snapshots']
     if not len(in_progress) == 0:
         logger.error('Snapshot already in progress: {0}'.format(in_progress))
         return False
