@@ -34,7 +34,14 @@ def create_snapshot(client, indices='_all', name=None,
     if not repository:
         logger.error('Missing required repository parameter')
         return False
-    in_progress = client.snapshot.status(repository='_all')['snapshots']
+    # This is to address older versions of Elasticsearch
+    # See https://github.com/elastic/curator/issues/379
+    no__all = (1, 1, 0)
+    version_number = get_version(client)
+    if version_number < no__all:
+        in_progress = client.snapshot.status(repository=repository)['snapshots']
+    else:
+        in_progress = client.snapshot.status()['snapshots']
     if not len(in_progress) == 0:
         logger.error('Snapshot already in progress: {0}'.format(in_progress))
         return False

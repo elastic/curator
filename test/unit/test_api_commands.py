@@ -342,10 +342,17 @@ class TestSnapshot(TestCase):
         self.assertFalse(curator.create_snapshot(client, name=snap_name))
     def test_create_snapshot_in_progress(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.snapshot.status.return_value = snap_running
+        self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
+    def test_create_snapshot_in_progress_old_version(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.0.3'} }
         client.snapshot.status.return_value = snap_running
         self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
     def test_create_snapshot_empty_arg_indices(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         client.snapshot.status.return_value = nosnap_running
         self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
     def test_create_snapshot_verify_nodes_positive(self):
