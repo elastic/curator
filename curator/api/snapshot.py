@@ -34,6 +34,10 @@ def create_snapshot(client, indices='_all', name=None,
     if not repository:
         logger.error('Missing required repository parameter')
         return False
+    in_progress = client.snapshot.status()['snapshots']
+    if not len(in_progress) == 0:
+        logger.error('Snapshot already in progress: {0}'.format(in_progress))
+        return False
     if not indices == '_all':
         indices = prune_closed(client, indices)
     if not indices:
@@ -61,7 +65,17 @@ def create_snapshot(client, indices='_all', name=None,
         client.snapshot.create(repository=repository, snapshot=name, body=body,
                                 wait_for_completion=wait_for_completion,
                                 request_timeout=request_timeout)
-        return True
+        if not wait_for_completion:
+            logger.warn("Not waiting for completion. Remember to check for successful completion manually.")
+            return True
+        else:
+            state = client.snapshot.get(repository=repository, snapshot=name)['snapshots'][0]['state']
+            if state == 'SUCCESS':
+                logger.info("Snapshot {0} successfully completed.".format(name))
+                return True
+            else:
+                logger.error("Snapshot {0} completed with state: {0}".format(state))
+                return False
     except elasticsearch.TransportError:
         logger.error("Client raised a TransportError.")
         return False

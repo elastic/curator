@@ -36,11 +36,22 @@ shards         = { 'indices': { named_index: { 'shards': {
 optimize_tuple = (4, 71)
 snap_name      = 'snap_name'
 repo_name      = 'repo_name'
+snap_running   = { 'snapshots': ['running'] }
+nosnap_running = { 'snapshots': [] }
 snapshot       = { 'snapshots': [
                     {
                         'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:00.000Z',
                         'shards': {'successful': 4, 'failed': 0, 'total': 4},
                         'end_time_in_millis': 0, 'state': 'SUCCESS',
+                        'snapshot': snap_name, 'end_time': '2015-01-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 0
+                    }]}
+partial        = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-01-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'PARTIAL',
                         'snapshot': snap_name, 'end_time': '2015-01-01T00:00:01.000Z',
                         'indices': named_indices,
                         'failures': [], 'start_time_in_millis': 0
@@ -329,8 +340,13 @@ class TestSnapshot(TestCase):
     def test_create_snapshot_missing_arg_repository(self):
         client = Mock()
         self.assertFalse(curator.create_snapshot(client, name=snap_name))
+    def test_create_snapshot_in_progress(self):
+        client = Mock()
+        client.snapshot.status.return_value = snap_running
+        self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
     def test_create_snapshot_empty_arg_indices(self):
         client = Mock()
+        client.snapshot.status.return_value = nosnap_running
         self.assertFalse(curator.create_snapshot(client, indices=[], repository=repo_name, name=snap_name))
     def test_create_snapshot_verify_nodes_positive(self):
         client = Mock()
@@ -338,6 +354,7 @@ class TestSnapshot(TestCase):
         client.cluster.state.return_value = open_indices
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.status.return_value = nosnap_running
         self.assertTrue(
             curator.create_snapshot(
                 client,
@@ -353,6 +370,7 @@ class TestSnapshot(TestCase):
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
         client.snapshot.verify_repository.side_effect = fake_fail
+        client.snapshot.status.return_value = nosnap_running
         self.assertFalse(
             curator.create_snapshot(
                 client,
@@ -367,6 +385,7 @@ class TestSnapshot(TestCase):
         client.cluster.state.return_value = open_indices
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.status.return_value = nosnap_running
         self.assertFalse(
             self.assertFalse(
                 curator.create_snapshot(
@@ -384,6 +403,38 @@ class TestSnapshot(TestCase):
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
         client.snapshot.create.side_effect = elasticsearch.TransportError
+        client.snapshot.status.return_value = nosnap_running
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_no_wait_for_completion(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshot
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.status.return_value = nosnap_running
+        self.assertTrue(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                wait_for_completion=False,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_incomplete(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = partial
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.status.return_value = nosnap_running
         self.assertFalse(
             curator.create_snapshot(
                 client,
