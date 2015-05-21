@@ -15,6 +15,10 @@ strftime formatting]. While it is often used in conjunction with the
 <<time-unit>> flag, a timestring pattern can be used to merely match indices
 with that pattern, rather than to filter by date, as with <<older-than>> or
 <<newer-than>>.
+Starting in v3.1.0, if you specify `--timestring` without <<older-than>> or
+<<newer-than>>, the process will continue, but with a message warning you that
+the operation will delete all indices with a time string, followed by a 10
+second countdown timer, which provides the opportunity to cancel the operation.
 
 [float]
 Flags

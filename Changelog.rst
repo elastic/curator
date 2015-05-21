@@ -10,6 +10,7 @@ Changelog
 
  * If ``wait_for_completion`` is true, snapshot success is now tested and logged.
    Reported in #253 (untergeek)
+ * Log & return false if a snapshot is already in progress (untergeek)
  * Logs individual deletes per index, even though they happen in batch mode.
    Also log individual snapshot deletions. Reported in #372 (untergeek)
  * Moved ``chunk_index_list`` from cli to api utils as it's now also used by ``filter.py``
