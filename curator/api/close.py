@@ -18,7 +18,7 @@ def close_indices(client, indices):
         client.indices.close(index=to_csv(indices), ignore_unavailable=True)
         return True
     except Exception:
-        logger.error("Error closing indices.  Check logs for more information.")
+        logger.error("Error closing indices.  Run with --debug flag and/or check Elasticsearch logs for more information.")
         return False
 
 def close(client, indices):

@@ -20,7 +20,7 @@ def delete_indices(client, indices):
         client.indices.delete(index=to_csv(indices))
         return True
     except Exception:
-        logger.error("Error deleting one or more indices.  Check logs for more information.")
+        logger.error("Error deleting one or more indices.  Run with --debug flag and/or check Elasticsearch logs for more information.")
         return False
 
 def delete(client, indices):
