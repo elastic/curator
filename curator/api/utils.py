@@ -298,7 +298,7 @@ def prune_closed(client, indices):
         if not index_closed(client, idx):
             retval.append(idx)
         else:
-            logger.info('Skipping index {0}: Already closed.'.format(idx))
+            logger.info('Skipping index {0}: Closed.'.format(idx))
     return sorted(retval)
 
 def prune_allocated(client, indices, key, value):

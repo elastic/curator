@@ -3,6 +3,22 @@
 Changelog
 =========
 
+3.2.0 (? ? ?)
+-------------
+
+**General**
+
+**Bug fixes**
+
+ * In rare cases, ``*`` wildcard would not expand.  Replaced with _all.
+   Reported in #399 (untergeek)
+ * Beginning with Elasticsearch 1.6, closed indices cannot have their replica
+   count altered.  Attempting to do so results in this error:
+   ``org.elasticsearch.ElasticsearchIllegalArgumentException: Can't update [index.number_of_replicas] on closed indices [[test_index]] - can leave index in an unopenable state``
+   As a result, the ``change_replicas`` method has been updated to prune closed
+   indices.  This change will apply to all versions of Elasticsearch.
+   Reported in #400 (untergeek)
+
 3.1.0 (21 May 2015)
 -------------------
 
