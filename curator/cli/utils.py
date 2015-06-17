@@ -226,4 +226,5 @@ def do_command(client, command, indices, params=None):
                 partial=params['partial'],
                 wait_for_completion=params['wait_for_completion'],
                 request_timeout=params['request_timeout'],
+                skip_repo_validation=params['skip_repo_validation'],
                )

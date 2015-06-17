@@ -12,6 +12,10 @@ Changelog
     figured they were right.  This is better. (untergeek)
   * Exit code 99 was unpopular.  It has been removed. Reported in #371 and #391
     (untergeek)
+  * Add ``--skip-repo-validation`` flag for snapshots.  Do not validate write
+    access to repository on all cluster nodes before proceeding. Useful for
+    shared filesystems where intermittent timeouts can affect validation, but
+    won't likely affect snapshot success. Requested in #396 (untergeek)
 
 **Bug fixes**
 

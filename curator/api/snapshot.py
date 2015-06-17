@@ -5,7 +5,8 @@ logger = logging.getLogger(__name__)
 def create_snapshot(client, indices='_all', name=None,
                     prefix='curator-', repository='',
                     ignore_unavailable=False, include_global_state=True,
-                    partial=False, wait_for_completion=True, request_timeout=21600):
+                    partial=False, wait_for_completion=True, request_timeout=21600,
+                    skip_repo_validation=False):
     """
     Create a snapshot of provided indices (or ``_all``) that are open.
 
@@ -28,6 +29,11 @@ def create_snapshot(client, indices='_all', name=None,
     :arg partial: Do not fail if primary shard is unavailable. (default:
         `False`)
     :type partial: bool
+    :arg skip_repo_validation: Do not validate write access to repository on
+        all cluster nodes before proceeding. (default: `False`).  Useful for
+        shared filesystems where intermittent timeouts can affect validation,
+        but won't likely affect snapshot success.
+    :type skip_repo_validation: bool
     :rtype bool:
     """
     # Return True if it is skipped
@@ -50,8 +56,7 @@ def create_snapshot(client, indices='_all', name=None,
         logger.error("No indices provided.")
         return False
     repo_access = (1, 4, 0)
-    version_number = get_version(client)
-    if version_number >= repo_access:
+    if version_number >= repo_access and not skip_repo_validation:
         try:
             nodes = client.snapshot.verify_repository(repository=repository)['nodes']
             logger.debug('Nodes with verified repository access: {0}'.format(nodes))
