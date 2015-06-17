@@ -9,7 +9,9 @@ Changelog
 **General**
 
   * Changed logging to go to stdout rather than stderr.  Reopened #121 and
-  figured they were right.  This is better. (untergeek)
+    figured they were right.  This is better. (untergeek)
+  * Exit code 99 was unpopular.  It has been removed. Reported in #371 and #391
+    (untergeek)
 
 **Bug fixes**
 

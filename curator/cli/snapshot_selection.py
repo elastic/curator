@@ -97,4 +97,4 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
     else:
         logger.warn('No snapshots matched provided args.')
         click.echo(click.style('ERROR. No snapshots matched provided args.', fg='red', bold=True))
-        sys.exit(99)
+        sys.exit(0)
