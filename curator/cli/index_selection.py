@@ -135,4 +135,4 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     else:
         logger.warn('No indices matched provided args: {0}'.format(ctx.params))
         click.echo(click.style('No indices matched provided args.', fg='red', bold=True))
-        sys.exit(99)
+        sys.exit(0)

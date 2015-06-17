@@ -190,7 +190,7 @@ class TestCLIIndexSelection(CuratorTestCase):
                         '--exclude', 'log',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(99, result.exit_code)
+        self.assertEqual(0, result.exit_code)
 
 class TestCLIAlias(CuratorTestCase):
     def test_alias_no_name_param(self):
@@ -841,7 +841,7 @@ class TestCLISnapshotSelection(CuratorTestCase):
                         '--prefix', 'no_match',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(99, result.exit_code)
+        self.assertEqual(0, result.exit_code)
 
 class TestCLILogging(CuratorTestCase):
     def test_logging_with_debug_flag(self):

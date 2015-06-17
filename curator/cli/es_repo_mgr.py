@@ -212,7 +212,7 @@ def repomgrcli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_
             raise ValueError('Invalid log level: {0}'.format(loglevel))
 
     handler = logging.StreamHandler(
-        open(logfile, 'a') if logfile else sys.stderr)
+        open(logfile, 'a') if logfile else sys.stdout)
     if logformat == 'logstash':
         handler.setFormatter(LogstashFormatter())
     else:
