@@ -34,7 +34,7 @@ def apply_allocation_rule(client, indices, rule=None):
             )
         return True
     except:
-        logger.error("Error in updating index settings with allocation rule.  Check logs for more information.")
+        logger.error("Error in updating index settings with allocation rule.  Run with --debug flag and/or check Elasticsearch logs for more information.")
         return False
 
 def allocation(client, indices, rule=None):

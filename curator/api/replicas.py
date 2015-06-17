@@ -27,7 +27,7 @@ def change_replicas(client, indices, replicas=None):
                     body='number_of_replicas={0}'.format(replicas))
                 return True
             except Exception:
-                logger.error("Error changing replica count.  Check logs for more information.")
+                logger.error("Error changing replica count.  Run with --debug flag and/or check Elasticsearch logs for more information.")
                 return False
         else:
             logger.warn('No open indices found.')

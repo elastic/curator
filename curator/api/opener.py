@@ -17,7 +17,7 @@ def open_indices(client, indices):
         client.indices.open(index=to_csv(indices))
         return True
     except Exception:
-        logger.error("Error opening indices.  Check logs for more information.")
+        logger.error("Error opening indices.  Run with --debug flag and/or check Elasticsearch logs for more information.")
         return False
 
 def opener(client, indices):
