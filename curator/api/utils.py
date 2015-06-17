@@ -23,7 +23,7 @@ def get_alias(client, alias):
 def get_indices(client):
     try:
         indices = list(client.indices.get_settings(
-            index='*', params={'expand_wildcards': 'open,closed'}))
+            index='_all', params={'expand_wildcards': 'open,closed'}))
         logger.debug("All indices: {0}".format(indices))
         return indices
     except Exception:
@@ -133,7 +133,7 @@ def chunk_index_list(indices):
             chunk = index
     chunks.append(chunk.split(','))
     return chunks
-    
+
 def optimized(client, index_name, max_num_segments=None):
     """
     Check if an index is optimized.
