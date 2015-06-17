@@ -8,6 +8,9 @@ Changelog
 
 **General**
 
+  * Changed logging to go to stdout rather than stderr.  Reopened #121 and
+  figured they were right.  This is better. (untergeek)
+
 **Bug fixes**
 
  * In rare cases, ``*`` wildcard would not expand.  Replaced with _all.
@@ -18,6 +21,7 @@ Changelog
    As a result, the ``change_replicas`` method has been updated to prune closed
    indices.  This change will apply to all versions of Elasticsearch.
    Reported in #400 (untergeek)
+
 
 3.1.0 (21 May 2015)
 -------------------
