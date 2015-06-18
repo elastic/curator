@@ -98,7 +98,8 @@ class TestAlias(TestCase):
     def test_add_to_alias_alias_not_found(self):
         client = Mock()
         client.indices.exists_alias.return_value = False
-        self.assertFalse(curator.add_to_alias(client, named_index, alias=named_alias))
+        client.cluster.state.return_value = open_index
+        self.assertTrue(curator.add_to_alias(client, named_index, alias=named_alias))
     def test_add_to_alias_exception_test(self):
         client = Mock()
         client.indices.get_alias.return_value = alias_retval
@@ -451,29 +452,6 @@ class TestSnapshot(TestCase):
             )
         )
 
-# def delete_snapshot(client, snapshot=None, repository=None):
-#     """
-#     Delete a single snapshot from a given repository by name
-#
-#     :arg client: The Elasticsearch client connection
-#     :arg snapshot: The snapshot name
-#     :arg repository: The Elasticsearch snapshot repository to use
-#     """
-#     if not repository:
-#         logger.error('Missing required repository parameter')
-#         return False
-#     if not snapshot:
-#         logger.error('Missing required snapshot parameter')
-#         return False
-#     if check_csv(snapshot):
-#         logger.error('Cannot delete multiple snapshots at once.  CSV value or list detected: {0}'.format(snapshot))
-#         return False
-#     try:
-#         client.snapshot.delete(repository=repository, snapshot=snap)
-#         return True
-#     except elasticsearch.RequestError as e:
-#         logger.error("Unable to delete snapshot {0} from repository {1}.  Exception: {2} Check logs for more information.".format(snapshot, repository, e.message))
-#         return False
 class TestDeleteSnapshot(TestCase):
     def test_delete_snapshot_missing_arg_repository(self):
         client = Mock()

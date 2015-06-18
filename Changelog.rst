@@ -16,6 +16,8 @@ Changelog
     access to repository on all cluster nodes before proceeding. Useful for
     shared filesystems where intermittent timeouts can affect validation, but
     won't likely affect snapshot success. Requested in #396 (untergeek)
+  * An alias no longer needs to be pre-existent in order to use the alias
+    command.  #317 (untergeek)
 
 **Bug fixes**
 
