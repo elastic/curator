@@ -8,6 +8,12 @@ Summary
 If access to your Elasticsearch instance is protected by SSL encryption, you
 must use the `--use_ssl` flag.
 
+TIP: Beginning with version 3.2.0, Curator has _experimental_ support for
+validating SSL certificates.  In order to make this work, an additional Python
+module needs to be installed via `pip install certifi`. If the `certifi` module
+is installed, and you are connecting to Elasticsearch via SSL, the verification
+should automatically take place.
+
 [float]
 Flags
 ~~~~~

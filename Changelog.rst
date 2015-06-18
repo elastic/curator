@@ -6,6 +6,14 @@ Changelog
 3.2.0 (? ? ?)
 -------------
 
+**New!**
+
+  * Added *experimental* support for SSL certificate validation.  In order for
+    this to work, you must install the ``certifi`` python module:
+    ``pip install certifi``
+    This feature *should* automatically work if the ``certifi`` module is
+    installed.  Please report any issues.
+
 **General**
 
   * Changed logging to go to stdout rather than stderr.  Reopened #121 and
