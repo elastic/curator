@@ -106,8 +106,17 @@ def get_client(**kwargs):
 
     """
     kwargs['master_only'] = False if not 'master_only' in kwargs else kwargs['master_only']
+    kwargs['use_ssl'] = False if not 'use_ssl' in kwargs else kwargs['use_ssl']
     logger.debug("kwargs = {0}".format(kwargs))
     master_only = kwargs.pop('master_only')
+    if kwargs['use_ssl']:
+        try:
+            logger.info('Attempting to verify SSL certificate.')
+            import certifi
+            kwargs['verify_certs'] = True
+            kwargs['ca_certs'] = certifi.where()
+        except ImportError:
+            logger.warn('Unable to verify SSL certificate.')
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
         # Verify the version is acceptable.
