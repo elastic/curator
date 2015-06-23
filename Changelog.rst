@@ -8,6 +8,8 @@ Changelog
 
 **New!**
 
+  * Added support to manually seal, or perform a [synced flush](http://www.elastic.co/guide/en/elasticsearch/reference/current/indices-synced-flush.html)
+    on indices with the ``seal`` command. #394 (untergeek)
   * Added *experimental* support for SSL certificate validation.  In order for
     this to work, you must install the ``certifi`` python module:
     ``pip install certifi``

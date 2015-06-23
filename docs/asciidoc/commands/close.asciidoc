@@ -20,6 +20,10 @@ Sometimes it makes sense to close an index so as to reduce cluster overhead, but
 meet data retention requirements. The `close` command makes it possible to do in
 a scripted way.
 
+NOTE: Starting with Curator 3.2.0, if you have Elasticsearch 1.6.0 or later, the
+_close_ command will attempt to perform a <<seal,synced flush>>, or _seal_ each
+index before closing, which should lead to faster recovery times.
+
 [float]
 Flags
 ~~~~~

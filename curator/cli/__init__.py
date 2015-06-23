@@ -8,6 +8,7 @@ from .delete import *
 from .opener import *
 from .optimize import *
 from .replicas import *
+from .seal import *
 from .show import *
 from .snapshot import *
 from .index_selection import *
