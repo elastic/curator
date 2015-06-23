@@ -94,8 +94,8 @@ def create_repository(client, **kwargs):
         else:
             logger.error("Unable to create repository {0}.  A repository with that name already exists.".format(repository))
             sys.exit(1)
-    except Exception:
-        logger.error("Unable to create repository {0}.  Check curator and elasticsearch logs for more information.".format(repository))
+    except elasticsearch.TransportError as e:
+        logger.error("Unable to create repository {0}.  Response Code: {1}.  Error: {2}. Check curator and elasticsearch logs for more information.".format(repository, e.status_code, e.error))
         return False
     logger.info("Repository {0} creation initiated...".format(repository))
     return True
