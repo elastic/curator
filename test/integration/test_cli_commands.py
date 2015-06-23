@@ -505,6 +505,25 @@ class TestCLIReplicas(CuratorTestCase):
                     obj={"filters":[]})
         self.assertEqual(0, result.exit_code)
 
+class TestCLISeal(CuratorTestCase):
+    def test_cli_seal_indices(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'seal',
+                        'indices',
+                        '--newer-than', '5',
+                        '--timestring', '%Y.%m.%d',
+                        '--time-unit', 'days'
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(0, result.exit_code)
+
 class TestCLIShow(CuratorTestCase):
     def test_cli_show_indices(self):
         self.create_indices(10)

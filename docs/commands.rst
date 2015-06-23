@@ -118,6 +118,16 @@ change_replicas
 +++++++++++++++
 .. automethod:: curator.api.change_replicas
 
+Sealing (Synced Flush) Indices
+------------------------------
+
+seal
+++++
+.. automethod:: curator.api.seal
+
+seal_indices
+++++++++++++
+.. automethod:: curator.api.seal_indices
 
 Show Indices
 ------------

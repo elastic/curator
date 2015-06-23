@@ -12,6 +12,7 @@
 * <<open,open>>
 * <<optimize,optimize>>
 * <<replicas,replicas>>
+* <<seal,seal>>
 * <<show,show>>
 * <<snapshot,snapshot>>
 --
@@ -24,5 +25,6 @@ include::delete.asciidoc[]
 include::open.asciidoc[]
 include::optimize.asciidoc[]
 include::replicas.asciidoc[]
+include::seal.asciidoc[]
 include::show.asciidoc[]
 include::snapshot.asciidoc[]

@@ -226,6 +226,8 @@ def do_command(client, command, indices, params=None):
                )
     if command == "replicas":
         return replicas(client, indices, replicas=params['count'])
+    if command == "seal":
+        return seal(client, indices)
     if command == "snapshot":
         return create_snapshot(
                 client, indices=indices, name=params['name'],

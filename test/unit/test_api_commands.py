@@ -86,6 +86,36 @@ snap_body       = {
                     "indices" : "index1,index2"
                   }
 verified_nodes  = {'nodes': {'nodeid1': {'name': 'node1'}, 'nodeid2': {'name': 'node2'}}}
+synced_pass     = {
+                    "_shards":{"total":1,"successful":1,"failed":0},
+                    "index_name":{
+                        "total":1,"successful":1,"failed":0,
+                        "failures":[],
+                    }
+                  }
+synced_fail     = {
+                    "_shards":{"total":1,"successful":0,"failed":1},
+                    "index_name":{
+                        "total":1,"successful":0,"failed":1,
+                        "failures":[
+                            {"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":True,"node":"nodeid1","relocating_node":None,"shard":0,"index":"index_name"}},
+                        ]
+                    }
+                  }
+sync_conflict   = elasticsearch.ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
+synced_fails    = {
+                    "_shards":{"total":2,"successful":1,"failed":1},
+                    "index1":{
+                        "total":1,"successful":0,"failed":1,
+                        "failures":[
+                            {"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":True,"node":"nodeid1","relocating_node":None,"shard":0,"index":"index_name"}},
+                        ]
+                    },
+                    "index2":{
+                        "total":1,"successful":1,"failed":0,
+                        "failures":[]
+                    },
+                  }
 
 class TestAlias(TestCase):
     def test_add_to_alias_bad_csv(self):
@@ -214,24 +244,60 @@ class TestBloom(TestCase):
         self.assertFalse(curator.bloom(client, named_index))
 
 class TestClose(TestCase):
+    def test_close_indices_positive_presyncflush(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        client.indices.flush.return_value = None
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close_indices(client, named_index))
+    def test_close_indices_negative_presyncflush(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        client.indices.flush.return_value = None
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close_indices(client, named_index))
+    def test_full_close_positive_presyncflush(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        client.indices.flush.return_value = None
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close(client, named_index))
+    def test_full_close_negative_presyncflush(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        client.indices.flush.return_value = None
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close(client, named_index))
     def test_close_indices_positive(self):
         client = Mock()
-        client.indices.flush.return_value = None
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.return_value = None
         self.assertTrue(curator.close_indices(client, named_index))
     def test_close_indices_negative(self):
         client = Mock()
-        client.indices.flush.side_effect = fake_fail
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close_indices(client, named_index))
     def test_full_close_positive(self):
         client = Mock()
-        client.indices.flush.return_value = None
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.return_value = None
         self.assertTrue(curator.close(client, named_index))
     def test_full_close_negative(self):
         client = Mock()
-        client.indices.flush.side_effect = fake_fail
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close(client, named_index))
 
@@ -322,6 +388,35 @@ class TestReplicas(TestCase):
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.side_effect = fake_fail
         self.assertFalse(curator.replicas(client, named_indices, replicas=0))
+
+class TestSeal(TestCase):
+    # The seal_indices method pretty much always returns True, requiring log
+    # viewing to ascertain if one or more indices failed to seal.
+    def test_seal_indices_good_version(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_bad_version(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_conflicterror(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.flush_synced.side_effect = sync_conflict
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_onepass_onefail(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fails
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
 
 class TestShow(TestCase):
     def setUp(self):
