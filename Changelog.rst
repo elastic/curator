@@ -28,6 +28,8 @@ Changelog
     won't likely affect snapshot success. Requested in #396 (untergeek)
   * An alias no longer needs to be pre-existent in order to use the alias
     command.  #317 (untergeek)
+  * es_repo_mgr now passes through upstream errors in the event a repository
+    fails to be created.  Requested in #405 (untergeek)
 
 **Bug fixes**
 
@@ -39,8 +41,9 @@ Changelog
    As a result, the ``change_replicas`` method has been updated to prune closed
    indices.  This change will apply to all versions of Elasticsearch.
    Reported in #400 (untergeek)
- * Fix es_repo_mgr repository creation verification error. Reported in #389
+ * Fixed es_repo_mgr repository creation verification error. Reported in #389
    (untergeek)
+
 
 
 3.1.0 (21 May 2015)
