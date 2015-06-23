@@ -50,6 +50,7 @@ class TestCLIRepositoryCreate(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         self.assertTrue(1, len(self.client.snapshot.get_repository(repository=self.args['repository'])))
+        self.assertEqual(0, result.exit_code)
 
     def test_create_fs_repository_fail(self):
         test = clicktest.CliRunner()

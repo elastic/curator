@@ -39,6 +39,8 @@ Changelog
    As a result, the ``change_replicas`` method has been updated to prune closed
    indices.  This change will apply to all versions of Elasticsearch.
    Reported in #400 (untergeek)
+ * Fix es_repo_mgr repository creation verification error. Reported in #389
+   (untergeek)
 
 
 3.1.0 (21 May 2015)

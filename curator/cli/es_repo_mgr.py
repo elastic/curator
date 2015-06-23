@@ -143,7 +143,7 @@ def fs(
     client = get_client(**ctx.parent.parent.params)
     success = False
     if create_repository(client, repo_type='fs', **ctx.params):
-        success = verify_repository(repository)
+        success = verify_repository(client, repository)
     if not success:
         sys.exit(1)
 
@@ -179,7 +179,7 @@ def s3(
     client = get_client(**ctx.parent.parent.params)
     success = False
     if create_repository(client, repo_type='s3', **ctx.params):
-        success = verify_repository(repository)
+        success = verify_repository(client, repository)
     if not success:
         sys.exit(1)
 
