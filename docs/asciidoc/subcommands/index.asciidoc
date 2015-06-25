@@ -38,6 +38,8 @@ $ curator
     │     └── indices
     ├── replicas
     │     └── indices
+    ├── seal
+    │     └── indices
     ├── show
     │     └── indices
     │     └── snapshots
@@ -60,6 +62,7 @@ Commands using the `indices` subcommand:
 * <<open>>
 * <<optimize>>
 * <<replicas>>
+* <<seal>>
 * <<show>>
 * <<snapshot>>
 
