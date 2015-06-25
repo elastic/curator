@@ -238,5 +238,5 @@ This example will show time-series indices matching `prefix`, `older_than` 30
     )
     working_list = indices
     for filter in filter_list:
-        working_list = apply_filter(working_list, **_filter)
+        working_list = curator.apply_filter(working_list, **filter)
     curator.show(working_list)
