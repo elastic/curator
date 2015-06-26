@@ -3,6 +3,16 @@
 Changelog
 =========
 
+3.3.0 (? ? ?)
+-------------
+
+**General**
+
+  * Added delete verification & retry (fixed at 3x) to potentially cover an edge
+    case in #420 (untergeek)
+
+**Bug fixes**
+
 3.2.0 (25 June 2015)
 --------------------
 
