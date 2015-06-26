@@ -15,8 +15,9 @@ functional but slow enough to respond that Elasticsearch yields a false-positive
 test result.  This condition is also usually intermittent, rather than constant.
 
 WARNING: Repository validation is performed in order to ensure your snapshots
-will all be able to write to the repository.  It is not recommended to skip this
-check unless you have verified that all is working, as expected.
+will all be able to write to the repository.  It is recommended that you let
+Curator perform this valuable check each time a snapshot is created unless you
+are experiencing the intermittent timeouts described.
 
 [float]
 Flags
