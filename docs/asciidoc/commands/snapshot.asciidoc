@@ -38,6 +38,7 @@ Options:
   --partial                       Do not fail if primary shard is unavailable.
   --request_timeout INTEGER       Allow this many seconds before the
                                   transaction times out.  [default: 21600]
+  --skip-repo-validation          Skip repository access validation.
   --help                          Show this message and exit.
 
 Commands:
