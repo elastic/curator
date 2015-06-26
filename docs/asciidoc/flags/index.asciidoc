@@ -39,6 +39,10 @@ _Snapshot selection only_
 * <<snapshot_flag,--snapshot>>
 * <<all-snapshots,--all-snapshots>>
 * <<repository,--repository>>
+
+_Command flags_
+
+* <<skip-repo-validation,--skip-repo-validation>>
 --
 
 include::debug.asciidoc[]
@@ -68,3 +72,4 @@ include::all-indices.asciidoc[]
 include::snapshot_flag.asciidoc[]
 include::all-snapshots.asciidoc[]
 include::repository.asciidoc[]
+include::skip-repo-validation.asciidoc[]
