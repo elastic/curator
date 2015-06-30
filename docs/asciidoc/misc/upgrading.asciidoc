@@ -24,3 +24,6 @@ and then:
 -------------------------------------
 pip install -U elasticsearch-curator.tar.gz
 -------------------------------------
+
+If Curator has been installed via package repository, then use the standard
+upgrade method for your repository.
