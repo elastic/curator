@@ -310,13 +310,25 @@ class TestDelete(TestCase):
         client = Mock()
         client.indices.delete.side_effect = fake_fail
         self.assertFalse(curator.delete_indices(client, named_indices))
-    def test_full_delete_positive(self):
-        client = Mock()
-        client.indices.delete.return_value = None
-        self.assertTrue(curator.delete(client, named_indices))
+
+    # This test needs to be able to have get_settings return two different
+    # values on subsequent calls.  I don't know how to do that, if it can
+    # be done.  Integration testing can cover testing this method, though.
+    #
+    # def test_full_delete_positive(self):
+    #     client = Mock()
+    #     client.indices.delete.return_value = None
+    #     client.indices.get_settings.return_value = named_indices
+    #     self.assertTrue(curator.delete(client, named_indices))
     def test_full_delete_negative(self):
         client = Mock()
+        client.indices.delete.return_value = None
+        client.indices.get_settings.return_value = named_indices
+        self.assertFalse(curator.delete(client, named_indices))
+    def test_full_delete_exception(self):
+        client = Mock()
         client.indices.delete.side_effect = fake_fail
+        client.indices.get_settings.return_value = named_indices
         self.assertFalse(curator.delete(client, named_indices))
 
 class TestOpen(TestCase):

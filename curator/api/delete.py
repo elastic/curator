@@ -25,9 +25,24 @@ def delete_indices(client, indices):
 
 def delete(client, indices):
     """
-    Helper method called by the CLI.
+    Helper method called by the CLI.  Tries up to 3x to delete indices.
 
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
     """
-    return delete_indices(client, indices)
+    for count in range(1, 4): # Try 3 times
+        success = delete_indices(client, indices)
+        if success:
+            result = [ i for i in indices if i in get_indices(client) ]
+            if len(result) > 0:
+                logger.error("Indices failed to delete:")
+                for idx in result:
+                    logger.error("---{0}".format(idx))
+            else:
+                # break
+                return True # We leave the loop here, if everything deleted.
+            indices = result
+        else:
+            return False # Encountered an exception
+    logger.error("Unable to delete indices after 3 attempts: {0}".format(result))
+    return False # If we make it here, indices didn't delete after 3 tries.
