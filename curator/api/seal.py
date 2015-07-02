@@ -18,7 +18,11 @@ def seal_indices(client, indices):
     errcode = ''
     try:
         if es_version >= (1, 6, 0):
-            results = client.indices.flush_synced(index=to_csv(indices))
+            if len(indices) > 0:
+                results = client.indices.flush_synced(index=to_csv(indices))
+            else:
+                logger.warn('No indices to seal.')
+                return True
         else:
             logger.error('Your version of Elasticsearch ({0}) does not support index sealing (synced flush).  Must be 1.6.0 or higher.'.format(es_version))
             results = {}

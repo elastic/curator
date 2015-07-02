@@ -3,6 +3,14 @@
 Changelog
 =========
 
+3.3.0 (? ? ?)
+-------------
+
+**Bug fixes**
+
+ * If closing indices with ES 1.6+, and all indices are closed, ensure that the
+   seal command does not try to seal all indices.  Reported in #426 (untergeek)
+
 3.2.0 (25 June 2015)
 --------------------
 
