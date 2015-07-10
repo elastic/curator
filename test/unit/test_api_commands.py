@@ -429,6 +429,13 @@ class TestSeal(TestCase):
         client.indices.flush_synced.return_value = synced_fails
         client.info.return_value = {'version': {'number': '1.6.0'} }
         self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_attribute_exception(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.flush_synced.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
 
 class TestShow(TestCase):
     def setUp(self):
