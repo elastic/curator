@@ -219,7 +219,7 @@ yum install python-setuptools
 -----------------------------
 * `Requires: python-unittest2` (RHEL/CentOS 6 only)
 +
-If you see this error:
+If you see an error like this:
 +
 [source,sh]
 ---------------------
