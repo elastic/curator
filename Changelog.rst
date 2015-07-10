@@ -3,18 +3,22 @@
 Changelog
 =========
 
-3.3.0 (? ? ?)
--------------
+3.2.1 (10 July 2015)
+--------------------
 
 **General**
 
   * Added delete verification & retry (fixed at 3x) to potentially cover an edge
     case in #420 (untergeek)
+  * Since GitHub allows rST (reStructuredText) README documents, and that's what
+    PyPI wants also, the README has been rebuilt in rST. (untergeek)
 
 **Bug fixes**
 
   * If closing indices with ES 1.6+, and all indices are closed, ensure that the
     seal command does not try to seal all indices.  Reported in #426 (untergeek)
+  * Capture AttributeError when sealing indices if a non-TransportError occurs.
+    Reported in #429 (untergeek)
 
 3.2.0 (25 June 2015)
 --------------------
