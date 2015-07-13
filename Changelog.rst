@@ -3,8 +3,15 @@
 Changelog
 =========
 
-3.3.0 (? ? ?)
--------------
+3.2.2 (13 July 2015)
+--------------------
+
+**General**
+
+  * This is a very minor change.  The ``mock`` library recently removed support
+    for Python 2.6.  As many Curator users are using RHEL/CentOS 6, which is
+    pinned to Python 2.6, this requires the mock version referenced by Curator
+    to also be pinned to a supported version (``mock==1.0.1``).
 
 3.2.1 (10 July 2015)
 --------------------
