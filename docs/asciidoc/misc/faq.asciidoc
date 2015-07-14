@@ -227,3 +227,16 @@ timeout.  Another potential resolution would be to have Curator connect to a
 client directly, rather than through a load balancer or proxy.
 
 '''''
+
+[[escape-percent]]
+== Q: How do I escape the `%` in the `--timestring` for use with systemd?
+
+[float]
+A: A double percent, `%%`, fixes the problem.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As seen here: https://discuss.elastic.co/t/curator-how-to-escape-characters-of-timestring-in-systemd/25222/2
+
+    --timestring '%%Y.%%m.%%d'
+
+'''''
