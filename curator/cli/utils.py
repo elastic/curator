@@ -201,7 +201,7 @@ def in_list(values, source_list):
             logger.warn('{0} not found!'.format(v))
     return retval
 
-def do_command(client, command, indices, params=None):
+def do_command(client, command, indices, params=None, master_timeout=30000):
     """
     Do the command.
     """
@@ -216,7 +216,7 @@ def do_command(client, command, indices, params=None):
     if command == "close":
         return close(client, indices)
     if command == "delete":
-        return delete(client, indices)
+        return delete(client, indices, master_timeout)
     if command == "open":
         return opener(client, indices)
     if command == "optimize":

@@ -3,8 +3,23 @@
 Changelog
 =========
 
-3.3.0 (? ? ?)
--------------
+3.2.3 (16 July 2015)
+--------------------
+
+**Bug fix**
+
+  * In order to address customer and community issues with bulk deletes, the
+    ``master_timeout`` is now invoked for delete operations.  This should address
+    503s with 30s timeouts in the debug log, even when ``--timeout`` is set to
+    a much higher value.  The ``master_timeout`` is tied to the ``--timeout``
+    flag value, but will not exceed 300 seconds. #420 (untergeek)
+
+**General**
+
+  * Mixing it up a bit here by putting `General` second!  The only other changes
+    are that logging has been improved for deletes so you won't need to have the
+    ``--debug`` flag to see if you have error codes >= 400, and some code
+    documentation improvements.
 
 3.2.2 (13 July 2015)
 --------------------
