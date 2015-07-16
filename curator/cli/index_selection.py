@@ -51,13 +51,27 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         sys.exit(1)
 
     logger.info("Job starting: {0} indices".format(ctx.parent.info_name))
-    logger.debug("Params: {0}".format(ctx.parent.parent.params))
+
     # Base and client args are in the grandparent tier of the context
+    logger.debug("Params: {0}".format(ctx.parent.parent.params))
+
+    # Set master_timeout to match 'timeout' if less than or equal to 300 seconds,
+    # otherwise set to 300.  Also, set this before overriding the timeout.
+    master_timeout = ctx.parent.parent.params['timeout'] if ctx.parent.parent.params['timeout'] <= 300 else 300
+    master_timeout = master_timeout * 1000 # This value is in milliseconds, at least in Python.
+    # If this is in error, it may be somewhere in the Python module or urllib3
+    # The Elasticsearch output was timing out deletes because they failed to
+    # complete within 30ms (until I multiplied by 1000)
     override_timeout(ctx)
+
+    # Get the client
     client = get_client(**ctx.parent.parent.params)
+
     # Get a master-list of indices
     indices = get_indices(client)
     logger.debug("Full list of indices: {0}".format(indices))
+
+    # Build index list
     if index and not ctx.obj['filters']:
         working_list = []
     else:
@@ -67,6 +81,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             click.echo(click.style('ERROR. No indices found in Elasticsearch.', fg='red', bold=True))
             sys.exit(1)
 
+    # Override any other flags if --all_indices specified
     if all_indices:
         working_list = indices
         logger.info('Matching all indices. Ignoring flags other than --exclude.')
@@ -124,12 +139,13 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
                     index_lists = chunk_index_list(working_list)
                     success = True
                     for l in index_lists:
-                        retval = do_command(client, ctx.parent.info_name, l, ctx.parent.params)
+                        retval = do_command(client, ctx.parent.info_name, l, ctx.parent.params, master_timeout)
                         if not retval:
                             success = False
+                        time.sleep(2) # Pause in between iterations
                     exit_msg(success)
                 else:
-                    retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params)
+                    retval = do_command(client, ctx.parent.info_name, working_list, ctx.parent.params, master_timeout)
                     exit_msg(retval)
 
     else:
