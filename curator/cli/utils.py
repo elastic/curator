@@ -210,7 +210,7 @@ def do_command(client, command, indices, params=None, master_timeout=30000):
                 client, indices, alias=params['name'], remove=params['remove']
                )
     if command == "allocation":
-        return allocation(client, indices, rule=params['rule'])
+        return allocation(client, indices, rule=params['rule'], allocation_type=params['type'] )
     if command == "bloom":
         return bloom(client, indices, delay=params['delay'])
     if command == "close":
