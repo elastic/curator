@@ -18,9 +18,9 @@ def allocation(ctx, rule, type):
         click.echo(click.style('Missing required parameter --rule', fg='red', bold=True))
         sys.exit(1)
 
-    if type != 'require' and type != 'include' and type !='exclude':    
+    if allocation_type not in ['require', 'include', 'exclude']:
 		#click.echo('{1}'.format(ctx.get_help()))
-        click.echo(click.style('--type can only one of: require, include  exclude', fg='red', bold=True))
+        click.echo(click.style('--type can only be one of: require, include  exclude', fg='red', bold=True))
         sys.exit(1)     	
 
 allocation.add_command(indices)

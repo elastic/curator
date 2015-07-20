@@ -310,7 +310,7 @@ def prune_allocated(client, indices, key, value, allocation_type):
     :arg indices: A list of indices to act on
     :arg key: The allocation attribute to check for
     :arg value: The value to check for
-    :arg allocation_type: type of allocation
+    :arg allocation_type: Type of allocation to apply
     :rtype: list
     """
     indices = ensure_list(indices)
@@ -324,7 +324,7 @@ def prune_allocated(client, indices, key, value, allocation_type):
         except KeyError:
             has_routing = False
         if has_routing:
-            logger.debug('Skipping index {0}: Already has allocation rule {1} applied for type {2}.'.format(idx, key + "=" + value, allocation_type))
+            logger.debug('Skipping index {0}: Allocation rule {1} is already applied for type {2}.'.format(idx, key + "=" + value, allocation_type))
         else:
             retval.append(idx)
     return sorted(retval)
