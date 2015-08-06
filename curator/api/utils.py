@@ -301,7 +301,7 @@ def prune_closed(client, indices):
             logger.info('Skipping index {0}: Closed.'.format(idx))
     return sorted(retval)
 
-def prune_allocated(client, indices, key, value):
+def prune_allocated(client, indices, key, value, allocation_type):
     """
     Return list of indices that do not have the routing allocation rule of
     `key=value`
@@ -310,6 +310,7 @@ def prune_allocated(client, indices, key, value):
     :arg indices: A list of indices to act on
     :arg key: The allocation attribute to check for
     :arg value: The value to check for
+    :arg allocation_type: Type of allocation to apply
     :rtype: list
     """
     indices = ensure_list(indices)
@@ -319,11 +320,11 @@ def prune_allocated(client, indices, key, value):
             index=idx,
         )
         try:
-            has_routing = settings[idx]['settings']['index']['routing']['allocation']['require'][key] == value
+            has_routing = settings[idx]['settings']['index']['routing']['allocation'][allocation_type][key] == value
         except KeyError:
             has_routing = False
         if has_routing:
-            logger.debug('Skipping index {0}: Already has allocation rule {1} applied.'.format(idx, key + "=" + value))
+            logger.debug('Skipping index {0}: Allocation rule {1} is already applied for type {2}.'.format(idx, key + "=" + value, allocation_type))
         else:
             retval.append(idx)
     return sorted(retval)

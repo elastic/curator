@@ -123,6 +123,20 @@ class TestChangeAllocation(CuratorTestCase):
 
         self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['require']['key'])
 
+    def test_index_allocation_can_be_modified_for_include(self):
+        self.create_index('test_index')
+
+        curator.apply_allocation_rule(self.client, 'test_index', rule="key=value", allocation_type='include')
+
+        self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['include']['key'])
+
+    def test_index_allocation_can_be_modified_for_exclude(self):
+        self.create_index('test_index')
+
+        curator.apply_allocation_rule(self.client, 'test_index', rule="key=value", allocation_type='exclude')
+
+        self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['exclude']['key'])
+
     def test_closed_index_allocation_can_be_modified(self):
         self.create_index('test_index')
 
@@ -145,6 +159,7 @@ class TestChangeAllocation(CuratorTestCase):
         self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
 
         self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['require']['key'])
+
 
 class TestDeleteIndex(CuratorTestCase):
     def test_index_will_be_deleted(self):

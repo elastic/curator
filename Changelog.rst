@@ -6,6 +6,12 @@ Changelog
 3.3.0 (? ? ?)
 -------------
 
+**General**
+
+* Allocation type can now also be 'include' or 'exclude', in addition to the
+  the existing default 'require' type. Add --type to the allocation command 
+  to specify the type. #443 (steffo)
+
 3.2.3 (16 July 2015)
 --------------------
 

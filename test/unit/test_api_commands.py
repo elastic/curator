@@ -197,6 +197,20 @@ class TestAllocate(TestCase):
         client.indices.get_settings.return_value = allocation_out
         client.indices.put_settings.side_effect = fake_fail
         self.assertFalse(curator.allocation(client, named_index, rule="foo=bar"))
+    def test_allocation_wrong_type_param(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.get_settings.return_value = allocation_out
+        client.indices.put_settings.return_value = None
+        self.assertFalse(curator.allocation(client, named_index, rule="foo=bar", allocation_type="wrong_type"))
+    def test_allocation_good_type_param(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.get_settings.return_value = allocation_out
+        client.indices.put_settings.return_value = None
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="require"))   
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="include"))   
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="exclude"))   
 
 class TestBloom(TestCase):
     def test_disable_bloom_no_more_bloom_positive(self):
