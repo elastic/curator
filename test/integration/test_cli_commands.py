@@ -311,6 +311,27 @@ class TestCLIAllocation(CuratorTestCase):
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][allocation_type][key]
         )
 
+    def test_allocation_fail_on_bad_type(self):
+        self.create_index('my_index')
+        key = 'foo'
+        value = 'bar'
+        rule = key + '=' + value
+        allocation_type = 'fail'
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'allocation', '--rule', rule,
+                        '--type', allocation_type,
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+
 class TestCLIBloom(CuratorTestCase):
     def test_bloom_cli(self):
         self.create_indices(5)

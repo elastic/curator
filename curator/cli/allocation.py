@@ -19,8 +19,7 @@ def allocation(ctx, rule, type):
         sys.exit(1)
 
     if type not in ['require', 'include', 'exclude']:
-		#click.echo('{1}'.format(ctx.get_help()))
         click.echo(click.style('--type can only be one of: require, include  exclude', fg='red', bold=True))
-        sys.exit(1)     	
+        sys.exit(1)
 
 allocation.add_command(indices)
