@@ -58,7 +58,7 @@ Options:
   --max_num_segments INTEGER  Merge to this number of segments per shard.
                               [default: 2]
   --request_timeout INTEGER   Allow this many seconds before the transaction
-                              times out.  [default: 218600]
+                              times out.  [default: 21600]
   --help                      Show this message and exit.
 
 Commands:
