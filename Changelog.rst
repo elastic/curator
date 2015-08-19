@@ -23,6 +23,8 @@ Changelog
   * Delete by space was only reporting space used by primary shards.  Fixed to
     show all space consumed.  Reported in #455 (untergeek)
 
+  * Update exit codes and messages for snapshot selection.  Reported in #452 (untergeek)
+
 3.2.3 (16 July 2015)
 --------------------
 

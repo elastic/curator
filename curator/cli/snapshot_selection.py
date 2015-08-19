@@ -59,8 +59,8 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
     if snapshots:
         working_list = snapshots
     else:
-        click.echo(click.style('ERROR. No snapshots found in Elasticsearch.', fg='red', bold=True))
-        sys.exit(1)
+        click.echo(click.style('No snapshots found in Elasticsearch.', fg='red', bold=True))
+        sys.exit(0)
 
     if all_snapshots:
         logger.info('Matching all snapshots. Ignoring flags other than --exclude.')
@@ -96,5 +96,5 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
     else:
         logger.warn('No snapshots matched provided args.')
-        click.echo(click.style('ERROR. No snapshots matched provided args.', fg='red', bold=True))
+        click.echo(click.style('No snapshots matched provided args.', fg='red', bold=True))
         sys.exit(0)

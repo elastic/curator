@@ -785,7 +785,7 @@ class TestCLISnapshotSelection(CuratorTestCase):
                         '--all-snapshots',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(0, result.exit_code)
     def test_snapshot_selection_show_filtered(self):
         self.create_repository()
         for i in ["1", "2", "3"]:
