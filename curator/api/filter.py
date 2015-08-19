@@ -319,10 +319,12 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
     """
 
     def get_stat_list(stats):
-        retval = list(
-            (index_name, index_stats['index']['primary_size_in_bytes'])
-            for (index_name, index_stats) in stats['indices'].items()
-        )
+        retval = []
+        for (index_name, index_stats) in stats['indices'].items():
+            replica_count = client.indices.get_settings(index_name)[index_name]['settings']['index']['number_of_replicas']
+            size = "size_in_bytes" if int(replica_count) > 0 else "primary_size_in_bytes"
+            logger.debug('Index: {0}  Size: {1}'.format(index_name, index_stats['index'][size]))
+            retval.append((index_name, index_stats['index'][size]))
         return retval
 
     if not disk_space:
