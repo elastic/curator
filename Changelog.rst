@@ -18,6 +18,11 @@ Changelog
   * Add SSL features, ``--ssl-no-validate`` and ``certificate`` to provide other
     ways to validate SSL connections to Elasticsearch. #436 (untergeek)
 
+**Bug fixes**
+
+  * Delete by space was only reporting space used by primary shards.  Fixed to
+    show all space consumed.  Reported in #455 (untergeek)
+
 3.2.3 (16 July 2015)
 --------------------
 
