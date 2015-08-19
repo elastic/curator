@@ -55,4 +55,44 @@ class TestCLIUtilsFilterCallback(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         self.assertEqual(1, result.exit_code)
-    
+
+class TestSSLFlags(CuratorTestCase):
+    def test_bad_certificate(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        '--use_ssl',
+                        '--certificate', '/path/to/nowhere',
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual('Error: Could not open certificate at /path/to/nowhere\n', result.output)
+    def test_ssl_no_validate(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        '--use_ssl',
+                        '--ssl-no-validate',
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertTrue(1, result.exit_code)

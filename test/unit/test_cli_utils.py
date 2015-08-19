@@ -121,3 +121,12 @@ class TestInList(TestCase):
         v = ['a', 'b', 'q']
         s = ['a', 'b', 'c', 'd']
         self.assertEqual(['a', 'b'], curator.in_list(v, s))
+
+class TestGetClient(TestCase):
+    def test_certificate_logic(self):
+        client = Mock()
+        kwargs = { 'use_ssl' : True, 'certificate' : 'mycert.pem' }
+        with self.assertRaises(SystemExit) as cm:
+            curator.get_client(**kwargs)
+            self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
+        self.assertEqual(cm.exception.code, 1)
