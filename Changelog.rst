@@ -13,7 +13,10 @@ Changelog
    to specify the type. #443 (steffo)
 
   * Bump elasticsearch python module dependency to 1.6.0+ to enable synced_flush
-    API call. Reported in #447 (untergeek) 
+    API call. Reported in #447 (untergeek)
+
+  * Add SSL features, ``--ssl-no-validate`` and ``certificate`` to provide other
+    ways to validate SSL connections to Elasticsearch. #436 (untergeek)
 
 3.2.3 (16 July 2015)
 --------------------

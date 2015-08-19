@@ -34,6 +34,8 @@ DEFAULT_ARGS = {
 @click.option('--url_prefix', help='Elasticsearch http url prefix.', default=DEFAULT_ARGS['url_prefix'])
 @click.option('--port', help='Elasticsearch port.', default=DEFAULT_ARGS['port'], type=int)
 @click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=DEFAULT_ARGS['use_ssl'])
+@click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
+@click.option('--ssl-no-validate', help='Do not validate SSL certificate', is_flag=True)
 @click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=DEFAULT_ARGS['http_auth'])
 @click.option('--timeout', help='Connection timeout in seconds.', default=DEFAULT_ARGS['timeout'], type=int)
 @click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
@@ -44,7 +46,7 @@ DEFAULT_ARGS = {
 @click.option('--logformat', help='Log output format [default|logstash].', default=DEFAULT_ARGS['logformat'])
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
+def cli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
     """
     Curator for Elasticsearch indices.
 
@@ -69,6 +71,14 @@ def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, d
         handler.setFormatter(logging.Formatter(format_string))
     logging.root.addHandler(handler)
     logging.root.setLevel(numeric_log_level)
+
+    # Test whether certificate is a valid file path
+    if use_ssl is True and certificate is not None:
+        try:
+            open(certificate, 'r')
+        except IOError:
+            click.echo(click.style('Error: Could not open certificate at {0}'.format(certificate), fg='red', bold=True))
+            sys.exit(1)
 
     # Filter out logging from Elasticsearch and associated modules by default
     if not debug:
