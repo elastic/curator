@@ -278,8 +278,11 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     :rtype: bool
     """
-    # Ensure that value is an int
-    cutoff = get_cutoff(unit_count=int(value), time_unit=time_unit, utc_now=utc_now)
+    cutoff = get_cutoff(unit_count=value, time_unit=time_unit, utc_now=utc_now)
+
+    if not cutoff:
+        logger.error('No cutoff value.')
+        return False
 
     try:
         object_time = get_datetime(timestamp, timestring)
