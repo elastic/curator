@@ -526,7 +526,7 @@ class TestCLIOptimize(CuratorTestCase):
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # This should force each doc to be in its own segment.
-            self.client.indices.flush(index="index_name", force=True, full=True)
+            self.client.indices.flush(index="index_name", force=True)
 
         test = clicktest.CliRunner()
         result = test.invoke(
