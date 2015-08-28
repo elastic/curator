@@ -67,7 +67,7 @@ def build_filter(
         if not timestring:
             logger.error("older_than and newer_than require timestring parameter")
             return {}
-        argdict = {  "groupname":groupname, "time_unit":time_unit,
+        argdict = { "groupname":groupname, "time_unit":time_unit,
                     "timestring": timestring, "value": value,
                     "method": kindOf }
         date_regex = get_date_regex(timestring)
@@ -278,7 +278,8 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     :rtype: bool
     """
-    cutoff = get_cutoff(unit_count=value, time_unit=time_unit, utc_now=utc_now)
+    # Ensure that value is an int
+    cutoff = get_cutoff(unit_count=int(value), time_unit=time_unit, utc_now=utc_now)
 
     try:
         object_time = get_datetime(timestamp, timestring)
@@ -327,7 +328,10 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
             retval.append((index_name, index_stats['index'][size]))
         return retval
 
-    if not disk_space:
+    # Ensure that disk_space is a float
+    if disk_space:
+        disk_space = float(disk_space)
+    else:
         logger.error("Mising value for disk_space.")
         return False
 
