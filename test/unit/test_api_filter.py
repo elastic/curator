@@ -320,3 +320,19 @@ class TestTimestampCheck(TestCase):
         utc_now = datetime(2015, 1, 5)
         self.assertFalse(curator.timestamp_check(timestamp, timestring=ts,
             time_unit=tu, value=v, utc_now=utc_now))
+    def test_timestamp_check_get_cutoff_with_none(self):
+        ts = '%Y.%m.%d'
+        tu = 'days'
+        v  = None
+        timestamp = '2015.01.01'
+        utc_now = datetime(2015, 1, 5)
+        self.assertFalse(curator.timestamp_check(timestamp, timestring=ts,
+            time_unit=tu, value=v, utc_now=utc_now))
+    def test_timestamp_check_get_cutoff_with_non_int(self):
+        ts = '%Y.%m.%d'
+        tu = 'days'
+        v  = 'foo'
+        timestamp = '2015.01.01'
+        utc_now = datetime(2015, 1, 5)
+        self.assertFalse(curator.timestamp_check(timestamp, timestring=ts,
+            time_unit=tu, value=v, utc_now=utc_now))
