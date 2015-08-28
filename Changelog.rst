@@ -25,6 +25,8 @@ Changelog
 
   * Update exit codes and messages for snapshot selection.  Reported in #452 (untergeek)
 
+  * Fix potential int/flat casting issues. Reported in #465 (untergeek)
+
 3.2.3 (16 July 2015)
 --------------------
 
