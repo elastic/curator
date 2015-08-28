@@ -8,8 +8,11 @@ Summary
 
 IMPORTANT: This flag only functions within the scope of <<index-selection,index selection>> or <<snapshot-selection,snapshot selection>>.
 
-Filter indices "newer than" a given number of <<time-unit,time-units>>. The
+Filter indices "newer than" the given number of <<time-unit,time-units>>. The
 indices must also have a <<timestring>>.
+
+The value provided indicates a given number of <<time-unit,time-units>> ago to
+use as a reference point. All indices "newer than" that point will be included.
 
 [float]
 Flags

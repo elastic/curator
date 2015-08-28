@@ -11,6 +11,9 @@ IMPORTANT: This flag only functions within the scope of <<index-selection,index 
 Filter indices "older than" a given number of <<time-unit,time-units>>. The
 indices must also have a <<timestring>>.
 
+The value provided indicates a given number of <<time-unit,time-units>> ago to
+use as a reference point. All indices "older than" that point will be included.
+
 [float]
 Flags
 ~~~~~
