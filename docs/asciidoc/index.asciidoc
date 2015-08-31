@@ -1,4 +1,4 @@
-:curator_version: 3.2.3
+:curator_version: 3.3.0
 :curator_major: 3
 :es_py_version: 1.6.0
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/current
