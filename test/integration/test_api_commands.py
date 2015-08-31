@@ -38,10 +38,8 @@ class TestAlias(CuratorTestCase):
         alias = 'testalias'
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
-        self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
         self.create_index('foo')
         curator.add_to_alias(self.client, 'foo', alias=alias)
-        self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
         curator.remove_from_alias(self.client, 'dummy', alias=alias)
         self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
     def test_remove_from_alias_negative(self):
@@ -65,10 +63,8 @@ class TestAlias(CuratorTestCase):
         alias = 'testalias'
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
-        self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
         self.create_index('foo')
         curator.add_to_alias(self.client, 'foo', alias=alias)
-        self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
         curator.alias(self.client, 'dummy', alias=alias, remove=True)
         self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
     def test_full_alias_remove_negative(self):
