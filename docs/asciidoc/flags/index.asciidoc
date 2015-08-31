@@ -17,6 +17,8 @@
 * <<timeout,--timeout>>
 * <<url_prefix,--url_prefix>>
 * <<use_ssl,--use_ssl>>
+* <<certificate,--certificate>>
+* <<ssl-no-validate,--ssl-no-validate>>
 * <<version,--version>>
 
 _Index and Snapshot Selection_
@@ -59,6 +61,8 @@ include::port.asciidoc[]
 include::timeout.asciidoc[]
 include::url_prefix.asciidoc[]
 include::use_ssl.asciidoc[]
+include::certificate.asciidoc[]
+include::ssl-no-validate.asciidoc[]
 include::version.asciidoc[]
 
 include::newer-than.asciidoc[]

@@ -45,8 +45,9 @@ ________________________________________________________________________________
 
 &nbsp;
 
-It is this last method, `index.routing.allocation.require.*`, that Curator uses
-to force routing.  Curator does not use `include` or `exclude` tagging.
+In versions 3.2.3 and older, Curator used this last method,
+`index.routing.allocation.require.*`, to force routing.  Beginning in version
+3.3.0, Curator also allows the use of `include` and `exclude` tagging.
 
 [float]
 Use-case
@@ -98,14 +99,17 @@ Flags
 $ curator allocation --help
 Usage: curator allocation [OPTIONS] COMMAND [ARGS]...
 
-Index Allocation
+  Index Allocation
 
 Options:
- --rule TEXT Routing allocation rule to apply, e.g. tag=ssd
- --help Show this message and exit.
+  --rule TEXT  Routing allocation rule to apply, e.g. tag=ssd
+  --type TEXT  Specify an allocation type, include, exclude or require
+               [default: require]
+  --help       Show this message and exit.
 
 Commands:
- indices Index selection.
+  indices  Index selection.
+
 --------------------------------------------------------------------------------
 
 &nbsp;
