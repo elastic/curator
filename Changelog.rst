@@ -6,6 +6,23 @@ Changelog
 3.3.0 (? ? ?)
 -------------
 
+**Announcement**
+
+  * Curator is tested in Jenkins.  Each commit to the master branch is tested
+    with both Python versions 2.7.6 and 3.4.0 against each of the following
+    Elasticsearch versions:
+    * 1.7_nightly
+    * 1.6_nightly
+    * 1.7.0
+    * 1.6.1
+    * 1.5.1
+    * 1.4.4
+    * 1.3.9
+    * 1.2.4
+    * 1.1.2
+    * 1.0.3
+  * If you are using a version different from this, your results may vary.
+
 **General**
 
   * Allocation type can now also be 'include' or 'exclude', in addition to the
