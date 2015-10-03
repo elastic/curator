@@ -38,7 +38,7 @@ A word about timeouts
 
 With some commands (e.g. `optimize`) the default behavior is to wait until the
 operation is complete before proceeding with the next step. Since these
-operations can take quite a long time it is advisable to set `--request_timeout`
+operations can take quite a long time it is advisable to set `--timeout`
 to a high value. If one is not set, a default of 6 hours (21600 seconds) will be
 applied.
 
