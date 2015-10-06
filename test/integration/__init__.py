@@ -120,3 +120,6 @@ class CuratorTestCase(TestCase):
         result = self.client.snapshot.get_repository(repository='_all')
         for repo in result:
             self.client.snapshot.delete_repository(repository=repo)
+
+    def close_index(self, name):
+        self.client.indices.close(index=name)

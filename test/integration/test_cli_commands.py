@@ -191,6 +191,24 @@ class TestCLIIndexSelection(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         self.assertEqual(0, result.exit_code)
+    def test_cli_closed_indices_only(self):
+        self.create_index('open-one')
+        self.create_index('closed-one')
+        self.close_index('closed-one')
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--logfile', os.devnull,
+                '--host', host,
+                '--port', str(port),
+                'show',
+                'indices',
+                '--closed-only',
+                '--suffix', 'one',
+            ],
+            obj={"filters":[]})
+        self.assertEqual(['closed-one (CLOSED)'], result.output.splitlines()[:2])
 
 class TestCLIAlias(CuratorTestCase):
     def test_alias_no_name_param(self):

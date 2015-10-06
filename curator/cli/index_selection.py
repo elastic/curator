@@ -30,9 +30,11 @@ logger = logging.getLogger(__name__)
                 help='Include the provided index in the list. Can be invoked multiple times.')
 @click.option('--all-indices', is_flag=True,
                 help='Do not filter indices.  Act on all indices.')
+@click.option('--closed-only', is_flag=True,
+                help='Include only indices that are closed.')
 @click.pass_context
 def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
-            timestring, regex, exclude, index, all_indices):
+            timestring, regex, exclude, index, all_indices, closed_only):
     """
     Get a list of indices to act on from the provided arguments, then perform
     the command [alias, allocation, bloom, close, delete, etc.] on the resulting
@@ -68,7 +70,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     client = get_client(**ctx.parent.parent.params)
 
     # Get a master-list of indices
-    indices = get_indices(client)
+    indices = get_indices(client, closed_only and not all_indices)
     logger.debug("Full list of indices: {0}".format(indices))
 
     # Build index list

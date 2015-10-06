@@ -20,10 +20,13 @@ def get_alias(client, alias):
         logger.error('Unable to find alias {0}.'.format(alias))
         return False
 
-def get_indices(client):
+def get_indices(client, closed_only=False):
     try:
+        wildcards = 'closed'
+        if closed_only is False:
+            wildcards = 'open,' + wildcards
         indices = list(client.indices.get_settings(
-            index='_all', params={'expand_wildcards': 'open,closed'}))
+            index='_all', params={'expand_wildcards': wildcards}))
         logger.debug("All indices: {0}".format(indices))
         return indices
     except Exception:
