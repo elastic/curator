@@ -21,7 +21,7 @@ def add_to_alias(client, index_name, alias=None):
     if not alias: # This prevents _all from being aliased by accident...
         logger.error('No alias provided.')
         return False
-    if not client.indices.exists_alias(alias):
+    if not client.indices.exists_alias(name=alias):
         indices_in_alias = []
         logger.info('Alias {0} not found.  Creating...'.format(alias))
     else:

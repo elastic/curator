@@ -14,7 +14,7 @@ def get_alias(client, alias):
     :arg alias: Alias name to operate on.
     :rtype: list of strings
     """
-    if client.indices.exists_alias(alias):
+    if client.indices.exists_alias(name=alias):
         return client.indices.get_alias(name=alias).keys()
     else:
         logger.error('Unable to find alias {0}.'.format(alias))
