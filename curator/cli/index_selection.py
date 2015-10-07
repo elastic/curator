@@ -70,7 +70,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     client = get_client(**ctx.parent.parent.params)
 
     # Get a master-list of indices
-    indices = get_indices(client, closed_only and not all_indices)
+    indices = get_indices(client)
     logger.debug("Full list of indices: {0}".format(indices))
 
     # Build index list
@@ -82,6 +82,10 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         else:
             click.echo(click.style('ERROR. No indices found in Elasticsearch.', fg='red', bold=True))
             sys.exit(1)
+
+    if closed_only and not all_indices:
+        logger.info("Pruning open indices, leaving only closed indices.")
+        working_list = prune_opened(client, working_list)
 
     # Override any other flags if --all_indices specified
     if all_indices:
