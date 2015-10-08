@@ -30,9 +30,11 @@ logger = logging.getLogger(__name__)
                 help='Include the provided index in the list. Can be invoked multiple times.')
 @click.option('--all-indices', is_flag=True,
                 help='Do not filter indices.  Act on all indices.')
+@click.option('--closed-only', is_flag=True,
+                help='Include only indices that are closed.')
 @click.pass_context
 def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
-            timestring, regex, exclude, index, all_indices):
+            timestring, regex, exclude, index, all_indices, closed_only):
     """
     Get a list of indices to act on from the provided arguments, then perform
     the command [alias, allocation, bloom, close, delete, etc.] on the resulting
@@ -80,6 +82,10 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         else:
             click.echo(click.style('ERROR. No indices found in Elasticsearch.', fg='red', bold=True))
             sys.exit(1)
+
+    if closed_only and not all_indices:
+        logger.info("Pruning open indices, leaving only closed indices.")
+        working_list = prune_opened(client, working_list)
 
     # Override any other flags if --all_indices specified
     if all_indices:

@@ -6,6 +6,11 @@ Changelog
 3.4.0 (? ? ?)
 -------------
 
+**General**
+
+  * During index selection you can now select only closed indices with ``--closed-only``.
+   Does not impact ``--all-indices`` #476 (Basster)
+
 3.3.0 (31 August 2015)
 ----------------------
 

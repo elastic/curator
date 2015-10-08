@@ -292,13 +292,27 @@ def prune_closed(client, indices):
     :arg indices: A list of indices to act on
     :rtype: list
     """
+    return prune_open_or_closed(client, indices, append_closed=False)
+
+def prune_opened(client, indices):
+    """
+    Return list of indices that are not open.
+
+    :arg client: The Elasticsearch client connection
+    :arg indices: A list of indices to act on
+    :rtype: list
+    """
+    return prune_open_or_closed(client, indices, append_closed=True)
+
+def prune_open_or_closed(client, indices, append_closed):
     indices = ensure_list(indices)
     retval = []
     for idx in list(indices):
-        if not index_closed(client, idx):
+        if index_closed(client, idx) is append_closed:
             retval.append(idx)
         else:
-            logger.info('Skipping index {0}: Closed.'.format(idx))
+            status = 'Closed' if append_closed else 'Opened'
+            logger.info('Skipping index {0}: {1}.'.format(idx, status))
     return sorted(retval)
 
 def prune_allocated(client, indices, key, value, allocation_type):

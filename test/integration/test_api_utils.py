@@ -74,6 +74,30 @@ class TestPruneClosed(CuratorTestCase):
             ]
         self.assertEqual(l, r)
 
+class TestPruneOpened(CuratorTestCase):
+    def test_positive(self):
+        for i in range(1, 11):
+            self.create_index('test_index{0}'.format(i))
+        self.client.indices.close(index='test_index1,test_index2,test_index3')
+        l = curator.get_indices(self.client)
+        l = sorted(curator.prune_opened(self.client, l))
+        self.assertEqual(3, len(l))
+        r = [
+            "test_index1", "test_index2", "test_index3"
+            ]
+        self.assertEqual(l, r)
+    def test_negative(self):
+        for i in range(1, 11):
+            self.create_index('test_index{0}'.format(i))
+        self.client.indices.delete(index='test_index1,test_index2,test_index3')
+        self.client.indices.close(index='test_index4')
+        l = curator.get_indices(self.client)
+        l = sorted(curator.prune_opened(self.client, l))
+        self.assertEqual(1, len(l))
+        r = ["test_index4"]
+        self.assertEqual(l, r)
+
+
 class TestSegmentCount(CuratorTestCase):
     def test_simple(self):
         self.create_index('test_index', shards=2)
