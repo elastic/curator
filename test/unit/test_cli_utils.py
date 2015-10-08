@@ -85,7 +85,7 @@ class TestCheckVersion(TestCase):
         self.assertEqual(cm.exception.code, 1)
     def test_check_version_greater_than(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.0.1'} }
+        client.info.return_value = {'version': {'number': '3.0.1'} }
         with self.assertRaises(SystemExit) as cm:
             curator.check_version(client)
         self.assertEqual(cm.exception.code, 1)
