@@ -14,6 +14,9 @@ def delete_indices(client, indices, master_timeout=30000):
     :rtype bool:
     """
     indices = ensure_list(indices)
+    if get_version(client) >= (2,0,0):
+        if type(master_timeout) == type(int()):
+            master_timeout = str(master_timeout/1000) + 's'
     try:
         logger.info("Deleting indices as a batch operation:")
         for i in indices:
@@ -37,6 +40,9 @@ def delete(client, indices, master_timeout=30000):
     :arg master_timeout: Number of milliseconds to wait for master node response
     :rtype bool:
     """
+    if get_version(client) >= (2,0,0):
+        if type(master_timeout) == type(int()):
+            master_timeout = str(master_timeout/1000) + 's'
     for count in range(1, 4): # Try 3 times
         logger.debug("master_timeout value: {0}".format(master_timeout))
         delete_indices(client, indices, master_timeout)

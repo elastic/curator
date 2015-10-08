@@ -12,7 +12,7 @@ from ..api import *
 logger = logging.getLogger(__name__)
 
 # Elasticsearch versions supported
-version_max  = (2, 0, 0)
+version_max  = (3, 0, 0)
 version_min = (1, 0, 0)
 
 REGEX_MAP = {

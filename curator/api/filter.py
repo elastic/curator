@@ -324,11 +324,10 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
 
     def get_stat_list(stats):
         retval = []
-        for (index_name, index_stats) in stats['indices'].items():
-            replica_count = client.indices.get_settings(index_name)[index_name]['settings']['index']['number_of_replicas']
-            size = "size_in_bytes" if int(replica_count) > 0 else "primary_size_in_bytes"
-            logger.debug('Index: {0}  Size: {1}'.format(index_name, index_stats['index'][size]))
-            retval.append((index_name, index_stats['index'][size]))
+        for index_name in stats['indices']:
+            size = stats['indices'][index_name]['total']['store']['size_in_bytes']
+            logger.debug('Index: {0}  Size: {1}'.format(index_name, size))
+            retval.append((index_name, size))
         return retval
 
     # Ensure that disk_space is a float
@@ -355,9 +354,9 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
             index_lists = chunk_index_list(not_closed)
             statlist = []
             for l in index_lists:
-                statlist.extend(get_stat_list(client.indices.status(index=to_csv(l))))
+                statlist.extend(get_stat_list(client.indices.stats(index=to_csv(l))))
         else:
-            statlist = get_stat_list(client.indices.status(index=to_csv(not_closed)))
+            statlist = get_stat_list(client.indices.stats(index=to_csv(not_closed)))
 
         sorted_indices = sorted(statlist, reverse=reverse)
 

@@ -13,9 +13,11 @@ open_indices   = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'open' },
 closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
                                                'index2' : { 'state' : 'close' }}}}
 fake_fail      = Exception('Simulated Failure')
-indices_space  = { 'indices' : {
-        'index1' : { 'index' : { 'primary_size_in_bytes': 1083741824 }},
-        'index2' : { 'index' : { 'primary_size_in_bytes': 1083741824 }}}}
+
+indices_stats  = { 'indices' : {
+         'index1' : { 'total' : { 'store' : { 'size_in_bytes' : 1083741824 }}},
+         'index2' : { 'total' : { 'store' : { 'size_in_bytes' : 1083741824 }}}}}
+
 re_test_indices = [
     "logstash-2014.12.31", "logstash-2014.12.30", "logstash-2014.12.29",
     ".marvel-2015.12.31", ".marvel-2015.12.30", ".marvel-2015.12.29",
@@ -29,9 +31,6 @@ re_test_indices = [
     "foologstash", "barlogstash",
     "logstashfoo", "logstashbar",
     ]
-
-sized           = { u'index1': {u'settings': {u'index': {u'number_of_replicas': u'0'} } },
-                    u'index2': {u'settings': {u'index': {u'number_of_replicas': u'0'} } } }
 
 class FilterBySpace(TestCase):
     def test_filter_by_space_param_check(self):
@@ -47,25 +46,22 @@ class FilterBySpace(TestCase):
         client = Mock()
         ds = 10.0
         client.cluster.state.return_value = open_indices
-        client.indices.get_settings.return_value = sized
         # Build return value of over 1G in size for each index
-        client.indices.status.return_value = indices_space
+        client.indices.stats.return_value = indices_stats
         self.assertEqual([], curator.filter_by_space(client, named_indices, disk_space=ds))
     def test_filter_by_space_one_deletion(self):
         client = Mock()
         ds = 2.0
         client.cluster.state.return_value = open_indices
-        client.indices.get_settings.return_value = sized
         # Build return value of over 1G in size for each index
-        client.indices.status.return_value = indices_space
+        client.indices.stats.return_value = indices_stats
         self.assertEqual(["index1"], curator.filter_by_space(client, named_indices, disk_space=ds))
     def test_filter_by_space_one_deletion_no_reverse(self):
         client = Mock()
         ds = 2.0
         client.cluster.state.return_value = open_indices
-        client.indices.get_settings.return_value = sized
         # Build return value of over 1G in size for each index
-        client.indices.status.return_value = indices_space
+        client.indices.stats.return_value = indices_stats
         self.assertEqual(["index2"], curator.filter_by_space(client, named_indices, disk_space=ds, reverse=False))
 
 class TestBuildFilter(TestCase):

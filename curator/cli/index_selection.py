@@ -110,6 +110,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     if working_list and ctx.parent.info_name == 'delete':
         # If filter by disk space, filter the working_list by space:
         if ctx.parent.params['disk_space']:
+            logger.info("Filtering to keep disk usage below {0} gigabytes".format(ctx.parent.params['disk_space']))
             working_list = filter_by_space(
                                 client, working_list,
                                 disk_space=ctx.parent.params['disk_space'],

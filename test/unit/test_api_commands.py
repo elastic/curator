@@ -208,9 +208,9 @@ class TestAllocate(TestCase):
         client.cluster.state.return_value = open_index
         client.indices.get_settings.return_value = allocation_out
         client.indices.put_settings.return_value = None
-        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="require"))   
-        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="include"))   
-        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="exclude"))   
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="require"))
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="include"))
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="exclude"))
 
 class TestBloom(TestCase):
     def test_disable_bloom_no_more_bloom_positive(self):
@@ -318,10 +318,12 @@ class TestClose(TestCase):
 class TestDelete(TestCase):
     def test_delete_indices_positive(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.0.0'} }
         client.indices.delete.return_value = None
         self.assertTrue(curator.delete_indices(client, named_indices))
     def test_delete_indices_negative(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.0.0'} }
         client.indices.delete.side_effect = fake_fail
         self.assertFalse(curator.delete_indices(client, named_indices))
 
@@ -336,11 +338,13 @@ class TestDelete(TestCase):
     #     self.assertTrue(curator.delete(client, named_indices))
     def test_full_delete_negative(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.7.2'} }
         client.indices.delete.return_value = None
         client.indices.get_settings.return_value = named_indices
         self.assertFalse(curator.delete(client, named_indices))
     def test_full_delete_exception(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.7.2'} }
         client.indices.delete.side_effect = fake_fail
         client.indices.get_settings.return_value = named_indices
         self.assertFalse(curator.delete(client, named_indices))
