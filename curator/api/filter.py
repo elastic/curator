@@ -365,6 +365,7 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
 
             if disk_usage > disk_limit:
                 delete_list.append(index_name)
+                logger.info('Deleting {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
             else:
                 logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
     return delete_list

@@ -205,7 +205,7 @@ def repomgrcli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validat
 
     # Setup logging
     if debug:
-        numeric_log_level = logging.DEBUG
+        numeric_log_level = logging.DEBUG or loglevel.upper() == 'DEBUG'
         format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
     else:
         numeric_log_level = getattr(logging, loglevel.upper(), None)
