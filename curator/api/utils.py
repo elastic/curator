@@ -155,9 +155,10 @@ def optimized(client, index_name, max_num_segments=None):
     shards, segmentcount = get_segmentcount(client, index_name)
     logger.debug('Index {0} has {1} shards and {2} segments total.'.format(index_name, shards, segmentcount))
     if segmentcount > (shards * max_num_segments):
+        logger.debug('Flagging index {0} for optimization.'.format(index_name))
         return False
     else:
-        logger.info('Skipping index {0}: Already optimized.'.format(index_name))
+        logger.debug('Skipping index {0}: Already optimized.'.format(index_name))
         return True
 
 def get_version(client):
@@ -307,12 +308,13 @@ def prune_opened(client, indices):
 def prune_open_or_closed(client, indices, append_closed):
     indices = ensure_list(indices)
     retval = []
+    status = 'Closed' if append_closed else 'Opened'
     for idx in list(indices):
         if index_closed(client, idx) is append_closed:
             retval.append(idx)
+            logger.debug('Including index {0}: {1}.'.format(idx, status))
         else:
-            status = 'Closed' if append_closed else 'Opened'
-            logger.info('Skipping index {0}: {1}.'.format(idx, status))
+            logger.debug('Skipping index {0}: {1}.'.format(idx, status))
     return sorted(retval)
 
 def prune_allocated(client, indices, key, value, allocation_type):
@@ -340,5 +342,6 @@ def prune_allocated(client, indices, key, value, allocation_type):
         if has_routing:
             logger.debug('Skipping index {0}: Allocation rule {1} is already applied for type {2}.'.format(idx, key + "=" + value, allocation_type))
         else:
+            logger.info('Flagging index {0} to have allocation rule {1} applied for type {2}.'.format(idx, key + "=" + value, allocation_type))
             retval.append(idx)
     return sorted(retval)

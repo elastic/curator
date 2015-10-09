@@ -129,7 +129,7 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             countdown(10)
         # Make a sorted, unique list of indices
         working_list = sorted(list(set(working_list)))
-        logger.debug('ACTION: {0}. INDICES: {1}'.format(ctx.parent.info_name, working_list))
+        logger.info('Action {0} will be performed on the following indices: {1}'.format(ctx.parent.info_name, working_list))
 
         # Do action here!!! Don't forget to account for DRY_RUN!!!
         if ctx.parent.info_name == 'show':
