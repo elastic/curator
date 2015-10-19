@@ -16,6 +16,7 @@ Changelog
     for ES versions 1.0.3 through 2.0.0-rc1.  Fixed in #488 (untergeek)
   * es_repo_mgr now has access to the same SSL options from #462. #489 (untergeek)
   * Logging improvements requested in #475. (untergeek)
+  * Added ``--quiet`` flag. #494 (untergeek)
 
 3.3.0 (31 August 2015)
 ----------------------

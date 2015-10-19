@@ -89,7 +89,7 @@ Download and install the Public Signing Key:
 
 [source,sh]
 --------------------------------------------------
-wget -qO - https://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo apt-key add -
+wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 --------------------------------------------------
 
 [float]
@@ -100,7 +100,7 @@ Add the following in your `/etc/apt/sources.list.d/` directory in a file with a
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
-deb http://packages.elasticsearch.org/curator/{curator_major}/debian stable main
+deb http://packages.elastic.co/curator/{curator_major}/debian stable main
 --------------------------------------------------
 
 [WARNING]
@@ -148,7 +148,7 @@ Download and install the public signing key:
 
 [source,sh]
 --------------------------------------------------
-rpm --import https://packages.elasticsearch.org/GPG-KEY-elasticsearch
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 --------------------------------------------------
 
 [float]
@@ -167,9 +167,9 @@ RHEL/CentOS 6:
 --------------------------------------------------
 [curator-{curator_major}]
 name=CentOS/RHEL 6 repository for Elasticsearch Curator {curator_major}.x packages
-baseurl=http://packages.elasticsearch.org/curator/{curator_major}/centos/6
+baseurl=http://packages.elastic.co/curator/{curator_major}/centos/6
 gpgcheck=1
-gpgkey=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
 enabled=1
 --------------------------------------------------
 
@@ -178,9 +178,9 @@ RHEL/CentOS 7:
 --------------------------------------------------
 [curator-{curator_major}]
 name=CentOS/RHEL 7 repository for Elasticsearch Curator {curator_major}.x packages
-baseurl=http://packages.elasticsearch.org/curator/{curator_major}/centos/7
+baseurl=http://packages.elastic.co/curator/{curator_major}/centos/7
 gpgcheck=1
-gpgkey=http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
 enabled=1
 --------------------------------------------------
 =========================================
@@ -249,6 +249,6 @@ WARNING: If you do have Python installed, do not uncompress the zip file into
 your Python directory.  It can cause library path collisions which will prevent
 Curator from properly functioning.
 
-* http://packages.elasticsearch.org/curator/{curator_major}/windows/curator-{curator_version}-win64.zip[Download Curator]
-** http://packages.elasticsearch.org/curator/{curator_major}/windows/curator-{curator_version}-win64.zip.md5.txt[MD5]
-** http://packages.elasticsearch.org/curator/{curator_major}/windows/curator-{curator_version}-win64.zip.sha1.txt[SHA1]
+* http://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win64.zip[Download Curator]
+** http://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win64.zip.md5.txt[MD5]
+** http://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win64.zip.sha1.txt[SHA1]
