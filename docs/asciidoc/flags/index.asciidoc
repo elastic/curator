@@ -14,6 +14,7 @@
 * <<loglevel,--loglevel>>
 * <<master-only,--master-only>>
 * <<port,--port>>
+* <<quiet, --quiet>>
 * <<timeout,--timeout>>
 * <<url_prefix,--url_prefix>>
 * <<use_ssl,--use_ssl>>
@@ -57,6 +58,7 @@ include::logfile.asciidoc[]
 include::logformat.asciidoc[]
 include::loglevel.asciidoc[]
 include::master-only.asciidoc[]
+include::quiet.asciidoc[]
 include::port.asciidoc[]
 include::timeout.asciidoc[]
 include::url_prefix.asciidoc[]

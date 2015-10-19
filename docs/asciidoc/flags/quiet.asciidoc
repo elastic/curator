@@ -1,0 +1,32 @@
+[[quiet]]
+== --quiet
+
+[float]
+Summary
+~~~~~~~
+
+Disallows non-log STDOUT output, which is typically error messages.
+
+If no <<logfile, --logfile>> is specified, logging will still output to STDOUT
+by default.
+
+NOTE: If <<logformat, --logformat logstash>> is specified, `--quiet` is
+automatically implied.
+
+[float]
+Flags
+~~~~~
+
+* `--quiet` Suppress command-line output.
+
+IMPORTANT: This flag must come before any <<commands,command>>.
+
+[float]
+Example
+~~~~~~~
+
+Silence non-log command-line output:
+
+-----------------------------------------------------------------------------
+curator --logfile /tmp/curator.log --quiet <<command>> <<flags>>
+-----------------------------------------------------------------------------
