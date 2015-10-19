@@ -43,8 +43,9 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
     """
 
     if not repository:
-        click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('Missing required --repository parameter.', fg='red', bold=True))
+        msgout('{0}'.format(ctx.get_help()), quiet=ctx.parent.parent.params['quiet'])
+        logger.error('Missing required parameter --repository')
+        msgout('Missing required parameter --repository', error=True, quiet=ctx.parent.parent.params['quiet'])
         sys.exit(1)
 
     logger.info("Job starting: {0} snapshots".format(ctx.parent.info_name))
@@ -59,7 +60,8 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
     if snapshots:
         working_list = snapshots
     else:
-        click.echo(click.style('No snapshots found in Elasticsearch.', fg='red', bold=True))
+        logger.error('No snapshots found in Elasticsearch.')
+        msgout('No snapshots found in Elasticsearch.', error=True, quiet=ctx.parent.parent.params['quiet'])
         sys.exit(0)
 
     if all_snapshots:
@@ -96,5 +98,5 @@ def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
     else:
         logger.warn('No snapshots matched provided args.')
-        click.echo(click.style('No snapshots matched provided args.', fg='red', bold=True))
+        msgout('No snapshots matched provided args.', quiet=ctx.parent.parent.params['quiet'])
         sys.exit(0)
