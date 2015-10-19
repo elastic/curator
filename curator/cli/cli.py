@@ -44,9 +44,10 @@ DEFAULT_ARGS = {
 @click.option('--loglevel', help='Log level', default=DEFAULT_ARGS['log_level'])
 @click.option('--logfile', help='log file')
 @click.option('--logformat', help='Log output format [default|logstash].', default=DEFAULT_ARGS['logformat'])
+@click.option('--quiet', help='Suppress command-line output.', is_flag=True)
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
+def cli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat, quiet):
     """
     Curator for Elasticsearch indices.
 
@@ -66,18 +67,21 @@ def cli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http
     handler = logging.StreamHandler(
         open(logfile, 'a') if logfile else sys.stdout)
     if logformat == 'logstash':
+        ctx.params['quiet'] = True
         handler.setFormatter(LogstashFormatter())
     else:
         handler.setFormatter(logging.Formatter(format_string))
     logging.root.addHandler(handler)
     logging.root.setLevel(numeric_log_level)
+    logger = logging.getLogger('curator.cli')
 
     # Test whether certificate is a valid file path
     if use_ssl is True and certificate is not None:
         try:
             open(certificate, 'r')
         except IOError:
-            click.echo(click.style('Error: Could not open certificate at {0}'.format(certificate), fg='red', bold=True))
+            logger.error('Could not open certificate at {0}'.format(certificate))
+            msgout('Error: Could not open certificate at {0}'.format(certificate), error=True, quiet=quiet)
             sys.exit(1)
 
     # Filter out logging from Elasticsearch and associated modules by default

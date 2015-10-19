@@ -89,8 +89,8 @@ def check_version(client):
     version_number = get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
-        click.echo(click.style('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))), fg='red'))
-        click.echo(click.style('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))), fg='red', bold=True))
+        logger.error('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
+        logger.error('Incompatible with version {0} of Elasticsearch.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
 def check_master(client, master_only=False):
@@ -135,7 +135,7 @@ def get_client(**kwargs):
         check_master(client, master_only=master_only)
         return client
     except Exception:
-        click.echo(click.style('ERROR: Connection failure.', fg='red', bold=True))
+        logger.error('Connection failure.')
         sys.exit(1)
 
 def override_timeout(ctx):
@@ -163,10 +163,10 @@ def filter_callback(ctx, param, value):
 
     if param.name in ['older_than', 'newer_than']:
         if not ctx.params['time_unit'] :
-            click.echo(click.style("Parameters --older-than and --newer-than require the --time-unit parameter", fg='red', bold=True))
+            logger.error("Parameters --older-than and --newer-than require the --time-unit parameter")
             sys.exit(1)
         if not ctx.params['timestring']:
-            click.echo(click.style("Parameters --older-than and --newer-than require the --timestring parameter", fg='red', bold=True))
+            logger.error("Parameters --older-than and --newer-than require the --timestring parameter")
             sys.exit(1)
         argdict = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
                     "timestring": ctx.params['timestring'], "value": value,
@@ -249,3 +249,13 @@ def do_command(client, command, indices, params=None, master_timeout=30000):
                 request_timeout=params['request_timeout'],
                 skip_repo_validation=params['skip_repo_validation'],
                )
+
+def msgout(msg, error=False, warning=False, quiet=False):
+    """Output messages to stdout via click.echo if quiet=False"""
+    if not quiet:
+        if error:
+            click.echo(click.style(click.style(msg, fg='red', bold=True)))
+        elif warning:
+            click.echo(click.style(click.style(msg, fg='yellow', bold=True)))
+        else:
+            click.echo(msg)

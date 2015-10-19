@@ -14,12 +14,14 @@ logger = logging.getLogger(__name__)
 def allocation(ctx, rule, type):
     """Index Allocation"""
     if not rule:
-        click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('Missing required parameter --rule', fg='red', bold=True))
+        msgout('{0}'.format(ctx.get_help()), quiet=ctx.parent.params['quiet'])
+        logger.error('Missing required parameter --rule')
+        msgout('Missing required parameter --rule', error=True, quiet=ctx.parent.params['quiet'])
         sys.exit(1)
 
     if type not in ['require', 'include', 'exclude']:
-        click.echo(click.style('--type can only be one of: require, include  exclude', fg='red', bold=True))
+        logger.error('--type can only be one of: require, include  exclude')
+        msgout('--type can only be one of: require, include  exclude', error=True, quiet=ctx.parent.params['quiet'])
         sys.exit(1)
 
 allocation.add_command(indices)

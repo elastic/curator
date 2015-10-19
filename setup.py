@@ -22,7 +22,7 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=1.7.0,<2.0.0' ]
+    res = ['elasticsearch>=1.8.0,<2.0.0' ]
     res.append('click>=3.3')
     return res
 

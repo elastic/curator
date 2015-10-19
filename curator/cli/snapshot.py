@@ -38,7 +38,8 @@ def snapshot(
     ):
     """Take snapshots of indices (Backup)"""
     if not repository:
-        click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('Missing required parameter --repository', fg='red', bold=True))
+        msgout('{0}'.format(ctx.get_help()), quiet=ctx.parent.params['quiet'])
+        logger.error('Missing required parameter --repository')
+        msgout('Missing required parameter --repository', error=True, quiet=ctx.parent.params['quiet'])
         sys.exit(1)
 snapshot.add_command(indices)

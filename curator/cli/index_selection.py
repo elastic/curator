@@ -48,8 +48,10 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         regex = r'^.*{0}.*$'.format(get_date_regex(timestring))
         ctx.obj['filters'].append({ 'pattern': regex })
     if not all_indices and not ctx.obj['filters'] and not index:
-        click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('ERROR. At least one filter must be supplied.', fg='red', bold=True))
+
+        logger.error('At least one filter must be supplied.')
+        msgout('{0}'.format(ctx.get_help()), quiet=ctx.parent.parent.params['quiet'])
+        msgout('ERROR. At least one filter must be supplied.', error=True, quiet=ctx.parent.parent.params['quiet'])
         sys.exit(1)
 
     logger.info("Job starting: {0} indices".format(ctx.parent.info_name))
@@ -80,7 +82,8 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         if indices:
             working_list = indices
         else:
-            click.echo(click.style('ERROR. No indices found in Elasticsearch.', fg='red', bold=True))
+            logger.error('No indices found in Elasticsearch')
+            msgout('ERROR. No indices found in Elasticsearch.', error=True, quiet=ctx.parent.parent.params['quiet'])
             sys.exit(1)
 
     if closed_only and not all_indices:
@@ -123,10 +126,19 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         if timestring and not newer_than and not older_than \
           and not (ctx.parent.info_name == 'show') \
           and not ctx.parent.parent.params['dry_run']:
-            click.echo(click.style('You are using --timestring without --older-than or --newer-than.', fg='yellow', bold=True))
-            click.echo('This could result in actions being performed on all indices matching {0}'.format(timestring))
-            click.echo(click.style('Press CTRL-C to exit Curator before the timer expires:', fg='red', bold=True))
-            countdown(10)
+            if ctx.parent.parent.params['quiet']:
+                # Don't output to stdout if 'quiet' (or logformat == logstash)
+                logger.warn('You are using --timestring without --older-than or --newer-than.')
+                logger.warn('This could result in actions being performed on all indices matching {0}'.format(timestring))
+            else:
+                # Do this if not quiet mode.
+                logger.warn('You are using --timestring without --older-than or --newer-than.')
+                logger.warn('This could result in actions being performed on all indices matching {0}'.format(timestring))
+                msgout('You are using --timestring without --older-than or --newer-than.', warning=True, quiet=ctx.parent.parent.params['quiet'])
+                msgout('This could result in actions being performed on all indices matching {0}'.format(timestring), warning=True, quiet=ctx.parent.parent.params['quiet'])
+                msgout('Press CTRL-C to exit Curator before the timer expires:', error=True, quiet=ctx.parent.parent.params['quiet'])
+                countdown(10)
+
         # Make a sorted, unique list of indices
         working_list = sorted(list(set(working_list)))
         logger.info('Action {0} will be performed on the following indices: {1}'.format(ctx.parent.info_name, working_list))
@@ -157,5 +169,5 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
 
     else:
         logger.warn('No indices matched provided args: {0}'.format(ctx.params))
-        click.echo(click.style('No indices matched provided args.', fg='red', bold=True))
+        msgout('No indices matched provided args: {0}'.format(ctx.params), quiet=ctx.parent.parent.params['quiet'])
         sys.exit(0)

@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 def alias(ctx, name, remove):
     """Index Aliasing"""
     if not name:
-        click.echo('{0}'.format(ctx.get_help()))
-        click.echo(click.style('Missing required parameter --name', fg='red', bold=True))
+        msgout('{0}'.format(ctx.get_help()), quiet=ctx.parent.params['quiet'])
+        logger.error('Missing required parameter --name')
+        msgout('Missing required parameter --name', error=True, quiet=ctx.parent.params['quiet'])
         sys.exit(1)
 alias.add_command(indices)
