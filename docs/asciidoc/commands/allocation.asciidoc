@@ -6,8 +6,8 @@ Summary
 ~~~~~~~
 
 From the
-{ref}/index-modules-allocation.html#shard-allocation-filtering[Elasticsearch
-Shard Allocation Filtering Documentation]:
+{ref}/shard-allocation-filtering.html[Elasticsearch Shard Allocation Filtering 
+Documentation]:
 
 ________________________________________________________________________________
 Allows to control the allocation of indices on nodes based on include/exclude
