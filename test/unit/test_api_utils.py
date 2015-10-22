@@ -145,6 +145,35 @@ class TestPruneKibana(TestCase):
         r = []
         self.assertEqual(r, curator.prune_kibana(l))
 
+class TestIndexClosed(TestCase):
+    def test_cat_indices_json(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.7.2'} }
+        client.cat.indices.return_value = [{'status': 'close'}]
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, True)
+
+    def test_cat_indices_text_plain(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.5.0'} }
+        client.cat.indices.return_value = u'[{"status":"close"}]'
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, True)
+
+    def test_cluster_state(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = closed_index
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, True)
+
+    def test_open(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.7.2'} }
+        client.cat.indices.return_value = [{'status': 'open'}]
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, False)
+
 class TestGetVersion(TestCase):
     def test_positive(self):
         client = Mock()
@@ -176,6 +205,7 @@ class TestOptimized(TestCase):
         self.assertRaises(ValueError, curator.optimized, client, named_index)
     def test_optimized_index_closed(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.0'} }
         client.cluster.state.return_value = closed_index
         self.assertTrue(curator.optimized(client, named_index, max_num_segments=2))
 
