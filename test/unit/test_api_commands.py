@@ -14,6 +14,8 @@ named_index    = 'index_name'
 named_indices  = [ "index1", "index2" ]
 open_index     = {'metadata': {'indices' : { named_index : {'state' : 'open'}}}}
 closed_index   = {'metadata': {'indices' : { named_index : {'state' : 'close'}}}}
+cat_open_index = [{'status': 'open'}]
+cat_closed_index = [{'status': 'close'}]
 open_indices   = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'open' },
                                                'index2' : { 'state' : 'open' }}}}
 closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
@@ -129,6 +131,7 @@ class TestAlias(TestCase):
         client = Mock()
         client.indices.exists_alias.return_value = False
         client.cluster.state.return_value = open_index
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.add_to_alias(client, named_index, alias=named_alias))
     def test_add_to_alias_exception_test(self):
         client = Mock()
@@ -136,6 +139,7 @@ class TestAlias(TestCase):
         client.indices.exists_alias.return_value = True
         client.cluster.state.return_value = open_index
         client.indices.update_aliases.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.add_to_alias(client, named_index, alias=named_alias))
     def test_remove_from_alias_bad_csv(self):
         client = Mock()
@@ -286,14 +290,14 @@ class TestClose(TestCase):
         self.assertFalse(curator.close(client, named_index))
     def test_close_indices_positive(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_pass
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.return_value = None
         self.assertTrue(curator.close_indices(client, named_index))
     def test_close_indices_negative(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.side_effect = fake_fail
@@ -301,14 +305,14 @@ class TestClose(TestCase):
         self.assertFalse(curator.close_indices(client, named_index))
     def test_full_close_positive(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_pass
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.return_value = None
         self.assertTrue(curator.close(client, named_index))
     def test_full_close_negative(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.side_effect = fake_fail
@@ -373,24 +377,28 @@ class TestOptimize(TestCase):
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.optimize_index(client, named_index, max_num_segments=2))
     def test_optimize_index_negative(self):
         client = Mock()
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.optimize_index(client, named_index, max_num_segments=2))
     def test_optimize_positive(self):
         client = Mock()
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.optimize(client, named_index, max_num_segments=2))
     def test_optimize_negative(self):
         client = Mock()
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.optimize(client, named_index, max_num_segments=2))
 
 class TestReplicas(TestCase):
@@ -402,21 +410,25 @@ class TestReplicas(TestCase):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.change_replicas(client, named_indices, replicas=0))
     def test_change_replicas_negative(self):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.change_replicas(client, named_indices, replicas=0))
     def test_replicas_positive(self):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.replicas(client, named_indices, replicas=0))
     def test_replicas_negative(self):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.replicas(client, named_indices, replicas=0))
 
 class TestSeal(TestCase):
@@ -424,7 +436,7 @@ class TestSeal(TestCase):
     # viewing to ascertain if one or more indices failed to seal.
     def test_seal_indices_good_version(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_pass
         client.info.return_value = {'version': {'number': '1.6.0'} }
         self.assertTrue(curator.seal_indices(client, named_index))
@@ -436,20 +448,20 @@ class TestSeal(TestCase):
         self.assertTrue(curator.seal_indices(client, named_index))
     def test_seal_indices_conflicterror(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.indices.flush_synced.side_effect = sync_conflict
         client.info.return_value = {'version': {'number': '1.6.0'} }
         self.assertTrue(curator.seal_indices(client, named_index))
     def test_seal_indices_onepass_onefail(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fails
         client.info.return_value = {'version': {'number': '1.6.0'} }
         self.assertTrue(curator.seal_indices(client, named_index))
     def test_seal_indices_attribute_exception(self):
         client = Mock()
-        client.cluster.state.return_value = open_index
+        client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.indices.flush_synced.side_effect = fake_fail
         client.info.return_value = {'version': {'number': '1.6.0'} }

@@ -4,6 +4,7 @@ import time
 import re
 import sys
 import logging
+import json
 logger = logging.getLogger(__name__)
 
 def get_alias(client, alias):
@@ -88,11 +89,18 @@ def index_closed(client, index_name):
     :arg index_name: The index name
     :rtype: bool
     """
-    index_metadata = client.cluster.state(
-        index=index_name,
-        metric='metadata',
-    )
-    return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
+    if get_version(client) >= (1, 5, 0):
+        indices = client.cat.indices(index=index_name, format='json', h='status')
+        if not isinstance(indices, list):  # content-type: text/plain
+            indices = json.loads(indices)
+        (index_info,) = indices
+        return index_info['status'] == 'close'
+    else:
+        index_metadata = client.cluster.state(
+            index=index_name,
+            metric='metadata',
+        )
+        return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
 
 def get_segmentcount(client, index_name):
     """
