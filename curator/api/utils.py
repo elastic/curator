@@ -89,8 +89,13 @@ def index_closed(client, index_name):
     :arg index_name: The index name
     :rtype: bool
     """
+    # This workaround using the _cat API is for AWS Elasticsearch, since it does
+    # not allow users to poll the cluster state.  It may also be faster than
+    # using the cluster state.
     if get_version(client) >= (1, 5, 0):
         indices = client.cat.indices(index=index_name, format='json', h='status')
+        # This workaround is also for AWS, as the _cat API still returns text/plain
+        # even with ``format='json'``.
         if not isinstance(indices, list):  # content-type: text/plain
             indices = json.loads(indices)
         (index_info,) = indices
