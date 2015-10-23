@@ -17,6 +17,7 @@ Changelog
   * es_repo_mgr now has access to the same SSL options from #462. #489 (untergeek)
   * Logging improvements requested in #475. (untergeek)
   * Added ``--quiet`` flag. #494 (untergeek)
+  * Fixed ``index_closed`` to work with AWS Elasticsearch. #499 (univerio)
 
 3.3.0 (31 August 2015)
 ----------------------
