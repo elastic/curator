@@ -6,7 +6,7 @@ Summary
 ~~~~~~~
 
 From the
-{ref}/index-modules-allocation.html#shard-allocation-filtering[Elasticsearch Shard Allocation Filtering 
+{ref}/shard-allocation-filtering.html[Elasticsearch Shard Allocation Filtering
 Documentation]:
 
 ________________________________________________________________________________
