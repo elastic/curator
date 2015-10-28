@@ -3,8 +3,8 @@
 Changelog
 =========
 
-3.4.0 (? ? ?)
--------------
+3.4.0 (28 October 2015)
+-----------------------
 
 **General**
 
@@ -18,6 +18,7 @@ Changelog
   * Logging improvements requested in #475. (untergeek)
   * Added ``--quiet`` flag. #494 (untergeek)
   * Fixed ``index_closed`` to work with AWS Elasticsearch. #499 (univerio)
+  * Acceptable versions of Elasticsearch-py module are 1.8.0 up to 2.1.0 (untergeek)
 
 3.3.0 (31 August 2015)
 ----------------------
