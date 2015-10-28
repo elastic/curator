@@ -24,11 +24,8 @@ pip install elasticsearch-curator
 PIP installation of a specific version:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you are still using Elasticsearch 0.90.x, you need to install curator
-version 0.6.2:
-
 ----------------------------------------
-pip install elasticsearch-curator==0.6.2
+pip install elasticsearch-curator==2.0.0
 ----------------------------------------
 
 &nbsp;
