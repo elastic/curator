@@ -39,16 +39,16 @@ Installation: PIP installation from source
 Download and install the https://github.com/shazow/urllib3[urllib3] dependency
 (1.8.3 or greater):
 
-. `wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.8.3.tar.gz`
-. `pip install urllib3-1.8.3.tar.gz`
+. `wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.12.tar.gz`
+. `pip install urllib3-1.12.tar.gz`
 
 &nbsp;
 
 Download and install the http://click.pocoo.org/[click] dependency (3.3 or
 greater):
 
-. `wget https://pypi.python.org/packages/source/c/click/click-3.3.tar.gz -O click-3.3.tar.gz`
-. `pip install click-3.3.tar.gz`
+. `wget https://pypi.python.org/packages/source/c/click/click-5.1.tar.gz -O click-5.1.tar.gz`
+. `pip install click-5.1.tar.gz`
 
 
 &nbsp;
