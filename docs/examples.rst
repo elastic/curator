@@ -4,7 +4,7 @@ Examples
 ========
 
 `build_filter` Examples
----------------------
+-----------------------
 
 Filter indices by prefix
 ++++++++++++++++++++++++

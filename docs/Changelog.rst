@@ -42,8 +42,8 @@ Changelog
 **General**
 
   * Allocation type can now also be ``include`` or ``exclude``, in addition to the
-   the existing default ``require`` type. Add ``--type`` to the allocation command
-   to specify the type. #443 (steffo)
+    the existing default ``require`` type. Add ``--type`` to the allocation command
+    to specify the type. #443 (steffo)
 
   * Bump elasticsearch python module dependency to 1.6.0+ to enable synced_flush
     API call. Reported in #447 (untergeek)
