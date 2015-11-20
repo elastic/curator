@@ -51,5 +51,5 @@ Display a list of snapshots in the named repository matching the selection
 parameters:
 
 ------------------------------------------------------------------------------------------------------
-curator show --show-snapshots --repository REPOSITORY_NAME snapshots <<snapshot selection parameters>>
+curator show snapshots <<snapshot selection parameters>>
 ------------------------------------------------------------------------------------------------------
