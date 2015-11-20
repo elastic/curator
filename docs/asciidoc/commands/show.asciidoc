@@ -42,7 +42,7 @@ Examples
 Display a list of indices matching the selection parameters:
 
 ------------------------------------------------------------------
-curator show --show-indices indices <<index selection parameters>>
+curator show indices <<index selection parameters>>
 ------------------------------------------------------------------
 
 &nbsp;
