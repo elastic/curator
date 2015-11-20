@@ -42,7 +42,7 @@ Examples
 Display a list of indices matching the selection parameters:
 
 ------------------------------------------------------------------
-curator show --show-indices indices <<index selection parameters>>
+curator show indices <<index selection parameters>>
 ------------------------------------------------------------------
 
 &nbsp;
@@ -51,5 +51,5 @@ Display a list of snapshots in the named repository matching the selection
 parameters:
 
 ------------------------------------------------------------------------------------------------------
-curator show --show-snapshots --repository REPOSITORY_NAME snapshots <<snapshot selection parameters>>
+curator show snapshots <<snapshot selection parameters>>
 ------------------------------------------------------------------------------------------------------
