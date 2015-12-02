@@ -117,7 +117,8 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
             working_list = filter_by_space(
                                 client, working_list,
                                 disk_space=ctx.parent.params['disk_space'],
-                                reverse=ctx.parent.params['reverse']
+                                reverse=ctx.parent.params['reverse'],
+                                position=ctx.parent.params['position']
                            )
 
     if working_list:
