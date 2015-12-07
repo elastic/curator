@@ -17,6 +17,8 @@ version_min = (1, 0, 0)
 
 REGEX_MAP = {
     'timestring': r'^.*{0}.*$',
+    'newest': r'(?P<date>{0})',
+    'oldest': r'(?P<date>{0})',
     'newer_than': r'(?P<date>{0})',
     'older_than': r'(?P<date>{0})',
     'prefix': r'^{0}.*$',
@@ -161,12 +163,12 @@ def filter_callback(ctx, param, value):
     else:
         argdict = {}
 
-    if param.name in ['older_than', 'newer_than']:
+    if param.name in ['oldest', 'newest', 'older_than', 'newer_than']:
         if not ctx.params['time_unit'] :
-            logger.error("Parameters --older-than and --newer-than require the --time-unit parameter")
+            logger.error("Parameters --oldest and --newest and --older-than and --newer-than require the --time-unit parameter")
             sys.exit(1)
         if not ctx.params['timestring']:
-            logger.error("Parameters --older-than and --newer-than require the --timestring parameter")
+            logger.error("Parameters --oldest and --newest and --older-than and --newer-than require the --timestring parameter")
             sys.exit(1)
         argdict = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
                     "timestring": ctx.params['timestring'], "value": value,

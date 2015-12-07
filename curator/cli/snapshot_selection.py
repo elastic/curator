@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 ### SNAPSHOTS
 @click.command(short_help="Snapshot selection.")
+@click.option('--newest', type=int, callback=filter_callback,
+                help='Include only the n newest snapshots')
+@click.option('--oldest', type=int, callback=filter_callback,
+                help='Include only the n oldest snapshots')
 @click.option('--newer-than', type=int, callback=filter_callback,
                 help='Include only snapshots newer than n time_units')
 @click.option('--older-than', type=int, callback=filter_callback,
@@ -34,7 +38,7 @@ logger = logging.getLogger(__name__)
 @click.option('--repository', type=str, is_eager=True, expose_value=True,
                 help='Repository name.')
 @click.pass_context
-def snapshots(ctx, newer_than, older_than, prefix, suffix, time_unit,
+def snapshots(ctx, newest, oldest, newer_than, older_than, prefix, suffix, time_unit,
             timestring, regex, exclude, snapshot, all_snapshots, repository):
     """
     Get a list of snapshots to act on from the provided arguments, then perform

@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 REGEX_MAP = {
     'timestring': r'^.*{0}.*$',
+    'newest': r'(?P<date>{0})',
+    'oldest': r'(?P<date>{0})',
     'newer_than': r'(?P<date>{0})',
     'older_than': r'(?P<date>{0})',
     'prefix': r'^{0}.*$',
@@ -34,7 +36,7 @@ def build_filter(
     Return a filter object based on the arguments.
 
     :arg kindOf: Can be one of:
-        [older_than|newer_than|suffix|prefix|regex|timestring].
+        [oldest|newest|older_than|newer_than|suffix|prefix|regex|timestring].
         This option defines what kind of filter you will be building.
     :arg exclude: If `True`, exclude matches rather than include
     :arg groupname: The name of a named capture in pattern.  Currently only acts
@@ -47,7 +49,7 @@ def build_filter(
         `older_than` and `newer_than`.  It is the strftime string if `kindOf` is
         `timestring`. It's used to build the regular expression for other kinds.
     """
-    if kindOf not in [  'older_than', 'newer_than', 'regex',
+    if kindOf not in [ 'oldest', 'newest', 'older_than', 'newer_than', 'regex',
                     'exclude', 'prefix', 'suffix', 'timestring'   ]:
         logger.error('{0}: Invalid value for kindOf'.format(kindOf))
         return {}
@@ -60,12 +62,12 @@ def build_filter(
     else:
         argdict = {}
 
-    if kindOf in ['older_than', 'newer_than']:
+    if kindOf in ['oldest', 'newest', 'older_than', 'newer_than']:
         if not time_unit:
-            logger.error("older_than and newer_than require time_unit parameter")
+            logger.error("oldest and newest and older_than and newer_than require time_unit parameter")
             return {}
         if not timestring:
-            logger.error("older_than and newer_than require timestring parameter")
+            logger.error("oldest and newest and older_than and newer_than require timestring parameter")
             return {}
         argdict = { "groupname":groupname, "time_unit":time_unit,
                     "timestring": timestring, "value": value,
@@ -102,8 +104,8 @@ def apply_filter(
         Only used for time-based filtering.
     :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.
         (default: ``days``). Only used for time-based filtering.
-    :arg method: Either ``older_than`` or ``newer_than``. Only used for
-        time-based filtering.
+    :arg method: Either ``oldest`` or ``newest`` or ``older_than`` or ``newer_than``.
+        Only used for time-based filtering.
     :arg value: `time_unit` multiplier used to calculate time window. Only
         used for time-based filtering.
     :arg utc_now: Used for testing.  Overrides current time with specified time.
@@ -136,6 +138,20 @@ def apply_filter(
                 match = True
         if match == True:
             result.append(item)
+
+    if method == "newest" or method == "oldest":
+        if value <= 0:
+          result = []
+        else:
+          result = sort_by_date(items=result, pattern=pattern, groupname=groupname, timestring=timestring)
+          if result:
+            if method == "newest":
+              result = result[-value:]
+            elif method == "oldest":
+              result = result[:value]
+          else:
+            result = []
+
     return result
 
 def get_date_regex(timestring):
@@ -273,7 +289,7 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
     :arg timestamp: An strftime parsable date string.
     :arg timestring: An strftime string to match against ``timestamp``.
     :arg time_unit: One of ``hours``, ``days``, ``weeks``, ``months``.
-    :arg method: ``older_than`` or ``newer_than``.
+    :arg method: ``oldest`` or ``newest`` or ``older_than`` or ``newer_than``.
     :arg value: `time_unit` multiplier used to calculate time window.
     :arg utc_now: Used for testing.  Overrides current time with specified time.
     :rtype: bool
@@ -296,6 +312,10 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
     elif method == "newer_than":
         if object_time > cutoff:
             return True
+    elif method == "newest":
+        return True
+    elif method == "oldest":
+        return True
 
     logger.debug('Timestamp "{0}" is outside the cutoff period ({1} {2} {3}).'.format(
                         timestamp, method.replace('_', ' '), value, time_unit))
@@ -369,3 +389,20 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
             else:
                 logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
     return delete_list
+
+def sort_by_date(items, pattern, groupname, timestring):
+    result = []
+    p = re.compile(pattern)
+    for item in items:
+        m = p.search(item)
+        if m and m.group(groupname):
+            timestamp = m.group(groupname)
+            try:
+              dt = get_datetime(timestamp, timestring)
+            except ValueError:
+              logger.error('Could not extract a timestamp matching {0} from timestring {1}'.format(timestamp, timestring))
+            else:
+              result.append((dt, item))
+
+    result = sorted(result)
+    return [b for (a,b) in result]
