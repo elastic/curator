@@ -3,15 +3,20 @@
 Changelog
 =========
 
-3.4.x (? ? ?)
+3.5.x (? ? ?)
 -------------
 
 **General**
 
   * Update license copyright to 2016
-  
+  * Use slim python version with Docker #527 (xaka)
+
 **Bug fixes**
 
+  * Fix sphinx documentation build error #506 (hydrapolic)
+  * Ensure snapshots are found before iterating #507 (garyelephant)
+  * Fix a doc inconsistency #509 (pmoust)
+  * Fix a typo in `show` documentation #513 (pbamba)
   * Default to trying the cluster state for checking whether indices are closed, and
     then fall back to using the _cat API (for Amazon ES instances). #519 (untergeek)
   * Improve logging to show time delay between optimize runs, if selected. #525 (untergeek)
