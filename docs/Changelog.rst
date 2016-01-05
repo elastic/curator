@@ -11,7 +11,8 @@ Changelog
   * Default to trying the cluster state for checking whether indices are closed, and
     then fall back to using the _cat API (for Amazon ES instances). #519 (untergeek)
   * Improve logging to show time delay between optimize runs, if selected. #525 (untergeek)
-  
+  * Allow elasticsearch-py module versions through 2.3.0 (a presumption at this point) #524 (untergeek)
+
 3.4.0 (28 October 2015)
 -----------------------
 
