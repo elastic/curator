@@ -18,6 +18,7 @@ Changelog
   * Logging improvements requested in #475. (untergeek)
   * Added ``--quiet`` flag. #494 (untergeek)
   * Fixed ``index_closed`` to work with AWS Elasticsearch. #499 (univerio)
+  * Acceptable versions of Elasticsearch-py module are 1.8.0 up to 2.1.0 (untergeek)
 
 3.3.0 (31 August 2015)
 ----------------------
@@ -42,8 +43,8 @@ Changelog
 **General**
 
   * Allocation type can now also be ``include`` or ``exclude``, in addition to the
-    the existing default ``require`` type. Add ``--type`` to the allocation command
-    to specify the type. #443 (steffo)
+   the existing default ``require`` type. Add ``--type`` to the allocation command
+   to specify the type. #443 (steffo)
 
   * Bump elasticsearch python module dependency to 1.6.0+ to enable synced_flush
     API call. Reported in #447 (untergeek)
