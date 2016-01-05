@@ -69,6 +69,9 @@ def create_snapshot(client, indices='_all', name=None,
     name = name if name else prefix + datetime.utcnow().strftime('%Y%m%d%H%M%S')
     logger.info("Snapshot name: {0}".format(name))
     all_snaps = get_snapshots(client, repository=repository)
+    if all_snaps is False:
+        logger.error("Unable to find all snapshots in repository")
+        return False
     if name in all_snaps:
         logger.error("A snapshot with name '{0}' already exists.".format(name))
         return False
