@@ -89,23 +89,39 @@ def index_closed(client, index_name):
     :arg index_name: The index name
     :rtype: bool
     """
-    # This workaround using the _cat API is for AWS Elasticsearch, since it does
-    # not allow users to poll the cluster state.  It may also be faster than
-    # using the cluster state.
-    if get_version(client) >= (1, 5, 0):
-        indices = client.cat.indices(index=index_name, format='json', h='status')
-        # This workaround is also for AWS, as the _cat API still returns text/plain
-        # even with ``format='json'``.
-        if not isinstance(indices, list):  # content-type: text/plain
-            indices = json.loads(indices)
-        (index_info,) = indices
-        return index_info['status'] == 'close'
-    else:
+    try:
         index_metadata = client.cluster.state(
             index=index_name,
             metric='metadata',
         )
         return index_metadata['metadata']['indices'][index_name]['state'] == 'close'
+    except elasticsearch.TransportError as e:
+        if e.status_code == 401:
+            # This workaround using the _cat API is for AWS Elasticsearch, since it does
+            # not allow users to poll the cluster state.  It is slower than using the
+            # cluster state, especially when iterating over large numbers of indices.
+            try:
+                if get_version(client) >= (1, 5, 0):
+                    indices = client.cat.indices(index=index_name, format='json', h='status')
+                    # This workaround is also for AWS, as the _cat API still returns text/plain
+                    # even with ``format='json'``.
+                    if not isinstance(indices, list):  # content-type: text/plain
+                        indices = json.loads(indices)
+                    (index_info,) = indices
+                    return index_info['status'] == 'close'
+                else:
+                    logger.error('Unable to determine whether index {0} is open or closed'.format(index_name))
+                    raise
+            except Exception:
+                logger.error('Unable to determine whether index {0} is open or closed'.format(index_name))
+                raise
+        else:
+            logger.debug('Error {0}'.format(e))
+    else:
+        logger.error('Unable to determine whether index {0} is open or closed'.format(index_name))
+        raise
+
+
 
 def get_segmentcount(client, index_name):
     """

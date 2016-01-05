@@ -21,6 +21,7 @@ open_indices   = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'open' },
 closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
                                                'index2' : { 'state' : 'close' }}}}
 fake_fail      = Exception('Simulated Failure')
+four_oh_one    = elasticsearch.TransportError(401, "simulated error")
 named_alias    = 'alias_name'
 allocation_in  = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'foo': 'bar'}}}}}}}
 allocation_out = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'not': 'foo'}}}}}}}
@@ -288,36 +289,71 @@ class TestClose(TestCase):
         client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close(client, named_index))
-    def test_close_indices_positive(self):
+    def test_close_indices_positive_cat(self):
         client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_pass
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.return_value = None
         self.assertTrue(curator.close_indices(client, named_index))
-    def test_close_indices_negative(self):
+    def test_close_indices_positive(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close_indices(client, named_index))
+    def test_close_indices_negative_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close_indices(client, named_index))
-    def test_full_close_positive(self):
+    def test_close_indices_negative(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.flush_synced.return_value = synced_fail
+        client.cluster.state.return_value = open_index
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close_indices(client, named_index))
+    def test_full_close_positive_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_pass
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.return_value = None
         self.assertTrue(curator.close(client, named_index))
-    def test_full_close_negative(self):
+    def test_full_close_positive(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close(client, named_index))
+    def test_full_close_negative_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.info.return_value = {'version': {'number': '1.6.0'} }
         client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close(client, named_index))
+    def test_full_close_negative(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close(client, named_index))
+
 
 class TestDelete(TestCase):
     def test_delete_indices_positive(self):
@@ -436,6 +472,7 @@ class TestSeal(TestCase):
     # viewing to ascertain if one or more indices failed to seal.
     def test_seal_indices_good_version(self):
         client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_pass
         client.info.return_value = {'version': {'number': '1.6.0'} }
@@ -448,6 +485,7 @@ class TestSeal(TestCase):
         self.assertTrue(curator.seal_indices(client, named_index))
     def test_seal_indices_conflicterror(self):
         client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.indices.flush_synced.side_effect = sync_conflict
@@ -455,12 +493,14 @@ class TestSeal(TestCase):
         self.assertTrue(curator.seal_indices(client, named_index))
     def test_seal_indices_onepass_onefail(self):
         client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fails
         client.info.return_value = {'version': {'number': '1.6.0'} }
         self.assertTrue(curator.seal_indices(client, named_index))
     def test_seal_indices_attribute_exception(self):
         client = Mock()
+        client.cluster.state.side_effect = four_oh_one
         client.cat.indices.return_value = cat_open_index
         client.indices.flush_synced.return_value = synced_fail
         client.indices.flush_synced.side_effect = fake_fail
