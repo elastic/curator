@@ -78,5 +78,5 @@ curator --host 10.0.0.2 close indices --exclude do-not-touch --exclude logstash-
 
 &nbsp;
 
-In this case, all indices saving those matching pattern `kibana`, or all
+In this case, all indices saving those matching pattern `do-not-touch`, or all
 Logstash indices for the month of March 2015 will be closed.
