@@ -95,11 +95,11 @@ def check_version(client):
 
 def check_master(client, master_only=False):
     """
-    Check if master node.  If not, exit with error code
+    Check if master node.  If not, exit
     """
     if master_only and not is_master_node(client):
         logger.info('Master-only flag detected. Connected to non-master node. Aborting.')
-        sys.exit(9)
+        sys.exit(0)
 
 def get_client(**kwargs):
     """Return an Elasticsearch client using the provided parameters
