@@ -80,7 +80,10 @@ The resulting `_filter` dictionary will be:
     client = elasticsearch.Elasticsearch()
 
     indices = curator.get_indices(client)
-    _filter = curator.build_filter(kindOf='suffix', value='-prod')
+    _filter = curator.build_filter(
+                kindOf='older_than', value=5, time_unit='days',
+                timestring='%Y.%d.%m'
+             )
     working_list = curator.apply_filter(indices, **_filter)
 
 The contents of `working_list` would then only be indices matching these
