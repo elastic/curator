@@ -1,0 +1,35 @@
+[[client-cert]]
+== --client-cert
+
+[float]
+Summary
+~~~~~~~
+
+Allows the use of a specified SSL client cert file to authenticate to
+Elasticsearch.  The file may contain both an SSL client certificate and an SSL
+key, in which case `--client-key` is not used.  If using `--client-cert`, and
+the file specified does not also contain the key, use `--client-key` to specify
+the file containing the SSL key.  The cert file must be in PEM format, and the
+key part, if used, must be an unencrypted key in PEM format as well.
+
+[float]
+Flags
+~~~~~
+
+* `--client-cert` Path to client certificate file to use for SSL client authentication.
+
+IMPORTANT: This flag must come before any <<commands,command>>.
+
+[float]
+Example
+~~~~~~~
+
+Connect to a cluster at `https://example.com/` via SSL using SSL client authentication:
+
+---------------------------------------------------------------------
+curator --host example.com --port 443 --use_ssl \
+        --certificate /path/to/cacert.pem \
+        --client-cert /path/to/clientcert.pem \
+        --client-key /path/to/clientkey.pem \
+        <<command>> <<flags>>
+---------------------------------------------------------------------

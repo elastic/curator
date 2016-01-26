@@ -105,7 +105,9 @@ def s3(
 @click.option('--port', help='Elasticsearch port.', default=DEFAULT_ARGS['port'], type=int)
 @click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=DEFAULT_ARGS['use_ssl'])
 @click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
-@click.option('--ssl-no-validate', help='Do not validate SSL certificate', is_flag=True)
+@click.option('--client-cert', help='Path to file containing SSL certificate for client auth. (OPTIONAL)', type=str, default=None)
+@click.option('--client-key', help='Path to file containing SSL key for client auth. (OPTIONAL)', type=str, default=None)
+@click.option('--ssl-no-validate', help='Do not validate server\'s SSL certificate', is_flag=True)
 @click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=DEFAULT_ARGS['http_auth'])
 @click.option('--timeout', help='Connection timeout in seconds.', default=DEFAULT_ARGS['timeout'], type=int)
 @click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
@@ -115,7 +117,7 @@ def s3(
 @click.option('--logformat', help='Log output format [default|logstash].', default=DEFAULT_ARGS['logformat'])
 @click.version_option(version=__version__)
 @click.pass_context
-def repomgrcli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http_auth, timeout, master_only, debug, loglevel, logfile, logformat):
+def repomgrcli(ctx, host, url_prefix, port, use_ssl, certificate, client_cert, client_key, ssl_no_validate, http_auth, timeout, master_only, debug, loglevel, logfile, logformat):
     """Repository manager for Elasticsearch Curator.
     """
 

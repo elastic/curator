@@ -130,3 +130,17 @@ class TestGetClient(TestCase):
             curator.get_client(**kwargs)
             self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
         self.assertEqual(cm.exception.code, 1)
+    def test_client_cert_logic(self):
+        client = Mock()
+        kwargs = { 'use_ssl' : True, 'client_cert' : 'myclientcert.pem' }
+        with self.assertRaises(SystemExit) as cm:
+            curator.get_client(**kwargs)
+            self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
+        self.assertEqual(cm.exception.code, 1)
+    def test_client_key_logic(self):
+        client = Mock()
+        kwargs = { 'use_ssl' : True, 'client_key' : 'myclientkey.pem' }
+        with self.assertRaises(SystemExit) as cm:
+            curator.get_client(**kwargs)
+            self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
+        self.assertEqual(cm.exception.code, 1)

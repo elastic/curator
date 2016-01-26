@@ -109,6 +109,8 @@ def get_client(**kwargs):
     kwargs['use_ssl'] = False if not 'use_ssl' in kwargs else kwargs['use_ssl']
     kwargs['ssl_no_validate'] = False if not 'ssl_no_validate' in kwargs else kwargs['ssl_no_validate']
     kwargs['certificate'] = False if not 'certificate' in kwargs else kwargs['certificate']
+    kwargs['client_cert'] = False if not 'client_cert' in kwargs else kwargs['client_cert']
+    kwargs['client_key'] = False if not 'client_key' in kwargs else kwargs['client_key']
     logger.debug("kwargs = {0}".format(kwargs))
     master_only = kwargs.pop('master_only')
     if kwargs['use_ssl']:
