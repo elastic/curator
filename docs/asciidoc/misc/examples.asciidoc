@@ -49,7 +49,7 @@ alias.
 === Optimize only the specified indices
 
 -----
-curator --host 10.0.0.2 optimize --max_num_segments 1 --delay 120 \
+curator --host 10.0.0.2 optimize indices --max_num_segments 1 --delay 120 \
    --index indexname1 --index indexname2
 -----
 
