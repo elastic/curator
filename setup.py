@@ -2,6 +2,7 @@ import os
 import re
 import sys
 from setuptools import setup
+from cx_Freeze import setup, Executable
 
 # Utility function to read from file.
 def fread(fname):
@@ -25,6 +26,49 @@ def get_install_requires():
     res = ['elasticsearch>=1.8.0,<2.4.0' ]
     res.append('click>=3.3')
     return res
+
+### cx_Freeze ###
+
+# Dependencies are automatically detected, but it might need
+# fine tuning.
+buildOptions = dict(packages = [], excludes = [])
+
+base = 'Console'
+
+icon = None
+if os.path.exists('Elastic.ico'):
+    icon = 'Elastic.ico'
+
+curator_exe = Executable(
+    "run_curator.py",
+    base=base,
+    targetName = "curator",
+    compress = True
+)
+repo_mgr_exe = Executable(
+    "run_es_repo_mgr.py",
+    base=base,
+    targetName = "es_repo_mgr",
+    compress = True
+)
+
+if sys.platform == "win32":
+    curator_exe = Executable(
+        "run_curator.py",
+        base=base,
+        targetName = "curator.exe",
+        compress = True,
+        icon = icon
+    )
+    repo_mgr_exe = Executable(
+        "run_es_repo_mgr.py",
+        base=base,
+        targetName = "es_repo_mgr.exe",
+        compress = True,
+        icon = icon
+    )
+
+### end cx_Freeze ###
 
 setup(
     name = "elasticsearch-curator",
@@ -50,5 +94,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     test_suite = "test.run_tests.run_all",
-    tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"]
+    tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"],
+    options = {"build_exe" : buildOptions},
+    executables = [curator_exe, repo_mgr_exe]
 )
