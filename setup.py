@@ -2,7 +2,6 @@ import os
 import re
 import sys
 from setuptools import setup
-from cx_Freeze import setup, Executable
 
 # Utility function to read from file.
 def fread(fname):
@@ -27,74 +26,101 @@ def get_install_requires():
     res.append('click>=3.3')
     return res
 
-### cx_Freeze ###
+try:
+    ### cx_Freeze ###
+    from cx_Freeze import setup, Executable
+    # Dependencies are automatically detected, but it might need
+    # fine tuning.
+    buildOptions = dict(packages = [], excludes = [])
 
-# Dependencies are automatically detected, but it might need
-# fine tuning.
-buildOptions = dict(packages = [], excludes = [])
+    base = 'Console'
 
-base = 'Console'
+    icon = None
+    if os.path.exists('Elastic.ico'):
+        icon = 'Elastic.ico'
 
-icon = None
-if os.path.exists('Elastic.ico'):
-    icon = 'Elastic.ico'
-
-curator_exe = Executable(
-    "run_curator.py",
-    base=base,
-    targetName = "curator",
-    compress = True
-)
-repo_mgr_exe = Executable(
-    "run_es_repo_mgr.py",
-    base=base,
-    targetName = "es_repo_mgr",
-    compress = True
-)
-
-if sys.platform == "win32":
     curator_exe = Executable(
         "run_curator.py",
         base=base,
-        targetName = "curator.exe",
-        compress = True,
-        icon = icon
+        targetName = "curator",
+        compress = True
     )
     repo_mgr_exe = Executable(
         "run_es_repo_mgr.py",
         base=base,
-        targetName = "es_repo_mgr.exe",
-        compress = True,
-        icon = icon
+        targetName = "es_repo_mgr",
+        compress = True
     )
 
-### end cx_Freeze ###
-
-setup(
-    name = "elasticsearch-curator",
-    version = get_version(),
-    author = "Aaron Mildenstein",
-    author_email = "aaron@mildensteins.com",
-    description = "Tending your Elasticsearch indices",
-    long_description=fread('README.rst'),
-    url = "http://github.com/elastic/curator",
-    download_url = "https://github.com/elastic/curator/tarball/v" + get_version(),
-    license = "Apache License, Version 2.0",
-    install_requires = get_install_requires(),
-    keywords = "elasticsearch time-series indexed index-expiry",
-    packages = ["curator", "curator.api", "curator.cli"],
-    include_package_data=True,
-    entry_points = {
-        "console_scripts" : ["curator = curator.curator:main",
-                             "es_repo_mgr = curator.es_repo_mgr:main"]
-    },
-    classifiers=[
-        "Intended Audience :: Developers",
-        "Intended Audience :: System Administrators",
-        "License :: OSI Approved :: Apache Software License",
-    ],
-    test_suite = "test.run_tests.run_all",
-    tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"],
-    options = {"build_exe" : buildOptions},
-    executables = [curator_exe, repo_mgr_exe]
-)
+    if sys.platform == "win32":
+        curator_exe = Executable(
+            "run_curator.py",
+            base=base,
+            targetName = "curator.exe",
+            compress = True,
+            icon = icon
+        )
+        repo_mgr_exe = Executable(
+            "run_es_repo_mgr.py",
+            base=base,
+            targetName = "es_repo_mgr.exe",
+            compress = True,
+            icon = icon
+        )
+    setup(
+        name = "elasticsearch-curator",
+        version = get_version(),
+        author = "Elastic",
+        author_email = "info@elastic.co",
+        description = "Tending your Elasticsearch indices",
+        long_description=fread('README.rst'),
+        url = "http://github.com/elastic/curator",
+        download_url = "https://github.com/elastic/curator/tarball/v" + get_version(),
+        license = "Apache License, Version 2.0",
+        install_requires = get_install_requires(),
+        keywords = "elasticsearch time-series indexed index-expiry",
+        packages = ["curator", "curator.api", "curator.cli"],
+        include_package_data=True,
+        entry_points = {
+            "console_scripts" : ["curator = curator.curator:main",
+                                 "es_repo_mgr = curator.es_repo_mgr:main"]
+        },
+        classifiers=[
+            "Intended Audience :: Developers",
+            "Intended Audience :: System Administrators",
+            "License :: OSI Approved :: Apache Software License",
+        ],
+        test_suite = "test.run_tests.run_all",
+        tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"],
+        options = {"build_exe" : buildOptions},
+        executables = [curator_exe, repo_mgr_exe]
+    )
+    ### end cx_Freeze ###
+except ImportError:
+    print('Unable to load cx_Freeze.  Cannot do \'build_exe\' or \'bdist_msi\'.\n')
+    setup(
+        name = "elasticsearch-curator",
+        version = get_version(),
+        author = "Elastic",
+        author_email = "info@elastic.co",
+        description = "Tending your Elasticsearch indices",
+        long_description=fread('README.rst'),
+        url = "http://github.com/elastic/curator",
+        download_url = "https://github.com/elastic/curator/tarball/v" + get_version(),
+        license = "Apache License, Version 2.0",
+        install_requires = get_install_requires(),
+        keywords = "elasticsearch time-series indexed index-expiry",
+        packages = ["curator", "curator.api", "curator.cli"],
+        include_package_data=True,
+        entry_points = {
+            "console_scripts" : ["curator = curator.curator:main",
+                                 "es_repo_mgr = curator.es_repo_mgr:main"]
+        },
+        classifiers=[
+            "Intended Audience :: Developers",
+            "Intended Audience :: System Administrators",
+            "License :: OSI Approved :: Apache Software License",
+        ],
+        test_suite = "test.run_tests.run_all",
+        tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"]
+    )
