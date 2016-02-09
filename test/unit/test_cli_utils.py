@@ -110,7 +110,7 @@ class TestCheckMaster(TestCase):
         }
         with self.assertRaises(SystemExit) as cm:
             curator.check_master(client, master_only=True)
-        self.assertEqual(cm.exception.code, 9)
+        self.assertEqual(cm.exception.code, 0)
 
 class TestInList(TestCase):
     def test_in_list_positive(self):
