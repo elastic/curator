@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 ### INDICES
 @click.command(short_help="Index selection.")
+@click.option('--newest', type=int, callback=filter_callback,
+                help='Include only the n newest indices')
+@click.option('--oldest', type=int, callback=filter_callback,
+                help='Include only the n oldest indices')
 @click.option('--newer-than', type=int, callback=filter_callback,
                 help='Include only indices newer than n time_units')
 @click.option('--older-than', type=int, callback=filter_callback,
@@ -33,7 +37,7 @@ logger = logging.getLogger(__name__)
 @click.option('--closed-only', is_flag=True,
                 help='Include only indices that are closed.')
 @click.pass_context
-def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
+def indices(ctx, newest, oldest, newer_than, older_than, prefix, suffix, time_unit,
             timestring, regex, exclude, index, all_indices, closed_only):
     """
     Get a list of indices to act on from the provided arguments, then perform
@@ -123,18 +127,18 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
     if working_list:
         ### Issue #348
         # I don't care about using only --timestring if it's a `show` or `dry_run`
-        if timestring and not newer_than and not older_than \
+        if timestring and not newest and not oldest and not newer_than and not older_than \
           and not (ctx.parent.info_name == 'show') \
           and not ctx.parent.parent.params['dry_run']:
             if ctx.parent.parent.params['quiet']:
                 # Don't output to stdout if 'quiet' (or logformat == logstash)
-                logger.warn('You are using --timestring without --older-than or --newer-than.')
+                logger.warn('You are using --timestring without --newest or --oldest or --older-than or --newer-than.')
                 logger.warn('This could result in actions being performed on all indices matching {0}'.format(timestring))
             else:
                 # Do this if not quiet mode.
-                logger.warn('You are using --timestring without --older-than or --newer-than.')
+                logger.warn('You are using --timestring without --newest or --oldest or --older-than or --newer-than.')
                 logger.warn('This could result in actions being performed on all indices matching {0}'.format(timestring))
-                msgout('You are using --timestring without --older-than or --newer-than.', warning=True, quiet=ctx.parent.parent.params['quiet'])
+                msgout('You are using --timestring without --newest or --oldest or --older-than or --newer-than.', warning=True, quiet=ctx.parent.parent.params['quiet'])
                 msgout('This could result in actions being performed on all indices matching {0}'.format(timestring), warning=True, quiet=ctx.parent.parent.params['quiet'])
                 msgout('Press CTRL-C to exit Curator before the timer expires:', error=True, quiet=ctx.parent.parent.params['quiet'])
                 countdown(10)
