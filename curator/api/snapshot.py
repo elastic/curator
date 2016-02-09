@@ -60,8 +60,15 @@ def create_snapshot(client, indices='_all', name=None,
         try:
             nodes = client.snapshot.verify_repository(repository=repository)['nodes']
             logger.debug('Nodes with verified repository access: {0}'.format(nodes))
-        except Exception:
-            logger.error('Failed to verify all nodes have repository access.')
+        except Exception as e:
+            logger.error('Failed to verify all nodes have repository access:')
+            try:
+                if e.status_code == 404:
+                    logger.error('--- Repository "{0}" not found. Error: {1}, {2}'.format(repository, e.status_code, e.er))
+                else:
+                    logger.error('--- Got a {0} response from Elasticsearch.  Error message: {1}'.format(e.status_code, e.error))
+            except AttributeError:
+                logger.error('--- Error message: {0}'.format(e))
             return False
     body=create_snapshot_body(indices, ignore_unavailable=ignore_unavailable,
                                 include_global_state=include_global_state,

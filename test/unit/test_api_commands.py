@@ -22,6 +22,7 @@ closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
                                                'index2' : { 'state' : 'close' }}}}
 fake_fail      = Exception('Simulated Failure')
 four_oh_one    = elasticsearch.TransportError(401, "simulated error")
+four_oh_four    = elasticsearch.TransportError(404, "simulated error")
 named_alias    = 'alias_name'
 allocation_in  = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'foo': 'bar'}}}}}}}
 allocation_out = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'not': 'foo'}}}}}}}
@@ -562,6 +563,38 @@ class TestSnapshot(TestCase):
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
         client.snapshot.verify_repository.side_effect = fake_fail
+        client.snapshot.status.return_value = nosnap_running
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_verify_nodes_four_oh_one(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.verify_repository.side_effect = four_oh_one
+        client.snapshot.status.return_value = nosnap_running
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_verify_nodes_four_oh_four(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.verify_repository.side_effect = four_oh_four
         client.snapshot.status.return_value = nosnap_running
         self.assertFalse(
             curator.create_snapshot(
