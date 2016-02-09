@@ -11,6 +11,9 @@ Changelog
   * Update license copyright to 2016
   * Use slim python version with Docker #527 (xaka)
   * Changed ``--master-only`` exit code to 0 when connected to non-master node #540 (wkruse)
+  * Add ``cx_Freeze`` capability to ``setup.py``, plus a ``binary_release.py``
+    script to simplify binary package creation.  #554 (untergeek)
+  * Set Elastic as author. #555 (untergeek)
 
 **Bug fixes**
 
@@ -22,6 +25,8 @@ Changelog
     then fall back to using the _cat API (for Amazon ES instances). #519 (untergeek)
   * Improve logging to show time delay between optimize runs, if selected. #525 (untergeek)
   * Allow elasticsearch-py module versions through 2.3.0 (a presumption at this point) #524 (untergeek)
+  * Improve logging in snapshot api method to reveal when a repository appears to be
+    missing. Reported in #551 (untergeek)
 
 
 3.4.0 (28 October 2015)
