@@ -10,6 +10,7 @@ Changelog
 
   * Update license copyright to 2016
   * Use slim python version with Docker #527 (xaka)
+  * Changed ``--master-only`` exit code to 0 when connected to non-master node #540 (wkruse)
 
 **Bug fixes**
 
