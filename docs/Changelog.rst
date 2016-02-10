@@ -14,6 +14,7 @@ Changelog
   * Add ``cx_Freeze`` capability to ``setup.py``, plus a ``binary_release.py``
     script to simplify binary package creation.  #554 (untergeek)
   * Set Elastic as author. #555 (untergeek)
+  * Put repository creation methods into API and document them. Requested in #550 (untergeek)
 
 **Bug fixes**
 
