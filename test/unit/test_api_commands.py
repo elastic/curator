@@ -187,10 +187,12 @@ class TestAllocate(TestCase):
         client.cluster.state.return_value = open_index
         client.indices.get_settings.return_value = allocation_in
         client.indices.put_settings.return_value = None
-        self.assertFalse(curator.apply_allocation_rule(client, named_index, rule="foo=bar"))
+        # It should return true now because after skipping one, it results in an empty list. #531
+        self.assertTrue(curator.apply_allocation_rule(client, named_index, rule="foo=bar"))
     def test_apply_allocation_rule_empty_list(self):
         client = Mock()
-        self.assertFalse(curator.apply_allocation_rule(client, [], rule="foo=bar"))
+        # It should return true now, even with an empty list. #531
+        self.assertTrue(curator.apply_allocation_rule(client, [], rule="foo=bar"))
     def test_allocation_positive(self):
         client = Mock()
         client.cluster.state.return_value = open_index
