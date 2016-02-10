@@ -3,7 +3,7 @@
 Changelog
 =========
 
-3.5.x (? ? ?)
+3.4.1 (? ? ?)
 -------------
 
 **General**
@@ -27,6 +27,8 @@ Changelog
   * Allow elasticsearch-py module versions through 2.3.0 (a presumption at this point) #524 (untergeek)
   * Improve logging in snapshot api method to reveal when a repository appears to be
     missing. Reported in #551 (untergeek)
+  * Test that ``--timestring`` has the correct variable for ``--time-unit``.
+    Reported in #544 (untergeek)
 
 
 3.4.0 (28 October 2015)
