@@ -259,3 +259,22 @@ def msgout(msg, error=False, warning=False, quiet=False):
             click.echo(click.style(click.style(msg, fg='yellow', bold=True)))
         else:
             click.echo(msg)
+
+def validate_time_details(time_unit, timestring):
+    """
+    Validate that the appropriate element(s) for time_unit are in the timestring.
+    """
+    retval = False
+    if time_unit == 'hours':
+        if '%H' in timestring:
+            retval = True
+    elif time_unit == 'days':
+        if '%d' in timestring:
+            retval = True
+    elif time_unit == 'weeks':
+        if '%W' in timestring:
+            retval = True
+    elif time_unit == 'months':
+        if '%m' in timestring:
+            retval = True
+    return retval
