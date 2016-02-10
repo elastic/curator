@@ -54,6 +54,11 @@ def indices(ctx, newer_than, older_than, prefix, suffix, time_unit,
         msgout('ERROR. At least one filter must be supplied.', error=True, quiet=ctx.parent.parent.params['quiet'])
         sys.exit(1)
 
+    if timestring and time_unit:
+        if not validate_time_details(time_unit, timestring):
+            msgout('ERROR. Timestring {0} does not contain time unit {1}'.format(timestring, time_unit))
+            sys.exit(1)
+
     logger.info("Job starting: {0} indices".format(ctx.parent.info_name))
 
     # Base and client args are in the grandparent tier of the context

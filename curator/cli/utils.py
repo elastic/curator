@@ -95,11 +95,11 @@ def check_version(client):
 
 def check_master(client, master_only=False):
     """
-    Check if master node.  If not, exit with error code
+    Check if master node.  If not, exit
     """
     if master_only and not is_master_node(client):
         logger.info('Master-only flag detected. Connected to non-master node. Aborting.')
-        sys.exit(9)
+        sys.exit(0)
 
 def get_client(**kwargs):
     """Return an Elasticsearch client using the provided parameters
@@ -259,3 +259,22 @@ def msgout(msg, error=False, warning=False, quiet=False):
             click.echo(click.style(click.style(msg, fg='yellow', bold=True)))
         else:
             click.echo(msg)
+
+def validate_time_details(time_unit, timestring):
+    """
+    Validate that the appropriate element(s) for time_unit are in the timestring.
+    """
+    retval = False
+    if time_unit == 'hours':
+        if '%H' in timestring:
+            retval = True
+    elif time_unit == 'days':
+        if '%d' in timestring:
+            retval = True
+    elif time_unit == 'weeks':
+        if '%W' in timestring:
+            retval = True
+    elif time_unit == 'months':
+        if '%m' in timestring:
+            retval = True
+    return retval

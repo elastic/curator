@@ -3,6 +3,37 @@
 Changelog
 =========
 
+3.4.1 (? ? ?)
+-------------
+
+**General**
+
+  * Update license copyright to 2016
+  * Use slim python version with Docker #527 (xaka)
+  * Changed ``--master-only`` exit code to 0 when connected to non-master node #540 (wkruse)
+  * Add ``cx_Freeze`` capability to ``setup.py``, plus a ``binary_release.py``
+    script to simplify binary package creation.  #554 (untergeek)
+  * Set Elastic as author. #555 (untergeek)
+  * Put repository creation methods into API and document them. Requested in #550 (untergeek)
+
+**Bug fixes**
+
+  * Fix sphinx documentation build error #506 (hydrapolic)
+  * Ensure snapshots are found before iterating #507 (garyelephant)
+  * Fix a doc inconsistency #509 (pmoust)
+  * Fix a typo in `show` documentation #513 (pbamba)
+  * Default to trying the cluster state for checking whether indices are closed, and
+    then fall back to using the _cat API (for Amazon ES instances). #519 (untergeek)
+  * Improve logging to show time delay between optimize runs, if selected. #525 (untergeek)
+  * Allow elasticsearch-py module versions through 2.3.0 (a presumption at this point) #524 (untergeek)
+  * Improve logging in snapshot api method to reveal when a repository appears to be
+    missing. Reported in #551 (untergeek)
+  * Test that ``--timestring`` has the correct variable for ``--time-unit``.
+    Reported in #544 (untergeek)
+  * Allocation will exit with exit_code 0 now when there are no indices to work on.
+    Reported in #531 (untergeek)
+
+
 3.4.0 (28 October 2015)
 -----------------------
 
@@ -18,6 +49,7 @@ Changelog
   * Logging improvements requested in #475. (untergeek)
   * Added ``--quiet`` flag. #494 (untergeek)
   * Fixed ``index_closed`` to work with AWS Elasticsearch. #499 (univerio)
+  * Acceptable versions of Elasticsearch-py module are 1.8.0 up to 2.1.0 (untergeek)
 
 3.3.0 (31 August 2015)
 ----------------------

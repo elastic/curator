@@ -25,7 +25,9 @@ def optimize_index(client, index_name, max_num_segments=None, delay=0,
                 index=index_name, max_num_segments=max_num_segments,
                 request_timeout=request_timeout
             )
-            time.sleep(delay)
+            if delay > 0:
+                logger.info("Pausing for {0} seconds before continuing...".format(delay))
+                time.sleep(delay)
             return True
         except Exception:
             logger.error("Error optimizing index {0}.  Run with --debug flag and/or check Elasticsearch logs for more information.".format(index_name))

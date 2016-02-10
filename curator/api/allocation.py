@@ -32,7 +32,7 @@ def apply_allocation_rule(client, indices, rule=None, allocation_type='require' 
 
     if not indices:
         logger.warn("No indices to act on.")
-        return False
+        return True # Send successful execution on empty list #531
     logger.info('Updating index setting index.routing.allocation.{0}.{1}={2}'.format(allocation_type,key,value))
     try:
         client.indices.put_settings(index=to_csv(indices),
