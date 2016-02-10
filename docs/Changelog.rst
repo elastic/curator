@@ -29,6 +29,8 @@ Changelog
     missing. Reported in #551 (untergeek)
   * Test that ``--timestring`` has the correct variable for ``--time-unit``.
     Reported in #544 (untergeek)
+  * Allocation will exit with exit_code 0 now when there are no indices to work on.
+    Reported in #531 (untergeek)
 
 
 3.4.0 (28 October 2015)
