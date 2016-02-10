@@ -9,7 +9,7 @@ except ImportError:
     from io import StringIO
 
 import elasticsearch
-import curator
+from curator import api as curator
 
 fake_fail      = Exception('Simulated Failure')
 repo_name      = 'repo_name'

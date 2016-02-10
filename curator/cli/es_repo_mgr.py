@@ -4,6 +4,7 @@ import re
 import sys
 
 from .utils import *
+from ..api import *
 from .. import __version__
 
 import logging
@@ -36,95 +37,12 @@ def show_repos(client):
         print('{0}'.format(repository))
     sys.exit(0)
 
-
-def create_repo_body(repo_type=None,
-                     compress=True, concurrent_streams=None, chunk_size=None,
-                     max_restore_bytes_per_sec=None,
-                     max_snapshot_bytes_per_sec=None,
-                     location=None,
-                     bucket=None, region=None, base_path=None, access_key=None,
-                     secret_key=None, **kwargs):
-    """Create the request body for creating a repository"""
-    # This shouldn't happen, but just in case...
-    if not repo_type:
-        click.echo(click.style('Missing required parameter --repo_type', fg='red', bold=True))
-        sys.exit(1)
-
-    argdict = locals()
-    body = {}
-    body['type'] = argdict['repo_type']
-    body['settings'] = {}
-    settings = []
-    maybes   = [
-                'compress', 'concurrent_streams', 'chunk_size',
-                'max_restore_bytes_per_sec', 'max_snapshot_bytes_per_sec'
-               ]
-    s3       = ['bucket', 'region', 'base_path', 'access_key', 'secret_key']
-
-    settings += [i for i in maybes if argdict[i]]
-    # Type 'fs'
-    if argdict['repo_type'] == 'fs':
-        settings.append('location')
-    # Type 's3'
-    if argdict['repo_type'] == 's3':
-        settings += [i for i in s3 if argdict[i]]
-    for k in settings:
-        body['settings'][k] = argdict[k]
-    return body
-
-def create_repository(client, **kwargs):
-    """Create repository with repository and body settings"""
-    if not 'repository' in kwargs:
-        click.echo(click.style('Missing required parameter --repository', fg='red', bold=True))
-        sys.exit(1)
-    else:
-        repository = kwargs['repository']
-
-    try:
-        body = create_repo_body(**kwargs)
-        logger.info("Checking if repository {0} already exists...".format(repository))
-        result = get_repository(client, repository=repository)
-        logger.debug("Result = {0}".format(result))
-        if not result:
-            logger.info("Repository {0} not in Elasticsearch. Continuing...".format(repository))
-            client.snapshot.create_repository(repository=repository, body=body)
-        elif result is not None and repository not in result:
-            logger.info("Repository {0} not in Elasticsearch. Continuing...".format(repository))
-            client.snapshot.create_repository(repository=repository, body=body)
-        else:
-            logger.error("Unable to create repository {0}.  A repository with that name already exists.".format(repository))
-            sys.exit(1)
-    except elasticsearch.TransportError as e:
-        logger.error("Unable to create repository {0}.  Response Code: {1}.  Error: {2}. Check curator and elasticsearch logs for more information.".format(repository, e.status_code, e.error))
-        return False
-    logger.info("Repository {0} creation initiated...".format(repository))
-    return True
-
-def verify_repository(client, repository=None):
-    """Verify repository existence"""
-    if not repository:
-        click.echo(click.style('Missing required parameter --repository', fg='red', bold=True))
-        sys.exit(1)
-    test_result = get_repository(client, repository)
-    if repository in test_result:
-        logger.info("Repository {0} creation validated.".format(repository))
-        return True
-    else:
-        logger.error("Repository {0} failed validation...".format(repository))
-        return False
-
-def delete_callback(ctx, param, value):
-    if not value:
-        ctx.abort()
-
 @click.command(short_help='Filesystem Repository')
 @click.option('--repository', required=True, type=str, help='Repository name')
 @click.option('--location', required=True, type=str,
             help='Shared file-system location. Must match remote path, & be accessible to all master & data nodes')
 @click.option('--compression', type=bool, default=True, show_default=True,
-            help='Enable/Disable compression.')
-@click.option('--concurrent_streams', type=int, default=5, show_default=True,
-            help='Number of streams (per node) performing snapshot.')
+            help='Enable/Disable metadata compression.')
 @click.option('--chunk_size', type=str,
             help='Chunk size, e.g. 1g, 10m, 5k. [unbounded]')
 @click.option('--max_restore_bytes_per_sec', type=str, default='20mb',
@@ -135,7 +53,7 @@ def delete_callback(ctx, param, value):
             help='Throttles per node snapshot rate (per second).')
 @click.pass_context
 def fs(
-    ctx, repository, location, compression, concurrent_streams, chunk_size,
+    ctx, repository, location, compression, chunk_size,
     max_restore_bytes_per_sec, max_snapshot_bytes_per_sec):
     """
     Create a filesystem repository.
@@ -157,9 +75,7 @@ def fs(
 @click.option('--secret_key', type=str,
             help='S3 secret key. [value of cloud.aws.secret_key]')
 @click.option('--compression', type=bool, default=True, show_default=True,
-            help='Enable/Disable compression.')
-@click.option('--concurrent_streams', type=int, default=5, show_default=True,
-            help='Number of streams (per node) performing snapshot.')
+            help='Enable/Disable metadata compression.')
 @click.option('--chunk_size', type=str,
             help='Chunk size, e.g. 1g, 10m, 5k. [unbounded]')
 @click.option('--max_restore_bytes_per_sec', type=str, default='20mb',
@@ -171,7 +87,7 @@ def fs(
 @click.pass_context
 def s3(
     ctx, repository, bucket, region, base_path, access_key, secret_key,
-    compression, concurrent_streams, chunk_size, max_restore_bytes_per_sec,
+    compression, chunk_size, max_restore_bytes_per_sec,
     max_snapshot_bytes_per_sec):
     """
     Create an S3 repository.

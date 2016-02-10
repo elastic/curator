@@ -70,6 +70,10 @@ to_csv
 ++++++
 .. automethod:: curator.api.to_csv
 
+verify_repository
++++++++++++++++++
+.. automethod:: curator.api.verify_repository
+
 
 Index Pruning
 -------------
@@ -93,6 +97,14 @@ Other
 create_snapshot_body
 ++++++++++++++++++++
 .. automethod:: curator.api.create_snapshot_body
+
+create_repo_body
+++++++++++++++++
+.. automethod:: curator.api.create_repo_body
+
+create_repository
++++++++++++++++++
+.. automethod:: curator.api.create_repository
 
 chunk_index_list
 ++++++++++++++++
