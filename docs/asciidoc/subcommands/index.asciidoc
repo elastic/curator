@@ -4,7 +4,7 @@
 [partintro]
 --
 
-The http://click.pocoo.org/3/[Click API] is used to form the command-line for
+The http://click.pocoo.org/[Click API] is used to form the command-line for
 Curator. Click allows Curator to have nested commands. In this way, a
 command-line structure can be built which allows multiple commands to all make
 use of the same subcommands.
