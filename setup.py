@@ -97,7 +97,6 @@ try:
     )
     ### end cx_Freeze ###
 except ImportError:
-    print('Unable to load cx_Freeze.  Cannot do \'build_exe\' or \'bdist_msi\'.\n')
     setup(
         name = "elasticsearch-curator",
         version = get_version(),
