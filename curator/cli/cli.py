@@ -35,6 +35,8 @@ DEFAULT_ARGS = {
 @click.option('--port', help='Elasticsearch port.', default=DEFAULT_ARGS['port'], type=int)
 @click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=DEFAULT_ARGS['use_ssl'])
 @click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
+@click.option('--client-cert', help='Path to file containing SSL certificate for client auth. (OPTIONAL)', type=str, default=None)
+@click.option('--client-key', help='Path to file containing SSL key for client auth. (OPTIONAL)', type=str, default=None)
 @click.option('--ssl-no-validate', help='Do not validate SSL certificate', is_flag=True)
 @click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=DEFAULT_ARGS['http_auth'])
 @click.option('--timeout', help='Connection timeout in seconds.', default=DEFAULT_ARGS['timeout'], type=int)
@@ -47,7 +49,7 @@ DEFAULT_ARGS = {
 @click.option('--quiet', help='Suppress command-line output.', is_flag=True)
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat, quiet):
+def cli(ctx, host, url_prefix, port, use_ssl, certificate, client_cert, client_key, ssl_no_validate, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat, quiet):
     """
     Curator for Elasticsearch indices.
 
@@ -82,6 +84,24 @@ def cli(ctx, host, url_prefix, port, use_ssl, certificate, ssl_no_validate, http
         except IOError:
             logger.error('Could not open certificate at {0}'.format(certificate))
             msgout('Error: Could not open certificate at {0}'.format(certificate), error=True, quiet=quiet)
+            sys.exit(1)
+
+    # Test whether client_cert is a valid file path
+    if use_ssl is True and client_cert is not None:
+        try:
+            open(client_cert, 'r')
+        except IOError:
+            logger.error('Could not open client cert at {0}'.format(client_cert))
+            msgout('Error: Could not open client cert at {0}'.format(client_cert), error=True, quiet=quiet)
+            sys.exit(1)
+
+    # Test whether client_key is a valid file path
+    if use_ssl is True and client_key is not None:
+        try:
+            open(client_key, 'r')
+        except IOError:
+            logger.error('Could not open client key at {0}'.format(client_key))
+            msgout('Error: Could not open client key at {0}'.format(client_key), error=True, quiet=quiet)
             sys.exit(1)
 
     # Filter out logging from Elasticsearch and associated modules by default

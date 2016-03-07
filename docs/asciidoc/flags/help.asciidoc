@@ -36,20 +36,24 @@ Usage: curator [OPTIONS] COMMAND [ARGS]...
   See http://elastic.co/guide/en/elasticsearch/client/curator/current
 
 Options:
-  --host TEXT        Elasticsearch host.
-  --url_prefix TEXT  Elasticsearch http url prefix.
-  --port INTEGER     Elasticsearch port.
-  --use_ssl          Connect to Elasticsearch through SSL.
-  --http_auth TEXT   Use Basic Authentication ex: user:pass
-  --timeout INTEGER  Connection timeout in seconds.
-  --master-only      Only operate on elected master node.
-  --dry-run          Do not perform any changes.
-  --debug            Debug mode
-  --loglevel TEXT    Log level
-  --logfile TEXT     log file
-  --logformat TEXT   Log output format [default|logstash].
-  --version          Show the version and exit.
-  --help             Show this message and exit.
+  --host TEXT         Elasticsearch host.
+  --url_prefix TEXT   Elasticsearch http url prefix.
+  --port INTEGER      Elasticsearch port.
+  --use_ssl           Connect to Elasticsearch through SSL.
+  --ssl-no-validate   Use SSL but do not validate the certificate (WARNING: UNSAFE!).
+  --certificate TEXT  Path to CA certificate to use for SSL validation.
+  --client-cert TEXT  Path to client certificate file to use for SSL client authentication.
+  --client-key TEXT   Path to client key file to use for SSL client authentication.
+  --http_auth TEXT    Use Basic Authentication ex: user:pass
+  --timeout INTEGER   Connection timeout in seconds.
+  --master-only       Only operate on elected master node.
+  --dry-run           Do not perform any changes.
+  --debug             Debug mode
+  --loglevel TEXT     Log level
+  --logfile TEXT      log file
+  --logformat TEXT    Log output format [default|logstash].
+  --version           Show the version and exit.
+  --help              Show this message and exit.
 
 Commands:
   alias       Index Aliasing

@@ -8,6 +8,12 @@ Changelog
 
 **General**
 
+  * Add support for the `--client-cert` and `--client-key` command line parameters
+    and client_cert and client_key parameters to the get_client() call. #520 (richm)
+
+**Bug fixes**
+
+
 
 3.4.1 (10 February 2016)
 ------------------------
