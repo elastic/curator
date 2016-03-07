@@ -28,15 +28,14 @@ DATE_REGEX = {
 
 def build_filter(
         kindOf=None, time_unit=None, timestring=None,
-        groupname='date', value=None, exclude=False,
+        groupname='date', value=None,
     ):
     """
     Return a filter object based on the arguments.
 
     :arg kindOf: Can be one of:
-        [older_than|newer_than|suffix|prefix|regex|timestring].
+        [older_than|newer_than|suffix|prefix|regex|timestring|exclude].
         This option defines what kind of filter you will be building.
-    :arg exclude: If `True`, exclude matches rather than include
     :arg groupname: The name of a named capture in pattern.  Currently only acts
         on 'date'
     :arg timestring: An strftime string to match the datestamp in an index name.
