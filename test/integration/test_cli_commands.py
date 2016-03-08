@@ -728,6 +728,22 @@ class TestCLISnapshot(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         self.assertEqual(1, result.exit_code)
+    def test_snapshot_name_with_uppercase_chars(self):
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'snapshot',
+                        '--repository', self.args['repository'],
+                        '--name', 'BadSnapName',
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
     def test_cli_snapshot_indices(self):
         self.create_indices(5)
         self.create_repository()

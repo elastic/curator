@@ -13,6 +13,12 @@ Changelog
 
 **Bug fixes**
 
+  * Disallow users from creating snapshots with upper-case letters, which is not
+    permitted by Elasticsearch. #562 (untergeek)
+  * Remove `print()` command from ``setup.py`` as it causes issues with command-
+    line retrieval of ``--url``, etc. #568 (thib-ack)
+  * Remove unnecessary argument from `build_filter()` #530 (zzugg)
+
 
 
 3.4.1 (10 February 2016)
