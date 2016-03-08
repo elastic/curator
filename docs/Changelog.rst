@@ -13,7 +13,7 @@ Changelog
 
 **Bug fixes**
 
-  * Prevent users from creating snapshots with upper-case letters, which is not
+  * Disallow users from creating snapshots with upper-case letters, which is not
     permitted by Elasticsearch. #562 (untergeek)
   * Remove `print()` command from ``setup.py`` as it causes issues with command-
     line retrieval of ``--url``, etc. #568 (thib-ack)
