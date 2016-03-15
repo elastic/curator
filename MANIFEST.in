@@ -1,7 +1,15 @@
 include Changelog.rst
-include CONTRIBUTORS
+include CONTRIBUTORS CONTRIBUTING.md
 include LICENSE.txt
-include README.md
-
+include README.rst
+include Dockerfile
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+recursive-include test *
+recursive-include docs *
+recursive-exclude docs *.pyc
+recursive-exclude docs *.pyo
+recursive-exclude test *.pyc
+recursive-exclude test *.pyo
+prune docs/_build
+prune docs/asciidoc/html_docs

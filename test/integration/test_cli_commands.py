@@ -190,7 +190,25 @@ class TestCLIIndexSelection(CuratorTestCase):
                         '--exclude', 'log',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(99, result.exit_code)
+        self.assertEqual(0, result.exit_code)
+    def test_cli_closed_indices_only(self):
+        self.create_index('open-one')
+        self.create_index('closed-one')
+        self.close_index('closed-one')
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--logfile', os.devnull,
+                '--host', host,
+                '--port', str(port),
+                'show',
+                'indices',
+                '--closed-only',
+                '--suffix', 'one',
+            ],
+            obj={"filters":[]})
+        self.assertEqual(['closed-one (CLOSED)'], result.output.splitlines()[:2])
 
 class TestCLIAlias(CuratorTestCase):
     def test_alias_no_name_param(self):
@@ -262,6 +280,75 @@ class TestCLIAllocation(CuratorTestCase):
             value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation']['require'][key]
         )
+
+    def test_allocation_all_indices_include(self):
+        self.create_index('my_index')
+        key = 'foo'
+        value = 'bar'
+        rule = key + '=' + value
+        allocation_type = 'include'
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'allocation', '--rule', rule,
+                        '--type', allocation_type,
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        self.assertEquals(
+            value,
+            self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][allocation_type][key]
+        )
+
+    def test_allocation_all_indices_exclude(self):
+        self.create_index('my_index')
+        key = 'foo'
+        value = 'bar'
+        rule = key + '=' + value
+        allocation_type = 'exclude'
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'allocation', '--rule', rule,
+                        '--type', allocation_type,
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        self.assertEquals(
+            value,
+            self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][allocation_type][key]
+        )
+
+    def test_allocation_fail_on_bad_type(self):
+        self.create_index('my_index')
+        key = 'foo'
+        value = 'bar'
+        rule = key + '=' + value
+        allocation_type = 'fail'
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'allocation', '--rule', rule,
+                        '--type', allocation_type,
+                        'indices',
+                        '--all-indices',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
 
 class TestCLIBloom(CuratorTestCase):
     def test_bloom_cli(self):
@@ -457,7 +544,7 @@ class TestCLIOptimize(CuratorTestCase):
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # This should force each doc to be in its own segment.
-            self.client.indices.flush(index="index_name", force=True, full=True)
+            self.client.indices.flush(index="index_name", force=True)
 
         test = clicktest.CliRunner()
         result = test.invoke(
@@ -505,6 +592,25 @@ class TestCLIReplicas(CuratorTestCase):
                     obj={"filters":[]})
         self.assertEqual(0, result.exit_code)
 
+class TestCLISeal(CuratorTestCase):
+    def test_cli_seal_indices(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'seal',
+                        'indices',
+                        '--newer-than', '5',
+                        '--timestring', '%Y.%m.%d',
+                        '--time-unit', 'days'
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(0, result.exit_code)
+
 class TestCLIShow(CuratorTestCase):
     def test_cli_show_indices(self):
         self.create_indices(10)
@@ -525,6 +631,66 @@ class TestCLIShow(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         output = sorted(result.output.splitlines(), reverse=True)[:4]
+        self.assertEqual(expected, output)
+    def test_cli_show_indices_hours(self):
+        self.create_index('logstash-2016.02.10.00')
+        indices = curator.get_indices(self.client)
+        expected = sorted(indices, reverse=True)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--timestring', '%Y.%m.%d.%H',
+                        '--time-unit', 'hours'
+                    ],
+                    obj={"filters":[]})
+        output = sorted(result.output.splitlines(), reverse=True)
+        self.assertEqual(expected, output)
+    def test_cli_show_indices_weeks(self):
+        self.create_index('logstash-2016-03')
+        indices = curator.get_indices(self.client)
+        expected = sorted(indices, reverse=True)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'show',
+                        'indices',
+                        '--older-than', '1',
+                        '--timestring', '%Y-%W',
+                        '--time-unit', 'weeks'
+                    ],
+                    obj={"filters":[]})
+        output = sorted(result.output.splitlines(), reverse=True)
+        self.assertEqual(expected, output)
+    def test_cli_show_indices_months(self):
+        self.create_index('logstash-2015.12')
+        indices = curator.get_indices(self.client)
+        expected = sorted(indices, reverse=True)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'show',
+                        'indices',
+                        '--older-than', '1',
+                        '--timestring', '%Y.%m',
+                        '--time-unit', 'months'
+                    ],
+                    obj={"filters":[]})
+        output = sorted(result.output.splitlines(), reverse=True)
         self.assertEqual(expected, output)
     def test_cli_show_indices_older_than_zero(self):
         self.create_indices(10)
@@ -559,6 +725,22 @@ class TestCLISnapshot(CuratorTestCase):
                         'snapshot',
                         'indices',
                         '--exclude', 'log',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+    def test_snapshot_name_with_uppercase_chars(self):
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        'snapshot',
+                        '--repository', self.args['repository'],
+                        '--name', 'BadSnapName',
+                        'indices',
+                        '--all-indices',
                     ],
                     obj={"filters":[]})
         self.assertEqual(1, result.exit_code)
@@ -697,7 +879,7 @@ class TestCLISnapshotSelection(CuratorTestCase):
                         '--all-snapshots',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(0, result.exit_code)
     def test_snapshot_selection_show_filtered(self):
         self.create_repository()
         for i in ["1", "2", "3"]:
@@ -841,7 +1023,7 @@ class TestCLISnapshotSelection(CuratorTestCase):
                         '--prefix', 'no_match',
                     ],
                     obj={"filters":[]})
-        self.assertEqual(99, result.exit_code)
+        self.assertEqual(0, result.exit_code)
 
 class TestCLILogging(CuratorTestCase):
     def test_logging_with_debug_flag(self):

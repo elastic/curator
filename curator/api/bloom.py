@@ -30,7 +30,7 @@ def disable_bloom_filter(client, indices, delay=None):
                     body='index.codec.bloom.load=false')
                 return True
         except Exception:
-            logger.error("Error disabling bloom filters.  Check logs for more information.")
+            logger.error("Error disabling bloom filters.  Run with --debug flag and/or check Elasticsearch logs for more information.")
             return False
 
 def loop_bloom(client, indices, delay):

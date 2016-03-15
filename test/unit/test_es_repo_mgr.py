@@ -9,7 +9,7 @@ except ImportError:
     from io import StringIO
 
 import elasticsearch
-import curator
+from curator import api as curator
 
 fake_fail      = Exception('Simulated Failure')
 repo_name      = 'repo_name'
@@ -51,7 +51,7 @@ class TestCreateRepository(TestCase):
     def test_create_repository_exception(self):
         client = Mock()
         client.snapshot.get_repository.return_value = {'not_your_repo':{'foo':'bar'}}
-        client.snapshot.create_repository.side_effect = fake_fail
+        client.snapshot.create_repository.side_effect = elasticsearch.TransportError(500, "Error message", {"message":"Error"})
         self.assertRaises(Exception, curator.create_repository(client, repository="repo", repo_type="fs"))
 
 class TestVerifyRepository(TestCase):

@@ -17,14 +17,20 @@ def change_replicas(client, indices, replicas=None):
         return False
     else:
         indices = ensure_list(indices)
+        pruned = prune_closed(client, indices)
+        if sorted(indices) != sorted(pruned):
+            logger.warn('Skipping closed indices to prevent error which can leave indices unopenable.')
         logger.info('Updating index setting: number_of_replicas={0}'.format(replicas))
-        try:
-            client.indices.put_settings(index=to_csv(indices),
-                body='number_of_replicas={0}'.format(replicas))
-            return True
-        except Exception:
-            logger.error("Error changing replica count.  Check logs for more information.")
-            return False
+        if len(pruned) > 0:
+            try:
+                client.indices.put_settings(index=to_csv(pruned),
+                    body='number_of_replicas={0}'.format(replicas))
+                return True
+            except Exception:
+                logger.error("Error changing replica count.  Run with --debug flag and/or check Elasticsearch logs for more information.")
+                return False
+        else:
+            logger.warn('No open indices found.')
 
 def replicas(client, indices, replicas=None):
     """

@@ -14,8 +14,14 @@
 * <<loglevel,--loglevel>>
 * <<master-only,--master-only>>
 * <<port,--port>>
+* <<quiet, --quiet>>
+* <<timeout,--timeout>>
 * <<url_prefix,--url_prefix>>
 * <<use_ssl,--use_ssl>>
+* <<certificate,--certificate>>
+* <<client-cert,--client-cert>>
+* <<client-key,--client-key>>
+* <<ssl-no-validate,--ssl-no-validate>>
 * <<version,--version>>
 
 _Index and Snapshot Selection_
@@ -39,6 +45,10 @@ _Snapshot selection only_
 * <<snapshot_flag,--snapshot>>
 * <<all-snapshots,--all-snapshots>>
 * <<repository,--repository>>
+
+_Command flags_
+
+* <<skip-repo-validation,--skip-repo-validation>>
 --
 
 include::debug.asciidoc[]
@@ -50,9 +60,15 @@ include::logfile.asciidoc[]
 include::logformat.asciidoc[]
 include::loglevel.asciidoc[]
 include::master-only.asciidoc[]
+include::quiet.asciidoc[]
 include::port.asciidoc[]
+include::timeout.asciidoc[]
 include::url_prefix.asciidoc[]
 include::use_ssl.asciidoc[]
+include::certificate.asciidoc[]
+include::client-cert.asciidoc[]
+include::client-key.asciidoc[]
+include::ssl-no-validate.asciidoc[]
 include::version.asciidoc[]
 
 include::newer-than.asciidoc[]
@@ -68,3 +84,4 @@ include::all-indices.asciidoc[]
 include::snapshot_flag.asciidoc[]
 include::all-snapshots.asciidoc[]
 include::repository.asciidoc[]
+include::skip-repo-validation.asciidoc[]

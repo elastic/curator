@@ -15,28 +15,32 @@ def add_to_alias(client, index_name, alias=None):
     if check_csv(index_name):
         logger.error("Must specify only a single index as an argument.")
         return False
+    if not client.indices.exists(index_name):
+        logger.error("Index {0} not found.".format(index_name))
+        return False
     if not alias: # This prevents _all from being aliased by accident...
         logger.error('No alias provided.')
         return False
-    if not client.indices.exists_alias(alias):
-        logger.error('Skipping index {0}: Alias {1} does not exist.'.format(index_name, alias))
-        return False
+    if not client.indices.exists_alias(name=alias):
+        indices_in_alias = []
+        logger.info('Alias {0} not found.  Creating...'.format(alias))
     else:
         indices_in_alias = get_alias(client, alias)
-        if not index_name in indices_in_alias:
-            if index_closed(client, index_name):
-                logger.error('Failed to add index {0} to alias {1} because it is closed.'.format(index_name, alias))
-                return False
-            else:
-                try:
-                    client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
-                    return True
-                except Exception as e:
-                    logger.error("Error adding index {0} to alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e))
-                    return False
+    if not index_name in indices_in_alias:
+        if index_closed(client, index_name):
+            logger.error('Failed to add index {0} to alias {1} because it is closed.'.format(index_name, alias))
+            return False
         else:
-            logger.info('Skipping index {0}: Index already exists in alias {1}...'.format(index_name, alias))
-            return True
+            try:
+                client.indices.update_aliases(body={'actions': [{ 'add': { 'index': index_name, 'alias': alias}}]})
+                logger.info('Adding index {0} to alias {1}...'.format(index_name, alias))
+                return True
+            except Exception as e:
+                logger.error("Error adding index {0} to alias {1}.  Exception: {2}  Run with --debug flag and/or check Elasticsearch logs for more information.".format(index_name, alias, e))
+                return False
+    else:
+        logger.debug('Skipping index {0}: Index already exists in alias {1}...'.format(index_name, alias))
+        return True
 
 def remove_from_alias(client, index_name, alias=None):
     """
@@ -60,9 +64,10 @@ def remove_from_alias(client, index_name, alias=None):
     if index_name in indices_in_alias:
         try:
             client.indices.update_aliases(body={'actions': [{ 'remove': { 'index': index_name, 'alias': alias}}]})
+            logger.info("Removing index {0} from alias {1}.".format(index_name, alias))
             return True
         except Exception as e:
-            logger.error("Error removing index {0} from alias {1}.  Exception: {2}  Check logs for more information.".format(index_name, alias, e))
+            logger.error("Error removing index {0} from alias {1}.  Exception: {2}  Run with --debug flag and/or check Elasticsearch logs for more information.".format(index_name, alias, e))
             return False
     else:
         logger.warn('Index {0} does not exist in alias {1}; skipping.'.format(index_name, alias))

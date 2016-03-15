@@ -5,19 +5,19 @@ from mock import patch, Mock
 from . import CuratorTestCase
 
 class TestAlias(CuratorTestCase):
-    def test_add_to_alias_positive(self):
+    def test_add_to_pre_existent_alias(self):
         alias = 'testalias'
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         self.create_index('foo')
         curator.add_to_alias(self.client, 'foo', alias=alias)
         self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
-    def test_add_to_alias_negative(self):
+    def test_add_to_non_existent_alias(self):
         alias = 'testalias'
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         self.create_index('foo')
-        self.assertFalse(curator.add_to_alias(self.client, 'foo', alias="ooga"))
+        self.assertTrue(curator.add_to_alias(self.client, 'foo', alias="ooga"))
     def test_add_to_alias_with_closed(self):
         alias = 'testalias'
         self.create_index('dummy')
@@ -47,14 +47,14 @@ class TestAlias(CuratorTestCase):
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         self.assertFalse(curator.remove_from_alias(self.client, 'dummy', alias="ooga"))
-    def test_full_alias_add_positive(self):
+    def test_full_alias_add_to_pre_existent_alias(self):
         alias = 'testalias'
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         self.create_index('foo')
         self.assertTrue(curator.alias(self.client, 'foo', alias=alias))
         self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
-    def test_full_alias_add_negative(self):
+    def test_full_alias_add_non_existent_index(self):
         alias = 'testalias'
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
@@ -73,18 +73,6 @@ class TestAlias(CuratorTestCase):
         self.client.indices.put_alias(index='dummy', name=alias)
         self.assertFalse(curator.alias(self.client, 'dummy', alias="ooga", remove=True))
 
-#def alias(client, indices, alias=None, remove=False):
-# retval = True
-# for i in indices:
-#     if remove:
-#         success = remove_from_alias(client, i, alias=alias)
-#     else:
-#         success = add_to_alias(client, i, alias=alias)
-#     # if we fail once, we fail completely
-#     if not success:
-#         retval = False
-# return retval
-
 class TestChangeReplicas(CuratorTestCase):
     def test_index_replicas_can_be_modified(self):
         self.create_index('test_index')
@@ -102,7 +90,7 @@ class TestChangeReplicas(CuratorTestCase):
 
         self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
 
-    def test_closed_index_replicas_can_be_modified(self):
+    def test_closed_index_replicas_cannot_be_modified(self):
         self.create_index('test_index')
 
         self.client.indices.close(index='test_index')
@@ -116,7 +104,7 @@ class TestChangeReplicas(CuratorTestCase):
 
         curator.change_replicas(self.client, 'test_index', replicas=1)
 
-        self.assertEquals('1', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+        self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
 
         self.client.indices.open(index='test_index')
         index_metadata = self.client.cluster.state(
@@ -125,7 +113,7 @@ class TestChangeReplicas(CuratorTestCase):
         )
         self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
 
-        self.assertEquals('1', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
+        self.assertEquals('0', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['number_of_replicas'])
 
 class TestChangeAllocation(CuratorTestCase):
     def test_index_allocation_can_be_modified(self):
@@ -134,6 +122,20 @@ class TestChangeAllocation(CuratorTestCase):
         curator.apply_allocation_rule(self.client, 'test_index', rule="key=value")
 
         self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['require']['key'])
+
+    def test_index_allocation_can_be_modified_for_include(self):
+        self.create_index('test_index')
+
+        curator.apply_allocation_rule(self.client, 'test_index', rule="key=value", allocation_type='include')
+
+        self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['include']['key'])
+
+    def test_index_allocation_can_be_modified_for_exclude(self):
+        self.create_index('test_index')
+
+        curator.apply_allocation_rule(self.client, 'test_index', rule="key=value", allocation_type='exclude')
+
+        self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['exclude']['key'])
 
     def test_closed_index_allocation_can_be_modified(self):
         self.create_index('test_index')
@@ -157,6 +159,7 @@ class TestChangeAllocation(CuratorTestCase):
         self.assertEquals('open', index_metadata['metadata']['indices']['test_index']['state'])
 
         self.assertEquals('value', self.client.indices.get_settings(index='test_index')['test_index']['settings']['index']['routing']['allocation']['require']['key'])
+
 
 class TestDeleteIndex(CuratorTestCase):
     def test_index_will_be_deleted(self):

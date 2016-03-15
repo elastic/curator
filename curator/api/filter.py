@@ -28,15 +28,14 @@ DATE_REGEX = {
 
 def build_filter(
         kindOf=None, time_unit=None, timestring=None,
-        groupname='date', value=None, exclude=False,
+        groupname='date', value=None,
     ):
     """
     Return a filter object based on the arguments.
 
     :arg kindOf: Can be one of:
-        [older_than|newer_than|suffix|prefix|regex|timestring].
+        [older_than|newer_than|suffix|prefix|regex|timestring|exclude].
         This option defines what kind of filter you will be building.
-    :arg exclude: If `True`, exclude matches rather than include
     :arg groupname: The name of a named capture in pattern.  Currently only acts
         on 'date'
     :arg timestring: An strftime string to match the datestamp in an index name.
@@ -67,7 +66,7 @@ def build_filter(
         if not timestring:
             logger.error("older_than and newer_than require timestring parameter")
             return {}
-        argdict = {  "groupname":groupname, "time_unit":time_unit,
+        argdict = { "groupname":groupname, "time_unit":time_unit,
                     "timestring": timestring, "value": value,
                     "method": kindOf }
         date_regex = get_date_regex(timestring)
@@ -280,6 +279,10 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
     """
     cutoff = get_cutoff(unit_count=value, time_unit=time_unit, utc_now=utc_now)
 
+    if not cutoff:
+        logger.error('No cutoff value.')
+        return False
+
     try:
         object_time = get_datetime(timestamp, timestring)
     except ValueError:
@@ -319,13 +322,17 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
     """
 
     def get_stat_list(stats):
-        retval = list(
-            (index_name, index_stats['index']['primary_size_in_bytes'])
-            for (index_name, index_stats) in stats['indices'].items()
-        )
+        retval = []
+        for index_name in stats['indices']:
+            size = stats['indices'][index_name]['total']['store']['size_in_bytes']
+            logger.debug('Index: {0}  Size: {1}'.format(index_name, size))
+            retval.append((index_name, size))
         return retval
 
-    if not disk_space:
+    # Ensure that disk_space is a float
+    if disk_space:
+        disk_space = float(disk_space)
+    else:
         logger.error("Mising value for disk_space.")
         return False
 
@@ -346,9 +353,9 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
             index_lists = chunk_index_list(not_closed)
             statlist = []
             for l in index_lists:
-                statlist.extend(get_stat_list(client.indices.status(index=to_csv(l))))
+                statlist.extend(get_stat_list(client.indices.stats(index=to_csv(l))))
         else:
-            statlist = get_stat_list(client.indices.status(index=to_csv(not_closed)))
+            statlist = get_stat_list(client.indices.stats(index=to_csv(not_closed)))
 
         sorted_indices = sorted(statlist, reverse=reverse)
 
@@ -357,6 +364,7 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
 
             if disk_usage > disk_limit:
                 delete_list.append(index_name)
+                logger.info('Deleting {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
             else:
                 logger.info('skipping {0}, summed disk usage is {1:.3f} GB and disk limit is {2:.3f} GB.'.format(index_name, disk_usage/2**30, disk_limit/2**30))
     return delete_list

@@ -36,3 +36,6 @@ Show indices older than 30 days matching the `--timestring` `%Y%m%d`:
 -------------------------------------------------------------------------
 curator show indices --older-than 30 --time-unit days --timestring %Y%m%d
 -------------------------------------------------------------------------
+
+TIP: See the <<escape-percent,FAQ>> for information about escaping the `%`
+symbol in systemd setups.

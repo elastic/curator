@@ -12,7 +12,7 @@ from ..api import *
 logger = logging.getLogger(__name__)
 
 # Elasticsearch versions supported
-version_max  = (2, 0, 0)
+version_max  = (3, 0, 0)
 version_min = (1, 0, 0)
 
 REGEX_MAP = {
@@ -89,25 +89,46 @@ def check_version(client):
     version_number = get_version(client)
     logger.debug('Detected Elasticsearch version {0}'.format(".".join(map(str,version_number))))
     if version_number >= version_max or version_number < version_min:
-        click.echo(click.style('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))), fg='red'))
-        click.echo(click.style('ERROR: Incompatible with version {0} of Elasticsearch.  Exiting.'.format(".".join(map(str,version_number))), fg='red', bold=True))
+        logger.error('Expected Elasticsearch version range > {0} < {1}'.format(".".join(map(str,version_min)),".".join(map(str,version_max))))
+        logger.error('Incompatible with version {0} of Elasticsearch.'.format(".".join(map(str,version_number))))
         sys.exit(1)
 
 def check_master(client, master_only=False):
     """
-    Check if master node.  If not, exit with error code
+    Check if master node.  If not, exit
     """
     if master_only and not is_master_node(client):
         logger.info('Master-only flag detected. Connected to non-master node. Aborting.')
-        sys.exit(9)
+        sys.exit(0)
 
 def get_client(**kwargs):
     """Return an Elasticsearch client using the provided parameters
 
     """
     kwargs['master_only'] = False if not 'master_only' in kwargs else kwargs['master_only']
+    kwargs['use_ssl'] = False if not 'use_ssl' in kwargs else kwargs['use_ssl']
+    kwargs['ssl_no_validate'] = False if not 'ssl_no_validate' in kwargs else kwargs['ssl_no_validate']
+    kwargs['certificate'] = False if not 'certificate' in kwargs else kwargs['certificate']
+    kwargs['client_cert'] = False if not 'client_cert' in kwargs else kwargs['client_cert']
+    kwargs['client_key'] = False if not 'client_key' in kwargs else kwargs['client_key']
     logger.debug("kwargs = {0}".format(kwargs))
     master_only = kwargs.pop('master_only')
+    if kwargs['use_ssl']:
+        if kwargs['ssl_no_validate']:
+            kwargs['verify_certs'] = False # Not needed, but explicitly defined
+        else:
+            logger.info('Attempting to verify SSL certificate.')
+            # If user provides a certificate:
+            if kwargs['certificate']:
+                kwargs['verify_certs'] = True
+                kwargs['ca_certs'] = kwargs['certificate']
+            else: # Try to use certifi certificates:
+                try:
+                    import certifi
+                    kwargs['verify_certs'] = True
+                    kwargs['ca_certs'] = certifi.where()
+                except ImportError:
+                    logger.warn('Unable to verify SSL certificate.')
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
         # Verify the version is acceptable.
@@ -116,7 +137,7 @@ def get_client(**kwargs):
         check_master(client, master_only=master_only)
         return client
     except Exception:
-        click.echo(click.style('ERROR: Connection failure.', fg='red', bold=True))
+        logger.error('Connection failure.')
         sys.exit(1)
 
 def override_timeout(ctx):
@@ -144,10 +165,10 @@ def filter_callback(ctx, param, value):
 
     if param.name in ['older_than', 'newer_than']:
         if not ctx.params['time_unit'] :
-            click.echo(click.style("Parameters --older-than and --newer-than require the --time-unit parameter", fg='red', bold=True))
+            logger.error("Parameters --older-than and --newer-than require the --time-unit parameter")
             sys.exit(1)
         if not ctx.params['timestring']:
-            click.echo(click.style("Parameters --older-than and --newer-than require the --timestring parameter", fg='red', bold=True))
+            logger.error("Parameters --older-than and --newer-than require the --timestring parameter")
             sys.exit(1)
         argdict = {  "groupname":'date', "time_unit":ctx.params["time_unit"],
                     "timestring": ctx.params['timestring'], "value": value,
@@ -192,7 +213,7 @@ def in_list(values, source_list):
             logger.warn('{0} not found!'.format(v))
     return retval
 
-def do_command(client, command, indices, params=None):
+def do_command(client, command, indices, params=None, master_timeout=30000):
     """
     Do the command.
     """
@@ -201,13 +222,13 @@ def do_command(client, command, indices, params=None):
                 client, indices, alias=params['name'], remove=params['remove']
                )
     if command == "allocation":
-        return allocation(client, indices, rule=params['rule'])
+        return allocation(client, indices, rule=params['rule'], allocation_type=params['type'] )
     if command == "bloom":
         return bloom(client, indices, delay=params['delay'])
     if command == "close":
         return close(client, indices)
     if command == "delete":
-        return delete(client, indices)
+        return delete(client, indices, master_timeout)
     if command == "open":
         return opener(client, indices)
     if command == "optimize":
@@ -217,6 +238,8 @@ def do_command(client, command, indices, params=None):
                )
     if command == "replicas":
         return replicas(client, indices, replicas=params['count'])
+    if command == "seal":
+        return seal(client, indices)
     if command == "snapshot":
         return create_snapshot(
                 client, indices=indices, name=params['name'],
@@ -226,4 +249,34 @@ def do_command(client, command, indices, params=None):
                 partial=params['partial'],
                 wait_for_completion=params['wait_for_completion'],
                 request_timeout=params['request_timeout'],
+                skip_repo_validation=params['skip_repo_validation'],
                )
+
+def msgout(msg, error=False, warning=False, quiet=False):
+    """Output messages to stdout via click.echo if quiet=False"""
+    if not quiet:
+        if error:
+            click.echo(click.style(click.style(msg, fg='red', bold=True)))
+        elif warning:
+            click.echo(click.style(click.style(msg, fg='yellow', bold=True)))
+        else:
+            click.echo(msg)
+
+def validate_time_details(time_unit, timestring):
+    """
+    Validate that the appropriate element(s) for time_unit are in the timestring.
+    """
+    retval = False
+    if time_unit == 'hours':
+        if '%H' in timestring:
+            retval = True
+    elif time_unit == 'days':
+        if '%d' in timestring:
+            retval = True
+    elif time_unit == 'weeks':
+        if '%W' in timestring:
+            retval = True
+    elif time_unit == 'months':
+        if '%m' in timestring:
+            retval = True
+    return retval

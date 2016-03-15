@@ -85,7 +85,7 @@ class TestCheckVersion(TestCase):
         self.assertEqual(cm.exception.code, 1)
     def test_check_version_greater_than(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.0.1'} }
+        client.info.return_value = {'version': {'number': '3.0.1'} }
         with self.assertRaises(SystemExit) as cm:
             curator.check_version(client)
         self.assertEqual(cm.exception.code, 1)
@@ -110,7 +110,7 @@ class TestCheckMaster(TestCase):
         }
         with self.assertRaises(SystemExit) as cm:
             curator.check_master(client, master_only=True)
-        self.assertEqual(cm.exception.code, 9)
+        self.assertEqual(cm.exception.code, 0)
 
 class TestInList(TestCase):
     def test_in_list_positive(self):
@@ -121,3 +121,26 @@ class TestInList(TestCase):
         v = ['a', 'b', 'q']
         s = ['a', 'b', 'c', 'd']
         self.assertEqual(['a', 'b'], curator.in_list(v, s))
+
+class TestGetClient(TestCase):
+    def test_certificate_logic(self):
+        client = Mock()
+        kwargs = { 'use_ssl' : True, 'certificate' : 'mycert.pem' }
+        with self.assertRaises(SystemExit) as cm:
+            curator.get_client(**kwargs)
+            self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
+        self.assertEqual(cm.exception.code, 1)
+    def test_client_cert_logic(self):
+        client = Mock()
+        kwargs = { 'use_ssl' : True, 'client_cert' : 'myclientcert.pem' }
+        with self.assertRaises(SystemExit) as cm:
+            curator.get_client(**kwargs)
+            self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
+        self.assertEqual(cm.exception.code, 1)
+    def test_client_key_logic(self):
+        client = Mock()
+        kwargs = { 'use_ssl' : True, 'client_key' : 'myclientkey.pem' }
+        with self.assertRaises(SystemExit) as cm:
+            curator.get_client(**kwargs)
+            self.assertEqual(sys.stdout.getvalue(),'ERROR: Connection failure.\n')
+        self.assertEqual(cm.exception.code, 1)

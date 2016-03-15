@@ -55,4 +55,84 @@ class TestCLIUtilsFilterCallback(CuratorTestCase):
                     ],
                     obj={"filters":[]})
         self.assertEqual(1, result.exit_code)
-    
+
+class TestSSLFlags(CuratorTestCase):
+    def test_bad_certificate(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        '--use_ssl',
+                        '--certificate', '/path/to/nowhere',
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual('Error: Could not open certificate at /path/to/nowhere\n', result.output)
+    def test_ssl_no_validate(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        '--use_ssl',
+                        '--ssl-no-validate',
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertTrue(1, result.exit_code)
+    def test_bad_client_cert(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        '--use_ssl',
+                        '--client-cert', '/path/to/nowhere',
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual('Error: Could not open client cert at /path/to/nowhere\n', result.output)
+    def test_bad_client_key(self):
+        self.create_indices(10)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--logfile', os.devnull,
+                        '--host', host,
+                        '--port', str(port),
+                        '--use_ssl',
+                        '--client-key', '/path/to/nowhere',
+                        'show',
+                        'indices',
+                        '--older-than', '5',
+                        '--time-unit', 'days',
+                        '--timestring', '%Y.%m.%d',
+                    ],
+                    obj={"filters":[]})
+        self.assertEqual(1, result.exit_code)
+        self.assertEqual('Error: Could not open client key at /path/to/nowhere\n', result.output)

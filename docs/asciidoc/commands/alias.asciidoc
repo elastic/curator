@@ -5,7 +5,9 @@
 Summary
 ~~~~~~~
 
-Add indices to or remove them from aliases. The alias *must* already be in
+Add indices to or remove them from aliases.
+
+NOTE: For Curator versions older than 3.2.0, the alias *must* already be in
 existence.
 
 [float]

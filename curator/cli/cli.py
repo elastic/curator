@@ -34,6 +34,10 @@ DEFAULT_ARGS = {
 @click.option('--url_prefix', help='Elasticsearch http url prefix.', default=DEFAULT_ARGS['url_prefix'])
 @click.option('--port', help='Elasticsearch port.', default=DEFAULT_ARGS['port'], type=int)
 @click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=DEFAULT_ARGS['use_ssl'])
+@click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
+@click.option('--client-cert', help='Path to file containing SSL certificate for client auth. (OPTIONAL)', type=str, default=None)
+@click.option('--client-key', help='Path to file containing SSL key for client auth. (OPTIONAL)', type=str, default=None)
+@click.option('--ssl-no-validate', help='Do not validate SSL certificate', is_flag=True)
 @click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=DEFAULT_ARGS['http_auth'])
 @click.option('--timeout', help='Connection timeout in seconds.', default=DEFAULT_ARGS['timeout'], type=int)
 @click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
@@ -42,9 +46,10 @@ DEFAULT_ARGS = {
 @click.option('--loglevel', help='Log level', default=DEFAULT_ARGS['log_level'])
 @click.option('--logfile', help='log file')
 @click.option('--logformat', help='Log output format [default|logstash].', default=DEFAULT_ARGS['logformat'])
+@click.option('--quiet', help='Suppress command-line output.', is_flag=True)
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat):
+def cli(ctx, host, url_prefix, port, use_ssl, certificate, client_cert, client_key, ssl_no_validate, http_auth, timeout, master_only, dry_run, debug, loglevel, logfile, logformat, quiet):
     """
     Curator for Elasticsearch indices.
 
@@ -53,7 +58,7 @@ def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, d
 
     # Setup logging
     if debug:
-        numeric_log_level = logging.DEBUG
+        numeric_log_level = logging.DEBUG or loglevel.upper() == 'DEBUG'
         format_string = '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s'
     else:
         numeric_log_level = getattr(logging, loglevel.upper(), None)
@@ -62,13 +67,42 @@ def cli(ctx, host, url_prefix, port, use_ssl, http_auth, timeout, master_only, d
             raise ValueError('Invalid log level: {0}'.format(loglevel))
 
     handler = logging.StreamHandler(
-        open(logfile, 'a') if logfile else sys.stderr)
+        open(logfile, 'a') if logfile else sys.stdout)
     if logformat == 'logstash':
+        ctx.params['quiet'] = True
         handler.setFormatter(LogstashFormatter())
     else:
         handler.setFormatter(logging.Formatter(format_string))
     logging.root.addHandler(handler)
     logging.root.setLevel(numeric_log_level)
+    logger = logging.getLogger('curator.cli')
+
+    # Test whether certificate is a valid file path
+    if use_ssl is True and certificate is not None:
+        try:
+            open(certificate, 'r')
+        except IOError:
+            logger.error('Could not open certificate at {0}'.format(certificate))
+            msgout('Error: Could not open certificate at {0}'.format(certificate), error=True, quiet=quiet)
+            sys.exit(1)
+
+    # Test whether client_cert is a valid file path
+    if use_ssl is True and client_cert is not None:
+        try:
+            open(client_cert, 'r')
+        except IOError:
+            logger.error('Could not open client cert at {0}'.format(client_cert))
+            msgout('Error: Could not open client cert at {0}'.format(client_cert), error=True, quiet=quiet)
+            sys.exit(1)
+
+    # Test whether client_key is a valid file path
+    if use_ssl is True and client_key is not None:
+        try:
+            open(client_key, 'r')
+        except IOError:
+            logger.error('Could not open client key at {0}'.format(client_key))
+            msgout('Error: Could not open client key at {0}'.format(client_key), error=True, quiet=quiet)
+            sys.exit(1)
 
     # Filter out logging from Elasticsearch and associated modules by default
     if not debug:

@@ -14,11 +14,15 @@ named_index    = 'index_name'
 named_indices  = [ "index1", "index2" ]
 open_index     = {'metadata': {'indices' : { named_index : {'state' : 'open'}}}}
 closed_index   = {'metadata': {'indices' : { named_index : {'state' : 'close'}}}}
+cat_open_index = [{'status': 'open'}]
+cat_closed_index = [{'status': 'close'}]
 open_indices   = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'open' },
                                                'index2' : { 'state' : 'open' }}}}
 closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
                                                'index2' : { 'state' : 'close' }}}}
 fake_fail      = Exception('Simulated Failure')
+four_oh_one    = elasticsearch.TransportError(401, "simulated error")
+four_oh_four    = elasticsearch.TransportError(404, "simulated error")
 named_alias    = 'alias_name'
 allocation_in  = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'foo': 'bar'}}}}}}}
 allocation_out = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'not': 'foo'}}}}}}}
@@ -86,6 +90,36 @@ snap_body       = {
                     "indices" : "index1,index2"
                   }
 verified_nodes  = {'nodes': {'nodeid1': {'name': 'node1'}, 'nodeid2': {'name': 'node2'}}}
+synced_pass     = {
+                    "_shards":{"total":1,"successful":1,"failed":0},
+                    "index_name":{
+                        "total":1,"successful":1,"failed":0,
+                        "failures":[],
+                    }
+                  }
+synced_fail     = {
+                    "_shards":{"total":1,"successful":0,"failed":1},
+                    "index_name":{
+                        "total":1,"successful":0,"failed":1,
+                        "failures":[
+                            {"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":True,"node":"nodeid1","relocating_node":None,"shard":0,"index":"index_name"}},
+                        ]
+                    }
+                  }
+sync_conflict   = elasticsearch.ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
+synced_fails    = {
+                    "_shards":{"total":2,"successful":1,"failed":1},
+                    "index1":{
+                        "total":1,"successful":0,"failed":1,
+                        "failures":[
+                            {"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":True,"node":"nodeid1","relocating_node":None,"shard":0,"index":"index_name"}},
+                        ]
+                    },
+                    "index2":{
+                        "total":1,"successful":1,"failed":0,
+                        "failures":[]
+                    },
+                  }
 
 class TestAlias(TestCase):
     def test_add_to_alias_bad_csv(self):
@@ -98,13 +132,16 @@ class TestAlias(TestCase):
     def test_add_to_alias_alias_not_found(self):
         client = Mock()
         client.indices.exists_alias.return_value = False
-        self.assertFalse(curator.add_to_alias(client, named_index, alias=named_alias))
+        client.cluster.state.return_value = open_index
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        self.assertTrue(curator.add_to_alias(client, named_index, alias=named_alias))
     def test_add_to_alias_exception_test(self):
         client = Mock()
         client.indices.get_alias.return_value = alias_retval
         client.indices.exists_alias.return_value = True
         client.cluster.state.return_value = open_index
         client.indices.update_aliases.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.add_to_alias(client, named_index, alias=named_alias))
     def test_remove_from_alias_bad_csv(self):
         client = Mock()
@@ -150,10 +187,12 @@ class TestAllocate(TestCase):
         client.cluster.state.return_value = open_index
         client.indices.get_settings.return_value = allocation_in
         client.indices.put_settings.return_value = None
-        self.assertFalse(curator.apply_allocation_rule(client, named_index, rule="foo=bar"))
+        # It should return true now because after skipping one, it results in an empty list. #531
+        self.assertTrue(curator.apply_allocation_rule(client, named_index, rule="foo=bar"))
     def test_apply_allocation_rule_empty_list(self):
         client = Mock()
-        self.assertFalse(curator.apply_allocation_rule(client, [], rule="foo=bar"))
+        # It should return true now, even with an empty list. #531
+        self.assertTrue(curator.apply_allocation_rule(client, [], rule="foo=bar"))
     def test_allocation_positive(self):
         client = Mock()
         client.cluster.state.return_value = open_index
@@ -166,6 +205,20 @@ class TestAllocate(TestCase):
         client.indices.get_settings.return_value = allocation_out
         client.indices.put_settings.side_effect = fake_fail
         self.assertFalse(curator.allocation(client, named_index, rule="foo=bar"))
+    def test_allocation_wrong_type_param(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.get_settings.return_value = allocation_out
+        client.indices.put_settings.return_value = None
+        self.assertFalse(curator.allocation(client, named_index, rule="foo=bar", allocation_type="wrong_type"))
+    def test_allocation_good_type_param(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.get_settings.return_value = allocation_out
+        client.indices.put_settings.return_value = None
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="require"))
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="include"))
+        self.assertTrue(curator.allocation(client, named_index, rule="foo=bar", allocation_type="exclude"))
 
 class TestBloom(TestCase):
     def test_disable_bloom_no_more_bloom_positive(self):
@@ -213,43 +266,130 @@ class TestBloom(TestCase):
         self.assertFalse(curator.bloom(client, named_index))
 
 class TestClose(TestCase):
-    def test_close_indices_positive(self):
+    def test_close_indices_positive_presyncflush(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.3.4'} }
         client.indices.flush.return_value = None
         client.indices.close.return_value = None
         self.assertTrue(curator.close_indices(client, named_index))
-    def test_close_indices_negative(self):
+    def test_close_indices_negative_presyncflush(self):
         client = Mock()
-        client.indices.flush.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        client.indices.flush.return_value = None
+        client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close_indices(client, named_index))
-    def test_full_close_positive(self):
+    def test_full_close_positive_presyncflush(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.3.4'} }
         client.indices.flush.return_value = None
         client.indices.close.return_value = None
         self.assertTrue(curator.close(client, named_index))
-    def test_full_close_negative(self):
+    def test_full_close_negative_presyncflush(self):
         client = Mock()
-        client.indices.flush.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        client.indices.flush.return_value = None
+        client.indices.close.side_effect = fake_fail
         client.indices.close.return_value = None
         self.assertFalse(curator.close(client, named_index))
+    def test_close_indices_positive_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close_indices(client, named_index))
+    def test_close_indices_positive(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close_indices(client, named_index))
+    def test_close_indices_negative_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close_indices(client, named_index))
+    def test_close_indices_negative(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.flush_synced.return_value = synced_fail
+        client.cluster.state.return_value = open_index
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close_indices(client, named_index))
+    def test_full_close_positive_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close(client, named_index))
+    def test_full_close_positive(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.indices.close.return_value = None
+        self.assertTrue(curator.close(client, named_index))
+    def test_full_close_negative_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close(client, named_index))
+    def test_full_close_negative(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.close.side_effect = fake_fail
+        client.indices.close.return_value = None
+        self.assertFalse(curator.close(client, named_index))
+
 
 class TestDelete(TestCase):
     def test_delete_indices_positive(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.0.0'} }
         client.indices.delete.return_value = None
         self.assertTrue(curator.delete_indices(client, named_indices))
     def test_delete_indices_negative(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.0.0'} }
         client.indices.delete.side_effect = fake_fail
         self.assertFalse(curator.delete_indices(client, named_indices))
-    def test_full_delete_positive(self):
-        client = Mock()
-        client.indices.delete.return_value = None
-        self.assertTrue(curator.delete(client, named_indices))
+
+    # This test needs to be able to have get_settings return two different
+    # values on subsequent calls.  I don't know how to do that, if it can
+    # be done.  Integration testing can cover testing this method, though.
+    #
+    # def test_full_delete_positive(self):
+    #     client = Mock()
+    #     client.indices.delete.return_value = None
+    #     client.indices.get_settings.return_value = named_indices
+    #     self.assertTrue(curator.delete(client, named_indices))
     def test_full_delete_negative(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.7.2'} }
+        client.indices.delete.return_value = None
+        client.indices.get_settings.return_value = named_indices
+        self.assertFalse(curator.delete(client, named_indices))
+    def test_full_delete_exception(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.7.2'} }
         client.indices.delete.side_effect = fake_fail
+        client.indices.get_settings.return_value = named_indices
         self.assertFalse(curator.delete(client, named_indices))
 
 class TestOpen(TestCase):
@@ -276,24 +416,28 @@ class TestOptimize(TestCase):
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.optimize_index(client, named_index, max_num_segments=2))
     def test_optimize_index_negative(self):
         client = Mock()
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.optimize_index(client, named_index, max_num_segments=2))
     def test_optimize_positive(self):
         client = Mock()
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.optimize(client, named_index, max_num_segments=2))
     def test_optimize_negative(self):
         client = Mock()
         client.indices.segments.return_value = shards
         client.cluster.state.return_value = open_index
         client.indices.optimize.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.optimize(client, named_index, max_num_segments=2))
 
 class TestReplicas(TestCase):
@@ -305,22 +449,66 @@ class TestReplicas(TestCase):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.change_replicas(client, named_indices, replicas=0))
     def test_change_replicas_negative(self):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.change_replicas(client, named_indices, replicas=0))
     def test_replicas_positive(self):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.return_value = None
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertTrue(curator.replicas(client, named_indices, replicas=0))
     def test_replicas_negative(self):
         client = Mock()
         client.cluster.state.return_value = open_indices
         client.indices.put_settings.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.4.4'} }
         self.assertFalse(curator.replicas(client, named_indices, replicas=0))
+
+class TestSeal(TestCase):
+    # The seal_indices method pretty much always returns True, requiring log
+    # viewing to ascertain if one or more indices failed to seal.
+    def test_seal_indices_good_version(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_bad_version(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_pass
+        client.info.return_value = {'version': {'number': '1.3.4'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_conflicterror(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.flush_synced.side_effect = sync_conflict
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_onepass_onefail(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_fails
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_attribute_exception(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.cat.indices.return_value = cat_open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.flush_synced.side_effect = fake_fail
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertTrue(curator.seal_indices(client, named_index))
 
 class TestShow(TestCase):
     def setUp(self):
@@ -377,6 +565,38 @@ class TestSnapshot(TestCase):
         client.snapshot.get.return_value = snapshots
         client.snapshot.verify_repository.return_value = verified_nodes
         client.snapshot.verify_repository.side_effect = fake_fail
+        client.snapshot.status.return_value = nosnap_running
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_verify_nodes_four_oh_one(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.verify_repository.side_effect = four_oh_one
+        client.snapshot.status.return_value = nosnap_running
+        self.assertFalse(
+            curator.create_snapshot(
+                client,
+                indices=named_indices,
+                repository=repo_name,
+                name='not_snap_name'
+            )
+        )
+    def test_create_snapshot_verify_nodes_four_oh_four(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = open_indices
+        client.snapshot.get.return_value = snapshots
+        client.snapshot.verify_repository.return_value = verified_nodes
+        client.snapshot.verify_repository.side_effect = four_oh_four
         client.snapshot.status.return_value = nosnap_running
         self.assertFalse(
             curator.create_snapshot(
@@ -451,29 +671,6 @@ class TestSnapshot(TestCase):
             )
         )
 
-# def delete_snapshot(client, snapshot=None, repository=None):
-#     """
-#     Delete a single snapshot from a given repository by name
-#
-#     :arg client: The Elasticsearch client connection
-#     :arg snapshot: The snapshot name
-#     :arg repository: The Elasticsearch snapshot repository to use
-#     """
-#     if not repository:
-#         logger.error('Missing required repository parameter')
-#         return False
-#     if not snapshot:
-#         logger.error('Missing required snapshot parameter')
-#         return False
-#     if check_csv(snapshot):
-#         logger.error('Cannot delete multiple snapshots at once.  CSV value or list detected: {0}'.format(snapshot))
-#         return False
-#     try:
-#         client.snapshot.delete(repository=repository, snapshot=snap)
-#         return True
-#     except elasticsearch.RequestError as e:
-#         logger.error("Unable to delete snapshot {0} from repository {1}.  Exception: {2} Check logs for more information.".format(snapshot, repository, e.message))
-#         return False
 class TestDeleteSnapshot(TestCase):
     def test_delete_snapshot_missing_arg_repository(self):
         client = Mock()

@@ -6,6 +6,7 @@ import elasticsearch
 from curator import api as curator
 
 named_index    = 'index_name'
+open_index   = {'metadata': {'indices' : { named_index : {'state' : 'open'}}}}
 closed_index   = {'metadata': {'indices' : { named_index : {'state' : 'close'}}}}
 named_indices  = [ "index1", "index2" ]
 named_alias    = 'alias_name'
@@ -15,6 +16,7 @@ aliases_retval = {
     "index2": { "aliases" : { named_alias : { } } },
     }
 fake_fail      = Exception('Simulated Failure')
+four_oh_one    = elasticsearch.TransportError(401, "simulated error")
 repo_name      = 'repo_name'
 test_repo      = {repo_name: {'type': 'fs', 'settings': {'compress': 'true', 'location': '/tmp/repos/repo_name'}}}
 test_repos     = {'TESTING': {'type': 'fs', 'settings': {'compress': 'true', 'location': '/tmp/repos/TESTING'}},
@@ -145,6 +147,44 @@ class TestPruneKibana(TestCase):
         r = []
         self.assertEqual(r, curator.prune_kibana(l))
 
+class TestIndexClosed(TestCase):
+    def test_cat_indices_json(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.info.return_value = {'version': {'number': '1.7.2'} }
+        client.cat.indices.return_value = [{'status': 'close'}]
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, True)
+
+    def test_cat_indices_text_plain(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.info.return_value = {'version': {'number': '1.5.0'} }
+        client.cat.indices.return_value = u'[{"status":"close"}]'
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, True)
+
+    def test_closed(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.4'} }
+        client.cluster.state.return_value = closed_index
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, True)
+
+    def test_open_cat(self):
+        client = Mock()
+        client.cluster.state.side_effect = four_oh_one
+        client.info.return_value = {'version': {'number': '1.7.2'} }
+        client.cat.indices.return_value = [{'status': 'open'}]
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, False)
+
+    def test_open(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        closed = curator.index_closed(client, named_index)
+        self.assertEqual(closed, False)
+
 class TestGetVersion(TestCase):
     def test_positive(self):
         client = Mock()
@@ -176,6 +216,7 @@ class TestOptimized(TestCase):
         self.assertRaises(ValueError, curator.optimized, client, named_index)
     def test_optimized_index_closed(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '1.4.0'} }
         client.cluster.state.return_value = closed_index
         self.assertTrue(curator.optimized(client, named_index, max_num_segments=2))
 
