@@ -3,10 +3,8 @@
 Changelog
 =========
 
-3.5.0a1 (9 March 2016)
+3.5.0 (16 March 2016)
 ----------------------
-
-**Pre-release version**
 
 **General**
 
