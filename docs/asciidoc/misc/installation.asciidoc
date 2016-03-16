@@ -25,7 +25,7 @@ PIP installation of a specific version:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ----------------------------------------
-pip install elasticsearch-curator==3.4.1
+pip install elasticsearch-curator==3.5.0
 ----------------------------------------
 
 &nbsp;
@@ -47,8 +47,8 @@ Download and install the https://github.com/shazow/urllib3[urllib3] dependency
 Download and install the http://click.pocoo.org/[click] dependency (3.3 or
 greater):
 
-. `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.2.tar.gz`
-. `pip install click-6.2.tar.gz`
+. `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.3.tar.gz`
+. `pip install click-6.3.tar.gz`
 
 
 &nbsp;
