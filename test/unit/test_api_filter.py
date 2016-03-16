@@ -239,7 +239,7 @@ class TestGetDateRegex(TestCase):
         self.assertEqual('\\d{4}\\.\\d{2}\\.\\d{2}\\-\\d{2}\\-\\d{2}\\d{2}\\d{2}\\d{2}\\d{2}',
             curator.get_date_regex('%Y.%y.%m-%W-%U%d%H%M%S'))
     def test_get_date_regex_date_map2(self):
-        self.assertEqual('\\d{4}\\-\\d{3}',
+        self.assertEqual('\\d{4}\\-\\d{1,3}',
             curator.get_date_regex('%Y-%j'))
 
 

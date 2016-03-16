@@ -23,7 +23,7 @@ DATE_REGEX = {
     'H' : '2',
     'M' : '2',
     'S' : '2',
-    'j' : '3',
+    'j' : '1,3',
 }
 
 def build_filter(
