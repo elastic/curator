@@ -8,6 +8,70 @@ import json
 import click
 logger = logging.getLogger(__name__)
 
+def fix_epoch(epoch):
+    """
+    Fix value of `epoch` to be epoch + milliseconds, which should be 13
+    characters long.
+
+    :arg epoch: An epoch timestamp, in epoch + milliseconds, or microsecond, or
+        even nanoseconds.
+    :rtype: Integer. Timestamp value of epoch + milliseconds
+    """
+    # No floating point numbers allowed
+    epoch = int(epoch)
+    # If we're still using this script past January, 2038, we have bigger problems
+    # than my hacky math here...
+    if len(str(epoch)) == 10:
+        return epoch * 1000
+    elif len(str(epoch)) == 13:
+        return epoch - multiplier * unit_count
+    elif len(str(epoch)) > 10 and len(str(epoch)) < 13:
+        raise ValueError('Unusually formatted epoch timestamp.  Should be 10, 13, or more digits')
+    else:
+        orders_of_magnitude = len(str(epoch)) - 13
+        powers_of_ten = 10**orders_of_magnitude
+        epoch = int(epoch/powers_of_ten)
+    return epoch
+
+def get_point_of_reference(unit, count, epoch=None):
+    """
+    Get a point-of-reference timestamp in epoch + milliseconds by deriving
+    from a `unit` and a `count`, and an optional reference timestamp, `epoch`
+
+    :arg unit:
+    """
+    # Start off with whole seconds
+    if unit == 'seconds':
+        multiplier = 1
+    elif unit == 'minutes':
+        multiplier = 60
+    elif unit == 'hours':
+        multiplier = 3600
+    elif unit == 'days':
+        multiplier = 3600*24
+    elif unit == 'weeks':
+        multiplier = 3600*24*7
+    elif unit == 'months':
+        multiplier = 3600*24*30
+    elif unit == 'years':
+        multiplier = 3600*24*365
+    else:
+        raise ValueError('Invalid unit: {0}.'.format(unit))
+    # Bump the multiplier to millisecond level
+    multiplier = multiplier * 1000
+    # Use this moment as a reference point, if one is not provided.
+    if not epoch:
+        epoch = time.time()*1000
+    epoch = fix_epoch(epoch)
+    return epoch - multiplier * count
+
+def byte_size(num, suffix='B'):
+    for unit in ['','K','M','G','T','P','E','Z']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Y', suffix)
+
 def get_alias(client, alias):
     """
     Return information about the specified alias.
