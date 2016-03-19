@@ -3,8 +3,15 @@
 Changelog
 =========
 
+3.5.1 (21 March 2016)
+---------------------
+
+**Bug fixes**
+
+  * Add more logging information to snapshot delete method #582 (untergeek)
+  
 3.5.0 (16 March 2016)
-----------------------
+---------------------
 
 **General**
 

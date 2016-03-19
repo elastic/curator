@@ -687,5 +687,5 @@ class TestDeleteSnapshot(TestCase):
         self.assertTrue(curator.delete_snapshot(client, repository=repo_name, snapshot=snap_name))
     def test_delete_snapshot_negative(self):
         client = Mock()
-        client.snapshot.delete.side_effect = elasticsearch.RequestError
+        client.snapshot.delete.side_effect = elasticsearch.TransportError(400, 'This is an error message')
         self.assertFalse(curator.delete_snapshot(client, repository=repo_name, snapshot=snap_name))
