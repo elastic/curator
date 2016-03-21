@@ -11,6 +11,7 @@ Changelog
   * Add more logging information to snapshot delete method #582 (untergeek)
   * Improve default timeout, logging, and exception handling for `seal` command
     #583 (untergeek)
+  * Fix use of default snapshot name. #584 (untergeek)
 
 3.5.0 (16 March 2016)
 ---------------------
