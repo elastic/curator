@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
+import urllib3
 from mock import Mock
 import sys
 try:
@@ -509,6 +510,14 @@ class TestSeal(TestCase):
         client.indices.flush_synced.side_effect = fake_fail
         client.info.return_value = {'version': {'number': '1.6.0'} }
         self.assertTrue(curator.seal_indices(client, named_index))
+    def test_seal_indices_timeout_error(self):
+        client = Mock()
+        client.cluster.state.return_value = open_index
+        client.indices.flush_synced.return_value = synced_fail
+        client.indices.flush_synced.side_effect = urllib3.exceptions.ReadTimeoutError('foo', 'bar', 'message')
+        client.info.return_value = {'version': {'number': '1.6.0'} }
+        self.assertFalse(curator.seal_indices(client, named_index))
+
 
 class TestShow(TestCase):
     def setUp(self):
@@ -687,5 +696,5 @@ class TestDeleteSnapshot(TestCase):
         self.assertTrue(curator.delete_snapshot(client, repository=repo_name, snapshot=snap_name))
     def test_delete_snapshot_negative(self):
         client = Mock()
-        client.snapshot.delete.side_effect = elasticsearch.RequestError
+        client.snapshot.delete.side_effect = elasticsearch.TransportError(400, 'This is an error message')
         self.assertFalse(curator.delete_snapshot(client, repository=repo_name, snapshot=snap_name))

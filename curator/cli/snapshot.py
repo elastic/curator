@@ -43,12 +43,13 @@ def snapshot(
         msgout('Missing required parameter --repository', error=True, quiet=ctx.parent.params['quiet'])
         sys.exit(1)
     # Check if `name` contains upper-case characters, which are forbidden #562
-    if any(c.isupper() for c in name):
-        msgout(
-            'Snapshot name: "{0}" contains upper-case characters, which are not allowed.'.format(name),
-            error=True,
-            quiet=ctx.parent.params['quiet']
-        )
-        logger.error('Snapshot name: "{0}" contains upper-case characters, which are not allowed.'.format(name))
-        sys.exit(1)
+    if name:
+        if any(c.isupper() for c in name):
+            msgout(
+                'Snapshot name: "{0}" contains upper-case characters, which are not allowed.'.format(name),
+                error=True,
+                quiet=ctx.parent.params['quiet']
+            )
+            logger.error('Snapshot name: "{0}" contains upper-case characters, which are not allowed.'.format(name))
+            sys.exit(1)
 snapshot.add_command(indices)

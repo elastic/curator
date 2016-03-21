@@ -1,6 +1,7 @@
 from .utils import *
 import elasticsearch
 import logging
+import urllib3
 logger = logging.getLogger(__name__)
 
 def seal_indices(client, indices):
@@ -14,19 +15,21 @@ def seal_indices(client, indices):
     :rtype: bool
     """
     indices = prune_closed(client, indices)
+    if not len(indices) > 0:
+        logger.info('No indices to seal.')
+        return True
     es_version = get_version(client)
+    if not es_version >= (1, 6, 0):
+        logger.warn('Your version of Elasticsearch ({0}) does not support index sealing (synced flush).  Must be 1.6.0 or higher.'.format(es_version))
+        return True # Non-fatal error
     errcode = ''
     results = {}
     try:
-        if es_version >= (1, 6, 0):
-            if len(indices) > 0:
-                results = client.indices.flush_synced(index=to_csv(indices))
-            else:
-                logger.warn('No indices to seal.')
-                return True
-        else:
-            logger.error('Your version of Elasticsearch ({0}) does not support index sealing (synced flush).  Must be 1.6.0 or higher.'.format(es_version))
+        results = client.indices.flush_synced(index=to_csv(indices))
     except Exception as e:
+        if str(type(e)) == "<class 'urllib3.exceptions.ReadTimeoutError'>":
+            logger.error('{0} consider using a larger value for --timeout'.format(e))
+            return False
         logger.warn('Non-fatal error encountered.')
         try:
             logger.debug('Error: {0}.  Message: {1}'.format(e.status_code, e.error))
