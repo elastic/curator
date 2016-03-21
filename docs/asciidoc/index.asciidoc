@@ -1,5 +1,5 @@
-:curator_version: 3.5.1
-:curator_major: 3
+:curator_version: 4.0.0
+:curator_major: 4
 :es_py_version: 2.3.0
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/2.2
 

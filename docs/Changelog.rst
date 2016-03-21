@@ -3,6 +3,30 @@
 Changelog
 =========
 
+4.0.0dev0 (16 March 2016)
+-------------------------
+
+**Breaking Changes**
+
+  * New API! (again?!)
+  * Command-line changes (but better functionality through YAML configuration files)
+
+**New Features**
+
+  * Sort by index age based on index name (same as previous versions of Curator),
+    but also by index `creation_date`, or by calculations from the Stats API on
+    a timestamp field.
+  * Class: `index_list`. This pulls all indices at instantiation, and you apply
+    filters...As many as you like, in fact, due to the YAML config file.
+  * YAML configuration files.  Now a single file can define an entire batch of
+    commands to be performed in sequence.
+  * Atomically add/remove indices from aliases! This is possible by way of the
+    new `index_list` class and YAML configuration files.
+  * State of indices pulled and stored in `index_list` instance.  Fewer API calls
+    required to serially test for open/close, `size_in_bytes`, etc.
+  * Filter by size now allows sorting by age!
+
+
 3.5.1 (21 March 2016)
 ---------------------
 
@@ -12,6 +36,7 @@ Changelog
   * Improve default timeout, logging, and exception handling for `seal` command
     #583 (untergeek)
   * Fix use of default snapshot name. #584 (untergeek)
+
 
 3.5.0 (16 March 2016)
 ---------------------
