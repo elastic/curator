@@ -145,11 +145,15 @@ def override_timeout(ctx):
     Override the default timeout for optimize and snapshot operations if the
     default value of 30 is provided at the command-line.
     """
-    timeout = 21600
-    if ctx.parent.info_name in ['optimize', 'snapshot']:
+    if ctx.parent.info_name in ['optimize', 'snapshot', 'seal']:
+        # Check for default timeout of 30s
         if ctx.parent.parent.params['timeout'] == 30:
-            logger.warn('Overriding default connection timeout.  New timeout: {0}'.format(timeout))
+            if ctx.parent.info_name in ['optimize', 'snapshot']:
+                timeout = 21600
+            elif ctx.parent.info_name == 'seal':
+                timeout = 180
             ctx.parent.parent.params['timeout'] = timeout
+            logger.info('Overriding default connection timeout for {0} action.  New timeout: {1}'.format(ctx.parent.info_name,timeout))
 
 def filter_callback(ctx, param, value):
     """

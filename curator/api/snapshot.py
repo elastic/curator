@@ -123,5 +123,5 @@ def delete_snapshot(client, snapshot=None, repository=None):
         client.snapshot.delete(repository=repository, snapshot=snapshot)
         return True
     except elasticsearch.TransportError as e:
-        logger.error("Unable to delete snapshot {0} from repository {1}. Status code: {2}, Error message: {3}.   Run with --debug flag and/or check Elasticsearch logs for more information.".format(snapshot, repository, e[0], e[1]))
+        logger.error("Unable to delete snapshot {0} from repository {1}. Error message: {2}.   Run with --debug flag and/or check Elasticsearch logs for more information.".format(snapshot, repository, e))
         return False
