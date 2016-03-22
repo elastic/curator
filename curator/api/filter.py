@@ -300,7 +300,7 @@ def timestamp_check(timestamp, timestring=None, time_unit=None,
                         timestamp, method.replace('_', ' '), value, time_unit))
     return False
 
-def filter_by_space(client, indices, disk_space=None, reverse=True):
+def filter_by_space(client, indices, disk_space=None, reverse=True, position=0):
     """
     Remove indices from the provided list of indices based on space consumed,
     sorted reverse-alphabetically by default.  If you set `reverse` to
@@ -314,10 +314,15 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
     By setting reverse to `False`, then ``index3`` will be deleted before
     ``index2``, which will be deleted before ``index1``
 
+    By setting position to a non-zero number, sorting index names will start
+    from the character position from the end of the name, to allow for sorting 
+    on the timestamp part instead of the full name of the index.
+
     :arg client: The Elasticsearch client connection
     :arg indices: A list of indices to act on
     :arg disk_space: Filter indices over *n* gigabytes
     :arg reverse: The filtering direction. (default: `True`)
+    :arg position: starting position for sort. (default: 0)
     :rtype: list
     """
 
@@ -357,7 +362,7 @@ def filter_by_space(client, indices, disk_space=None, reverse=True):
         else:
             statlist = get_stat_list(client.indices.stats(index=to_csv(not_closed)))
 
-        sorted_indices = sorted(statlist, reverse=reverse)
+        sorted_indices = sorted(statlist, reverse=reverse, key=lambda x: (x[0][position:], x[1]))
 
         for index_name, index_size in sorted_indices:
             disk_usage += index_size
