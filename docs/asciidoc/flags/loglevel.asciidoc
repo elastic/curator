@@ -6,6 +6,7 @@ Summary
 ~~~~~~~
 
 Set the minimum acceptable log severity to display. Default: `INFO`
+Options are(In order): CRITICAL, ERROR, WARNING, INFO, DEBUG
 
 [float]
 Flags
