@@ -1,0 +1,65 @@
+[[cli]]
+= Command Line
+
+[[command-line]]
+== Command Line Interface
+
+The command-line arguments are as follows:
+
+[source,sh]
+-------
+curator [--config CONFIG.YML] [--dry-run] ACTION_FILE.YML
+-------
+
+The square braces indicate optional elements.
+
+If `--config` and `CONFIG.YML` are not provided, Curator will look in
+`~/.curator/curator.yml` for the configuration file.  `~` is the home directory
+of the user executing Curator. In a Unix system, this might be
+`/home/username/.curator/curator.yml`, while on a Windows system, it might be
+`C:\Users\username\.curator\curator.yml`
+
+If `--dry-run` is included, Curator will simulate the action(s) in
+ACTION_FILE.YML as closely as possible without actually making any changes.  The
+results will be in the logfile, or STDOUT/command-line if no logfile is
+specified.
+
+`ACTION_FILE.YML` is a YAML <<actionfile, actionfile>>.
+
+Command-line help is never far away:
+
+[source,sh]
+-------
+curator --help
+-------
+
+The help output looks like this:
+
+[source,sh]
+-------
+$ curator --help
+Usage: curator [OPTIONS] ACTION_FILE
+
+  Curator for Elasticsearch indices.
+
+  See http://elastic.co/guide/en/elasticsearch/client/curator/current
+
+Options:
+  --config PATH  Path to configuration file. Default: ~/.curator/curator.yml
+  --dry-run      Do not perform any changes.
+  --version      Show the version and exit.
+  --help         Show this message and exit.
+-------
+
+&nbsp;
+
+[[exit-codes]]
+== Exit Codes
+
+Exit codes will indicate success or failure.
+
+* `0` — Success
+* `1` — Failure
+* `-1` - Exception raised that does not result in a `1` exit code.
+
+&nbsp;

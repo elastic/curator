@@ -1,0 +1,282 @@
+[[options]]
+= Options
+
+[partintro]
+--
+
+Options are settings used by <<actions,actions>>.
+--
+
+[[option_alias]]
+== alias
+
+NOTE: This option is required by the <<alias,alias action>>.
+
+The value for this setting is the name of the alias to use.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+[[option_allocation_type]]
+== allocation_type
+
+NOTE: This setting is used only when using the <<allocation,allocation action>>
+    or the <<filtertype_allocated,allocated filtertype>>.
+
+The value of this setting must be one of `require`, `include`, or `exclude`.
+
+Read more about these settings at
+https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
+
+The default value for this setting is `require`.
+
+[[option_continue]]
+== continue_if_exception
+
+If `continue_if_exception` is set to `True`, Curator will attempt to continue on
+to the next action, if any, even if an exception is encountered. Curator will
+log but ignore the exception that was raised.
+
+The default value for this setting is `False`
+
+[[option_count]]
+== count
+
+NOTE: This setting is required when using the <<replicas,replicas action>>.
+
+The value for this setting is the number of replicas to assign to matching
+indices.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+[[option_delay]]
+== delay
+
+NOTE: This setting is only used by the <<forcemerge,forceMerge action>>, and is
+    optional.
+
+The value for this setting is the number of seconds to delay between
+forceMerging indices, to allow the cluster to quiesce.
+
+There is no default value.
+
+[[option_disable]]
+== disable_action
+
+If `disable_action` is set to `True`, Curator will ignore the current action.
+This may be useful for temporarily disabling actions in a large configuration
+file.
+
+The default value for this setting is `False`
+
+[[option_ignore]]
+== ignore_unavailable
+
+NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+
+This setting must be either `True` or `False`.
+
+When the ignore_unavailable option is `False` and an index is missing the
+snapshot request will fail.
+
+The default value of this setting is `False`
+
+[[option_include_gs]]
+== include_global_state
+
+NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+
+This setting must be either `True` or `False`.
+
+The value of this setting determines whether Elasticsearch should include the
+global cluster state with the snapshot.
+
+The default value of this setting is `True`
+
+[[option_key]]
+== key
+
+NOTE: This setting is required when using the <<allocation,allocation action>>
+    or the <<filtertype_allocated,allocated filtertype>>.
+
+The value of this setting should correspond to a node setting on one or more
+nodes in your cluster.
+
+For example, you might have set
+
+[source,sh]
+-----------
+node.tag: myvalue
+-----------
+
+in your `elasticsearch.yml` file for one or more of your nodes.  To match
+allocation in this case, set key to `tag`.
+
+These special attributes are also supported:
+
+[cols="2*", options="header"]
+|===
+|attribute
+|description
+
+|`_name`
+|Match nodes by node name
+
+|`_host_ip`
+|Match nodes by host IP address (IP associated with hostname)
+
+|`_publish_ip`
+|Match nodes by publish IP address
+
+|`_ip`
+|Match either `_host_ip` or `_publish_ip`
+
+|`_host`
+|Match nodes by hostname
+|===
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+[[option_mns]]
+== max_num_segments
+
+NOTE: This setting is required when using the <<forcemerge,forceMerge action>>
+    or the <<filtertype_forcemerged,forcemerged filtertype>>.
+
+The value for this setting is the cutoff number of segments per shard.  Indices
+which have more than this number of segments per shard will remain in the index
+list.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+
+[[option_name]]
+== name
+
+NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+
+The value of this setting is the name of the snapshot.
+
+This setting should contain a valid Python strftime string.  Curator will
+extract the strftime identifiers and replace them with the corresponding values.
+
+The Python strftime identifiers that Curator currently recognizes include:
+
+* `Y`: A 4 digit year
+* `y`: A 2 digit year
+* `m`: The 2 digit month
+* `W`: The 2 digit week of the year
+* `d`: The 2 digit day of the month
+* `H`: The 2 digit hour of the day, in 24 hour notation
+* `M`: The 2 digit minute of the hour
+* `S`: The 2 digit number of second of the minute
+* `j`: The 3 digit day of the year
+
+The default value of this setting is `curator-%Y%m%d%H%M%S`
+
+
+[[option_partial]]
+== partial
+
+NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+
+This setting must be either `True` or `False`.
+
+The entire snapshot will fail if one or more indices being added to the
+snapshot don’t have all primary shards available. This behavior can be changed
+by setting partial to `True`.
+
+The default value of this setting is `False`
+
+
+
+[[option_repository]]
+== repository
+
+NOTE: This setting is only used by the <<snapshot, snapshot>>, and
+    <<delete_snapshots, delete snapshots>> actions.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+
+[[option_retry_count]]
+== retry_count
+
+NOTE: This setting is only used by the <<delete_snapshots, delete snapshots action>>.
+
+The value of this setting is the number of times to retry deleting a snapshot.
+
+The default for this setting is `3`.
+
+[[option_retry_interval]]
+== retry_interval
+
+NOTE: This setting is only used by the <<delete_snapshots, delete snapshots action>>.
+
+The value of this setting is the number of seconds to delay between retries.
+
+The default for this setting is `120`.
+
+
+[[option_skip_fsck]]
+== skip_repo_fs_check
+
+NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+
+This setting must be either `True` or `False`.
+
+Each master and data node in the cluster _must_ have write access to the shared
+filesystem used by the repository.  Some filesystems may take longer to respond
+to a check, which results in a false positive for the filesystem access check.
+For these cases, it is desirable to bypass this verification step, by setting
+this to `True.`
+
+The default value of this setting is `False`
+
+
+
+[[option_value]]
+== value
+
+NOTE: This setting is required when using the <<allocation,allocation action>>
+    or the <<filtertype_allocated,allocated filtertype>>.
+
+The value of this setting should correspond to a node setting on one or more
+nodes in your cluster.
+
+For example, you might have set
+
+[source,sh]
+-----------
+node.tag: myvalue
+-----------
+
+in your `elasticsearch.yml` file for one or more of your nodes.  To match
+allocation in this case, set value to `myvalue`. Additonally, if you used one of
+the special attribute names `_ip`, `_name`, `_id`, or `_host` for
+<<option_key,key>>, value can match the one of the node ip addresses, names,
+ids, or host names, respectively.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+[[option_wfc]]
+== wait_for_completion
+
+NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+
+This setting must be either `True` or `False`.
+
+This setting specifies whether or not the request should return immediately
+after snapshot initialization or wait for snapshot completion.
+
+During snapshot initialization, information about all previous snapshots is
+loaded into the memory, which means that in large repositories it may take
+several seconds (or even minutes) for this command to return even if the
+`wait_for_completion` setting is set to `False`.
+
+The default value of this setting is `True`
