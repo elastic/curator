@@ -3,10 +3,18 @@
 Changelog
 =========
 
+4.0.0a4 (21 Apr 2016)
+---------------------
+
+**Bug Fixes**
+
+  * Require `pyyaml` 3.10 or better.
+  * In the case that no `options` are in an action, apply the defaults.
+
 4.0.0a3 (21 Apr 2016)
 ---------------------
 
-It's time for Curator 4.0 alpha 1!
+It's time for Curator 4.0 alpha!
 
 **Breaking Changes**
 
