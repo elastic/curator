@@ -24,6 +24,13 @@ DATEMAP = {
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
+def random_directory():
+    dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+    directory = tempfile.mkdtemp(suffix=dirname)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    return directory
+
 def get_client():
     global client
     if client is not None:
@@ -60,23 +67,27 @@ class CuratorTestCase(TestCase):
         args['time_unit'] = 'days'
         args['prefix'] = 'logstash-'
         self.args = args
-        dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        # dirname = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         # This will create a psuedo-random temporary directory on the machine
         # which runs the unit tests, but NOT on the machine where elasticsearch
         # is running. This means tests may fail if run against remote instances
         # unless you explicitly set `self.args['location']` to a proper spot
         # on the target machine.
-        self.args['location'] = tempfile.mkdtemp(suffix=dirname)
+        self.args['location'] = random_directory()
+        self.args['configdir'] = random_directory()
+        self.args['configfile'] = os.path.join(self.args['configdir'], 'curator.yml')
+        self.args['actionfile'] = os.path.join(self.args['configdir'], 'actions.yml')
         self.args['repository'] = 'TEST_REPOSITORY'
-        if not os.path.exists(self.args['location']):
-            os.makedirs(self.args['location'])
+        # if not os.path.exists(self.args['location']):
+        #     os.makedirs(self.args['location'])
 
     def tearDown(self):
         self.delete_repositories()
         self.client.indices.delete(index='*')
         self.client.indices.delete_template(name='*', ignore=404)
-        if os.path.exists(self.args['location']):
-            shutil.rmtree(self.args['location'])
+        for path_arg in ['location', 'configdir']:
+            if os.path.exists(self.args[path_arg]):
+                shutil.rmtree(self.args[path_arg])
 
     def parse_args(self):
         return Args(self.args)
@@ -123,3 +134,7 @@ class CuratorTestCase(TestCase):
 
     def close_index(self, name):
         self.client.indices.close(index=name)
+
+    def write_config(self, fname, data):
+        with open(fname, 'w') as f:
+            f.write(data)

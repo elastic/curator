@@ -14,10 +14,10 @@ Elasticsearch Curator helps you curate, or manage your indices.
 `Curator API Documentation`_
 ----------------------------
 
-Since version 2.0, Curator ships with both an API and wrapper scripts (which are
-actually defined as entry points).  This allows you to write your own scripts to
-accomplish similar goals, or even new and different things with the `Curator API`_,
-and the `Elasticsearch Python API`_.
+Version 4.0 of Curator ships with both an API and a wrapper script (which is
+actually defined as an entry point).  The API allows you to write your own
+scripts to accomplish similar goals, or even new and different things with the
+`Curator API`_, and the `Elasticsearch Python API`_.
 
 .. _Curator API: http://curator.readthedocs.org/
 
@@ -73,8 +73,8 @@ Contributing
 * sign the `CLA <http://elastic.co/contributor-agreement/>`_
 * send a pull request!
 
-To run from source, use the ``run_curator.py`` and ``run_es_repo_mgr.py`` scripts
-in the root directory of the project.
+To run from source, use the ``run_curator.py`` script in the root directory of
+the project.
 
 Running Tests
 -------------
@@ -89,19 +89,19 @@ they're applied (it can still be one commit of course).
 
 The tests will try to connect to your local elasticsearch instance and run
 integration tests against it. This will delete all the data stored there! You
-can use the env variable ``TEST_ES_SERVER`` to point to a different instance (for
-example 'otherhost:9203').
+can use the env variable ``TEST_ES_SERVER`` to point to a different instance
+(for example, 'otherhost:9203').
 
 Versioning
 ----------
 
-There are two branches for development - ``master`` and ``0.6``. Master branch is
-used to track all the changes for Elasticsearch 1.0 and beyond whereas 0.6
-tracks Elasticsearch 0.90 and the corresponding ``elasticsearch-py`` version.
+Version 4.0 of Curator is the current ``master`` branch.  It supports
+Elasticsearch versions 2.0 through 5.0.  This is the first release of Curator
+that is not fully reverse compatible.
 
-Releases with major versions greater than 1 (X.Y.Z, where X is > 1) are to be
-used with Elasticsearch 1.0 and later, 0.6 releases are meant to work with
-Elasticsearch 0.90.X.
+The ``3.x`` branch will continue to be available to support earlier versions of
+Elasticsearch. No new development is being done with the ``3.x`` branch, but bug
+fixes may be merged as necessary.
 
 Origins
 -------

@@ -3,51 +3,41 @@
 Filter Methods
 ==============
 
-Sections
+* `IndexList`_
+* `SnapshotList`_
 
-* `Regex`_
-* `Date & Time`_
-* `Disk Space`_
+IndexList
+---------
 
-Regex
------
+.. automethod:: curator.indexlist.IndexList.filter_allocated
+   :noindex:
 
-build_filter
-++++++++++++
-.. automethod:: curator.api.build_filter
+.. automethod:: curator.indexlist.IndexList.filter_by_age
+   :noindex:
 
-apply_filter
-+++++++++++++
-.. automethod:: curator.api.apply_filter
+.. automethod:: curator.indexlist.IndexList.filter_by_regex
+   :noindex:
 
-get_date_regex
-++++++++++++++
-.. automethod:: curator.api.get_date_regex
+.. automethod:: curator.indexlist.IndexList.filter_by_space
+   :noindex:
 
+.. automethod:: curator.indexlist.IndexList.filter_closed
+   :noindex:
 
-Date & Time
------------
+.. automethod:: curator.indexlist.IndexList.filter_forceMerged
+   :noindex:
 
-get_datetime
-+++++++++++++
-.. automethod:: curator.api.get_datetime
+.. automethod:: curator.indexlist.IndexList.filter_kibana
+   :noindex:
 
-get_target_month
-++++++++++++++++
-.. automethod:: curator.api.get_target_month
+.. automethod:: curator.indexlist.IndexList.filter_opened
+   :noindex:
 
-get_cutoff
-++++++++++
-.. automethod:: curator.api.get_cutoff
+SnapshotList
+------------
 
-timestamp_check
-+++++++++++++++
-.. automethod:: curator.api.timestamp_check
+.. automethod:: curator.snapshotlist.SnapshotList.filter_by_age
+   :noindex:
 
-
-Disk Space
-----------
-
-filter_by_space
-+++++++++++++++
-.. automethod:: curator.api.filter_by_space
+.. automethod:: curator.snapshotlist.SnapshotList.filter_by_regex
+   :noindex:

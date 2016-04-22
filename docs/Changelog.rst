@@ -3,6 +3,52 @@
 Changelog
 =========
 
+4.0.0a1 (21 Apr 2016)
+---------------------
+
+It's time for Curator 4.0 alpha 1!
+
+**Breaking Changes**
+
+  * New API! (again?!)
+  * Command-line changes.  No more command-line args, except for ``--config``,
+    ``--actions``, and ``--dry-run``:
+
+      - ``--config`` points to a YAML client and logging configuration file.
+        The default location is ``~/.curator/curator.yml``
+      - ``--actions`` arg points to a YAML action configuration file
+      - ``--dry-run`` will simulate the action(s) which would have taken place,
+        but not actually make any changes to the cluster or its indices.
+
+**General**
+
+  * Updated API documentation
+  * Updated use documentation for Elastic main site.
+  * Include example files for ``--config`` and ``--actions``.
+
+**New Features**
+
+  * Sort by index age not only by index name (as with previous versions of
+    Curator), but also by index `creation_date`, or by calculations from the
+    Field Stats API on a timestamp field.
+  * Class: `IndexList`. This pulls all indices at instantiation, and you apply
+    filters, which are class methods.  You can iterate over as many filters as
+    you like, in fact, due to the YAML config file.
+  * Class: `SnapshotList`. This pulls all snapshots from the given repository at
+    instantiation, and you apply filters, which are class methods.  You can
+    iterate over as many filters as you like, in fact, due to the YAML config
+    file.
+  * YAML configuration files.  Now a single file can define an entire batch of
+    commands, each with their own filters, to be performed in sequence.
+  * Atomically add/remove indices from aliases! This is possible by way of the
+    new `IndexList` class and YAML configuration files.
+  * State of indices pulled and stored in `IndexList` instance.  Fewer API calls
+    required to serially test for open/close, `size_in_bytes`, etc.
+  * Filter by space now allows sorting by age!
+  * Experimental! Use AWS IAM credentials to sign requests to Elasticsearch.
+    This requires the end user to *manually* install the `requests_aws4auth`
+    python module.
+
 3.5.1 (21 March 2016)
 ---------------------
 
@@ -12,6 +58,7 @@ Changelog
   * Improve default timeout, logging, and exception handling for `seal` command
     #583 (untergeek)
   * Fix use of default snapshot name. #584 (untergeek)
+
 
 3.5.0 (16 March 2016)
 ---------------------

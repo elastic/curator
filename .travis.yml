@@ -2,11 +2,11 @@ language: python
 
 python:
   - "2.7"
-  - "3.3"
+  - "3.4"
 
 install:
   - mkdir /tmp/elasticsearch
-  - wget -O - https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.0.0.tar.gz | tar xz --directory=/tmp/elasticsearch --strip-components=1
+  - wget -O - https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-2.3.0.tar.gz | tar xz --directory=/tmp/elasticsearch --strip-components=1
   - pip install .
 
 before_script:
@@ -14,4 +14,3 @@ before_script:
 
 script:
   - python setup.py test
-

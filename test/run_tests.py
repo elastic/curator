@@ -13,6 +13,7 @@ def run_all(argv=None):
     if argv is None:
         argv = [
             'nosetests', '--with-xunit',
+            '--logging-format=%(levelname)s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s',
             '--with-xcoverage', '--cover-package=curator', '--cover-erase',
             '--verbose',
         ]
@@ -24,5 +25,3 @@ def run_all(argv=None):
 
 if __name__ == '__main__':
     run_all(sys.argv)
-
-

@@ -16,8 +16,8 @@ snapshots.
 Compatibility
 -------------
 
-The Elasticsearch Curator Python API is compatible with Elasticsearch versions 1.x
-through 2.0, and supports Python versions 2.6 and later.
+The Elasticsearch Curator Python API is compatible with Elasticsearch versions 2.x
+through 5.0, and supports Python versions 2.6 and later.
 
 Example Usage
 -------------
@@ -29,10 +29,11 @@ Example Usage
 
     client = elasticsearch.Elasticsearch()
 
-    curator.close_indices(client, ['logstash-2014.08.16','logstash-2014.08.17'])
-    curator.disable_bloom_filter(client, 'logstash-2014.08.31')
-    curator.optimize_index(client, 'logstash-2014.08.31')
-    curator.delete(client, ['logstash-2014.07.16', 'logstash-2014.07.17'])
+    ilo = curator.IndexList(client)
+    ilo.filter_by_regex(kind='prefix', value='logstash-')
+    ilo.filter_by_age(source='name', direction='older', timestring='%Y.%m.%d', unit='days', unit_count=30)
+    delete_indices = curator.Delete(ilo)
+    delete_indices.do_action()
 
 .. TIP::
     See more examples in the :doc:`Examples </examples>` page.
@@ -42,11 +43,9 @@ Features
 
 The API methods fall into the following categories:
 
-* :doc:`Commands </commands>` take a single index, or in some cases a list of indices and perform an action on them.
-* :doc:`Filters </filters>` are there to filter indices or snapshots based on provided criteria.
-* :doc:`Utilities </utilities>` are helper methods for commands and filters.
-
-Filtering indices is now handled by the :py:func:`curator.api.build_filter` method.
+* :doc:`Object Classes </objectclasses>` build and filter index list or snapshot list objects.
+* :doc:`Action Classes </actionclasses>` act on object classes.
+* :doc:`Utilities </utilities>` are helper methods.
 
 Logging
 ~~~~~~~
@@ -59,7 +58,7 @@ logger logs requests to the server in JSON format as pretty-printed ``curl``
 commands that you can execute from the command line. The ``elasticsearch.trace``
 logger is not inherited from the base logger and must be activated separately.
 
-.. _logging library: http://docs.python.org/3.3/library/logging.html
+.. _logging library: http://docs.python.org/3.5/library/logging.html
 
 Contents
 --------
@@ -67,7 +66,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   commands
+   objectclasses
+   actionclasses
    filters
    utilities
    examples
@@ -76,7 +76,7 @@ Contents
 License
 -------
 
-Copyright 2013–2015 Elastic <http://elastic.co> and contributors.
+Copyright (c) 2012–2016 Elasticsearch <http://www.elastic.co>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
