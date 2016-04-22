@@ -29,6 +29,11 @@ LOGGING_DEFAULTS = {
     'logformat': 'default',
 }
 
+OPTION_DEFAULTS = {
+    'continue_if_exception': False,
+    'disable_action': False,
+}
+
 REGEX_MAP = {
     'timestring': r'^.*{0}.*$',
     'regex': r'{0}',

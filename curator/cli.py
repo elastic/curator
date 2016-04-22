@@ -4,7 +4,7 @@ import logging
 import click
 import copy
 from .settings import ACTION_DEFAULTS, CONFIG_FILE, CLIENT_DEFAULTS, \
-    LOGGING_DEFAULTS
+    LOGGING_DEFAULTS, OPTION_DEFAULTS
 from .exceptions import *
 from .utils import *
 from .indexlist import IndexList
@@ -176,7 +176,9 @@ def cli(config, dry_run, action_file):
         else:
             raise MissingArgument('No value for "action" provided')
         logger.info('Action #{0}: {1}'.format(idx, action))
-
+        if not 'options' in actions[idx] or \
+                type(actions[idx]['options']) is not type(dict()):
+            actions[idx]['options'] = OPTION_DEFAULTS
         # Assign and remove these keys from the options as the action will
         # raise an exception if they are passed as kwargs
         action_disabled = actions[idx]['options'].pop('disable_action', False)

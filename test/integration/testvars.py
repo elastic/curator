@@ -151,6 +151,16 @@ optionless_proto = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
+no_options_proto = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Act on indices as filtered"\n'
+'    action: {0}\n'
+'    filters:\n'
+'      - filtertype: pattern\n'
+'        kind: prefix\n'
+'        value: my\n')
+
 actionless_proto = ('---\n'
 'actions:\n'
 '  1:\n'

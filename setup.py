@@ -24,6 +24,7 @@ def get_version():
 def get_install_requires():
     res = ['elasticsearch>=2.3.0,<5.1.0' ]
     res.append('click>=3.3')
+    res.append('pyyaml>=3.10')
     return res
 
 try:
