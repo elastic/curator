@@ -173,3 +173,20 @@ class TestCLIMethods(CuratorTestCase):
                     )
         self.assertEquals(10, len(curator.get_indices(self.client)))
         self.assertEqual(1, result.exit_code)
+    def test_no_options_in_action(self):
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.no_options_proto.format('delete_indices'))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        '--dry-run',
+                        self.args['actionfile']
+
+                    ],
+                    )
+        self.assertEqual(0, result.exit_code)
