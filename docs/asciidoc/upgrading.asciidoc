@@ -1,0 +1,29 @@
+[[upgrading]]
+== Upgrading
+
+If Curator has been installed via `pip`, the preferred way to upgrade is:
+
+-------------------------------------
+pip install -U elasticsearch-curator
+-------------------------------------
+
+If you need to manually upgrade, follow the
+<<installation,installation instructions>> for installing from source to obtain
+the most recent versions of both elasticsearch-py and Curator.
+
+You should then be able to run:
+
+-------------------------------------
+pip install -U elasticsearch-py.tar.gz
+-------------------------------------
+
+&nbsp;
+
+and then:
+
+-------------------------------------
+pip install -U elasticsearch-curator.tar.gz
+-------------------------------------
+
+If Curator has been installed via package repository, then use the standard
+upgrade method for your repository.

@@ -1,0 +1,403 @@
+[[actions]]
+= Actions
+
+[partintro]
+--
+
+Actions are the tasks which Curator can perform on your indices.  Snapshots,
+once created, can only be deleted.
+
+* <<alias,Alias>>
+* <<allocation,Allocation>>
+* <<close,Close>>
+* <<delete_indices,Delete Indices>>
+* <<delete_snapshots,Delete Snapshots>>
+* <<open,Open>>
+* <<forcemerge,forceMerge>>
+* <<replicas,Replicas>>
+* <<snapshot,Snapshot>>
+--
+
+[[alias]]
+== Alias
+
+[source,text]
+-------------
+action: alias
+description: "Add/Remove selected indices to or from the specified alias"
+options:
+  alias: alias_name
+  continue_if_exception: False
+  disable_action: False
+add:
+  filters:
+  - filtertype: ...
+remove:
+  filters:
+  - filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action adds and/or removes indices from the specified <<option_alias,alias>>
+
+The <<filters,filters>> under the `add` and `remove` directives define which
+indices will be added and/or removed.  This is an atomic action, so adds and
+removes happen instantaneously.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_alias,alias>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_alias,here>>.
+
+[[allocation]]
+== Allocation
+
+[source,text]
+-------------
+action: allocation
+description: "Add/Remove selected indices to or from the specified alias"
+options:
+  key:
+  value:
+  allocation_type:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action changes the shard routing allocation for the selected indices.
+
+See https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
+for more information.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_key,key>> (required)
+* <<option_value,value>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_allocation_type,allocation_type>> (has a default value which can
+    optionally be changed)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_allocation,here>>.
+
+[[close]]
+== Close
+
+[source,text]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action closes the selected indices.
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_close,here>>.
+
+[[delete_indices]]
+== Delete Indices
+
+[source,text]
+-------------
+action: delete_indices
+description: "Delete selected indices"
+options:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action deletes the selected indices.
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_delete_indices,here>>.
+
+
+[[delete_snapshots]]
+== Delete Snapshots
+
+[source,text]
+-------------
+action: delete_snapshots
+description: "Delete selected snapshots from 'repository'"
+options:
+  repository:
+  retry_interval:
+  retry_count:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action deletes the selected snapshots from the selected
+<<option_repository,repository>>.  If issues are encountered, it will retry
+up to <<option_retry_count,retry_count>> times, with a delay of
+<<option_retry_interval,retry_interval>> seconds between retries.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_repository,repository>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_retry_interval,retry_interval>> (has a default value which can
+    optionally be changed)
+* <<option_retry_count,retry_count>> (has a default value which can optionally
+    be changed)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_delete_snapshots,here>>.
+
+
+[[open]]
+== Open
+
+[source,text]
+-------------
+action: open
+description: "open selected indices"
+options:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action opens the selected indices.
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_open,here>>.
+
+
+[[forcemerge]]
+== Forcemerge
+
+[source,text]
+-------------
+action: forcemerge
+description: "Perform a forceMerge on selected indices to 'max_num_segments' per shard"
+options:
+  max_num_segments:
+  delay:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action performs a forceMerge on the selected indices, merging them to
+<<option_mns,max_num_segments>> per shard, with an optional pause between each
+merge of <<option_delay,delay>> seconds to allow the cluster to quiesce.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_mns,max_num_segments>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_delay,delay>> (has a default value which can optionally be changed)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_forcemerge,here>>.
+
+
+
+[[replicas]]
+== Replicas
+
+[source,text]
+-------------
+action: replicas
+description: >- Set the number of replicas per shard for selected
+    indices to 'count'
+options:
+  count:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action will set the number of replicas per shard to the value of
+<<option_count,count>>.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_count,count>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_replicas,here>>.
+
+
+
+[[snapshot]]
+== Snapshot
+
+[source,text]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository:
+  # Leaving name blank will result in the default 'curator-%Y%m%d%H%M%S'
+  name:
+  ignore_unavailable: False
+  include_global_state: True
+  partial: False
+  wait_for_completion: True
+  skip_repo_fs_check: False
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action will snapshot indices to the indicated
+<<option_repository,repository>>, with a name, or name pattern, as identified by
+<<option_name,name>>.
+
+The other options are usually okay to leave at the defaults, but feel free to
+read about them and change them accordingly.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_repository,repository>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_name,name>> (has a default value which can optionally be changed)
+* <<option_ignore,ignore_unavailable>> (has a default value which can optionally
+    be changed)
+* <<option_include_gs,include_global_state>> (has a default value which can
+    optionally be changed)
+* <<option_partial,partial>> (has a default value which can optionally be
+    changed)
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
+* <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
+    optionally be changed)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_snapshot,here>>.
