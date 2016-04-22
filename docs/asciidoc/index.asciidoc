@@ -1,17 +1,17 @@
-:curator_version: 4.0.0
+:curator_version: 4.0.0a1
 :curator_major: 4
 :es_py_version: 2.3.0
-:ref:  http://www.elastic.co/guide/en/elasticsearch/reference/2.2
+:ref:  http://www.elastic.co/guide/en/elasticsearch/reference/2.3
 
 [[curator-reference]]
 = Curator Reference
 
-include::misc/about.asciidoc[]
-include::misc/getting_started.asciidoc[]
-include::flags/index.asciidoc[]
-include::commands/index.asciidoc[]
-include::subcommands/index.asciidoc[]
-include::selection/index.asciidoc[]
-include::misc/faq.asciidoc[]
-include::misc/contributing.asciidoc[]
-include::misc/glossary.asciidoc[]
+include::about.asciidoc[]
+include::getting_started.asciidoc[]
+include::command-line.asciidoc[]
+include::configuration.asciidoc[]
+include::actions.asciidoc[]
+include::options.asciidoc[]
+include::filters.asciidoc[]
+include::filter_elements.asciidoc[]
+include::faq.asciidoc[]
