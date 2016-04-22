@@ -1,0 +1,18 @@
+[[getting-started]]
+= Getting Started
+
+[partintro]
+--
+
+Like a museum curator manages the exhibits and collections on display,
+Elasticsearch Curator helps you curate, or manage your Elasticsearch indices.
+
+Curator performs many operations on your Elasticsearch indices, from delete to
+snapshot to shard allocation routing.
+--
+
+include::installation.asciidoc[]
+include::upgrading.asciidoc[]
+include::examples.asciidoc[]
+
+&nbsp;

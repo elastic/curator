@@ -1,4 +1,4 @@
-:curator_version: 4.0.0a1
+:curator_version: 4.0.0a2
 :curator_major: 4
 :es_py_version: 2.3.0
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/2.3

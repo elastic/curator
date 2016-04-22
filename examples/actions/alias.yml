@@ -1,0 +1,44 @@
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: alias
+    description: >-
+      Alias indices older than 7 days but newer than 14 days, with a prefix of
+      logstash- to 'last_week', remove indices older than 14 days.
+    options:
+      alias: last_week
+      continue_if_exception: False
+      disable_action: True
+    add:
+      filters:
+      - filtertype: pattern
+        kind: prefix
+        value: logstash-
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 7
+      - filtertype: age
+        direction: younger
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 14
+    remove:
+      filters:
+      - filtertype: pattern
+        kind: prefix
+        value: logstash-
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 14

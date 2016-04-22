@@ -1,0 +1,292 @@
+
+[[filter_elements]]
+= Filter Elements
+
+[[fe_direction]]
+== direction
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
+with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
+set to `True`.
+
+This setting must be either `older` or `younger`.  This setting is used to
+determine whether indices or snapshots are `older` or `younger` than the
+reference point in time determined by <<fe_unit,unit>>,
+<<fe_unit_count,unit_count>>, and optionally, <<fe_epoch,epoch>>.
+
+There is no default value. This setting must be set by the user or an
+exception will be raised, and execution will halt.
+
+[[fe_disk_space]]
+== disk_space
+
+NOTE: This setting is only used with the <<filtertype_space,space>> filtertype +
+    and is a required setting.
+
+The value for this setting is a number of gigabytes.
+
+The <<filtertype_space,space filtertype>> will select indices to delete in
+excess of this number of gigabytes.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+
+[[fe_epoch]]
+== epoch
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+
+NOTE: This setting is optional.
+
+The value for this setting must be an epoch timestamp.
+
+<<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
+<<fe_epoch,epoch>>, are used by Curator to establish the moment in time point of
+reference with this formula:
+
+[source,sh]
+-----------
+point_of_reference = epoch - ((number of seconds in unit) * unit_count)
+-----------
+
+If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
+a point of reference in the future by using a negative value for
+<<fe_unit_count,unit_count>>.
+
+
+[[fe_exclude]]
+== exclude
+
+NOTE: This setting is only used with the <<filtertype_pattern,pattern>> filtertype.
+
+Setting exclude to `True` inverts the regular pattern match, and instead
+_excludes_ matches, keeping the indices or snapshots that do _not_ match the
+pattern
+
+The default value for this setting is `False`.
+
+
+[[fe_field]]
+== field
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+
+The value of this setting must be a timestamp field name.  This field must be
+present in the indices being filtered or an exception will be raised, and
+execution will halt.
+
+This setting is only used when <<fe_source,source>> is `field_stats`.
+
+The default value for this setting is `@timestamp`.
+
+
+
+[[fe_kind]]
+== kind
+
+NOTE: This setting is only used with the <<filtertype_pattern,pattern>> +
+    filtertype and is a required setting.
+
+Acceptable values for this setting are `prefix`, `suffix`, `timestring`, and
+`regex`.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+
+
+[[fe_reverse]]
+== reverse
+
+NOTE: This setting is only used with the <<filtertype_space,space>> filtertype
+
+This setting affects the sort order of the indices.  `True` means
+reverse-alphabetical.  This means that if all index names share the same pattern
+with a date--e.g. index-2016.03.01--older indices will be selected first.
+
+The default value of this setting is `True`.
+
+This setting is ignored if <<fe_use_age,use_age>> is `True`.
+
+
+[[fe_source]]
+== source
+The _source_ from which to derive the index or snapshot age. Can be one of
+`name`, `creation_date`, or `field_stats`.
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
+with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
+set to `True`.
+
+NOTE: All source's require <<fe_direction,direction>>, <<fe_unit,unit>>, and +
+<<fe_unit_count,unit_count>>. Additionally, each source can use the optional +
+setting, <<fe_epoch,epoch>>.
+
+[float]
+name
+~~~~
+
+Setting source to `name` tells Curator to derive an epoch timestamp from an
+index or snapshot name based on a <<fe_timestring,timestring>>.  This was the
+only available behavior in previous versions of Curator.
+
+This source requires <<fe_timestring,timestring>> to be set, in additon to <<fe_direction,direction>>,
+<<fe_unit,unit>>, and <<fe_unit_count,unit_count>>.
+
+[float]
+creation_date
+~~~~~~~~~~~~~
+
+Setting source to `creation_date` tells Curator to reference the index or
+snapshot creation time, as stored in the cluster metadata.
+
+This source requires <<fe_direction,direction>>, <<fe_unit,unit>>, and
+<<fe_unit_count,unit_count>>.
+
+[float]
+field_stats
+~~~~~~~~~~~
+
+Setting source to `field_stats` tells Curator to use a newer Elasticsearch API
+call which returns the minimum and maximum value of a field in an index. Curator
+will only use timestamp fields, which should be mapped in Elasticsearch as type
+`date`.
+
+The <<fe_field,field>> and <<fe_stats_result,stats_result>> settings are
+required to use the `field_stats` source.
+
+NOTE: Source `field_stats` only works with indices.
+
+[[fe_stats_result]]
+== stats_result
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+
+The value for this setting can be either `min_value` or `max_value`.  This
+setting is only used when <<fe_source,source>> is `field_stats`, and determines
+whether Curator will use the minimum or maximum value of <<fe_field,field>> for
+time calculations.
+
+The default value for this setting is `min_value`.
+
+
+
+[[fe_timestring]]
+== timestring
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
+with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
+set to `True`.
+
+This setting must be a valid Python strftime string.  It is used to match and
+extract the timestamp in an index name.
+
+The identifiers that Curator currently recognizes include:
+
+* `Y`: A 4 digit year
+* `y`: A 2 digit year
+* `m`: The 2 digit month
+* `W`: The 2 digit week of the year
+* `d`: The 2 digit day of the month
+* `H`: The 2 digit hour of the day, in 24 hour notation
+* `M`: The 2 digit minute of the hour
+* `S`: The 2 digit number of second of the minute
+* `j`: The 3 digit day of the year
+
+These identifiers may be combined with each other, and/or separated from each
+other with hyphens `-`, periods `.`, underscores `_`, or other characters valid
+in an index name.
+
+Each identifier must be preceded by a `%` character in the timestring.  For
+example, an index like `index-2016.04.01` would use a timestring of
+`'%Y.%m.%d'`.
+
+When <<fe_source,source>> is `name`, this setting must be set by the user or an
+exception will be raised, and execution will halt. There is no default value.
+
+[[fe_unit]]
+== unit
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
+with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
+set to `True`.
+
+This setting must be one of `seconds`, `minutes`, `hours`, `days`, `weeks`,
+`months`, or `years`.
+
+<<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
+<<fe_epoch,epoch>>, are used by Curator to establish the moment in time point of
+reference with this formula:
+
+[source,sh]
+-----------
+point_of_reference = epoch - ((number of seconds in unit) * unit_count)
+-----------
+
+If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
+a point of reference in the future by using a negative value for
+<<fe_unit_count,unit_count>>.
+
+This setting must be set by the user or an exception will be raised, and
+execution will halt.
+
+[[fe_unit_count]]
+== unit_count
+
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
+with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
+set to `True`.
+
+The value of this setting will be used as a multiplier for <<fe_unit,unit>>.
+
+<<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
+<<fe_epoch,epoch>>, are used by Curator to establish the moment in time point of
+reference with this formula:
+
+[source,sh]
+-----------
+point_of_reference = epoch - ((number of seconds in unit) * unit_count)
+-----------
+
+If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
+a point of reference in the future by using a negative value for
+<<fe_unit_count,unit_count>>.
+
+This setting must be set by the user or an exception will be raised, and
+execution will halt.
+
+[[fe_use_age]]
+== use_age
+
+This setting allows filtering of indices by their age _and_ the space they
+consume.  In other words, it sorts all indices in the list by age, then starts
+adding the space consumed by each index, beginning from the youngest.  Once the
+value of <<fe_disk_space,disk_space>> is reached, all remaining indices, which
+are the oldest, will be selected, omitting all of the younger indices.
+
+The default value of this setting is `False`
+
+NOTE: Use of this setting requires the additional setting, <<fe_source,source>>.
+
+[[fe_value]]
+== value
+
+NOTE: This setting is only used with the <<filtertype_pattern,pattern>> +
+    filtertype and is a required setting.  There is a separate
+    <<option_value,value option>> associated with the
+    <<allocation,allocation action>>, and the
+    <<filtertype_allocated,allocated filtertype>>.
+
+The value of this setting is used by <<fe_kind,kind>> as follows:
+
+* `prefix`: Search the first part of an index name for the provided value
+* `suffix`: Search the last part of an index name for the provided value
+* `regex`: Provide your own regular expression, and Curator will find the matches.
+* `timestring`: An strftime string to extrapolate and find indices that match.
+    For example, given a `timestring` of `'%Y.%m.%d'`, matching indices would
+    include `logstash-2016.04.01` and `.marvel-2016.04.01`, but not
+    `myindex-2016-04-01`, as the pattern is different.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.

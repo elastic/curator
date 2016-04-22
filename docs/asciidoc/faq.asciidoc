@@ -1,0 +1,252 @@
+[[faq]]
+= Frequently Asked Questions
+
+[partintro]
+--
+This section will be updated as more frequently asked questions arise
+--
+
+== Q: How can I report an error in the documentation?
+
+[float]
+A: Use the "Edit" link on any page
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See <<site-corrections,Site Corrections>>.
+
+== Q: Can I delete only certain data from within indices?
+
+[float]
+A: It's complicated
+~~~~~~~~~~~~~~~~~~~
+
+[float]
+TL;DR: No. Curator can only delete entire indices.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[float]
+Full answer:
+^^^^^^^^^^^^
+
+As a thought exercise, think of Elasticsearch indices as being like databases,
+or tablespaces within a database. If you had hundreds of millions of rows to
+delete from your database, would you run a separate
+`DELETE from TABLE where date<YYYY.MM.dd` to assemble hundreds of millions of
+individual delete operations every day, or would you partition your tables in a
+way that you could simply run `DROP table TABLENAME.YYYY.MM.dd`? The strain on
+your database would be astronomical on the former and next to nothing on the
+latter. Elasticsearch works much the same way. While Elasticsearch _can_
+technically do both methods, for use-cases with time-series data (like logging),
+we recommend dropping entire indices vs. the extremely I/O expensive search and
+delete method. Curator was created to help fill that need.
+
+While you can store different types within different indices (e.g.
+syslog-2014.05.05, apache-2015.05.06), this gets very expensive, very quickly in
+a totally different way. Each shard in Elasticsearch is a Lucene index. Each
+index requires a portion of the heap to exist and be kept current. If you have 3
+daily indices with 5 primary shards each, you suddenly have reduced the
+available heap space for shard management by a factor of 3, having gone from 5
+shards to 15, __per index,__ not counting multiple indexes per day. The ways to
+mitigate this (if you pursue this route) include massive daily indexing boxes
+and using shard allocation/routing to move indices to specific members of the
+cluster where they can have less effect; keeping fewer days of information;
+having more nodes in your cluster, and so forth.
+
+[float]
+Conclusion:
+^^^^^^^^^^^
+
+While it may be desirable to have different life-cycles for your data, sometimes
+it's just easier and cheaper to store everything as long as the longest
+life-cycle you wish to maintain.
+
+[float]
+Post-script:
+^^^^^^^^^^^^
+
+Even though it is neither recommended*, nor best practices, it is still possible
+to perform these search & delete operations yourself, using the Elasticsearch
+API. Curator will not be modified to perform operations such as these, however.
+Curator is meant to manage at the index level, rather than the data level.
+
+*There are reasons Elasticsearch does not recommend this, particularly for
+time-series data. For more information read
+http://blog.mikemccandless.com/2011/02/visualizing-lucenes-segment-merges.html
+and watch what happens to your segments when you delete data.
+
+'''''
+
+== Q: Can Curator handle index names with strange characters?
+
+[float]
+A: Yes!
+~~~~~~~
+
+This problem can be resolved by using the
+<<filtertype_pattern,pattern filtertype>> with <<fe_kind,kind>> set to `regex`,
+and <<fe_value,value>> set to the needed regular expression.
+
+[float]
+The Problem:
+^^^^^^^^^^^^
+
+Illegal characters make it hard to delete indices.
+
+------------------
+% curl logs.example.com:9200/_cat/indices
+red    }?ebc-2015.04.08.03
+                          sip-request{ 5 1         0  0     632b     316b
+red    }?ebc-2015.04.08.03
+                          sip-response 5 1         0  0     474b     237b
+red    ?ebc-2015.04.08.02
+                         sip-request{ 5 1         0  0     474b     316b
+red
+eb                               5 1         0  0     632b     316b
+red    ?e                                5 1         0  0     632b     316b
+------------------
+
+&nbsp;
+
+You can see it looks like there are some tab characters and maybe newline
+characters. This makes it hard to use the HTTP API to delete the indices.
+
+Dumping all the index settings out:
+
+[source,sh]
+-------
+curl -XGET localhost:9200/*/_settings?pretty
+-------
+
+&nbsp;
+
+...reveals the index names as the first key in the resulting JSON.  In this
+case, the names were very atypical:
+
+-------
+}\b?\u0011ebc-2015.04.08.02\u000Bsip-request{
+}\u0006?\u0011ebc-2015.04.08.03\u000Bsip-request{
+}\u0003?\u0011ebc-2015.04.08.03\fsip-response
+...
+-------
+
+&nbsp;
+
+Curator lets you use regular expressions to select indices to perform actions
+on.
+
+WARNING: Before attempting an action, see what will be affected by using the
+`--dry-run` flag first.
+
+To delete the first three from the above example, use `'.*sip.*'` as your
+regular expression.
+
+NOTE: In an <<actionfile,actionfile>>, regular expressions and strftime date
+strings _must_ be encapsulated in single-quotes.
+
+The next one is trickier. The real name of the index was `\n\u0011eb`. The
+regular expression `.*b$` did not work, but `'\n.*'` did.
+
+The last index can be deleted with a regular expression of `'.*e$'`.
+
+The resulting <<actionfile,actionfile>> might look like this:
+
+[source,text]
+--------
+actions:
+  1:
+    description: Delete indices with strange characters that match regex '.*sip.*'
+    action: delete_indices
+    options:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: regex
+      value: '.*sip.*'
+  2:
+    description: Delete indices with strange characters that match regex '\n.*'
+    action: delete_indices
+    options:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: regex
+      value: '\n.*'
+  3:
+    description: Delete indices with strange characters that match regex '.*e$'
+    action: delete_indices
+    options:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: regex
+      value: '.*e$'
+--------
+
+&nbsp;
+
+'''''
+
+[[entrypoint-fix]]
+== Q: I'm getting `DistributionNotFound` and `entry_point` errors when I try to run Curator.  What am I doing wrong?
+
+[float]
+A: You likely need to upgrade `setuptools`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you are still unable to install, or get strange errors about dependencies you
+know you've installed, or messages mentioning `entry_point`, you may need to
+upgrade the `setuptools` package.  This is especially common with RHEL and
+CentOS installs, and their variants, as they depend on Python 2.6.
+
+If you can run `pip install -U setuptools`, it should correct the problem.
+
+You may also be able to download and install manually:
+
+. `wget https://pypi.python.org/packages/source/s/setuptools/setuptools-15.1.tar.gz -O setuptools-15.1.tar.gz`
+. `pip install setuptools-15.1.tar.gz`
+
+Any dependencies this version of setuptools may require will have to be manually
+acquired and installed for your platform.
+
+For more information about setuptools, see https://pypi.python.org/pypi/setuptools
+
+This fix originally appeared https://github.com/elastic/curator/issues/56#issuecomment-77843587[here].
+
+'''''
+
+== Q: Snapshots seem to be working. Why am I getting `SnapshotMissingException` messages?
+
+[float]
+A: A load balancer, or other network fixture could be timing out your connection.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A gateway, proxy, or load balancer timeout will usually result in
+http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html[504 HTTP responses]:
+
+504 Gateway Timeout::
+    The server, while acting as a gateway or proxy, did not receive a timely
+    response from the upstream server specified by the URI (e.g. HTTP, FTP,
+    LDAP) or some other auxiliary server (e.g. DNS) it needed to access in
+    attempting to complete the request.
+
+
+An easy way to check is to change the <<loglevel,loglevel>> to DEBUG and look
+for 504 errors and long requests, like these:
+
+[source,txt]
+-------
+2015-04-02 13:18:37,702 DEBUG     urllib3.connectionpool          _make_request:368  "PUT /_snapshot/my_backup_s3_repository/curator-20150402121735?wait_for_completion=true HTTP/1.1" 504 0
+2015-04-02 13:18:37,703 WARNING            elasticsearch       log_request_fail:81   PUT /_snapshot/my_backup_s3_repository/curator-20150402121735?wait_for_completion=true [status:504 request:59.777s]
+-------
+
+Note the `status:504` and the `request:59.777s` at the right end of the line.
+
+In the case of these error messages, it turned out to be an AWS load balancer
+that had a 60 second timeout for connections.  The fix was to increase the
+timeout.  Another potential resolution would be to have Curator connect to a
+client directly, rather than through a load balancer or proxy.
+
+'''''

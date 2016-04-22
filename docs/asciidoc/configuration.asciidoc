@@ -1,0 +1,463 @@
+[[configuration]]
+= Configuration
+
+[partintro]
+--
+
+These are the higher-level configuration settings used by the configuration
+files.  <<actions,Actions>> and <<filters,filters>> are documented separately.
+--
+
+[[actionfile]]
+== Action File
+
+An action file has the following structure:
+
+[source,sh]
+-----------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: ACTION1
+    description: OPTIONAL DESCRIPTION
+    options:
+      option1: value1
+      ...
+      optionN: valueN
+      continue_if_exception: False
+      disable_action: True
+    filters:
+    - filtertype: *first*
+      filter_element1: value1
+      ...
+      filter_elementN: valueN
+    - filtertype: *second*
+      filter_element1: value1
+      ...
+      filter_elementN: valueN
+  2:
+    action: ACTION2
+    description: OPTIONAL DESCRIPTION
+    options:
+      option1: value1
+      ...
+      optionN: valueN
+      continue_if_exception: False
+      disable_action: True
+    filters:
+    - filtertype: *first*
+      filter_element1: value1
+      ...
+      filter_elementN: valueN
+    - filtertype: *second*
+      filter_element1: value1
+      ...
+      filter_elementN: valueN
+  3:
+    action: ACTION3
+    ...
+  4:
+    action: ACTION4
+    ...
+-----------
+
+It is a YAML configuration file.  The root key must be `actions`, after which
+there can be any number of actions, nested underneath numbers.  Actions will be
+taken in the order they are completed.
+
+The high-level elements of each numbered action are:
+
+* <<actions,action>>
+* <<description,description>>
+* <<options,options>>
+* <<filters,filters>>
+
+In the case of the <<alias,alias action>>, there are two additional high-level
+elements: `add` and `remove`, which are described in the <<alias,alias action>>
+documentation.
+
+[[description]]
+=== description
+
+This is an optional description which can help describe what the action and its
+filters are supposed to do.
+
+[source,text]
+-------------
+description: >- I can make the description span multiple
+    lines by putting ">-" at the beginning of the line,
+    as seen above.  Subsequent lines must also be indented.
+options:
+  option1: ...
+-------------
+
+[[configfile]]
+== Configuration File
+
+NOTE: The default location of the configuration file is `~/.curator/curator.yml`,
+    but another location can be specified using the `--config` flag on the
+    <<command-line,command-line>>.
+
+The configuration file contains client connection and settings for logging.  It
+looks like this:
+
+[source,sh]
+-----------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+client:
+  hosts:
+    - 127.0.0.1
+  port: 9200
+  url_prefix:
+  use_ssl: False
+  certificate:
+  client_cert:
+  client_key:
+  aws_key:
+  aws_secret_key:
+  aws_region:
+  ssl_no_validate: False
+  http_auth:
+  timeout: 30
+  master_only: False
+
+logging:
+  loglevel: INFO
+  logfile:
+  logformat: default
+-----------
+
+It is a YAML configuration file.  The two root keys must be `client` and
+`logging`.  The subkeys of each of these will be described here.
+
+[[hosts]]
+=== hosts
+
+This can be a single value:
+
+[source,sh]
+-----------
+hosts: 127.0.0.1
+-----------
+
+Or multiple values in the 3 acceptable YAML ways to render sequences, or arrays:
+
+Flow:
+
+[source,sh]
+-----------
+hosts: [ "10.0.0.1", "10.0.0.2" ]
+-----------
+
+Spanning:
+
+[source,sh]
+-----------
+hosts: [ "10.0.0.1",
+    "10.0.0.2" ]
+-----------
+
+Block:
+[source,sh]
+-----------
+hosts:
+  - 10.0.0.1
+  - 10.0.0.2
+-----------
+
+You can also provide these hosts with optional ports, and bypass the port
+option:
+
+[source,sh]
+-----------
+hosts:
+  - 10.0.0.1:9200
+  - 10.0.0.2:9201
+-----------
+
+WARNING: When adding a port to the end of a host or IP, the YAML Flow and
+    Spanning styles require `host:port` to be single `'` or double `"` quote
+    encapsulated or you will receive an error.  The Block style does not have
+    this limitation.
+
+[[port]]
+=== port
+
+This should be a single value:
+
+[source,sh]
+-----------
+port: 9200
+-----------
+
+The default is `9200`.  This value will only be applied to <<hosts,hosts>>
+without a port affixed, e.g. `localhost:9202`.
+
+[[url_prefix]]
+=== url_prefix
+
+This should be a single value or left empty.
+
+[source,sh]
+-----------
+url_prefix:
+-----------
+
+In some cases you may be obliged to connect to your Elasticsearch cluster
+through a proxy of some kind. There may be a URL prefix before the API URI
+items, e.g. http://example.com/elasticsearch/ as opposed to
+http://localhost:9200. In such a case, the set the `url_prefix` to the
+appropriate value, 'elasticsearch' in this example.
+
+The default is an empty string.
+
+[[use_ssl]]
+=== use_ssl
+
+This should be `True`, `False` or left empty.
+
+[source,sh]
+-----------
+use_ssl:
+-----------
+
+If access to your Elasticsearch instance is protected by SSL encryption, you
+must use set `use_ssl` to `True`.
+
+The default is `False`
+
+[[certificate]]
+=== certificate
+
+This should be a file path to your CA certificate, or left empty.
+
+[source,sh]
+-----------
+certificate:
+-----------
+
+This setting allows the use of a specified CA certificate file to validate the
+SSL certificate used by Elasticsearch.
+
+There is no default.
+
+[[client_cert]]
+=== client_cert
+
+This should be a file path to a client certificate (public key), or left empty.
+
+[source,sh]
+-----------
+client_cert:
+-----------
+
+Allows the use of a specified SSL client cert file to authenticate to
+Elasticsearch. The file may contain both an SSL client certificate and an SSL
+key, in which case <<client_key,client_key>> is not used. If specifying
+`client_cert`, and the file specified does not also contain the key, use
+<<client_key,client_key>> to specify the file containing the SSL key. The file
+must be in PEM format, and the key part, if used, must be an unencrypted key in
+PEM format as well.
+
+[[client_key]]
+=== client_key
+
+This should be a file path to a client key (private key), or left empty.
+
+[source,sh]
+-----------
+client_key:
+-----------
+
+Allows the use of a specified SSL client key file to authenticate to
+Elasticsearch. If using <<client_cert,client_cert>> and the file specified does
+not also contain the key, use `client_key` to specify the file containing the
+SSL key. The key file must be an unencrypted key in PEM format.
+
+[[aws_key]]
+=== aws_key
+
+WARNING: This setting will not work unless the `requests-aws4auth` Python module
+    has been manually installed first.
+
+This should be an AWS IAM access key, or left empty.
+
+[source,sh]
+-----------
+aws_key:
+-----------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+[[aws_secret_key]]
+=== aws_secret_key
+
+WARNING: This setting will not work unless the `requests-aws4auth` Python module
+    has been manually installed first.
+
+This should be an AWS IAM secret access key, or left empty.
+
+[source,sh]
+-----------
+aws_secret_key:
+-----------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+[[aws_region]]
+=== aws_region
+
+WARNING: This setting will not work unless the `requests-aws4auth` Python module
+    has been manually installed first.
+
+This should be an AWS region, or left empty.
+
+[source,sh]
+-----------
+aws_region:
+-----------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+[[ssl_no_validate]]
+=== ssl_no_validate
+
+This should be `True`, `False` or left empty.
+
+[source,sh]
+-----------
+ssl_no_validate:
+-----------
+
+If access to your Elasticsearch instance is protected by SSL encryption, you may
+set `ssl_no_validate` to `True` to disable SSL certificate verification.
+
+Valid use cases for doing so include the use of self-signed certificates that
+cannot be otherwise verified and would generate error messages.
+
+WARNING: Setting `ssl_no_validate` to `True` will likely result in a warning
+    message that your SSL certificates are not trusted. This is expected
+    behavior.
+
+The default value is `False`.
+
+[[http_auth]]
+=== http_auth
+
+This should be a authentication credentials (e.g. `user:pass`), or left empty.
+
+[source,sh]
+-----------
+http_auth:
+-----------
+
+This setting allows basic HTTP authentication to an Elasticsearch instance.
+
+The default is empty.
+
+[[timeout]]
+=== timeout
+
+This should be an integer number of seconds, or left empty.
+
+[source,sh]
+-----------
+timeout:
+-----------
+
+You can change the client connection timeout value with this setting.
+
+NOTE: Actions <<snapshot,snapshot>> and <<forcemerge,forcemerge>> will override
+    this value to `21600` if it is set at the default value of `30`.
+
+The default value is `30` (seconds).
+
+[[master_only]]
+=== master_only
+
+This should be `True`, `False` or left empty.
+
+[source,sh]
+-----------
+master_only:
+-----------
+
+In some situations, primarily with automated deployments, it makes sense to
+install Curator on every node. But you wouldn’t want it to run on each node.
+By setting `master_only` to `True`, this is possible. It tests for, and will
+only continue running on the node that is the elected master.
+
+The default value is `False`.
+
+[[loglevel]]
+=== loglevel
+
+This should be `CRIT`, `WARN`, `INFO`, `DEBUG`, or left empty.
+
+[source,sh]
+-----------
+loglevel:
+-----------
+
+Set the minimum acceptable log severity to display.
+
+* `CRIT` will only display critical messages.
+* `WARN` will display warning and critical messages.
+* `INFO` will display informational, warning, and critical messages.
+* `DEBUG` will display debug messages, in addition to all of the above.
+
+The default value is `INFO`.
+
+[[logfile]]
+=== logfile
+
+This should be a path to a log file, or left empty.
+
+[source,sh]
+-----------
+logfile:
+-----------
+
+The default value is empty, which will result in logging to `STDOUT`, or the
+console.
+
+[[logformat]]
+=== logformat
+
+This should `default`, `json`, `logstash`, or left empty.
+
+[source,sh]
+-----------
+logformat:
+-----------
+
+The `default` format looks like:
+
+[source,sh]
+-----------
+2016-04-22 11:53:09,972 INFO      Action #1: ACTIONNAME
+-----------
+
+The `json` or `logstash` formats look like:
+
+[source,sh]
+-----------
+{"@timestamp": "2016-04-22T11:54:29.033Z", "function": "cli", "linenum": 178,
+"loglevel": "INFO", "message": "Action #1: ACTIONNAME", "name": "curator.cli"}
+-----------
+
+The default value is `default`.
