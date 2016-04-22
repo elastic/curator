@@ -406,7 +406,7 @@ The default value is `False`.
 [[loglevel]]
 === loglevel
 
-This should be `CRIT`, `WARN`, `INFO`, `DEBUG`, or left empty.
+This should be `CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`, or left empty.
 
 [source,sh]
 -----------
@@ -415,9 +415,10 @@ loglevel:
 
 Set the minimum acceptable log severity to display.
 
-* `CRIT` will only display critical messages.
-* `WARN` will display warning and critical messages.
-* `INFO` will display informational, warning, and critical messages.
+* `CRITICAL` will only display critical messages.
+* `ERROR` will only display error and critical messages.
+* `WARN` will display error, warning, and critical messages.
+* `INFO` will display informational, error, warning, and critical messages.
 * `DEBUG` will display debug messages, in addition to all of the above.
 
 The default value is `INFO`.

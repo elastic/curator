@@ -3,7 +3,7 @@
 Changelog
 =========
 
-4.0.0a1 (21 Apr 2016)
+4.0.0a3 (21 Apr 2016)
 ---------------------
 
 It's time for Curator 4.0 alpha 1!
