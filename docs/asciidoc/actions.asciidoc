@@ -172,7 +172,7 @@ Required settings
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<body,body>> No default value.  Can create any acceptable index settings and
+* <<option_body,body>> No default value.  Can create any acceptable index settings and
     mappings as nested YAML.  See
     https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
     for more information.
