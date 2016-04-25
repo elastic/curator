@@ -130,8 +130,10 @@ def get_date_regex(timestring):
             pass
         elif curr in DATE_REGEX and prev == '%':
             regex += '\d{' + DATE_REGEX[curr] + '}'
-        else:
+        elif curr in ['.', '-']:
             regex += "\\" + curr
+        else:
+            regex += curr
         prev = curr
     logger.debug("regex = {0}".format(regex))
     return regex
@@ -352,7 +354,7 @@ def get_indices(client):
     """
     Get the current list of indices from the cluster.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: list
     """
     try:
@@ -370,7 +372,7 @@ def get_version(client):
     Return the ES version number as a tuple.
     Omits trailing tags like -dev, or Beta
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: tuple
     """
     version = client.info()['version']['number']
@@ -386,7 +388,7 @@ def is_master_node(client):
     Return `True` if the connected client node is the elected master node in
     the Elasticsearch cluster, otherwise return `False`.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
     my_node_id = list(client.nodes.info('_local')['nodes'])[0]
@@ -397,7 +399,7 @@ def check_version(client):
     """
     Verify version is within acceptable range.  Raise an exception if it is not.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: None
     """
     version_number = get_version(client)
@@ -417,7 +419,7 @@ def check_master(client, master_only=False):
     Check if connected client is the elected master node of the cluster.
     If not, cleanly exit with a log message.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: None
     """
     if master_only and not is_master_node(client):
@@ -565,57 +567,25 @@ def override_timeout(timeout, action):
             )
     return retval
 
-def show_dry_run(list_object, action, **kwargs):
+def show_dry_run(ilo, action, **kwargs):
     """
     Log dry run output with the action which would have been executed.
 
-    :arg list_object: A :class:`curator.indexlist.IndexList`, a
-        :class:`curator.snapshotlist.SnapshotList`, or an
-        :class:`curator.actions.Alias` action object.
+    :arg ilo: A :class:`curator.indexlist.IndexList`
     :arg action: The `action` to be performed.
     :arg kwargs: Any other args to show in the log output
     """
     logger.info('DRY-RUN MODE.  No changes will be made.')
-
-    if action == 'delete_snapshots':
-        items = sorted(list_object.snapshots)
-        item_type = 'snapshots'
-    elif action == 'alias':
-        items = list_object.actions
-        item_type = 'alias_actions'
-    else:
-        items = sorted(list_object.indices)
-        item_type = 'indices'
-        logger.info(
-            '(CLOSED) indices may be shown that may not be acted on by '
-            'action "{0}".'.format(action)
-        )
-    for item in items:
-        if item_type == 'indices':
-            index_closed = list_object.index_info[item]['state'] == 'close'
+    logger.info(
+        '(CLOSED) indices may be shown that may not be acted on by '
+        'action "{0}".'.format(action)
+    )
+    indices = sorted(ilo.indices)
+    for idx in indices:
+            index_closed = ilo.index_info[idx]['state'] == 'close'
             logger.info(
                 'DRY-RUN: {0}: {1}{2} with arguments: {3}'.format(
-                    action, item, ' (CLOSED)' if index_closed else '', kwargs
-                )
-            )
-        elif item_type == 'snapshots':
-            logger.info('DRY-RUN: {0}: {1} with arguments: '
-                '{2}'.format(action, item, kwargs)
-            )
-        elif item_type == 'alias_actions':
-            job = list(item.keys())[0]
-            index = item[job]['index']
-            alias = item[job]['alias']
-            # We want our log to look clever, so if job is "remove", strip the
-            # 'e' so "remove" can become "removing".  "adding" works already.
-            logger.info(
-                'DRY-RUN: {0}: {1}ing index "{2}" {3} alias '
-                '"{4}"'.format(
-                    action,
-                    job.rstrip('e'),
-                    index,
-                    'to' if action is 'add' else 'from',
-                    alias
+                    action, idx, ' (CLOSED)' if index_closed else '', kwargs
                 )
             )
 
@@ -624,7 +594,7 @@ def get_repository(client, repository=''):
     """
     Return configuration information for the indicated repository.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: dict
     """
@@ -640,7 +610,7 @@ def get_snapshot(client, repository=None, snapshot=''):
     If no snapshot specified, it will return all snapshots.  If none exist, an
     empty dictionary will be returned.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot: The snapshot name, or a comma-separated list of snapshots
     :rtype: dict
@@ -660,7 +630,7 @@ def get_snapshot_data(client, repository=None):
     """
     Get ``_all`` snapshots from repository and return a list.
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: list
     """
@@ -681,7 +651,7 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
     If no value is provided for `snapshot`, then check all of them.
     Return `snapshot` if it is found to be in progress, or `False`
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot: The snapshot name
     """
@@ -706,7 +676,7 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     """
     Ensure there are no snapshots in progress.  Pause and retry accordingly
 
-    :arg client: An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg retry_interval: Number of seconds to delay betwen retries. Default:
         120 (seconds)
@@ -833,7 +803,7 @@ def create_repository(client, **kwargs):
     """
     Create repository with repository and body settings
 
-    :arg client:  An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
 
     :arg repo_type: The type of repository (presently only `fs` and `s3`)
     :arg compress: Turn on compression of the snapshot files. Compression is
@@ -909,7 +879,7 @@ def repository_exists(client, repository=None):
     """
     Verify the existence of a repository
 
-    :arg client:  An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: bool
     """
@@ -927,7 +897,7 @@ def test_repo_fs(client, repository=None):
     """
     Test whether all nodes have write access to the repository
 
-    :arg client:  An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     """
     try:
@@ -959,7 +929,7 @@ def snapshot_running(client):
     """
     Return `True` if a snapshot is in progress, and `False` if not
 
-    :arg client:  An Elasticsearch client connection
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
     try:
@@ -970,7 +940,7 @@ def snapshot_running(client):
     # suspect.
     return False if status == [] else True
 
-def parse_snapshot_name(name):
+def parse_date_pattern(name):
     """
     Scan and parse `name` for :py:func:`time.strftime` strings, replacing them
     with the associated value when found, but otherwise returning lowercase
@@ -989,7 +959,7 @@ def parse_snapshot_name(name):
     * ``S``: The 2 digit number of second of the minute
     * ``j``: The 3 digit day of the year
 
-    :arg name: A snapshot name, which can contain :py:func:`time.strftime`
+    :arg name: A name, which can contain :py:func:`time.strftime`
         strings
     """
     prev = ''; curr = ''; rendered = ''

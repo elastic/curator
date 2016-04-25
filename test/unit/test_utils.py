@@ -109,9 +109,16 @@ class TestGetIndexTime(TestCase):
             ('2014-28', '%Y-%U', datetime(2014, 7, 14)),
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
             ('2009101112136', '%Y%m%d%H%M%S', datetime(2009, 10, 11, 12, 13, 6)),
+            ('2016-03-30t16', '%Y-%m-%dt%H', datetime(2016, 3, 30, 16, 0)),
                 ]:
             self.assertEqual(dt, curator.get_datetime(text, datestring))
 
+class TestGetDateRegex(TestCase):
+    def test_non_escaped(self):
+        self.assertEqual(
+            '\\d{4}\\-\\d{2}\\-\\d{2}t\\d{2}',
+            curator.get_date_regex('%Y-%m-%dt%H')
+        )
 class TestFixEpoch(TestCase):
     def test_fix_epoch(self):
         for long_epoch, epoch in [
@@ -293,21 +300,6 @@ class TestShowDryRun(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         self.assertIsNone(curator.show_dry_run(il, 'test_action'))
-    def test_snapshot_list(self):
-        client = Mock()
-        client.snapshot.get.return_value = testvars.snapshots
-        client.snapshot.get_repository.return_value = testvars.test_repo
-        sl = curator.SnapshotList(client, repository=testvars.repo_name)
-        self.assertIsNone(curator.show_dry_run(sl, 'delete_snapshots'))
-    def test_alias_list(self):
-        client = Mock()
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
-        ao.remove(ilo)
-        self.assertIsNone(curator.show_dry_run(ao, 'alias'))
 
 class TestGetRepository(TestCase):
     def test_get_repository_missing_arg(self):

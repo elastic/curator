@@ -26,6 +26,7 @@ CLASS_MAP = {
     'alias' :  Alias,
     'allocation' : Allocation,
     'close' : Close,
+    'create_index' : CreateIndex,
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,
@@ -74,26 +75,19 @@ def process_action(client, config, **kwargs):
         # Special behavior for this action, as it has 2 index lists
         logger.debug('Running "{0}" action'.format(action.upper()))
         action_obj = action_class(**mykwargs)
-        something_to_do = False
         if 'add' in config:
             logger.debug('Adding indices to alias "{0}"'.format(opts['alias']))
             adds = IndexList(client)
             adds.iterate_filters(config['add'])
             action_obj.add(adds)
-            something_to_do = True
         if 'remove' in config:
             logger.debug(
                 'Removing indices from alias "{0}"'.format(opts['alias']))
             removes = IndexList(client)
             removes.iterate_filters(config['remove'])
             action_obj.remove(removes)
-            something_to_do = True
-        if something_to_do:
-            dry_run_obj = action_obj
-        else:
-            logger.error('No add or remove blocks in alias definition')
-            raise ConfigurationError(
-                'No "add" or "remove" block in alias definition.')
+    elif action == 'create_index':
+        action_obj = action_class(client, **mykwargs)
     elif action == 'delete_snapshots':
         logger.debug('Running "delete_snapshots"')
         slo = SnapshotList(client, repository=opts['repository'])
@@ -101,17 +95,14 @@ def process_action(client, config, **kwargs):
         # We don't need to send this value to the action
         mykwargs.pop('repository')
         action_obj = action_class(slo, **mykwargs)
-        dry_run_obj = slo
     else:
         logger.debug('Running "{0}"'.format(action.upper()))
         ilo = IndexList(client)
         ilo.iterate_filters(config)
         action_obj = action_class(ilo, **mykwargs)
-        dry_run_obj = ilo
-
     ### Do the action
     if 'dry_run' in kwargs and kwargs['dry_run'] == True:
-        show_dry_run(dry_run_obj, action, **mykwargs)
+        action_obj.do_dry_run()
     else:
         logger.debug('Doing the action here.')
         action_obj.do_action()

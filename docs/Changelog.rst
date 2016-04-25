@@ -3,6 +3,23 @@
 Changelog
 =========
 
+4.0.0a5 (25 Apr 2016)
+---------------------
+
+**General**
+
+  * Documentation updates.
+  * Improve API by giving each action its own `do_dry_run()` method.
+
+**Bug Fixes**
+
+  * Do not escape characters other than ``.`` and ``-`` in timestrings. Fixes
+    #602 (untergeek)
+
+** New Features**
+
+  * Added `CreateIndex` action.
+
 4.0.0a4 (21 Apr 2016)
 ---------------------
 

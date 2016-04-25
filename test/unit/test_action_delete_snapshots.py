@@ -16,6 +16,14 @@ class TestActionDeleteSnapshots(TestCase):
         do = curator.DeleteSnapshots(slo)
         self.assertEqual(slo, do.snapshot_list)
         self.assertEqual(client, do.client)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        client.snapshot.delete.return_value = None
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        do = curator.DeleteSnapshots(slo)
+        self.assertIsNone(do.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshots

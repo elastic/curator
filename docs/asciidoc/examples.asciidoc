@@ -123,6 +123,34 @@ actions:
       unit_count: 30
 -------------
 
+
+[[ex_create_index]]
+== create_index
+
+[source,text]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: create_index
+    description: Create the index as named, with the specified settings.
+    options:
+      name: myindex
+      body:
+        settings:
+          number_of_shards: 2
+          number_of_replicas: 1
+      continue_if_exception: False
+      disable_action: True
+-------------
+
+
 [[ex_delete_indices]]
 === delete_indices
 
