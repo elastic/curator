@@ -520,15 +520,17 @@ def get_client(**kwargs):
                     'Missing one or more of "aws_key", "aws_secret_key", '
                     'or "region".'
                 )
-        # Override these kwargs
-        kwargs['use_ssl'] = True
-        kwargs['verify_certs'] = True
-        kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
-        kwargs['http_auth'] = (
-            AWS4Auth(
-                kwargs['aws_key'], kwargs['aws_secret_key'],
-                kwargs['region'], 'es')
-        )
+            # Override these kwargs
+            kwargs['use_ssl'] = True
+            kwargs['verify_certs'] = True
+            kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
+            kwargs['http_auth'] = (
+                AWS4Auth(
+                    kwargs['aws_key'], kwargs['aws_secret_key'],
+                    kwargs['region'], 'es')
+            )
+        else:
+            logger.debug('"requests_aws4auth" module present, but not used.')
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
 
