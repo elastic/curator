@@ -30,6 +30,14 @@ https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation
 
 The default value for this setting is `require`.
 
+[[option_body]]
+== body
+
+This setting should be nested YAML.  The values beneath `body` will be used by
+whichever action uses the option.
+
+There is no default value.
+
 [[option_continue]]
 == continue_if_exception
 
@@ -156,11 +164,12 @@ will be raised, and execution will halt.
 [[option_name]]
 == name
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+NOTE: This setting is only used by the <<snapshot,snapshot>> and
+    <<create_index,create_index>> actions.
 
-The value of this setting is the name of the snapshot.
+The value of this setting is the name of the snapshot or index.
 
-This setting should contain a valid Python strftime string.  Curator will
+This setting may contain a valid Python strftime string.  Curator will
 extract the strftime identifiers and replace them with the corresponding values.
 
 The Python strftime identifiers that Curator currently recognizes include:
@@ -175,7 +184,11 @@ The Python strftime identifiers that Curator currently recognizes include:
 * `S`: The 2 digit number of second of the minute
 * `j`: The 3 digit day of the year
 
-The default value of this setting is `curator-%Y%m%d%H%M%S`
+For the <<create_index,create_index>> action, there is no default setting.
+
+For the <<snapshot,snapshot>> action, the default value of this setting is
+`curator-%Y%m%d%H%M%S`
+
 
 
 [[option_partial]]

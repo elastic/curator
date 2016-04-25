@@ -141,6 +141,49 @@ Optional settings
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_close,here>>.
 
+
+[[create_index]]
+== create_index
+
+[source,text]
+-------------
+action: create_index
+description: "Create index as named"
+options:
+  name:
+  body:
+  continue_if_exception: False
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action closes the selected indices.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+* <<option_name,name>>
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<body,body>> No default value.  Can create any acceptable index settings and
+    mappings as nested YAML.  See
+    https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+    for more information.
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_create_index,here>>.
+
 [[delete_indices]]
 == Delete Indices
 

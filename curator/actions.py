@@ -70,6 +70,27 @@ class Alias(object):
 
         return { 'actions' : self.actions }
 
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        self.loggit.info('DRY-RUN MODE.  No changes will be made.')
+        for item in self.body()['actions']:
+            job = list(item.keys())[0]
+            index = item[job]['index']
+            alias = item[job]['alias']
+            # We want our log to look clever, so if job is "remove", strip the
+            # 'e' so "remove" can become "removing".  "adding" works already.
+            self.loggit.info(
+                'DRY-RUN: alias: {0}ing index "{1}" {2} alias '
+                '"{3}"'.format(
+                    job.rstrip('e'),
+                    index,
+                    'to' if job is 'add' else 'from',
+                    alias
+                )
+            )
+
     def do_action(self):
         """
         Run the API call `update_aliases` with the results of `body()`
@@ -120,6 +141,12 @@ class Allocation(object):
             '{0}.{1}={2}'.format(allocation_type, key, value)
         )
 
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(self.index_list, 'allocation', body=self.body)
+
     def do_action(self):
         """
         Change allocation settings for indices in `index_list.indices` with the
@@ -156,6 +183,13 @@ class Close(object):
         self.client     = ilo.client
         self.loggit     = logging.getLogger('curator.actions.close')
 
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(self.index_list, 'close')
+
     def do_action(self):
         """
         Close open indices in `index_list.indices`
@@ -173,6 +207,55 @@ class Close(object):
                     index=to_csv(l), ignore_unavailable=True)
         except Exception as e:
             report_failure(e)
+
+class CreateIndex(object):
+    def __init__(self, client, name, body={}):
+        """
+        :arg client: An :class:`elasticsearch.Elasticsearch` client object
+        :arg name: A name, which can contain :py:func:`time.strftime`
+            strings
+        :arg body: The `settings` and `mappings` for the index. For more
+            information see https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+        :type body: dict, representing the settings and mappings.
+        """
+        verify_client_object(client)
+        if not name:
+            raise ConfigurationError('Value for "name" not provided.')
+        #: Instance variable.
+        #: The parsed version of `name`
+        self.name       = parse_date_pattern(name)
+        #: Instance variable.
+        #: Extracted from the config yaml, it should be a dictionary of
+        #: mappings and settings suitable for index creation.
+        self.body       = body
+        #: Instance variable.
+        #: An :class:`elasticsearch.Elasticsearch` client object
+        self.client     = client
+        self.loggit     = logging.getLogger('curator.actions.create_index')
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        logger.info('DRY-RUN MODE.  No changes will be made.')
+        self.loggit.info(
+            'DRY-RUN: create_index "{0}" with arguments: '
+            '{1}'.format(self.name, self.body)
+        )
+
+    def do_action(self):
+        """
+        Create index identified by `name` with settings in `body`
+        """
+        self.loggit.info(
+            'Creating index "{0}" with settings: '
+            '{1}'.format(self.name, self.body)
+        )
+        try:
+            self.client.indices.create(index=self.name, body=self.body)
+        except Exception as e:
+            report_failure(e)
+
 
 class DeleteIndices(object):
     def __init__(self, ilo, master_timeout=30):
@@ -242,6 +325,12 @@ class DeleteIndices(object):
             '{0}'.format(result)
         )
 
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(self.index_list, 'delete_indices')
+
     def do_action(self):
         """
         Delete indices in `index_list.indices`
@@ -278,6 +367,16 @@ class ForceMerge(object):
         #: Internally accessible copy of `delay`
         self.delay = delay
         self.loggit = logging.getLogger('curator.actions.forcemerge')
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(
+            self.index_list, 'forcemerge',
+            max_num_segments=self.max_num_segments,
+            delay=self.delay,
+        )
 
     def do_action(self):
         """
@@ -318,6 +417,12 @@ class Open(object):
         self.index_list = ilo
         self.loggit     = logging.getLogger('curator.actions.open')
 
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(self.index_list, 'open')
+
     def do_action(self):
         """
         Open closed indices in `index_list.indices`
@@ -353,6 +458,12 @@ class Replicas(object):
         #: Internally accessible copy of `count`
         self.count      = count
         self.loggit     = logging.getLogger('curator.actions.replicas')
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(self.index_list, 'replicas', count=self.count)
 
     def do_action(self):
         """
@@ -401,6 +512,20 @@ class DeleteSnapshots(object):
         #: The repository name derived from `slo`
         self.repository     = slo.repository
         self.loggit = logging.getLogger('curator.actions.delete_snapshots')
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        logger.info('DRY-RUN MODE.  No changes will be made.')
+        mykwargs = {
+            'repository' : self.repository,
+            'retry_interval' : self.retry_interval,
+            'retry_count' : self.retry_count,
+        }
+        for snap in self.snapshot_list.snapshots:
+            logger.info('DRY-RUN: delete_snapshot: {0} with arguments: '
+                '{1}'.format(snap, mykwargs))
 
     def do_action(self):
         """
@@ -461,10 +586,13 @@ class Snapshot(object):
             raise MissingArgument('No value for "name" provided.')
         #: Instance variable.
         #: The parsed version of `name`
-        self.name = parse_snapshot_name(name)
+        self.name = parse_date_pattern(name)
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client              = ilo.client
+        #: Instance variable.
+        #: Internal reference to `ilo`
+        self.index_list = ilo
         #: Instance variable.
         #: Internally accessible copy of `repository`
         self.repository          = repository
@@ -475,6 +603,7 @@ class Snapshot(object):
         #: Internally accessible copy of `skip_repo_fs_check`
         self.skip_repo_fs_check  = skip_repo_fs_check
         self.state               = None
+
         #: Instance variable.
         #: Populated at instance creation time by calling
         #: :mod:`curator.utils.create_snapshot_body` with `ilo.indices` and the
@@ -515,6 +644,12 @@ class Snapshot(object):
         else:
             self.loggit.warn(
                 'Snapshot {0} completed with state: {0}'.format(self.state))
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        show_dry_run(self.index_list, 'snapshot', body=self.body)
 
     def do_action(self):
         """

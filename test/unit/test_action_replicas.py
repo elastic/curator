@@ -27,6 +27,15 @@ class TestActionReplicas(TestCase):
         ro = curator.Replicas(ilo, count=2)
         self.assertEqual(ilo, ro.index_list)
         self.assertEqual(client, ro.client)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.indices.put_settings.return_value = None
+        ilo = curator.IndexList(client)
+        ro = curator.Replicas(ilo, count=0)
+        self.assertIsNone(ro.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one

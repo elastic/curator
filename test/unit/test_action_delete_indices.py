@@ -24,6 +24,15 @@ class TestActionDeleteIndices(TestCase):
         do = curator.DeleteIndices(ilo)
         self.assertEqual(ilo, do.index_list)
         self.assertEqual(client, do.client)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_four
+        client.cluster.state.return_value = testvars.clu_state_four
+        client.indices.stats.return_value = testvars.stats_four
+        client.indices.delete.return_value = None
+        ilo = curator.IndexList(client)
+        do = curator.DeleteIndices(ilo)
+        self.assertIsNone(do.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_four
