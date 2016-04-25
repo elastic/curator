@@ -84,6 +84,16 @@ class TestActionAlias(TestCase):
         ilo = curator.IndexList(client)
         ao = curator.Alias(alias='alias')
         self.assertRaises(curator.ActionError, ao.body)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.indices.update_aliases.return_value = testvars.alias_success
+        ilo = curator.IndexList(client)
+        ao = curator.Alias(alias='alias')
+        ao.add(ilo)
+        self.assertIsNone(ao.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one

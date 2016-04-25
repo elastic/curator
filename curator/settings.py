@@ -62,6 +62,10 @@ ACTION_DEFAULTS = {
         'allocation_type' : 'require',
     },
     'close' : {},
+    'create_index' : {
+        'name' : None,
+        'body' : {},
+    },
     'delete_indices' : {},
     'delete_snapshots' : {
         'repository' : None,

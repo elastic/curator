@@ -91,6 +91,20 @@ class TestActionSnapshot(TestCase):
             name=testvars.snap_name)
         so.report_state()
         self.assertEqual('IN_PROGRESS', so.state)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.create.return_value = None
+        client.snapshot.status.return_value = testvars.nosnap_running
+        client.snapshot.verify_repository.return_value = testvars.verified_nodes
+        ilo = curator.IndexList(client)
+        so = curator.Snapshot(ilo, repository=testvars.repo_name,
+            name=testvars.snap_name)
+        self.assertIsNone(so.do_dry_run())
     def test_do_action_success(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one

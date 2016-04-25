@@ -28,6 +28,16 @@ class TestActionForceMerge(TestCase):
         fmo = curator.ForceMerge(ilo, max_num_segments=2)
         self.assertEqual(ilo, fmo.index_list)
         self.assertEqual(client, fmo.client)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.indices.segments.return_value = testvars.shards
+        client.indices.forcemerge.return_value = None
+        ilo = curator.IndexList(client)
+        fmo = curator.ForceMerge(ilo, max_num_segments=2)
+        self.assertIsNone(fmo.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one

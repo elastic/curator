@@ -17,6 +17,16 @@ class TestActionClose(TestCase):
         co = curator.Close(ilo)
         self.assertEqual(ilo, co.index_list)
         self.assertEqual(client, co.client)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.indices.flush_synced.return_value = testvars.synced_pass
+        client.indices.close.return_value = None
+        ilo = curator.IndexList(client)
+        co = curator.Close(ilo)
+        self.assertIsNone(co.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one

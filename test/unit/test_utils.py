@@ -300,21 +300,6 @@ class TestShowDryRun(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         self.assertIsNone(curator.show_dry_run(il, 'test_action'))
-    def test_snapshot_list(self):
-        client = Mock()
-        client.snapshot.get.return_value = testvars.snapshots
-        client.snapshot.get_repository.return_value = testvars.test_repo
-        sl = curator.SnapshotList(client, repository=testvars.repo_name)
-        self.assertIsNone(curator.show_dry_run(sl, 'delete_snapshots'))
-    def test_alias_list(self):
-        client = Mock()
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
-        ao.remove(ilo)
-        self.assertIsNone(curator.show_dry_run(ao, 'alias'))
 
 class TestGetRepository(TestCase):
     def test_get_repository_missing_arg(self):

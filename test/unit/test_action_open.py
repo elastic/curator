@@ -17,6 +17,17 @@ class TestActionOpen(TestCase):
         oo = curator.Open(ilo)
         self.assertEqual(ilo, oo.index_list)
         self.assertEqual(client, oo.client)
+    def test_do_dry_run(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_four
+        client.cluster.state.return_value = testvars.clu_state_four
+        client.indices.stats.return_value = testvars.stats_four
+        client.indices.open.return_value = None
+        ilo = curator.IndexList(client)
+        ilo.filter_opened()
+        oo = curator.Open(ilo)
+        self.assertEqual([u'c-2016.03.05'], oo.index_list.indices)
+        self.assertIsNone(oo.do_dry_run())
     def test_do_action(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_four

@@ -304,3 +304,25 @@ delete_snap_proto = ('---\n'
 '        unit: {5}\n'
 '        unit_count: {6}\n'
 '        epoch: {7}\n')
+
+create_index = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Create index as named"\n'
+'    action: create_index\n'
+'    options:\n'
+'      name: {0}\n'
+'      continue_if_exception: False\n'
+'      disable_action: False\n')
+
+create_index_with_body = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Create index as named with body"\n'
+'    action: create_index\n'
+'    options:\n'
+'      name: {0}\n'
+'      body:\n'
+
+'      continue_if_exception: False\n'
+'      disable_action: False\n')
