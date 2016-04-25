@@ -130,8 +130,10 @@ def get_date_regex(timestring):
             pass
         elif curr in DATE_REGEX and prev == '%':
             regex += '\d{' + DATE_REGEX[curr] + '}'
-        else:
+        elif curr in ['.', '-']:
             regex += "\\" + curr
+        else:
+            regex += curr
         prev = curr
     logger.debug("regex = {0}".format(regex))
     return regex

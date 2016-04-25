@@ -3,6 +3,14 @@
 Changelog
 =========
 
+4.0.0a5 (? ? ?)
+---------------
+
+**Bug Fixes**
+
+  * Do not escape characters other than ``.`` and ``-`` in timestrings. Fixes
+    #602 (untergeek)
+
 4.0.0a4 (21 Apr 2016)
 ---------------------
 
