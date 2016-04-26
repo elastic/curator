@@ -9,10 +9,11 @@ NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
 with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
 set to `True`.
 
-This setting must be either `older` or `younger`.  This setting is used to
-determine whether indices or snapshots are `older` or `younger` than the
-reference point in time determined by <<fe_unit,unit>>,
-<<fe_unit_count,unit_count>>, and optionally, <<fe_epoch,epoch>>.
+This setting must be either `older` or `younger`. This setting is used to
+determine whether the filter should select indices or snapshots that are
+`older` or `younger` than the reference point in time determined by
+<<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
+<<fe_epoch,epoch>>.
 
 There is no default value. This setting must be set by the user or an
 exception will be raised, and execution will halt.
