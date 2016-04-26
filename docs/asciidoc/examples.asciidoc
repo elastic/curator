@@ -123,9 +123,8 @@ actions:
       unit_count: 30
 -------------
 
-
 [[ex_create_index]]
-== create_index
+=== create_index
 
 [source,text]
 -------------
