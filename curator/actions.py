@@ -392,8 +392,12 @@ class ForceMerge(object):
                     'forceMerging index {0} to {1} segments per shard.  '
                     'Please wait...'.format(index_name, self.max_num_segments)
                 )
-                self.client.indices.forcemerge(
-                    index=index_name, max_num_segments=self.max_num_segments)
+                if get_version(self.client) < (5, 0, 0):
+                    self.client.indices.optimize(index=index_name,
+                        max_num_segments=self.max_num_segments)
+                else:
+                    self.client.indices.forcemerge(index=index_name,
+                        max_num_segments=self.max_num_segments)
                 if self.delay > 0:
                     self.loggit.info(
                         'Pausing for {0} seconds before continuing...'.format(

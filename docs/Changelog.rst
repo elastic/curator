@@ -3,6 +3,15 @@
 Changelog
 =========
 
+4.0.0a8 (26 Apr 2016)
+---------------------
+
+**Bug Fixes**
+
+  * Fix to use `optimize` with versions of Elasticsearch < 5.0
+  * Fix missing setting in testvars
+  
+
 4.0.0a7 (25 Apr 2016)
 ---------------------
 
