@@ -47,8 +47,9 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
                         self.client, self.args['repository'], '_all'
                        )
             self.assertEqual(i, len(snapshot['snapshots']))
-            time.sleep(1.25)
+            time.sleep(1.0)
             timestamps.append(int(time.time()))
+            time.sleep(1.0)
         ### Setup the actual delete
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -69,7 +70,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         snapshot = curator.get_snapshot(
                     self.client, self.args['repository'], '_all'
                    )
-        self.assertEqual(1, len(snapshot['snapshots']))
+        self.assertEqual(2, len(snapshot['snapshots']))
     def test_no_repository(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
