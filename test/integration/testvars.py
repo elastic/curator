@@ -323,6 +323,7 @@ create_index_with_body = ('---\n'
 '    options:\n'
 '      name: {0}\n'
 '      body:\n'
-
+'        number_of_shards: 1\n'
+'        number_of_replicas: 0\n'
 '      continue_if_exception: False\n'
 '      disable_action: False\n')

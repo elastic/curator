@@ -1,10 +1,7 @@
 .. _readme:
 
-Curator |buildstatus|
-=====================
-
-.. |buildstatus| image:: http://build-eu-00.elastic.co/job/es-curator_core/badge/icon
-   :target: http://build-eu-00.elastic.co/job/es-curator_core/
+Curator
+=======
 
 Have indices in Elasticsearch? This is the tool for you!
 
