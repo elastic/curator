@@ -464,7 +464,9 @@ def get_client(**kwargs):
     :arg timeout: Number of seconds before the client will timeout.
     :type timeout: int
     :arg master_only: If `True`, the client will `only` connect if the
-        endpoint is the elected master node of the cluster.
+        endpoint is the elected master node of the cluster.  **This option does
+        not work if `hosts` has more than one value.**  It will raise an
+        Exception in that case.
     :type master_only: bool
     :rtype: :class:`elasticsearch.Elasticsearch`
     """
@@ -534,6 +536,12 @@ def get_client(**kwargs):
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
 
+    if master_only:
+        if len(kwargs['hosts']) > 1:
+            raise ConfigurationError(
+                '"master_only" cannot be True if more than one host is '
+                'specified. Hosts = {0}'.format(kwargs['hosts'])
+            )
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
         # Verify the version is acceptable.

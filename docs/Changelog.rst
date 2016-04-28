@@ -3,6 +3,14 @@
 Changelog
 =========
 
+4.0.0a10 (? ? ?)
+----------------
+
+**Bug Fixes**
+
+  * Disallow use of `master_only` if multiple hosts are used. Fixes #615
+    (untergeek)
+    
 4.0.0a9 (27 Apr 2016)
 ---------------------
 
