@@ -12,7 +12,8 @@ actions:
       Alias indices older than 7 days but newer than 14 days, with a prefix of
       logstash- to 'last_week', remove indices older than 14 days.
     options:
-      alias: last_week
+      name: last_week
+      extra_settings:
       continue_if_exception: False
       disable_action: True
     add:
@@ -20,25 +21,30 @@ actions:
       - filtertype: pattern
         kind: prefix
         value: logstash-
+        exclude:
       - filtertype: age
         source: name
         direction: older
         timestring: '%Y.%m.%d'
         unit: days
         unit_count: 7
+        exclude:
       - filtertype: age
         direction: younger
         timestring: '%Y.%m.%d'
         unit: days
         unit_count: 14
+        exclude:
     remove:
       filters:
       - filtertype: pattern
         kind: prefix
         value: logstash-
+        exclude:
       - filtertype: age
         source: name
         direction: older
         timestring: '%Y.%m.%d'
         unit: days
         unit_count: 14
+        exclude:

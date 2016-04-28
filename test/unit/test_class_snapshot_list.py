@@ -83,6 +83,17 @@ class TestSnapshotListRegexFilters(TestCase):
         )
         sl.filter_by_regex(kind='prefix', value='sna', exclude=True)
         self.assertEqual([], sl.snapshots)
+    def test_filter_by_regex_prefix_exclude(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertEqual(
+            [u'snap_name', u'snapshot-2015.03.01'],
+            sorted(sl.snapshots)
+        )
+        sl.filter_by_regex(kind='prefix', value='snap_', exclude=True)
+        self.assertEqual([u'snapshot-2015.03.01'], sl.snapshots)
     def test_filter_by_regex_timestring(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshots

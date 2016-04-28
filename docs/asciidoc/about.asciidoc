@@ -4,8 +4,16 @@
 [partintro]
 --
 
-Like a museum curator manages the exhibits and collections on display,
-Elasticsearch Curator helps you curate, or manage your Elasticsearch indices.
+Elasticsearch Curator helps you curate, or manage, your Elasticsearch indices
+and snapshots by:
+
+1. Obtaining the full list of indices (or snapshots) from the cluster, as the
+_actionable list_
+2. Iterate through a list of user-defined <<filters,filters>> to progressively
+remove indices (or snapshots) from this _actionable list_ as needed.
+3. Perform various <<actions,actions>> on the items which remain in the
+_actionable list._
+
 --
 
 == Origin

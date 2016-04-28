@@ -7,16 +7,6 @@
 Options are settings used by <<actions,actions>>.
 --
 
-[[option_alias]]
-== alias
-
-NOTE: This option is required by the <<alias,alias action>>.
-
-The value for this setting is the name of the alias to use.
-
-There is no default value. This setting must be set by the user or an exception
-will be raised, and execution will halt.
-
 [[option_allocation_type]]
 == allocation_type
 
@@ -30,11 +20,11 @@ https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation
 
 The default value for this setting is `require`.
 
-[[option_body]]
-== body
+[[option_extra_settings]]
+== extra_settings
 
-This setting should be nested YAML.  The values beneath `body` will be used by
-whichever action uses the option.
+This setting should be nested YAML.  The values beneath `extra_settings` will be
+used by whichever action uses the option.
 
 There is no default value.
 
@@ -164,10 +154,11 @@ will be raised, and execution will halt.
 [[option_name]]
 == name
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> and
+NOTE: This setting is used by the <<alias,alias>>, <<snapshot,snapshot>>, and
     <<create_index,create_index>> actions.
 
-The value of this setting is the name of the snapshot or index.
+The value of this setting is the name of the alias, snapshot, or index,
+depending on which action makes use of `name`.
 
 This setting may contain a valid Python strftime string.  Curator will
 extract the strftime identifiers and replace them with the corresponding values.
@@ -183,6 +174,9 @@ The Python strftime identifiers that Curator currently recognizes include:
 * `M`: The 2 digit minute of the hour
 * `S`: The 2 digit number of second of the minute
 * `j`: The 3 digit day of the year
+
+This option is required by the <<alias,alias>> action, and has no default
+setting in that context.
 
 For the <<create_index,create_index>> action, there is no default setting.
 

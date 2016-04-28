@@ -26,7 +26,8 @@ once created, can only be deleted.
 action: alias
 description: "Add/Remove selected indices to or from the specified alias"
 options:
-  alias: alias_name
+  name: alias_name
+  extra_settings:
   continue_if_exception: False
   disable_action: False
 add:
@@ -41,21 +42,41 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given action, it
     will be ignored.
 
-This action adds and/or removes indices from the specified <<option_alias,alias>>
+This action adds and/or removes indices from the alias identified by
+ <<option_name,name>>
 
 The <<filters,filters>> under the `add` and `remove` directives define which
 indices will be added and/or removed.  This is an atomic action, so adds and
 removes happen instantaneously.
 
+The <<option_extra_settings,extra_settings>> option allows the addition of extra
+settings with the `add` directive.  These settings are ignored for `remove`.  An
+example of how these settings can be used to create a filtered alias might be:
+
+[source,text]
+-------------
+extra_settings:
+  filter:
+    term:
+      user: kimchy
+-------------
+
+WARNING: Before creating a filtered alias, first ensure that the fields already
+  exist in the mapping.
+
+Learn more about adding filtering and routing to aliases in the
+{ref}/indices-aliases.html[Elasticsearch Alias API documentation].
+
 [float]
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_alias,alias>> (required)
+* <<option_name,name>> (required)
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_extra_settings,extra_settings>> (No default value.)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -143,7 +164,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 
 
 [[create_index]]
-== create_index
+== Create Index
 
 [source,text]
 -------------
@@ -151,7 +172,7 @@ action: create_index
 description: "Create index as named"
 options:
   name:
-  body:
+  extra_settings:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -162,7 +183,25 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given action, it
     will be ignored.
 
-This action closes the selected indices.
+This action creates the named index.
+
+The <<option_extra_settings,extra_settings>> option allows the addition of extra
+settings, such as index settings and mappings.  An example of how these settings
+can be used to create an index might be:
+
+[source,text]
+-------------
+extra_settings:
+  settings:
+    number_of_shards: 1
+    number_of_replicas: 0
+  mappings:
+    type1 :
+      properties:
+        field1:
+          type: string
+          index: not_analyzed
+-------------
 
 [float]
 Required settings
@@ -172,9 +211,9 @@ Required settings
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_body,body>> No default value.  Can create any acceptable index settings and
-    mappings as nested YAML.  See
-    https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+* <<option_extra_settings,extra_settings>> No default value.  You can add any
+    acceptable index settings and mappings as nested YAML.  See the
+    {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)

@@ -30,6 +30,33 @@ class IndexList(object):
         self.all_indices = []
         self.__get_indices()
 
+    def __actionable(self, idx):
+        self.loggit.info(
+            'Index {0} is actionable and remains in the list.'.format(idx))
+
+    def __not_actionable(self, idx):
+            self.loggit.info(
+                'Index {0} is not actionable, removing from list.'.format(idx))
+            self.indices.remove(idx)
+
+    def __excludify(self, condition, exclude, index, msg=None):
+        if condition == True:
+            if exclude:
+                text = "Removed from actionable list"
+                self.__not_actionable(index)
+            else:
+                text = "Remains in actionable list"
+                self.__actionable(index)
+        else:
+            if exclude:
+                text = "Remains in actionable list"
+                self.__actionable(index)
+            else:
+                text = "Removed from actionable list"
+                self.__not_actionable(index)
+        if msg:
+            self.loggit.info('{0}: {1}'.format(text, msg))
+
     def __get_indices(self):
         """
         Pull all indices into `all_indices`, then populate `indices` and
@@ -60,6 +87,20 @@ class IndexList(object):
                 "docs" : 0,
                 "state" : "",
             }
+
+    def __map_method(self, ft):
+        methods = {
+            'age': self.filter_by_age,
+            'allocated': self.filter_allocated,
+            'closed': self.filter_closed,
+            'forcemerged': self.filter_forceMerged,
+            'kibana': self.filter_kibana,
+            'none': self.filter_none,
+            'opened': self.filter_opened,
+            'pattern': self.filter_by_regex,
+            'space': self.filter_by_space,
+        }
+        return methods[ft]
 
     def _get_index_stats(self):
         """
@@ -215,8 +256,7 @@ class IndexList(object):
 
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
-        Filter out indices not matching the pattern, or in the case of exclude,
-        filter those matching the pattern.
+        Match indices by regular expression (pattern).
 
         :arg kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or
             ``timestring``. This option defines what kind of filter you will be
@@ -224,8 +264,10 @@ class IndexList(object):
         :arg value: Depends on `kind`. It is the strftime string if `kind` is
             ``timestring``. It's used to build the regular expression for other
             kinds.
-        :arg exclude: Will cause the filter to invert, and keep non-matching
-            values
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
         """
         self.loggit.debug('Filtering indices by regex')
         if kind not in [ 'regex', 'prefix', 'suffix', 'timestring' ]:
@@ -251,26 +293,16 @@ class IndexList(object):
             self.loggit.debug('Filter by regex: Index: {0}'.format(index))
             match = pattern.match(index)
             if match:
-                msg = 'Regex "{0}" matches index "{1}"'.format(regex, index)
-                if exclude:
-                    self.loggit.debug('Exclude: {0}'.format(msg))
-                    self.indices.remove(index)
-                else:
-                    self.loggit.debug('{0}'.format(msg))
+                self.__excludify(True, exclude, index)
             else:
-                msg = 'Regex "{0}" does not match index "{1}"'.format(regex, index)
-                if exclude:
-                    self.loggit.debug('Exclude: {0}'.format(msg))
-                else:
-                    self.loggit.debug('{0}'.format(msg))
-                    self.indices.remove(index)
+                self.__excludify(False, exclude, index)
 
     def filter_by_age(self, source='name', direction=None, timestring=None,
         unit=None, unit_count=None, field=None, stats_result='min_value',
-        epoch=None,
+        epoch=None, exclude=False,
         ):
         """
-        Remove indices from `indices` by relative age calculations.
+        Match `indices` by relative age calculations.
 
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
@@ -289,7 +321,12 @@ class IndexList(object):
         :arg epoch: An epoch timestamp used in conjunction with ``unit`` and
             ``unit_count`` to establish a point of reference for calculations.
             If not provided, the current time will be used.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
         """
+
         self.loggit.debug('Filtering indices by age')
         # Get timestamp point of reference, PoR
         PoR = get_point_of_reference(unit, unit_count, epoch)
@@ -328,62 +365,43 @@ class IndexList(object):
             )
 
         for index in self.working_list():
-            if direction == 'older':
-                # Remember, because time adds to epoch, smaller numbers are older
-                # We want to remove values larger, or "younger," from the list
-                # so downstream processing can be done on the "older" indices
-                try:
-                    if self.index_info[index]['age'][keyfield] > PoR:
-                        self.indices.remove(index)
-                        self.loggit.debug(
-                            'Index "{0}" age ({1}) is not "{2}" than the point '
-                            'of reference, ({3})'.format(
-                                index,
-                                int(self.index_info[index]['age'][keyfield]),
-                                direction,
-                                PoR
-                            )
-                        )
-                except KeyError:
-                    self.loggit.info(
-                        'Index "{0}" does not meet provided criteria. '
-                        'Removing from list.'.format(index, source))
-                    self.indices.remove(index)
-            elif direction == 'younger':
-                # Remember, because time adds to epoch, larger numbers are younger
-                # We want to remove values smaller, or "older," from the list
-                # so downstream processing can be done on the "younger" indices
-                try:
-                    if self.index_info[index]['age'][keyfield] < PoR:
-                        self.indices.remove(index)
-                        self.loggit.debug(
-                            'Index "{0}" age ({1}) is not "{2}" than the point '
-                            'of reference, ({3})'.format(
-                                index,
-                                self.index_info[index]['age'][keyfield],
-                                direction,
-                                PoR
-                            )
-                        )
-                except KeyError:
-                    self.loggit.info(
-                        'Index "{0}" does not meet provided criteria. '
-                        'Removing from list.'.format(index, source))
-                    self.indices.remove(index)
+
+            try:
+                msg = (
+                    'Index "{0}" age ({1}), direction: "{2}", point of '
+                    'reference, ({3})'.format(
+                        index,
+                        int(self.index_info[index]['age'][keyfield]),
+                        direction,
+                        PoR
+                    )
+                )
+                # Because time adds to epoch, smaller numbers are actually older
+                # timestamps.
+                if direction == 'older':
+                    agetest = self.index_info[index]['age'][keyfield] < PoR
+                else:
+                    agetest = self.index_info[index]['age'][keyfield] > PoR
+                self.__excludify(agetest, exclude, index, msg)
+            except KeyError:
+                self.loggit.info(
+                    'Index "{0}" does not meet provided criteria. '
+                    'Removing from list.'.format(index, source))
+                self.indices.remove(index)
 
     def filter_by_space(
         self, disk_space=None, reverse=True, use_age=False,
         source='creation_date', timestring=None, field=None,
-        stats_result='min_value'):
+        stats_result='min_value', exclude=False):
         """
-        Remove indices from the provided list of indices based on space
+        Remove indices from the actionable list based on space
         consumed, sorted reverse-alphabetically by default.  If you set
         `reverse` to `False`, it will be sorted alphabetically.
 
         The default is usually what you will want. If only one kind of index is
         provided--for example, indices matching ``logstash-%Y.%m.%d``--then
-        reverse alphabetical sorting will mean the oldest get removed first,
-        because lower numbers in the dates mean older indices.
+        reverse alphabetical sorting will mean the oldest will remain in the
+        list, because lower numbers in the dates mean older indices.
 
         By setting `reverse` to `False`, then ``index3`` will be deleted before
         ``index2``, which will be deleted before ``index1``
@@ -407,6 +425,10 @@ class IndexList(object):
         :arg stats_result: Either `min_value` or `max_value`.  Only used if
             `source` ``field_stats`` is selected. It determines whether to
             reference the minimum or maximum value of `field` in each index.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
         """
         self.loggit.debug('Filtering indices by disk space')
         # Ensure that disk_space is a float
@@ -477,38 +499,56 @@ class IndexList(object):
         for index in sorted_indices:
 
             disk_usage += self.index_info[index]['size_in_bytes']
-            suffix = (
+            msg = (
                 '{0}, summed disk usage is {1} and disk limit is {2}.'.format(
                     index, byte_size(disk_usage), byte_size(disk_limit)
                 )
             )
-            if disk_usage > disk_limit:
-                verb = "Omitting"
-            else:
-                verb = "Keeping"
-                self.indices.remove(index)
+            self.__excludify((disk_usage > disk_limit), exclude, index, msg)
+            # if disk_usage > disk_limit:
+            #     if exclude:
+            #         text = "Removed from actionable list"
+            #         self.__not_actionable(index)
+            #     else:
+            #         text = "Remains in actionable list"
+            #         self.__actionable(index)
+            # else:
+            #     if exclude:
+            #         text = "Remains in actionable list"
+            #         self.__actionable(index)
+            #     else:
+            #         text = "Removed from actionable list"
+            #         self.__not_actionable(index)
+            # self.loggit.info('{0}: {1}'.format(text, msg))
 
-            self.loggit.info('{0}: {1}'.format(verb, suffix))
-
-    def filter_kibana(self):
+    def filter_kibana(self, exclude=True):
         """
-        Filter out any index named ``.kibana``, ``kibana-int``,
-        ``.marvel-kibana``, or ``.marvel-es-data`` from `indices`
+        Match any index named ``.kibana``, ``kibana-int``, ``.marvel-kibana``,
+        or ``.marvel-es-data`` in `indices`.
+
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
         """
         self.loggit.debug('Filtering kibana indices')
         self.empty_list_check()
-        for index in [
-                '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'
-            ]:
-            if index in self.working_list():
-                self.indices.remove(index)
+        for index in self.working_list():
+            if index in [
+                    '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'
+                ]:
+                self.__excludify(True, exclude, index)
 
-    def filter_forceMerged(self, max_num_segments=None):
+    def filter_forceMerged(self, max_num_segments=None, exclude=True):
         """
-        Filter out any index which has `max_num_segments` per shard or fewer
-        from `indices`
+        Match any index which has `max_num_segments` per shard or fewer in the
+        actionable list.
 
         :arg max_num_segments: Cutoff number of segments per shard.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
         """
         self.loggit.debug('Filtering forceMerged indices')
         if not max_num_segments:
@@ -524,49 +564,68 @@ class IndexList(object):
             shards = int(self.index_info[index]['number_of_shards'])
             replicas = int(self.index_info[index]['number_of_replicas'])
             segments = int(self.index_info[index]['segments'])
-            suffix = (
+            msg = (
                 '{0} has {1} shard(s) + {2} replica(s) '
                 'with a sum total of {3} segments.'.format(
                     index, shards, replicas, segments
                 )
             )
             expected_count = ((shards + (shards * replicas)) * max_num_segments)
-            if segments <= expected_count:
-                self.loggit.info('Omitting: {0} '.format(suffix))
-                self.indices.remove(index)
-            else:
-                self.loggit.debug('Keeping: {0} '.format(suffix))
+            self.__excludify((segments <= expected_count), exclude, index, msg)
 
-    def filter_closed(self):
+
+    def filter_closed(self, exclude=True):
         """
         Filter out closed indices from `indices`
+
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
         """
         self.loggit.debug('Filtering closed indices')
         self.empty_list_check()
         for index in self.working_list():
-            if self.index_info[index]['state'] == 'close':
-                self.loggit.info('Omitting closed index {0}'.format(index))
-                self.indices.remove(index)
+            condition = self.index_info[index]['state'] == 'close'
+            self.loggit.debug('Index {0} state: {1}'.format(
+                    index, self.index_info[index]['state']
+                )
+            )
+            self.__excludify(condition, exclude, index)
 
-    def filter_opened(self):
+    def filter_opened(self, exclude=True):
         """
         Filter out opened indices from `indices`
+
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
         """
         self.loggit.debug('Filtering open indices')
         self.empty_list_check()
         for index in self.working_list():
-            if self.index_info[index]['state'] == 'open':
-                self.loggit.info('Omitting opened index {0}'.format(index))
-                self.indices.remove(index)
+            condition = self.index_info[index]['state'] == 'open'
+            self.loggit.debug('Index {0} state: {1}'.format(
+                    index, self.index_info[index]['state']
+                )
+            )
+            self.__excludify(condition, exclude, index)
 
-    def filter_allocated(self, key=None, value=None, allocation_type='require'):
+    def filter_allocated(self,
+            key=None, value=None, allocation_type='require', exclude=True,
+        ):
         """
-        Filter out all indices that have the routing allocation rule of
+        Match indices that have the routing allocation rule of
         `key=value` from `indices`
 
         :arg key: The allocation attribute to check for
         :arg value: The value to check for
         :arg allocation_type: Type of allocation to apply
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
         """
         self.loggit.debug(
             'Filtering indices with shard routing allocation rules')
@@ -590,15 +649,18 @@ class IndexList(object):
                         )
                     except KeyError:
                         has_routing = False
-                    if has_routing:
-                        self.loggit.debug(
-                            'Omitting index {0}: '
-                            'index.routing.allocation.{1}.{2}={3} '
-                            'is already set.'.format(
-                                index, allocation_type, key, value
-                            )
+                    # if has_routing:
+                    msg = (
+                        '{0}: Routing (mis)match: '
+                        'index.routing.allocation.{1}.{2}={3}.'.format(
+                            index, allocation_type, key, value
                         )
-                        self.indices.remove(index)
+                    )
+                        # self.indices.remove(index)
+                    self.__excludify(has_routing, exclude, index, msg)
+
+    def filter_none(self):
+        self.loggit.info('"None" filter selected.  No filtering will be done.')
 
     def iterate_filters(self, filter_dict):
         """
@@ -643,33 +705,10 @@ class IndexList(object):
                     'Invalid value for "filtertype": '
                     '{0}'.format(f['filtertype'])
                 )
-            if ft == 'pattern':
-                # Establish the default args for this filter
-                f_args = F_ARGS_PATTERN
-                # Set the filter instance so we can reference it easily later
-                method = self.filter_by_regex
-            elif ft == 'age':
-                f_args = F_ARGS_AGE_INDEX
-                method = self.filter_by_age
-            elif ft == 'space':
-                f_args = F_ARGS_SPACE
-                method = self.filter_by_space
-            elif ft == 'forcemerged':
-                f_args = F_ARGS_FORCEMERGED
-                method = self.filter_forceMerged
-            elif ft == 'allocated':
-                f_args = F_ARGS_ALLOCATED
-                method = self.filter_allocated
-            elif ft == 'kibana':
-                method = self.filter_kibana
-            elif ft == 'opened':
-                method = self.filter_opened
-            elif ft == 'closed':
-                method = self.filter_closed
-            elif ft == 'none':
-                logger.info('No filter applied.  Returning unaltered object.')
-                return
-            else:
+            try:
+                f_args = IDX_FILTER_DEFAULTS[ft]
+                method = self.__map_method(ft)
+            except:
                 raise ConfigurationError(
                     'Unrecognized filtertype: {0}'.format(ft))
             # Remove key 'filtertype' from dictionary 'f'

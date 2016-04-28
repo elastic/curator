@@ -5,14 +5,16 @@
 [[fe_direction]]
 == direction
 
-NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
-with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
-set to `True`.
+NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
 
 This setting must be either `older` or `younger`.  This setting is used to
 determine whether indices or snapshots are `older` or `younger` than the
 reference point in time determined by <<fe_unit,unit>>,
-<<fe_unit_count,unit_count>>, and optionally, <<fe_epoch,epoch>>.
+<<fe_unit_count,unit_count>>, and optionally, <<fe_epoch,epoch>>.  If
+`direction` is `older`, then indices (or snapshots) which are _older_ than the
+reference point in time will be matched.  Likewise, if `direction` is
+`younger`, then indices (or snapshots) which are _younger_ than the reference
+point in time will be matched.
 
 There is no default value. This setting must be set by the user or an
 exception will be raised, and execution will halt.
@@ -25,8 +27,7 @@ NOTE: This setting is only used with the <<filtertype_space,space>> filtertype +
 
 The value for this setting is a number of gigabytes.
 
-The <<filtertype_space,space filtertype>> will select indices to delete in
-excess of this number of gigabytes.
+Indices in excess of this number of gigabytes will be matched.
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
@@ -58,13 +59,12 @@ a point of reference in the future by using a negative value for
 [[fe_exclude]]
 == exclude
 
-NOTE: This setting is only used with the <<filtertype_pattern,pattern>> filtertype.
+NOTE: This setting is available in _all_ filter types.
 
-Setting exclude to `True` inverts the regular pattern match, and instead
-_excludes_ matches, keeping the indices or snapshots that do _not_ match the
-pattern
+If `exclude` is `True`, the filter will remove matches from the actionable list.
+If `exclude` is `False`, then only matches will be kept in the actionable list.
 
-The default value for this setting is `False`.
+The default value for this setting is different for each filter type.
 
 
 [[fe_field]]
@@ -88,8 +88,9 @@ The default value for this setting is `@timestamp`.
 NOTE: This setting is only used with the <<filtertype_pattern,pattern>> +
     filtertype and is a required setting.
 
-Acceptable values for this setting are `prefix`, `suffix`, `timestring`, and
-`regex`.
+This setting tells the <<filtertype_pattern,pattern>> what pattern type to
+match. Acceptable values for this setting are `prefix`, `suffix`, `timestring`,
+and `regex`.
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
@@ -180,7 +181,7 @@ with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
 set to `True`.
 
 This setting must be a valid Python strftime string.  It is used to match and
-extract the timestamp in an index name.
+extract the timestamp in an index or snapshot name.
 
 The identifiers that Curator currently recognizes include:
 
@@ -259,11 +260,12 @@ execution will halt.
 [[fe_use_age]]
 == use_age
 
-This setting allows filtering of indices by their age _and_ the space they
+This setting allows matching of indices by their age _and_ the space they
 consume.  In other words, it sorts all indices in the list by age, then starts
 adding the space consumed by each index, beginning from the youngest.  Once the
 value of <<fe_disk_space,disk_space>> is reached, all remaining indices, which
-are the oldest, will be selected, omitting all of the younger indices.
+are the oldest, will remain in the actionable list, omitting all of the younger
+indices.
 
 The default value of this setting is `False`
 
