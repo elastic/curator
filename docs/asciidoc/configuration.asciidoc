@@ -401,6 +401,11 @@ install Curator on every node. But you wouldn’t want it to run on each node.
 By setting `master_only` to `True`, this is possible. It tests for, and will
 only continue running on the node that is the elected master.
 
+WARNING: If `master_only` is `True`, and <<hosts,hosts>> has more than one
+    value, Curator will raise an Exception.  This setting should _only_ be used
+    with a single host in <<hosts,hosts>>, as its utility centers around
+    deploying to all nodes in the cluster.
+
 The default value is `False`.
 
 [[loglevel]]

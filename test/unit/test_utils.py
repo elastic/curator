@@ -230,7 +230,6 @@ class TestGetClient(TestCase):
     # These unit test cases can't really get a client object, so it's more for
     # code coverage than anything
     def test_url_prefix_none(self):
-        client = Mock()
         kwargs = {
             'url_prefix': None, 'use_ssl' : True, 'ssl_no_validate' : True
         }
@@ -239,7 +238,6 @@ class TestGetClient(TestCase):
             curator.get_client, **kwargs
         )
     def test_url_prefix_none_str(self):
-        client = Mock()
         kwargs = {
             'url_prefix': 'None', 'use_ssl' : True, 'ssl_no_validate' : True
         }
@@ -247,29 +245,34 @@ class TestGetClient(TestCase):
             elasticsearch.ElasticsearchException,
             curator.get_client, **kwargs
         )
+    def test_master_only_multiple_hosts(self):
+        kwargs = {
+            'url_prefix': '', 'master_only' : True,
+            'hosts' : ['127.0.0.1', '127.0.0.1']
+        }
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.get_client, **kwargs
+        )
     def test_certificate_logic(self):
-        client = Mock()
         kwargs = { 'use_ssl' : True, 'certificate' : 'mycert.pem' }
         self.assertRaises(
             elasticsearch.ElasticsearchException,
             curator.get_client, **kwargs
         )
     def test_client_cert_logic(self):
-        client = Mock()
         kwargs = { 'use_ssl' : True, 'client_cert' : 'myclientcert.pem' }
         self.assertRaises(
             elasticsearch.ElasticsearchException,
             curator.get_client, **kwargs
         )
     def test_client_key_logic(self):
-        client = Mock()
         kwargs = { 'use_ssl' : True, 'client_key' : 'myclientkey.pem' }
         self.assertRaises(
             elasticsearch.ElasticsearchException,
             curator.get_client, **kwargs
         )
     def test_certificate_no_verify_logic(self):
-        client = Mock()
         kwargs = { 'use_ssl' : True, 'ssl_no_validate' : True }
         self.assertRaises(
             elasticsearch.ElasticsearchException,
