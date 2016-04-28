@@ -20,6 +20,12 @@ aliases_retval = {
     "index2": { "aliases" : { named_alias : { } } },
     }
 alias_one_add  = [{'add': {'alias': 'alias', 'index': 'index_name'}}]
+alias_one_add_with_extras  = [
+    { 'add': {
+            'alias': 'alias', 'index': 'index_name',
+            'filter' : { 'term' : { 'user' : 'kimchy' }}
+            }
+    }]
 alias_one_rm   = [{'remove': {'alias': 'alias', 'index': 'index_name'}}]
 alias_one_body = { "actions" : [
                         {'remove': {'alias': 'alias', 'index': 'index_name'}},
@@ -534,7 +540,7 @@ actions:
         timestring: '%Y.%m.%d'
         unit: seconds
         unit_count: 0
-        epoch: 1456963200
+        epoch: 1456963201
 '''
 space_ft         = '''
 ---

@@ -19,8 +19,10 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 10
+      exclude:

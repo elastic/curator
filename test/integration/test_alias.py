@@ -35,6 +35,37 @@ class TestCLIAlias(CuratorTestCase):
                     ],
                     )
         self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
+    def test_add_only_with_extra_settings(self):
+        alias = 'testalias'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_add_only_with_extra_settings.format(alias))
+        self.create_index('my_index')
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEquals(
+            {
+                'my_index': {
+                    'aliases': {
+                        'testalias': {
+                            'filter': {
+                                'term': {
+                                    'user': 'kimchy'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            self.client.indices.get_alias(name=alias)
+        )
     def test_alias_remove_only(self):
         alias = 'testalias'
         self.write_config(

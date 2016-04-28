@@ -5,16 +5,20 @@ import time
 from datetime import datetime
 
 class Alias(object):
-    def __init__(self, alias=None):
+    def __init__(self, name=None, extra_settings={}):
         """
         Define the Alias object.
 
-        :arg alias: The alias name
+        :arg name: The alias name
+        :arg extra_settings: Extra settings, including filters and routing. For
+            more information see
+            https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html
         """
-        if not alias:
-            raise MissingArgument('No value for "alias" provided.')
-        #: The alias name.  Also accessible as an instance variable.
-        self.alias = alias
+        if not name:
+            raise MissingArgument('No value for "name" provided.')
+        #: Instance variable
+        #: The strftime parsed version of `name`.
+        self.name = parse_date_pattern(name)
         #: The list of actions to perform.  Populated by
         #: :mod:`curator.actions.Alias.add` and
         #: :mod:`curator.actions.Alias.remove`
@@ -22,12 +26,15 @@ class Alias(object):
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client  = None
+        #: Instance variable.
+        #: Any extra things to add to the alias, like filters, or routing.
+        self.extra_settings = extra_settings
         self.loggit  = logging.getLogger('curator.actions.alias')
 
     def add(self, ilo):
         """
         Create `add` statements for each index in `ilo` for `alias`, then
-        append them to `actions`.
+        append them to `actions`.  Add any `extras` that may be there.
 
         :arg ilo: A :class:`curator.indexlist.IndexList` object
 
@@ -38,9 +45,12 @@ class Alias(object):
         ilo.empty_list_check()
         for index in ilo.working_list():
             self.loggit.debug(
-                'Adding index {0} to alias {1}'.format(index, self.alias))
-            self.actions.append(
-                { 'add' : { 'index' : index, 'alias': self.alias } })
+                'Adding index {0} to alias {1} with extra settings '
+                '{2}'.format(index, self.name, self.extra_settings)
+            )
+            add_dict = { 'add' : { 'index' : index, 'alias': self.name } }
+            add_dict['add'].update(self.extra_settings)
+            self.actions.append(add_dict)
 
     def remove(self, ilo):
         """
@@ -55,9 +65,9 @@ class Alias(object):
         ilo.empty_list_check()
         for index in ilo.working_list():
             self.loggit.debug(
-                'Removing index {0} from alias {1}'.format(index, self.alias))
+                'Removing index {0} from alias {1}'.format(index, self.name))
             self.actions.append(
-                { 'remove' : { 'index' : index, 'alias': self.alias } })
+                { 'remove' : { 'index' : index, 'alias': self.name } })
 
     def body(self):
         """
@@ -209,14 +219,15 @@ class Close(object):
             report_failure(e)
 
 class CreateIndex(object):
-    def __init__(self, client, name, body={}):
+    def __init__(self, client, name, extra_settings={}):
         """
         :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg name: A name, which can contain :py:func:`time.strftime`
             strings
-        :arg body: The `settings` and `mappings` for the index. For more
-            information see https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
-        :type body: dict, representing the settings and mappings.
+        :arg extra_settings: The `settings` and `mappings` for the index. For
+            more information see
+            https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
+        :type extra_settings: dict, representing the settings and mappings.
         """
         verify_client_object(client)
         if not name:
@@ -227,7 +238,7 @@ class CreateIndex(object):
         #: Instance variable.
         #: Extracted from the config yaml, it should be a dictionary of
         #: mappings and settings suitable for index creation.
-        self.body       = body
+        self.body       = extra_settings
         #: Instance variable.
         #: An :class:`elasticsearch.Elasticsearch` client object
         self.client     = client

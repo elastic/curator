@@ -76,13 +76,13 @@ def process_action(client, config, **kwargs):
         logger.debug('Running "{0}" action'.format(action.upper()))
         action_obj = action_class(**mykwargs)
         if 'add' in config:
-            logger.debug('Adding indices to alias "{0}"'.format(opts['alias']))
+            logger.debug('Adding indices to alias "{0}"'.format(opts['name']))
             adds = IndexList(client)
             adds.iterate_filters(config['add'])
             action_obj.add(adds)
         if 'remove' in config:
             logger.debug(
-                'Removing indices from alias "{0}"'.format(opts['alias']))
+                'Removing indices from alias "{0}"'.format(opts['name']))
             removes = IndexList(client)
             removes.iterate_filters(config['remove'])
             action_obj.remove(removes)

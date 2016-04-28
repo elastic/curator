@@ -69,20 +69,25 @@ The snapshot filtertypes are:
 [[filtertype_allocated]]
 == allocated
 
+NOTE: {f_negative}
+
 [source,text]
 -------------
 - filtertype: allocated
   key:
   value:
   allocation_type:
+  exclude: True
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it will be ignored.
 
-This <<filtertype,filtertype>> will remove from the list any indices which
-match the given shard routing allocation options.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices based on their shard routing allocation settings.  They will remain in,
+or be removed from the actionable list based on the value of
+<<fe_exclude,exclude>>.
 
 [float]
 Required settings
@@ -95,11 +100,14 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_allocation_type,allocation_type>> (has a default value which can optionally be changed)
+* <<fe_exclude,exclude>> (default is `True`)
 
 
 
 [[filtertype_age]]
 == age
+
+NOTE: {f_positive}
 
 [source,text]
 -------------
@@ -112,14 +120,16 @@ Optional settings
    field
    stats_result:
    epoch:
+   exclude: False
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it will be ignored.
 
-This <<filtertype,filtertype>> allows you to filter indices and snapshots by
-their age.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices based on their age.  They will remain in, or be removed from the
+actionable list based on the value of <<fe_exclude,exclude>>.
 
 Read more about the different settings for this <<filtertype,filtertype>>:
 
@@ -145,20 +155,29 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 
 * <<fe_epoch,epoch>> (optional)
+* <<fe_exclude,exclude>> (default is `False`)
 
 
 [[filtertype_closed]]
 == closed
 
+NOTE: {f_negative}
+
 [source,text]
 -------------
 - filtertype: closed
+  exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove from the list any indices which are
-closed.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices which are closed.  They will remain in, or be removed from the
+actionable list based on the value of <<fe_exclude,exclude>>.
 
-There are no settings for this <<filtertype,filtertype>>.
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_exclude,exclude>> (default is `True`)
 
 [[filtertype_forcemerged]]
 == forcemerged
@@ -167,14 +186,17 @@ There are no settings for this <<filtertype,filtertype>>.
 -------------
 - filtertype: forcemerged
   max_num_segments: 2
+  exclude: True
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it will be ignored.
 
-This <<filtertype,filtertype>> will remove from the list any indices which have
-`max_num_segments` segments per shard, or fewer.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices which have `max_num_segments` segments per shard, or fewer.  They will
+remain in, or be removed from the actionable list based on the value of
+<<fe_exclude,exclude>>.
 
 [float]
 Required settings
@@ -182,7 +204,11 @@ Required settings
 
 * <<option_mns,max_num_segments>> (required)
 
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
 
+* <<fe_exclude,exclude>> (default is `True`)
 
 [[filtertype_kibana]]
 == kibana
@@ -190,12 +216,22 @@ Required settings
 [source,text]
 -------------
 - filtertype: kibana
+  exclude: True
 -------------
 
 This <<filtertype,filtertype>> will remove indices `.kibana`, `.marvel-kibana`,
 `kibana-int`, and `.marvel-es-data` from the list of indices, if present.
 
-There are no settings for this <<filtertype,filtertype>>.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices `.kibana`, `.marvel-kibana`, `kibana-int`, or `.marvel-es-data`. They
+will remain in, or be removed from the actionable list based on the value of
+<<fe_exclude,exclude>>.
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_exclude,exclude>> (default is `True`)
 
 
 [[filtertype_none]]
@@ -215,15 +251,23 @@ There are no settings for this <<filtertype,filtertype>>.
 [[filtertype_opened]]
 == opened
 
+NOTE: {f_negative}
+
 [source,text]
 -------------
 - filtertype: opened
+  exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove from the list any indices which are
-opened.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices which are opened.  They will remain in, or be removed from the
+actionable list based on the value of <<fe_exclude,exclude>>.
 
-There are no settings for this <<filtertype,filtertype>>.
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_exclude,exclude>> (default is `True`)
 
 
 
@@ -243,8 +287,9 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it will be ignored.
 
-This <<filtertype,filtertype>> allows you to filter indices and snapshots by
-patterns in the index or snapshot name.
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices matching a given pattern.  They will remain in, or be removed from
+the actionable list based on the value of <<fe_exclude,exclude>>.
 
 Read more about the different settings for this <<filtertype,filtertype>>:
 
@@ -259,7 +304,7 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_exclude,exclude>> (optional)
+* <<fe_exclude,exclude>> (default is `False`)
 
 
 
@@ -276,11 +321,19 @@ Optional settings
   timestring:
   field:
   stats_result:
+  exclude: False
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it will be ignored.
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices when their cumulative disk consumption exceeds
+<<fe_disk_space,disk_space>> gigabytes.  They are first ordered by age,
+or by alphabet, so as to guarantee the oldest indices are deleted first. They
+will remain in, or be removed from the actionable list based on the value of
+<<fe_exclude,exclude>>.
 
 [float]
 Deleting Indices By Space
@@ -304,6 +357,16 @@ caveats regarding this choice:
 These are only a few of the caveats. This is still a valid use-case, especially
 for those running a single-node test box.
 
+NOTE: The <<fe_reverse,reverse>> option will be ignored if
+    <<fe_use_age,use_age>> is `True`
+
+For use cases, where "like" indices are being counted, and their name pattern
+guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
+set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
+<<fe_reverse,reverse>> order by default.  For this case, this means that disk
+space calculations will start beginning with the _newest_ indices, and
+proceeding through to the oldest.
+
 Read more about the different settings for this <<filtertype,filtertype>>:
 
 [float]
@@ -325,3 +388,4 @@ Optional settings
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
+* <<fe_exclude,exclude>> (default is `False`)

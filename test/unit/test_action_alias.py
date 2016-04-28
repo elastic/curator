@@ -14,7 +14,7 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         self.assertRaises(TypeError, ao.add)
     def test_add_raises_on_invalid_parameter(self):
         client = Mock()
@@ -22,7 +22,7 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         self.assertRaises(TypeError, ao.add, [])
     def test_add_single(self):
         client = Mock()
@@ -30,16 +30,28 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.add(ilo)
         self.assertEqual(testvars.alias_one_add, ao.actions)
+    def test_add_single_with_extra_settings(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        ilo = curator.IndexList(client)
+        esd = {
+            'filter' : { 'term' : { 'user' : 'kimchy' } }
+        }
+        ao = curator.Alias(name='alias', extra_settings=esd)
+        ao.add(ilo)
+        self.assertEqual(testvars.alias_one_add_with_extras, ao.actions)
     def test_remove_single(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.remove(ilo)
         self.assertEqual(testvars.alias_one_rm, ao.actions)
     def test_add_multiple(self):
@@ -48,7 +60,7 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.add(ilo)
         cmp = sorted(ao.actions, key=lambda k: k['add']['index'])
         self.assertEqual(testvars.alias_two_add, cmp)
@@ -58,7 +70,7 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.remove(ilo)
         cmp = sorted(ao.actions, key=lambda k: k['remove']['index'])
         self.assertEqual(testvars.alias_two_rm, cmp)
@@ -68,7 +80,7 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.remove(ilo)
         ao.add(ilo)
         body = ao.body()
@@ -82,7 +94,7 @@ class TestActionAlias(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         self.assertRaises(curator.ActionError, ao.body)
     def test_do_dry_run(self):
         client = Mock()
@@ -91,7 +103,7 @@ class TestActionAlias(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.indices.update_aliases.return_value = testvars.alias_success
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.add(ilo)
         self.assertIsNone(ao.do_dry_run())
     def test_do_action(self):
@@ -101,7 +113,7 @@ class TestActionAlias(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.indices.update_aliases.return_value = testvars.alias_success
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.add(ilo)
         self.assertIsNone(ao.do_action())
     def test_do_action_raises_exception(self):
@@ -112,6 +124,6 @@ class TestActionAlias(TestCase):
         client.indices.update_aliases.return_value = testvars.alias_success
         client.indices.update_aliases.side_effect = testvars.four_oh_one
         ilo = curator.IndexList(client)
-        ao = curator.Alias(alias='alias')
+        ao = curator.Alias(name='alias')
         ao.add(ilo)
         self.assertRaises(curator.FailedExecution, ao.do_action)

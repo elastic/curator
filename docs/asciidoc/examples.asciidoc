@@ -22,7 +22,8 @@ actions:
       Alias indices older than 7 days but newer than 14 days, with a prefix of
       logstash- to 'last_week', remove indices older than 14 days.
     options:
-      alias: last_week
+      name: last_week
+      extra_settings:
       continue_if_exception: False
       disable_action: True
     add:
@@ -30,17 +31,20 @@ actions:
       - filtertype: pattern
         kind: prefix
         value: logstash-
+        exclude:
       - filtertype: age
         source: name
         direction: older
         timestring: '%Y.%m.%d'
         unit: days
         unit_count: 7
+        exclude:
       - filtertype: age
         direction: younger
         timestring: '%Y.%m.%d'
         unit: days
         unit_count: 14
+        exclude:
     remove:
       filters:
       - filtertype: pattern
@@ -52,6 +56,7 @@ actions:
         timestring: '%Y.%m.%d'
         unit: days
         unit_count: 14
+        exclude:
 -------------
 
 [[ex_allocation]]
@@ -83,11 +88,13 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 3
+      exclude:
 -------------
 
 [[ex_close]]
@@ -115,12 +122,14 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: name
       direction: older
       timestring: '%Y.%m.%d'
       unit: days
       unit_count: 30
+      exclude:
 -------------
 
 [[ex_create_index]]
@@ -138,10 +147,10 @@ actions:
 actions:
   1:
     action: create_index
-    description: Create the index as named, with the specified settings.
+    description: Create the index as named, with the specified extra settings.
     options:
       name: myindex
-      body:
+      extra_settings:
         settings:
           number_of_shards: 2
           number_of_replicas: 1
@@ -175,12 +184,14 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: name
       direction: older
       timestring: '%Y.%m.%d'
       unit: days
       unit_count: 45
+      exclude:
 -------------
 
 [[ex_delete_snapshots]]
@@ -209,11 +220,13 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: curator-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 45
+      exclude:
 -------------
 
 
@@ -247,11 +260,13 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 2
+      exclude:
 -------------
 
 [[ex_open]]
@@ -279,18 +294,21 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: name
       direction: older
       timestring: '%Y.%m.%d'
       unit: days
       unit_count: 30
+      exclude:
     - filtertype: age
       source: name
       direction: younger
       timestring: '%Y.%m.%d'
       unit: days
       unit_count: 60
+      exclude:
 -------------
 
 [[ex_replicas]]
@@ -319,11 +337,13 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 10
+      exclude:
 -------------
 
 [[ex_snapshot]]
@@ -362,9 +382,11 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 1
+      exclude:
 -------------
