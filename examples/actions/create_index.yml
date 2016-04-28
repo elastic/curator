@@ -8,10 +8,10 @@
 actions:
   1:
     action: create_index
-    description: Create the index as named, with the specified settings.
+    description: Create the index as named, with the specified extra settings.
     options:
       name: myindex
-      body:
+      extra_settings:
         settings:
           number_of_shards: 2
           number_of_replicas: 1

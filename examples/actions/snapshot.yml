@@ -15,7 +15,7 @@ actions:
       the repository filesystem access check.  Use the other options to create
       the snapshot.
     options:
-      repository: 
+      repository:
       # Leaving name blank will result in the default 'curator-%Y%m%d%H%M%S'
       name:
       ignore_unavailable: False
@@ -29,8 +29,10 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: creation_date
       direction: older
       unit: days
       unit_count: 1
+      exclude:

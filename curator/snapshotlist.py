@@ -38,6 +38,36 @@ class SnapshotList(object):
         #: time.  **Type:** ``list()`` of ``dict()`` data.
         self.__get_snapshots()
 
+
+    def __actionable(self, snap):
+        self.loggit.info(
+            'Snapshot {0} is actionable and remains in the list.'.format(snap))
+
+    def __not_actionable(self, snap):
+            self.loggit.info(
+                'Snapshot {0} is not actionable, removing from '
+                'list.'.format(snap)
+            )
+            self.snapshots.remove(snap)
+
+    def __excludify(self, condition, exclude, snap, msg=None):
+        if condition == True:
+            if exclude:
+                text = "Removed from actionable list"
+                self.__not_actionable(snap)
+            else:
+                text = "Remains in actionable list"
+                self.__actionable(snap)
+        else:
+            if exclude:
+                text = "Remains in actionable list"
+                self.__actionable(snap)
+            else:
+                text = "Removed from actionable list"
+                self.__not_actionable(snap)
+        if msg:
+            self.loggit.info('{0}: {1}'.format(text, msg))
+
     def __get_snapshots(self):
         """
         Pull all snapshots into `snapshots` and populate
@@ -49,6 +79,14 @@ class SnapshotList(object):
                 self.snapshots.append(list_item['snapshot'])
                 self.snapshot_info[list_item['snapshot']] = list_item
         self.empty_list_check()
+
+    def __map_method(self, ft):
+        methods = {
+            'age': self.filter_by_age,
+            'none': self.filter_none,
+            'pattern': self.filter_by_regex,
+        }
+        return methods[ft]
 
     def empty_list_check(self):
         """Raise exception if `snapshots` is empty"""
@@ -94,8 +132,10 @@ class SnapshotList(object):
         :arg value: Depends on `kind`. It is the strftime string if `kind` is
             `timestring`. It's used to build the regular expression for other
             kinds.
-        :arg exclude: Will cause the filter to invert, and keep non-matching
-            values
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            snapshots from `snapshots`. If `exclude` is `False`, then only
+            matching snapshots will be kept in `snapshots`.
+            Default is `False`
         """
         if kind not in [ 'regex', 'prefix', 'suffix', 'timestring' ]:
             raise ValueError('{0}: Invalid value for kind'.format(kind))
@@ -118,14 +158,14 @@ class SnapshotList(object):
         pattern = re.compile(regex)
         for snapshot in self.working_list():
             match = pattern.match(snapshot)
+            self.loggit.debug('Filter by regex: Snapshot: {0}'.format(snapshot))
             if match:
-                if exclude:
-                    self.snapshots.remove(snapshot)
+                self.__excludify(True, exclude, snapshot)
             else:
-                self.snapshots.remove(snapshot)
+                self.__excludify(False, exclude, snapshot)
 
     def filter_by_age(self, source='creation_date', direction=None,
-        timestring=None, unit=None, unit_count=None, epoch=None,
+        timestring=None, unit=None, unit_count=None, epoch=None, exclude=False
         ):
         """
         Remove snapshots from `snapshots` by relative age calculations.
@@ -141,6 +181,10 @@ class SnapshotList(object):
         :arg epoch: An epoch timestamp used in conjunction with ``unit`` and
             ``unit_count`` to establish a point of reference for calculations.
             If not provided, the current time will be used.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            snapshots from `snapshots`. If `exclude` is `False`, then only
+            matching snapshots will be kept in `snapshots`.
+            Default is `False`
         """
         self.loggit.debug('Starting filter_by_age')
         # Get timestamp point of reference, PoR
@@ -169,37 +213,59 @@ class SnapshotList(object):
 
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][keyfield]:
+                self.loggit.debug('Removing snapshot {0} for having no age')
                 self.snapshots.remove(snapshot)
-            elif direction == 'older':
-                # Remember, because time adds to epoch, smaller numbers are older
-                # We want to remove values larger, or "younger," from the list
-                # so downstream processing can be done on the "older" snapshots
-                if fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR:
-                    self.snapshots.remove(snapshot)
-                    self.loggit.debug(
-                        'Snapshot "{0}" age ({1}) is not "{2}" than the point '
-                        'of reference, ({3})'.format(
-                            snapshot,
-                            fix_epoch(self.snapshot_info[snapshot][keyfield]),
-                            direction,
-                            PoR
-                        )
-                    )
-            elif direction == 'younger':
-                # Remember, because time adds to epoch, larger numbers are younger
-                # We want to remove values smaller, or "older," from the list
-                # so downstream processing can be done on the "younger" snapshots
-                if fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR:
-                    self.snapshots.remove(snapshot)
-                    self.loggit.debug(
-                        'Snapshot "{0}" age ({1}) is not "{2}" than the point '
-                        'of reference, ({3})'.format(
-                            snapshot,
-                            fix_epoch(self.snapshot_info[snapshot][keyfield]),
-                            direction,
-                            PoR
-                        )
-                    )
+                continue
+            msg = (
+                'Snapshot "{0}" age ({1}), direction: "{2}", point of '
+                'reference, ({3})'.format(
+                    snapshot,
+                    fix_epoch(self.snapshot_info[snapshot][keyfield]),
+                    direction,
+                    PoR
+                )
+            )
+            # Because time adds to epoch, smaller numbers are actually older
+            # timestamps.
+            if direction == 'older':
+                agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR
+            else: # 'younger'
+                agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR
+            self.__excludify(agetest, exclude, snapshot, msg)
+
+            # elif direction == 'older':
+            #     # Remember, because time adds to epoch, smaller numbers are older
+            #     # We want to remove values larger, or "younger," from the list
+            #     # so downstream processing can be done on the "older" snapshots
+            #     if fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR:
+            #         self.snapshots.remove(snapshot)
+            #         self.loggit.debug(
+            #             'Snapshot "{0}" age ({1}) is not "{2}" than the point '
+            #             'of reference, ({3})'.format(
+            #                 snapshot,
+            #                 fix_epoch(self.snapshot_info[snapshot][keyfield]),
+            #                 direction,
+            #                 PoR
+            #             )
+            #         )
+            # elif direction == 'younger':
+            #     # Remember, because time adds to epoch, larger numbers are younger
+            #     # We want to remove values smaller, or "older," from the list
+            #     # so downstream processing can be done on the "younger" snapshots
+            #     if fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR:
+            #         self.snapshots.remove(snapshot)
+            #         self.loggit.debug(
+            #             'Snapshot "{0}" age ({1}) is not "{2}" than the point '
+            #             'of reference, ({3})'.format(
+            #                 snapshot,
+            #                 fix_epoch(self.snapshot_info[snapshot][keyfield]),
+            #                 direction,
+            #                 PoR
+            #             )
+            #         )
+
+    def filter_none(self):
+        self.loggit.info('"None" filter selected.  No filtering will be done.')
 
     def iterate_filters(self, config):
         """
@@ -246,18 +312,10 @@ class SnapshotList(object):
                     'Invalid value for "filtertype": '
                     '{0}'.format(f['filtertype'])
                 )
-            if ft == 'pattern':
-                # Establish the default args for this filter
-                f_args = F_ARGS_PATTERN
-                # Set the filter instance so we can reference it easily later
-                method = self.filter_by_regex
-            elif ft == 'age':
-                f_args = F_ARGS_AGE_SNAPS
-                method = self.filter_by_age
-            elif ft == 'none':
-                logger.info('No filter applied.  Returning unaltered object.')
-                return
-            else:
+            try:
+                f_args = SNAP_FILTER_DEFAULTS[ft]
+                method = self.__map_method(ft)
+            except:
                 raise ConfigurationError(
                     'Unrecognized filtertype: {0}'.format(ft))
             # Remove key 'filtertype' from dictionary 'f'

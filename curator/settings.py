@@ -55,7 +55,10 @@ DATE_REGEX = {
 }
 
 ACTION_DEFAULTS = {
-    'alias' : { 'alias' : None },
+    'alias' : {
+        'name' : None,
+        'extra_settings' : {},
+    },
     'allocation' : {
         'key' : None,
         'value' : None,
@@ -64,7 +67,7 @@ ACTION_DEFAULTS = {
     'close' : {},
     'create_index' : {
         'name' : None,
-        'body' : {},
+        'extra_settings' : {},
     },
     'delete_indices' : {},
     'delete_snapshots' : {
@@ -89,19 +92,34 @@ ACTION_DEFAULTS = {
     },
 }
 
-F_ARGS_PATTERN = {'kind':None, 'value':None, 'exclude':False}
-F_ARGS_AGE_INDEX = {
-    'source':'name', 'direction':None, 'timestring':None, 'unit':None,
-    'unit_count':None, 'field':None, 'stats_result':'min_value', 'epoch':None,
+IDX_FILTER_DEFAULTS = {
+
+    'age': {
+        'source':'name', 'direction':None, 'timestring':None, 'unit':None,
+        'unit_count':None, 'field':None, 'stats_result':'min_value',
+        'epoch':None, 'exclude':False
+    },
+    'allocated': {
+        'key':None, 'value':None, 'allocation_type':'require', 'exclude':True
+    },
+    'closed': {'exclude':True},
+    'forcemerged': {'max_num_segments':None, 'exclude':True},
+    'kibana': {'exclude':True},
+    'none': {},
+    'opened': {'exclude':True},
+    'pattern': {'kind':None, 'value':None, 'exclude':False},
+    'space': {
+        'disk_space':None, 'reverse':True, 'use_age':False,
+        'source':'creation_date', 'timestring':None, 'field':None,
+        'stats_result':'min_value', 'exclude':False,
+    },
 }
-F_ARGS_AGE_SNAPS = {
-    'source':'creation_date', 'direction':None, 'timestring':None,
-    'unit':None, 'unit_count':None, 'epoch':None,
+
+SNAP_FILTER_DEFAULTS = {
+    'age': {
+        'source':'creation_date', 'direction':None, 'timestring':None,
+        'unit':None, 'unit_count':None, 'epoch':None, 'exclude':False
+    },
+    'none': {},
+    'pattern': {'kind':None, 'value':None, 'exclude':False}
 }
-F_ARGS_SPACE = {
-    'disk_space':None, 'reverse':True, 'use_age':False,
-    'source':'creation_date', 'timestring':None, 'field':None,
-    'stats_result':'min_value',
-}
-F_ARGS_FORCEMERGED = {'max_num_segments':None}
-F_ARGS_ALLOCATED = {'key':None, 'value':None, 'allocation_type':'require'}

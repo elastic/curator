@@ -32,11 +32,11 @@ class TestCLICreateIndex(CuratorTestCase):
                     ],
                     )
         self.assertEqual(['testing'], curator.get_indices(self.client))
-    def test_with_body(self):
+    def test_with_extra_settings(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.create_index_with_body.format('testing'))
+            testvars.create_index_with_extra_settings.format('testing'))
         self.assertEqual([], curator.get_indices(self.client))
         test = clicktest.CliRunner()
         result = test.invoke(

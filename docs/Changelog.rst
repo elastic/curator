@@ -3,6 +3,25 @@
 Changelog
 =========
 
+4.0.0a9 (27 Apr 2016)
+---------------------
+
+**General**
+
+  * Changed `create_index` API to use kwarg `extra_settings` instead of `body`
+  * Normalized Alias action to use `name` instead of `alias`.  This simplifies
+    documentation by reducing the number of option elements.
+  * Streamlined some code
+  * Made `exclude` a filter element setting for all filters. Updated all
+    examples to show this.
+  * Improved documentation
+
+**New Features**
+
+  * Alias action can now accept `extra_settings` to allow adding filters, and/or
+    routing.
+
+
 4.0.0a8 (26 Apr 2016)
 ---------------------
 
@@ -10,7 +29,7 @@ Changelog
 
   * Fix to use `optimize` with versions of Elasticsearch < 5.0
   * Fix missing setting in testvars
-  
+
 
 4.0.0a7 (25 Apr 2016)
 ---------------------

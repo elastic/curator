@@ -973,9 +973,9 @@ def parse_date_pattern(name):
             rendered += str(datetime.utcnow().strftime('%{0}'.format(curr)))
         else:
             rendered += curr
-        logger.debug('Partially rendered snapshot name: {0}'.format(rendered))
+        logger.debug('Partially rendered name: {0}'.format(rendered))
         prev = curr
-    logger.debug('Fully rendered snapshot name: {0}'.format(rendered))
+    logger.debug('Fully rendered name: {0}'.format(rendered))
     return rendered
 
 def prune_nones(mydict):

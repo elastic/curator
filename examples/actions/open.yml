@@ -18,15 +18,18 @@ actions:
     - filtertype: pattern
       kind: prefix
       value: logstash-
+      exclude:
     - filtertype: age
       source: name
       direction: older
       timestring: '%Y.%m.%d'
       unit: days
       unit_count: 30
+      exclude:
     - filtertype: age
       source: name
       direction: younger
       timestring: '%Y.%m.%d'
       unit: days
       unit_count: 60
+      exclude:
