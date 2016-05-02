@@ -153,8 +153,9 @@ def cli(config, dry_run, action_file):
         sys.exit(1)
     test_client_options(client_args)
 
-    # Create a client object
-    client = get_client(**client_args)
+    # Extract this and save it for later, in case there's no timeout_override.
+    default_timeout = client_args.pop('timeout')
+    logger.debug('default_timeout = {0}'.format(default_timeout))
     #########################################
     ### Start working on the actions here ###
     #########################################
@@ -175,12 +176,10 @@ def cli(config, dry_run, action_file):
         action_disabled = actions[idx]['options'].pop('disable_action', False)
         continue_if_exception = (
             actions[idx]['options'].pop('continue_if_exception', False))
+        timeout_override = actions[idx]['options'].pop('timeout_override', None)
         logger.debug(
             'continue_if_exception = {0}'.format(continue_if_exception))
-        kwargs = {}
-        kwargs['master_timeout'] = (
-            client_args['timeout'] if client_args['timeout'] <= 300 else 300)
-        kwargs['dry_run'] = dry_run
+        logger.debug('timeout_override = {0}'.format(timeout_override))
 
         ### Skip to next action if 'disabled'
         if action_disabled:
@@ -189,6 +188,22 @@ def cli(config, dry_run, action_file):
                 'True'.format(action)
             )
             continue
+
+        # Override the timeout, if specified, otherwise use the default.
+        if type(timeout_override) == type(int()):
+            client_args['timeout'] = timeout_override
+        else:
+            client_args['timeout'] = default_timeout
+
+        # Set up action kwargs
+        kwargs = {}
+        kwargs['master_timeout'] = (
+            client_args['timeout'] if client_args['timeout'] <= 300 else 300)
+        kwargs['dry_run'] = dry_run
+
+        # Create a client object for each action...
+        client = get_client(**client_args)
+        logger.debug('client is {0}'.format(type(client)))
         ##########################
         ### Process the action ###
         ##########################

@@ -28,6 +28,7 @@ description: "Add/Remove selected indices to or from the specified alias"
 options:
   name: alias_name
   extra_settings:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 add:
@@ -77,6 +78,8 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_extra_settings,extra_settings>> (No default value.)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -96,6 +99,7 @@ options:
   key:
   value:
   allocation_type:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -123,6 +127,8 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_allocation_type,allocation_type>> (has a default value which can
     optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -139,6 +145,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: close
 description: "Close selected indices"
 options:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -154,6 +161,8 @@ This action closes the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -173,6 +182,7 @@ description: "Create index as named"
 options:
   name:
   extra_settings:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -215,6 +225,8 @@ Optional settings
     acceptable index settings and mappings as nested YAML.  See the
     {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -231,6 +243,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: delete_indices
 description: "Delete selected indices"
 options:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -246,6 +259,8 @@ This action deletes the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -266,6 +281,7 @@ options:
   repository:
   retry_interval:
   retry_count:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -294,6 +310,8 @@ Optional settings
     optionally be changed)
 * <<option_retry_count,retry_count>> (has a default value which can optionally
     be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -311,6 +329,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: open
 description: "open selected indices"
 options:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -326,6 +345,8 @@ This action opens the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -345,6 +366,7 @@ description: "Perform a forceMerge on selected indices to 'max_num_segments' per
 options:
   max_num_segments:
   delay:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -369,6 +391,8 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_delay,delay>> (has a default value which can optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -389,6 +413,7 @@ description: >- Set the number of replicas per shard for selected
     indices to 'count'
 options:
   count:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -411,6 +436,8 @@ Required settings
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -439,6 +466,7 @@ options:
   partial: False
   wait_for_completion: True
   skip_repo_fs_check: False
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -476,6 +504,8 @@ Optional settings
     be changed)
 * <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
     optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally

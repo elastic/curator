@@ -24,6 +24,7 @@ actions:
     options:
       name: last_week
       extra_settings:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     add:
@@ -82,6 +83,7 @@ actions:
       key: tag
       value: cold
       allocation_type: require
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -116,6 +118,7 @@ actions:
       Close indices older than 30 days (based on index name), for logstash-
       prefixed indices.
     options:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -154,6 +157,7 @@ actions:
         settings:
           number_of_shards: 2
           number_of_replicas: 1
+      timeout_override:
       continue_if_exception: False
       disable_action: True
 -------------
@@ -178,6 +182,7 @@ actions:
       Delete indices older than 45 days (based on index name), for logstash-
       prefixed indices.
     options:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -214,6 +219,7 @@ actions:
       (based on creation_date), for 'curator-' prefixed snapshots.
     options:
       repository:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -254,6 +260,7 @@ actions:
     options:
       max_num_segments: 2
       delay: 120
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -288,6 +295,7 @@ actions:
       Open indices older than 30 days but younger than 60 days (based on index
       name), for logstash- prefixed indices.
     options:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -331,6 +339,7 @@ actions:
       10 days (based on index creation_date)
     options:
       count: 0
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
@@ -376,6 +385,7 @@ actions:
       partial: False
       wait_for_completion: True
       skip_repo_fs_check: False
+      timeout_override:
       continue_if_exception: False
       disable_action: False
     filters:

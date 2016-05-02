@@ -245,6 +245,21 @@ this to `True.`
 The default value of this setting is `False`
 
 
+[[option_timeout_override]]
+== timeout_override
+
+NOTE: This setting is available in all actions.
+
+This setting must be an integer number of seconds, or it will be ignored, and
+the default <<timeout,timeout>> will be used.
+
+This setting is particularly useful for the <<forcemerge,forceMerge>> action,
+the <<snapshot,snapshot>> action, and any other action where a longer timeout
+from the client-defined default would be desirable.
+
+The default value of this setting is `None`
+
+
 
 [[option_value]]
 == value
