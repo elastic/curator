@@ -113,7 +113,7 @@ class Alias(object):
 
 class Allocation(object):
     def __init__(self, ilo, key=None, value=None, allocation_type='require',
-        wait_for_completion=False,
+        wait_for_completion=False, timeout=30,
         ):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
@@ -124,8 +124,9 @@ class Allocation(object):
             to have any effect.
         :arg allocation_type: Type of allocation to apply. Default is `require`
         :arg wait_for_completion: Wait (or not) for the operation
-            to complete before returning.  (default: `True`)
+            to complete before returning.  (default: `False`)
         :type wait_for_completion: bool
+        :arg timeout: Number of seconds to `wait_for_completion`
 
         .. note::
             See:
@@ -158,6 +159,10 @@ class Allocation(object):
         #: Instance variable.
         #: Internal reference to `wait_for_completion`
         self.wfc        = wait_for_completion
+        #: Instance variable.
+        #: How long in seconds to `wait_for_completion` before returning with an
+        #: exception
+        self.timeout    = '{0}s'.format(timeout)
 
     def do_dry_run(self):
         """
@@ -189,9 +194,9 @@ class Allocation(object):
                         'Waiting for shards to complete relocation for indices:'
                         ' {0}'.format(to_csv(l))
                     )
-                    self.client.cluster.health(
-                        index=to_csv(l),
-                        wait_for_relocation_shards=0
+                    self.client.cluster.health(index=to_csv(l),
+                        level='indices', wait_for_relocation_shards=0,
+                        timeout=self.timeout,
                     )
         except Exception as e:
             report_failure(e)
@@ -420,7 +425,7 @@ class ForceMerge(object):
                     'forceMerging index {0} to {1} segments per shard.  '
                     'Please wait...'.format(index_name, self.max_num_segments)
                 )
-                if get_version(self.client) < (5, 0, 0):
+                if get_version(self.client) < (2, 1, 0):
                     self.client.indices.optimize(index=index_name,
                         max_num_segments=self.max_num_segments)
                 else:
@@ -469,10 +474,13 @@ class Open(object):
             report_failure(e)
 
 class Replicas(object):
-    def __init__(self, ilo, count=None):
+    def __init__(self, ilo, count=None, wait_for_completion=False, timeout=30):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg count: The count of replicas per shard
+        :arg wait_for_completion: Wait (or not) for the operation
+            to complete before returning.  (default: `False`)
+        :type wait_for_completion: bool
         """
         verify_index_list(ilo)
         # It's okay for count to be zero
@@ -489,6 +497,13 @@ class Replicas(object):
         #: Instance variable.
         #: Internally accessible copy of `count`
         self.count      = count
+        #: Instance variable.
+        #: Internal reference to `wait_for_completion`
+        self.wfc        = wait_for_completion
+        #: Instance variable.
+        #: How long in seconds to `wait_for_completion` before returning with an
+        #: exception
+        self.timeout    = '{0}s'.format(timeout)
         self.loggit     = logging.getLogger('curator.actions.replicas')
 
     def do_dry_run(self):
@@ -516,6 +531,15 @@ class Replicas(object):
             for l in index_lists:
                 self.client.indices.put_settings(index=to_csv(l),
                     body='number_of_replicas={0}'.format(self.count))
+                if self.wfc and self.count > 0:
+                    logger.info(
+                        'Waiting for shards to complete replication for '
+                        'indices: {0}'.format(to_csv(l))
+                    )
+                    self.client.cluster.health(
+                        index=to_csv(l), wait_for_status='green',
+                        timeout=self.timeout,
+                    )
         except Exception as e:
             report_failure(e)
 

@@ -52,17 +52,23 @@ def process_action(client, config, **kwargs):
     mykwargs = {}
 
     if action in CLASS_MAP:
-        if action == 'delete_indices':
-            mykwargs['master_timeout'] = (
-                kwargs['master_timeout'] if 'master_timeout' in kwargs else 30)
         # deepcopy guarantees clean copies of the defaults, and nothing getting
         # altered in "pass by reference," which was happening in testing.
         mykwargs = copy.deepcopy(ACTION_DEFAULTS[action])
-        logger.debug('MYKWARGS = {0}'.format(mykwargs))
         action_class = CLASS_MAP[action]
     else:
         raise ConfigurationError(
             'Unrecognized action: {0}'.format(action))
+
+    # Override some settings...
+    if action == 'delete_indices':
+        mykwargs['master_timeout'] = (
+            kwargs['master_timeout'] if 'master_timeout' in kwargs else 30)
+    if action == 'allocation' or action == 'replicas':
+        # Setting the operation timeout to the client timeout
+        mykwargs['timeout'] = (
+            kwargs['timeout'] if 'timeout' in kwargs else 30)
+    logger.debug('MYKWARGS = {0}'.format(mykwargs))
 
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(opts))
@@ -200,6 +206,7 @@ def cli(config, dry_run, action_file):
         kwargs['master_timeout'] = (
             client_args['timeout'] if client_args['timeout'] <= 300 else 300)
         kwargs['dry_run'] = dry_run
+        kwargs['timeout'] = client_args['timeout']
 
         # Create a client object for each action...
         client = get_client(**client_args)

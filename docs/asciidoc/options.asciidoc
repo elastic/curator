@@ -289,8 +289,8 @@ will be raised, and execution will halt.
 [[option_wfc]]
 == wait_for_completion
 
-NOTE: This setting is used by the <<allocation,allocation>> and
-    <<snapshot,snapshot>> actions.
+NOTE: This setting is used by the <<allocation,allocation>>,
+    <<replicas,replicas>>, and <<snapshot,snapshot>> actions.
 
 This setting must be either `True` or `False`.
 
@@ -304,5 +304,5 @@ TIP: During snapshot initialization, information about all previous snapshots is
     `wait_for_completion` setting is set to `False`.
 
 The default value of this setting differs for each action.  The default for the
-<<snapshot,snapshot>> action is `False`.  The default for the
-<<snapshot,snapshot>> action is `True`.
+<<allocation,allocation>> and <<replicas,replicas>> actions is `False`.  The
+default for the <<snapshot,snapshot>> action is `True`.

@@ -65,13 +65,14 @@ ACTION_DEFAULTS = {
         'value' : None,
         'allocation_type' : 'require',
         'wait_for_completion' : False,
+        'timeout' : 30,
     },
     'close' : {},
     'create_index' : {
         'name' : None,
         'extra_settings' : {},
     },
-    'delete_indices' : {},
+    'delete_indices' : { 'master_timeout' : 30 },
     'delete_snapshots' : {
         'repository' : None,
         'retry_interval' : 120,
@@ -82,7 +83,11 @@ ACTION_DEFAULTS = {
         'max_num_segments' : 2,
     },
     'open' : {},
-    'replicas' : { 'count' : None },
+    'replicas' : {
+        'count' : None,
+        'wait_for_completion' : False,
+        'timeout' : 30,
+    },
     'snapshot' : {
         'repository' : None,
         'name' : 'curator-%Y%m%d%H%M%S',

@@ -116,6 +116,12 @@ This action changes the shard routing allocation for the selected indices.
 See https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
 for more information.
 
+You can optionally set `wait_for_completion` to `True`
+to have Curator wait for the shard routing to complete before continuing.  If
+this option is chosen, it is advisable to use the
+<<option_timeout_override,timeout_override>> option in order to avoid client
+timeouts.
+
 [float]
 Required settings
 ~~~~~~~~~~~~~~~~~
@@ -416,6 +422,7 @@ description: >- Set the number of replicas per shard for selected
     indices to 'count'
 options:
   count:
+  wait_for_completion: False
   timeout_override:
   continue_if_exception: False
   disable_action: False
@@ -428,7 +435,11 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     will be ignored.
 
 This action will set the number of replicas per shard to the value of
-<<option_count,count>>.
+<<option_count,count>>.  You can optionally set `wait_for_completion` to `True`
+to have Curator wait for the replication operation to complete before
+continuing.  If this option is chosen, it is advisable to use the
+<<option_timeout_override,timeout_override>> option in order to avoid client
+timeouts.
 
 [float]
 Required settings
@@ -439,6 +450,8 @@ Required settings
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
