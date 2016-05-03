@@ -17,6 +17,7 @@ actions:
     options:
       max_num_segments: 2
       delay: 120
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:

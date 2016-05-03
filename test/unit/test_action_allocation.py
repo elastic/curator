@@ -79,3 +79,14 @@ class TestActionAllocation(TestCase):
         ilo = curator.IndexList(client)
         ao = curator.Allocation(ilo, key='key', value='value')
         self.assertIsNone(ao.do_action())
+    def test_do_action_wait(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.indices.put_settings.return_value = None
+        client.cluster.health.return_value = None
+        ilo = curator.IndexList(client)
+        ao = curator.Allocation(
+            ilo, key='key', value='value', wait_for_completion=True)
+        self.assertIsNone(ao.do_action())
