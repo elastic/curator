@@ -289,16 +289,20 @@ will be raised, and execution will halt.
 [[option_wfc]]
 == wait_for_completion
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+NOTE: This setting is used by the <<allocation,allocation>> and
+    <<snapshot,snapshot>> actions.
 
 This setting must be either `True` or `False`.
 
-This setting specifies whether or not the request should return immediately
-after snapshot initialization or wait for snapshot completion.
+This setting specifies whether or not the request should return immediately or
+wait for the operation to complete before returning.
 
-During snapshot initialization, information about all previous snapshots is
-loaded into the memory, which means that in large repositories it may take
-several seconds (or even minutes) for this command to return even if the
-`wait_for_completion` setting is set to `False`.
 
-The default value of this setting is `True`
+TIP: During snapshot initialization, information about all previous snapshots is
+    loaded into the memory, which means that in large repositories it may take
+    several seconds (or even minutes) for this command to return even if the
+    `wait_for_completion` setting is set to `False`.
+
+The default value of this setting differs for each action.  The default for the
+<<snapshot,snapshot>> action is `False`.  The default for the
+<<snapshot,snapshot>> action is `True`.

@@ -83,6 +83,7 @@ actions:
       key: tag
       value: cold
       allocation_type: require
+      wait_for_completion: False
       timeout_override:
       continue_if_exception: False
       disable_action: True

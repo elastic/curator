@@ -12,6 +12,7 @@ actions:
       Open indices older than 30 days but younger than 60 days (based on index
       name), for logstash- prefixed indices.
     options:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:

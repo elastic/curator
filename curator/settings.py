@@ -30,7 +30,7 @@ LOGGING_DEFAULTS = {
 }
 
 OPTION_DEFAULTS = {
-    'timeout_override': None, 
+    'timeout_override': None,
     'continue_if_exception': False,
     'disable_action': False,
 }
@@ -64,6 +64,7 @@ ACTION_DEFAULTS = {
         'key' : None,
         'value' : None,
         'allocation_type' : 'require',
+        'wait_for_completion' : False,
     },
     'close' : {},
     'create_index' : {

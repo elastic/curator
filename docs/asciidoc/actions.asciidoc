@@ -99,6 +99,7 @@ options:
   key:
   value:
   allocation_type:
+  wait_for_completion: False
   timeout_override:
   continue_if_exception: False
   disable_action: False
@@ -127,6 +128,8 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_allocation_type,allocation_type>> (has a default value which can
     optionally be changed)
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can

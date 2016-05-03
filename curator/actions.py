@@ -112,7 +112,9 @@ class Alias(object):
             report_failure(e)
 
 class Allocation(object):
-    def __init__(self, ilo, key=None, value=None, allocation_type='require'):
+    def __init__(self, ilo, key=None, value=None, allocation_type='require',
+        wait_for_completion=False,
+        ):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg key: An arbitrary metadata attribute key.  Must match the key
@@ -121,6 +123,9 @@ class Allocation(object):
             values associated with `key` assigned to at least some of your nodes
             to have any effect.
         :arg allocation_type: Type of allocation to apply. Default is `require`
+        :arg wait_for_completion: Wait (or not) for the operation
+            to complete before returning.  (default: `True`)
+        :type wait_for_completion: bool
 
         .. note::
             See:
@@ -150,6 +155,9 @@ class Allocation(object):
             'index.routing.allocation.'
             '{0}.{1}={2}'.format(allocation_type, key, value)
         )
+        #: Instance variable.
+        #: Internal reference to `wait_for_completion`
+        self.wfc        = wait_for_completion
 
     def do_dry_run(self):
         """
@@ -176,6 +184,15 @@ class Allocation(object):
                 self.client.indices.put_settings(
                     index=to_csv(l), body=self.body
                 )
+                if self.wfc:
+                    logger.info(
+                        'Waiting for shards to complete relocation for indices:'
+                        ' {0}'.format(to_csv(l))
+                    )
+                    self.client.cluster.health(
+                        index=to_csv(l),
+                        wait_for_relocation_shards=0
+                    )
         except Exception as e:
             report_failure(e)
 

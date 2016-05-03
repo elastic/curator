@@ -13,6 +13,7 @@ actions:
       10 days (based on index creation_date)
     options:
       count: 0
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:

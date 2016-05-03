@@ -13,6 +13,7 @@ actions:
       (based on creation_date), for 'curator-' prefixed snapshots.
     options:
       repository:
+      timeout_override:
       continue_if_exception: False
       disable_action: True
     filters:
