@@ -121,6 +121,24 @@ class SnapshotList(object):
             else:
                 self.snapshot_info[snapshot]['age_by_name'] = None
 
+    def most_recent(self):
+        """
+        Return the most recent `SUCCESS`ful snapshot based on
+        `start_time_in_millis`.
+        """
+        self.empty_list_check()
+        most_recent_time = 0
+        most_recent_snap = ''
+        for snapshot in self.snapshots:
+            state = self.snapshot_info[snapshot]['state']
+            snaptime = fix_epoch(
+                self.snapshot_info[snapshot]['start_time_in_millis'])
+            if snaptime > most_recent_time and state == 'SUCCESS':
+                most_recent_snap = snapshot
+                most_recent_time = snaptime
+        return most_recent_snap
+
+
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
         Filter out indices not matching the pattern, or in the case of exclude,
