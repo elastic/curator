@@ -993,9 +993,7 @@ def prune_nones(mydict):
     :arg mydict: The dictionary to act on
     :rtype: dict
     """
-    return {
-        k: v for k, v in mydict.items() if v != None and v != "None"
-    }
+    return dict([(k, v) for k, v in mydict.items() if(v) and v != 'None' ])
 
 def verify_args(action, options):
     """
