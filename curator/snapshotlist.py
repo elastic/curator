@@ -251,37 +251,6 @@ class SnapshotList(object):
                 agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR
             self.__excludify(agetest, exclude, snapshot, msg)
 
-            # elif direction == 'older':
-            #     # Remember, because time adds to epoch, smaller numbers are older
-            #     # We want to remove values larger, or "younger," from the list
-            #     # so downstream processing can be done on the "older" snapshots
-            #     if fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR:
-            #         self.snapshots.remove(snapshot)
-            #         self.loggit.debug(
-            #             'Snapshot "{0}" age ({1}) is not "{2}" than the point '
-            #             'of reference, ({3})'.format(
-            #                 snapshot,
-            #                 fix_epoch(self.snapshot_info[snapshot][keyfield]),
-            #                 direction,
-            #                 PoR
-            #             )
-            #         )
-            # elif direction == 'younger':
-            #     # Remember, because time adds to epoch, larger numbers are younger
-            #     # We want to remove values smaller, or "older," from the list
-            #     # so downstream processing can be done on the "younger" snapshots
-            #     if fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR:
-            #         self.snapshots.remove(snapshot)
-            #         self.loggit.debug(
-            #             'Snapshot "{0}" age ({1}) is not "{2}" than the point '
-            #             'of reference, ({3})'.format(
-            #                 snapshot,
-            #                 fix_epoch(self.snapshot_info[snapshot][keyfield]),
-            #                 direction,
-            #                 PoR
-            #             )
-            #         )
-
     def filter_none(self):
         self.loggit.info('"None" filter selected.  No filtering will be done.')
 
