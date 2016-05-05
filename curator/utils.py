@@ -220,10 +220,14 @@ class TimestringSearch(object):
         if match:
             if match.group("date"):
                 timestamp = match.group("date")
-                return (
-                    (get_datetime(timestamp, self.timestring) -
-                    datetime(1970,1,1)).total_seconds()
+                # I would have used `total_seconds`, but apparently that's new
+                # to Python 2.7+, and due to so many people still using
+                # RHEL/CentOS 6, I need this to support Python 2.6.
+                tdelta = (
+                    get_datetime(timestamp, self.timestring) -
+                    datetime(1970,1,1)
                 )
+                return tdelta.seconds + tdelta.days * 24 * 3600
 
 def get_point_of_reference(unit, count, epoch=None):
     """
