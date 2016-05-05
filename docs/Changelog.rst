@@ -22,6 +22,7 @@ Changelog
   * Fix an issue where arguments weren't being properly passed and populated.
   * ForceMerge replaced Optimize in ES 2.1.0.
   * Fix prune_nones to work with Python 2.6. Fixes #619 (untergeek)
+  * Fix TimestringSearch to work with Python 2.6. Fixes #622 (untergeek)
 
 4.0.0a9 (27 Apr 2016)
 ---------------------
