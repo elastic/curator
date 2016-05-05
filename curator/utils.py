@@ -258,6 +258,9 @@ def get_point_of_reference(unit, count, epoch=None):
     if not epoch:
         epoch = time.time()
     epoch = fix_epoch(epoch)
+    logger.debug('multiplier = {0}, count = {1}'.format(multiplier, count))
+    logger.debug('epoch = {0}'.format(epoch))
+    logger.debug('Point of reference = {0}'.format(epoch - multiplier * count))
     return epoch - multiplier * count
 
 def byte_size(num, suffix='B'):
@@ -993,7 +996,8 @@ def prune_nones(mydict):
     :arg mydict: The dictionary to act on
     :rtype: dict
     """
-    return dict([(k, v) for k, v in mydict.items() if(v) and v != 'None' ])
+    # Must test for None, because 0 is acceptable.
+    return dict([(k,v) for k, v in mydict.items() if v != None and v != 'None'])
 
 def verify_args(action, options):
     """

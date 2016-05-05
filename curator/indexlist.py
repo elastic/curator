@@ -219,6 +219,10 @@ class IndexList(object):
             epoch = ts.get_epoch(index)
             if epoch:
                 self.index_info[index]['age']['name'] = epoch
+                self.loggit.debug(
+                    'Index {0} translates to epoch timestamp: '
+                    '{1}'.format(index, int(epoch))
+                )
 
     def _get_field_stats_dates(self, field='@timestamp'):
         """
@@ -691,7 +695,7 @@ class IndexList(object):
         self.loggit.debug('All filters: {0}'.format(filter_dict['filters']))
         for f in filter_dict['filters']:
             self.loggit.debug('Top of the loop: {0}'.format(self.indices))
-            logger.debug('Un-parsed filter args: {0}'.format(f))
+            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
             f_args = None
             # Make sure we got at least this much in the configuration
             if not 'filtertype' in f:
@@ -717,10 +721,10 @@ class IndexList(object):
             # provided settings.
             if f_args:
                 f_args.update(prune_nones(f))
-                logger.debug('Filter args: {0}'.format(f_args))
-                logger.debug('Pre-instance: {0}'.format(self.indices))
+                self.loggit.debug('Filter args: {0}'.format(f_args))
+                self.loggit.debug('Pre-instance: {0}'.format(self.indices))
                 method(**f_args)
-                logger.debug('Post-instance: {0}'.format(self.indices))
+                self.loggit.debug('Post-instance: {0}'.format(self.indices))
             else:
                 # Otherwise, it's a settingless filter.
                 method()
