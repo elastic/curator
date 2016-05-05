@@ -32,7 +32,7 @@ Example Usage
     ilo = curator.IndexList(client)
     ilo.filter_by_regex(kind='prefix', value='logstash-')
     ilo.filter_by_age(source='name', direction='older', timestring='%Y.%m.%d', unit='days', unit_count=30)
-    delete_indices = curator.Delete(ilo)
+    delete_indices = curator.DeleteIndices(ilo)
     delete_indices.do_action()
 
 .. TIP::
