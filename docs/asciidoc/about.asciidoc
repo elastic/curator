@@ -66,8 +66,7 @@ allows you to write your own scripts to accomplish similar goals--or even new
 and different things--with the same code that Curator uses.
 
 The API documentation is not on this site, but is available at
-http://curator.readthedocs.org/.  The Curator API is built using
-the
+http://curator.readthedocs.io/.  The Curator API is built using the
 http://www.elastic.co/guide/en/elasticsearch/client/python-api/current/index.html[Elasticsearch
 Python API].
 
