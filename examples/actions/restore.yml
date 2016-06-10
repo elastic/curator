@@ -1,0 +1,41 @@
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent curator-* snapshot with state
+      SUCCESS.  Wait for the restore to complete before continuing.  Do not skip
+      the repository filesystem access check.  Use the other options to define
+      the index/shard settings for the restore.
+    options:
+      repository:
+      # Leaving name blank will result in restoring the most recent snapshot by age
+      name:
+      # Leaving indices blank will result in restoring all indices in the snapshot
+      indices:
+      include_aliases: False
+      ignore_unavailable: False
+      include_global_state: True
+      partial: False
+      rename_pattern:
+      rename_replacement:
+      extra_settings:
+      wait_for_completion: True
+      skip_repo_fs_check: False
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: curator-
+      exclude:
+    - filtertype: state
+      state: SUCCESS
+      exclude:

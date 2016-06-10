@@ -15,8 +15,7 @@ NOTE: This setting is used only when using the <<allocation,allocation action>>
 
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
-Read more about these settings at
-https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
+Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
 
@@ -77,6 +76,18 @@ This setting must be either `True` or `False`.
 
 When the ignore_unavailable option is `False` and an index is missing the
 snapshot request will fail.
+
+The default value of this setting is `False`
+
+[[option_include_aliases]]
+== include_aliases
+
+NOTE: This setting is only used by the <<restore,restore>> action.
+
+This setting must be either `True` or `False`.
+
+The value of this setting determines whether Elasticsearch should include index
+aliases when restoring the snapshot.
 
 The default value of this setting is `False`
 
@@ -198,7 +209,43 @@ by setting partial to `True`.
 
 The default value of this setting is `False`
 
+[[option_rename_pattern]]
+== rename_pattern
 
+NOTE: This setting is only used by the <<restore, restore>> action.
+
+[TIP]
+.from the Elasticsearch documentation
+======================================
+The <<option_rename_pattern,rename_pattern>> and
+<<option_rename_replacement,rename_replacement>> options can be also used to
+rename indices on restore using regular expression that supports referencing the
+original text as explained
+http://docs.oracle.com/javase/6/docs/api/java/util/regex/Matcher.html#appendReplacement(java.lang.StringBuffer,%20java.lang.String)[here].
+======================================
+
+Read more about this setting at {ref}/modules-snapshots.html#_restore
+
+There is no default value.
+
+[[option_rename_replacement]]
+== rename_replacement
+
+NOTE: This setting is only used by the <<restore, restore>> action.
+
+[TIP]
+.From the Elasticsearch documentation
+======================================
+The <<option_rename_pattern,rename_pattern>> and
+<<option_rename_replacement,rename_replacement>> options can be also used to
+rename indices on restore using regular expression that supports referencing the
+original text as explained
+http://docs.oracle.com/javase/6/docs/api/java/util/regex/Matcher.html#appendReplacement(java.lang.StringBuffer,%20java.lang.String)[here].
+======================================
+
+Read more about this setting at {ref}/modules-snapshots.html#_restore
+
+There is no default value.
 
 [[option_repository]]
 == repository

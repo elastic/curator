@@ -88,6 +88,20 @@ ACTION_DEFAULTS = {
         'wait_for_completion' : False,
         'timeout' : 30,
     },
+    'restore' : {
+        'repository' : None,
+        'name' : None,
+        'indices' : None,
+        'include_aliases' : False,
+        'ignore_unavailable' : False,
+        'include_global_state' : True,
+        'partial' : False,
+        'rename_pattern' : None,
+        'rename_replacement' : None,
+        'extra_settings' : {},
+        'wait_for_completion' : True,
+        'skip_repo_fs_check' : False,
+    },
     'snapshot' : {
         'repository' : None,
         'name' : 'curator-%Y%m%d%H%M%S',
@@ -128,5 +142,6 @@ SNAP_FILTER_DEFAULTS = {
         'unit':None, 'unit_count':None, 'epoch':None, 'exclude':False
     },
     'none': {},
-    'pattern': {'kind':None, 'value':None, 'exclude':False}
+    'pattern': {'kind':None, 'value':None, 'exclude':False},
+    'state': {'state':'SUCCESS', 'exclude':False}
 }

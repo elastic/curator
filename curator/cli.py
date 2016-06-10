@@ -32,6 +32,7 @@ CLASS_MAP = {
     'forcemerge' : ForceMerge,
     'open' : Open,
     'replicas' : Replicas,
+    'restore' : Restore,
     'snapshot' : Snapshot,
 }
 
@@ -94,8 +95,8 @@ def process_action(client, config, **kwargs):
             action_obj.remove(removes)
     elif action == 'create_index':
         action_obj = action_class(client, **mykwargs)
-    elif action == 'delete_snapshots':
-        logger.debug('Running "delete_snapshots"')
+    elif action == 'delete_snapshots' or action == 'restore':
+        logger.debug('Running "{0}"'.format(action))
         slo = SnapshotList(client, repository=opts['repository'])
         slo.iterate_filters(config)
         # We don't need to send this value to the action

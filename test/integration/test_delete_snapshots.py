@@ -23,21 +23,14 @@ port = int(port) if port else 9200
 # '        unit: {5}\n'
 # '        unit_count: {6}\n'
 # '        epoch: {7}\n')
+
 class TestCLIDeleteSnapshots(CuratorTestCase):
     def test_deletesnapshot(self):
-        def add_docs(idx):
-            for i in ["1", "2", "3"]:
-                self.client.create(
-                    index=idx, doc_type='log',
-                    body={"doc" + i :'TEST DOCUMENT'},
-                )
-                # This should force each doc to be in its own segment.
-                self.client.indices.flush(index=idx, force=True)
         ### Create snapshots to delete and verify them
         self.create_repository()
         timestamps = []
         for i in range(1,4):
-            add_docs('my_index{0}'.format(i))
+            self.add_docs('my_index{0}'.format(i))
             ilo = curator.IndexList(self.client)
             snap = curator.Snapshot(ilo, repository=self.args['repository'],
                 name='curator-%Y%m%d%H%M%S'
