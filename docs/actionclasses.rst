@@ -62,3 +62,8 @@ Snapshot
 --------
 .. autoclass:: curator.actions.Snapshot
   :members:
+
+Restore
+-------
+.. autoclass:: curator.actions.Restore
+  :members:

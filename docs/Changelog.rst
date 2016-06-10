@@ -6,6 +6,10 @@ Changelog
 4.0.0a10 (? ? ?)
 ----------------
 
+**New Features**
+
+  * Snapshot restore is here!
+  
 **General**
 
   * Add `wait_for_completion` to Allocation and Replicas actions.  These will

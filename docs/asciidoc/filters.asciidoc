@@ -21,6 +21,7 @@ The snapshot filtertypes are:
 
 * <<filtertype_age,age>>
 * <<filtertype_pattern,pattern>>
+* <<filtertype_state,state>>
 
 --
 
@@ -69,8 +70,6 @@ The snapshot filtertypes are:
 [[filtertype_allocated]]
 == allocated
 
-NOTE: {f_negative}
-
 [source,text]
 -------------
 - filtertype: allocated
@@ -106,8 +105,6 @@ Optional settings
 
 [[filtertype_age]]
 == age
-
-NOTE: {f_positive}
 
 [source,text]
 -------------
@@ -160,8 +157,6 @@ Optional settings
 
 [[filtertype_closed]]
 == closed
-
-NOTE: {f_negative}
 
 [source,text]
 -------------
@@ -250,8 +245,6 @@ There are no settings for this <<filtertype,filtertype>>.
 
 [[filtertype_opened]]
 == opened
-
-NOTE: {f_negative}
 
 [source,text]
 -------------
@@ -388,4 +381,34 @@ Optional settings
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
+* <<fe_exclude,exclude>> (default is `False`)
+
+[[filtertype_state]]
+== state
+
+[source,text]
+-------------
+- filtertype: state
+  state: SUCCESS
+  exclude: False
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given
+    <<filtertype,filtertype>>, it will be ignored.
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+snapshots based on the value of <<fe_state,state>>.  They will remain in, or be
+removed from the actionable list based on the value of <<fe_exclude,exclude>>.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_state,state>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
 * <<fe_exclude,exclude>> (default is `False`)

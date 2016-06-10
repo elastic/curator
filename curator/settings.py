@@ -142,5 +142,6 @@ SNAP_FILTER_DEFAULTS = {
         'unit':None, 'unit_count':None, 'epoch':None, 'exclude':False
     },
     'none': {},
-    'pattern': {'kind':None, 'value':None, 'exclude':False}
+    'pattern': {'kind':None, 'value':None, 'exclude':False},
+    'state': {'state':'SUCCESS', 'exclude':False}
 }

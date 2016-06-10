@@ -294,6 +294,35 @@ settings_four  = {
     }
 }
 
+settings_named = {
+    u'index-2015.01.01': {
+        u'state': u'open',
+        u'aliases': [u'my_alias'],
+        u'mappings': {},
+        u'settings': {
+            u'index': {
+                u'number_of_replicas': u'1', u'uuid': u'random_uuid_string_here',
+                u'number_of_shards': u'5', u'creation_date': u'1456963200172',
+                u'routing': {u'allocation': {u'include': {u'tag': u'foo'}}},
+                u'version': {u'created': u'2020099'}, u'refresh_interval': u'5s'
+            }
+        }
+    },
+    u'index-2015.02.01': {
+        u'state': u'open',
+        u'aliases': [u'my_alias'],
+        u'mappings': {},
+        u'settings': {
+            u'index': {
+                u'number_of_replicas': u'1', u'uuid': u'another_random_uuid_string',
+                u'number_of_shards': u'5', u'creation_date': u'1457049600812',
+                u'routing': {u'allocation': {u'include': {u'tag': u'bar'}}},
+                u'version': {u'created': u'2020099'}, u'refresh_interval': u'5s'
+            }
+        }
+    }
+}
+
 clu_state_one  = {
     u'metadata': {
         u'indices': settings_one

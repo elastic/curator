@@ -159,6 +159,17 @@ required to use the `field_stats` source.
 
 NOTE: Source `field_stats` only works with indices.
 
+[[fe_state]]
+== state
+
+NOTE: This setting is only used with the <<filtertype_state,state>> filtertype.
+
+The value for this setting must be one of `SUCCESS`, `PARTIAL`, `FAILED`,
+or `IN_PROGRESS`.  This setting determines what kind of snapshots will be
+passed.
+
+The default value for this setting is `SUCCESS`.
+
 [[fe_stats_result]]
 == stats_result
 

@@ -462,7 +462,107 @@ Optional settings
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_replicas,here>>.
 
+[[restore]]
+== Restore
 
+[source,text]
+-------------
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent snapshot with state SUCCESS.  Wait
+      for the restore to complete before continuing.  Do not skip the repository
+      filesystem access check.  Use the other options to define the index/shard
+      settings for the restore.
+    options:
+      repository:
+      # Leaving name blank will result in restoring the most recent snapshot by age
+      name:
+      # Leaving indices blank will result in restoring all indices in the snapshot
+      indices:
+      include_aliases: False
+      ignore_unavailable: False
+      include_global_state: True
+      partial: False
+      rename_pattern:
+      rename_replacement:
+      extra_settings:
+      wait_for_completion: True
+      skip_repo_fs_check: False
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action will restore indices from the indicated
+<<option_repository,repository>>, from the most recent snapshot identified by
+the applied filters, or the snapshot identified by <<option_name,name>>.
+
+The other options are usually okay to leave at the defaults, but feel free to
+read about them and change them accordingly.
+
+The <<option_extra_settings,extra_settings>> option allows the addition of extra
+settings, such as index settings and mappings.  An example of how these settings
+can be used to change settings for an index being restored might be:
+
+[source,text]
+-------------
+extra_settings:
+  settings:
+    number_of_shards: 1
+    number_of_replicas: 0
+  mappings:
+    type1 :
+      properties:
+        field1:
+          type: string
+          index: not_analyzed
+-------------
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_repository,repository>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_name,name>> (has no default value)
+* <<option_include_aliases,include_aliases>> (has a default value which can
+    optionally be changed)
+* <<option_ignore,ignore_unavailable>> (has a default value which can optionally
+    be changed)
+* <<option_include_gs,include_global_state>> (has a default value which can
+    optionally be changed)
+* <<option_partial,partial>> (has a default value which can optionally be
+    changed)
+* <<option_rename_pattern,rename_pattern>> (has no default value)
+* <<option_rename_replacement,rename_replacement>> (has no default value)
+* <<option_extra_settings,extra_settings>> (has no default value.)
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
+* <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
+    optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_restore,here>>.
 
 [[snapshot]]
 == Snapshot

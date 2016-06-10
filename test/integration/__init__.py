@@ -123,6 +123,28 @@ class CuratorTestCase(TestCase):
         if wait_for_yellow:
             self.client.cluster.health(wait_for_status='yellow')
 
+    def add_docs(self, idx):
+        for i in ["1", "2", "3"]:
+            self.client.create(
+                index=idx, doc_type='log',
+                body={"doc" + i :'TEST DOCUMENT'},
+            )
+            # This should force each doc to be in its own segment.
+            self.client.indices.flush(index=idx, force=True)
+
+    def create_snapshot(self, name, csv_indices):
+        body = {
+            "indices": csv_indices,
+            "ignore_unavailable": False,
+            "include_global_state": True,
+            "partial": False,
+        }
+        self.create_repository()
+        self.client.snapshot.create(
+            repository=self.args['repository'], snapshot=name, body=body,
+            wait_for_completion=True
+        )
+        
     def create_repository(self):
         body = {'type':'fs', 'settings':{'location':self.args['location']}}
         self.client.snapshot.create_repository(repository=self.args['repository'], body=body)
