@@ -9,6 +9,7 @@ Changelog
 **New Features**
 
   * Snapshot restore is here!
+  * Optionally delete aliases from indices before closing. Fixes #644 (untergeek)
 
 **General**
 

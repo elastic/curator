@@ -154,6 +154,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: close
 description: "Close selected indices"
 options:
+  delete_aliases: False
   timeout_override:
   continue_if_exception: False
   disable_action: False
@@ -165,11 +166,14 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given action, it
     will be ignored.
 
-This action closes the selected indices.
+This action closes the selected indices, and optionally deletes associated
+aliases beforehand.
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_delete_aliases,delete_aliases>> (has a default value which can
+    optionally be changed)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can

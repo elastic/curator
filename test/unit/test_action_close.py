@@ -37,6 +37,16 @@ class TestActionClose(TestCase):
         ilo = curator.IndexList(client)
         co = curator.Close(ilo)
         self.assertIsNone(co.do_action())
+    def test_do_action_with_delete_aliases(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        client.indices.flush_synced.return_value = testvars.synced_pass
+        client.indices.close.return_value = None
+        ilo = curator.IndexList(client)
+        co = curator.Close(ilo, delete_aliases=True)
+        self.assertIsNone(co.do_action())
     def test_do_action_raises_exception(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one

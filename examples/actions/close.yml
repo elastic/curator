@@ -12,6 +12,7 @@ actions:
       Close indices older than 30 days (based on index name), for logstash-
       prefixed indices.
     options:
+      delete_aliases: False
       timeout_override:
       continue_if_exception: False
       disable_action: True

@@ -67,7 +67,7 @@ ACTION_DEFAULTS = {
         'wait_for_completion' : False,
         'timeout' : 30,
     },
-    'close' : {},
+    'close' : { 'delete_aliases' : False },
     'create_index' : {
         'name' : None,
         'extra_settings' : {},
