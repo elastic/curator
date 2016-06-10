@@ -58,6 +58,17 @@ forceMerging indices, to allow the cluster to quiesce.
 
 There is no default value.
 
+[[option_delete_aliases]]
+== delete_aliases
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+The value for this setting determines whether aliases will be deleted from
+indices before closing.
+
+The default value is `False`.
+
 [[option_disable]]
 == disable_action
 

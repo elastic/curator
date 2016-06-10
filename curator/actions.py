@@ -203,14 +203,20 @@ class Allocation(object):
             report_failure(e)
 
 class Close(object):
-    def __init__(self, ilo):
+    def __init__(self, ilo, delete_aliases=False):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
+        :arg delete_aliases: If `True`, will delete any associated aliases
+            before closing indices.
+        :type delete_aliases: bool
         """
         verify_index_list(ilo)
         #: Instance variable.
         #: Internal reference to `ilo`
         self.index_list = ilo
+        #: Instance variable.
+        #: Internal reference to `delete_aliases`
+        self.delete_aliases = delete_aliases
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client     = ilo.client
@@ -221,7 +227,8 @@ class Close(object):
         """
         Log what the output would be, but take no action.
         """
-        show_dry_run(self.index_list, 'close')
+        show_dry_run(
+            self.index_list, 'close', **{'delete_aliases':self.delete_aliases})
 
     def do_action(self):
         """
@@ -233,7 +240,12 @@ class Close(object):
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
-                # Do sync_flush from SyncFlush object after it's built?
+                if self.delete_aliases:
+                    self.loggit.info(
+                        'Deleting aliases from indices before closing.')
+                    self.loggit.debug('Deleting aliases from: {0}'.format(l))
+                    self.client.indices.delete_alias(
+                        index=to_csv(l), name='_all')
                 self.client.indices.flush(
                     index=to_csv(l), ignore_unavailable=True)
                 self.client.indices.close(
