@@ -16,11 +16,11 @@ actually defined as an entry point).  The API allows you to write your own
 scripts to accomplish similar goals, or even new and different things with the
 `Curator API`_, and the `Elasticsearch Python API`_.
 
-.. _Curator API: http://curator.readthedocs.org/
+.. _Curator API: http://curator.readthedocs.io/
 
 .. _Curator API Documentation: `Curator API`_
 
-.. _Elasticsearch Python API: http://elasticsearch-py.readthedocs.org/
+.. _Elasticsearch Python API: http://elasticsearch-py.readthedocs.io/
 
 `Curator CLI Documentation`_
 ----------------------------

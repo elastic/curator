@@ -3,8 +3,8 @@
 Changelog
 =========
 
-4.0.0a10 (? ? ?)
-----------------
+4.0.0a10 (10 June 2016)
+-----------------------
 
 **New Features**
 
@@ -29,6 +29,7 @@ Changelog
   * Fix prune_nones to work with Python 2.6. Fixes #619 (untergeek)
   * Fix TimestringSearch to work with Python 2.6. Fixes #622 (untergeek)
   * Add language classifiers to ``setup.py``.  Fixes #640 (untergeek)
+  * Changed references to readthedocs.org to be readthedocs.io.
 
 4.0.0a9 (27 Apr 2016)
 ---------------------
@@ -464,7 +465,7 @@ Be sure to read the updated command-line specific docs in the
 [wiki](https://github.com/elasticsearch/curator/wiki) and change your
 command-line arguments accordingly.
 
-The API docs are still at http://curator.readthedocs.org.  Be sure to read the
+The API docs are still at http://curator.readthedocs.io.  Be sure to read the
 latest docs, or select the docs for 3.0.0.
 
 **General**
