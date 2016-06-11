@@ -66,6 +66,31 @@ class TestSnapshotListAgeFilterName(TestCase):
         sl._get_name_based_ages('%Y.%m.%d')
         self.assertIsNone(sl.snapshot_info['snap_name']['age_by_name'])
 
+class TestSnapshotListStateFilter(TestCase):
+    def test_success_inclusive(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        sl.filter_by_state(state='SUCCESS')
+        self.assertEqual(
+            [u'snap_name', u'snapshot-2015.03.01'],
+            sorted(sl.snapshots)
+        )
+    def test_success_exclusive(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.inprogress
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        sl.filter_by_state(state='SUCCESS', exclude=True)
+        self.assertEqual([u'snapshot-2015.03.01'], sorted(sl.snapshots))
+    def test_invalid_state(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertRaises(ValueError, sl.filter_by_state, state='invalid')
+
 class TestSnapshotListRegexFilters(TestCase):
     def test_filter_by_regex_prefix(self):
         client = Mock()

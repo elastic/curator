@@ -121,6 +121,22 @@ class SnapshotList(object):
             else:
                 self.snapshot_info[snapshot]['age_by_name'] = None
 
+    def most_recent(self):
+        """
+        Return the most recent snapshot based on `start_time_in_millis`.
+        """
+        self.empty_list_check()
+        most_recent_time = 0
+        most_recent_snap = ''
+        for snapshot in self.snapshots:
+            snaptime = fix_epoch(
+                self.snapshot_info[snapshot]['start_time_in_millis'])
+            if snaptime > most_recent_time:
+                most_recent_snap = snapshot
+                most_recent_time = snaptime
+        return most_recent_snap
+
+
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
         Filter out indices not matching the pattern, or in the case of exclude,
@@ -233,36 +249,28 @@ class SnapshotList(object):
                 agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR
             self.__excludify(agetest, exclude, snapshot, msg)
 
-            # elif direction == 'older':
-            #     # Remember, because time adds to epoch, smaller numbers are older
-            #     # We want to remove values larger, or "younger," from the list
-            #     # so downstream processing can be done on the "older" snapshots
-            #     if fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR:
-            #         self.snapshots.remove(snapshot)
-            #         self.loggit.debug(
-            #             'Snapshot "{0}" age ({1}) is not "{2}" than the point '
-            #             'of reference, ({3})'.format(
-            #                 snapshot,
-            #                 fix_epoch(self.snapshot_info[snapshot][keyfield]),
-            #                 direction,
-            #                 PoR
-            #             )
-            #         )
-            # elif direction == 'younger':
-            #     # Remember, because time adds to epoch, larger numbers are younger
-            #     # We want to remove values smaller, or "older," from the list
-            #     # so downstream processing can be done on the "younger" snapshots
-            #     if fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR:
-            #         self.snapshots.remove(snapshot)
-            #         self.loggit.debug(
-            #             'Snapshot "{0}" age ({1}) is not "{2}" than the point '
-            #             'of reference, ({3})'.format(
-            #                 snapshot,
-            #                 fix_epoch(self.snapshot_info[snapshot][keyfield]),
-            #                 direction,
-            #                 PoR
-            #             )
-            #         )
+    def filter_by_state(self, state=None, exclude=False):
+        """
+        Filter out indices not matching ``state``, or in the case of exclude,
+        filter those matching ``state``.
+
+        :arg state: The snapshot state to filter for. Must be one of
+            ``SUCCESS``, ``PARTIAL``, ``FAILED``, or ``IN_PROGRESS``.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            snapshots from `snapshots`. If `exclude` is `False`, then only
+            matching snapshots will be kept in `snapshots`.
+            Default is `False`
+        """
+        if state.upper() not in ['SUCCESS', 'PARTIAL', 'FAILED', 'IN_PROGRESS']:
+            raise ValueError('{0}: Invalid value for state'.format(state))
+
+        self.empty_list_check()
+        for snapshot in self.working_list():
+            self.loggit.debug('Filter by state: Snapshot: {0}'.format(snapshot))
+            if self.snapshot_info[snapshot]['state'] == state:
+                self.__excludify(True, exclude, snapshot)
+            else:
+                self.__excludify(False, exclude, snapshot)
 
     def filter_none(self):
         self.loggit.info('"None" filter selected.  No filtering will be done.')

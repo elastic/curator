@@ -28,6 +28,7 @@ description: "Add/Remove selected indices to or from the specified alias"
 options:
   name: alias_name
   extra_settings:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 add:
@@ -77,6 +78,8 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_extra_settings,extra_settings>> (No default value.)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -96,6 +99,8 @@ options:
   key:
   value:
   allocation_type:
+  wait_for_completion: False
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -111,6 +116,12 @@ This action changes the shard routing allocation for the selected indices.
 See https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
 for more information.
 
+You can optionally set `wait_for_completion` to `True`
+to have Curator wait for the shard routing to complete before continuing.  If
+this option is chosen, it is advisable to use the
+<<option_timeout_override,timeout_override>> option in order to avoid client
+timeouts.
+
 [float]
 Required settings
 ~~~~~~~~~~~~~~~~~
@@ -123,6 +134,10 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_allocation_type,allocation_type>> (has a default value which can
     optionally be changed)
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -139,6 +154,8 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: close
 description: "Close selected indices"
 options:
+  delete_aliases: False
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -149,11 +166,16 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given action, it
     will be ignored.
 
-This action closes the selected indices.
+This action closes the selected indices, and optionally deletes associated
+aliases beforehand.
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_delete_aliases,delete_aliases>> (has a default value which can
+    optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -173,6 +195,7 @@ description: "Create index as named"
 options:
   name:
   extra_settings:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -215,6 +238,8 @@ Optional settings
     acceptable index settings and mappings as nested YAML.  See the
     {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -231,6 +256,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: delete_indices
 description: "Delete selected indices"
 options:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -246,6 +272,8 @@ This action deletes the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -266,6 +294,7 @@ options:
   repository:
   retry_interval:
   retry_count:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -294,6 +323,8 @@ Optional settings
     optionally be changed)
 * <<option_retry_count,retry_count>> (has a default value which can optionally
     be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -311,6 +342,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: open
 description: "open selected indices"
 options:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -326,6 +358,8 @@ This action opens the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -345,6 +379,7 @@ description: "Perform a forceMerge on selected indices to 'max_num_segments' per
 options:
   max_num_segments:
   delay:
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -369,6 +404,8 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_delay,delay>> (has a default value which can optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -389,6 +426,8 @@ description: >- Set the number of replicas per shard for selected
     indices to 'count'
 options:
   count:
+  wait_for_completion: False
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -400,7 +439,11 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     will be ignored.
 
 This action will set the number of replicas per shard to the value of
-<<option_count,count>>.
+<<option_count,count>>.  You can optionally set `wait_for_completion` to `True`
+to have Curator wait for the replication operation to complete before
+continuing.  If this option is chosen, it is advisable to use the
+<<option_timeout_override,timeout_override>> option in order to avoid client
+timeouts.
 
 [float]
 Required settings
@@ -411,6 +454,10 @@ Required settings
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally
@@ -419,7 +466,107 @@ Optional settings
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_replicas,here>>.
 
+[[restore]]
+== Restore
 
+[source,text]
+-------------
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent snapshot with state SUCCESS.  Wait
+      for the restore to complete before continuing.  Do not skip the repository
+      filesystem access check.  Use the other options to define the index/shard
+      settings for the restore.
+    options:
+      repository:
+      # Leaving name blank will result in restoring the most recent snapshot by age
+      name:
+      # Leaving indices blank will result in restoring all indices in the snapshot
+      indices:
+      include_aliases: False
+      ignore_unavailable: False
+      include_global_state: True
+      partial: False
+      rename_pattern:
+      rename_replacement:
+      extra_settings:
+      wait_for_completion: True
+      skip_repo_fs_check: False
+      timeout_override:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action will restore indices from the indicated
+<<option_repository,repository>>, from the most recent snapshot identified by
+the applied filters, or the snapshot identified by <<option_name,name>>.
+
+The other options are usually okay to leave at the defaults, but feel free to
+read about them and change them accordingly.
+
+The <<option_extra_settings,extra_settings>> option allows the addition of extra
+settings, such as index settings and mappings.  An example of how these settings
+can be used to change settings for an index being restored might be:
+
+[source,text]
+-------------
+extra_settings:
+  settings:
+    number_of_shards: 1
+    number_of_replicas: 0
+  mappings:
+    type1 :
+      properties:
+        field1:
+          type: string
+          index: not_analyzed
+-------------
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_repository,repository>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_name,name>> (has no default value)
+* <<option_include_aliases,include_aliases>> (has a default value which can
+    optionally be changed)
+* <<option_ignore,ignore_unavailable>> (has a default value which can optionally
+    be changed)
+* <<option_include_gs,include_global_state>> (has a default value which can
+    optionally be changed)
+* <<option_partial,partial>> (has a default value which can optionally be
+    changed)
+* <<option_rename_pattern,rename_pattern>> (has no default value)
+* <<option_rename_replacement,rename_replacement>> (has no default value)
+* <<option_extra_settings,extra_settings>> (has no default value.)
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
+* <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
+    optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_restore,here>>.
 
 [[snapshot]]
 == Snapshot
@@ -439,6 +586,7 @@ options:
   partial: False
   wait_for_completion: True
   skip_repo_fs_check: False
+  timeout_override:
   continue_if_exception: False
   disable_action: False
 filters:
@@ -476,6 +624,8 @@ Optional settings
     be changed)
 * <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
     optionally be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
     optionally be changed)
 * <<option_disable,disable_action>> (has a default value which can optionally

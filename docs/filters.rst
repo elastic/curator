@@ -41,3 +41,6 @@ SnapshotList
 
 .. automethod:: curator.snapshotlist.SnapshotList.filter_by_regex
    :noindex:
+
+.. automethod:: curator.snapshotlist.SnapshotList.filter_by_state
+  :noindex:

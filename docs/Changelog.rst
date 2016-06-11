@@ -3,6 +3,34 @@
 Changelog
 =========
 
+4.0.0a10 (10 June 2016)
+-----------------------
+
+**New Features**
+
+  * Snapshot restore is here!
+  * Optionally delete aliases from indices before closing. Fixes #644 (untergeek)
+
+**General**
+
+  * Add `wait_for_completion` to Allocation and Replicas actions.  These will
+    use the client timeout, as set by default or `timeout_override`, to
+    determine how long to wait for timeout.  These are handled in batches of
+    indices for now.
+  * Allow `timeout_override` option for all actions.  This allows for different
+    timeout values per action.
+
+**Bug Fixes**
+
+  * Disallow use of `master_only` if multiple hosts are used. Fixes #615
+    (untergeek)
+  * Fix an issue where arguments weren't being properly passed and populated.
+  * ForceMerge replaced Optimize in ES 2.1.0.
+  * Fix prune_nones to work with Python 2.6. Fixes #619 (untergeek)
+  * Fix TimestringSearch to work with Python 2.6. Fixes #622 (untergeek)
+  * Add language classifiers to ``setup.py``.  Fixes #640 (untergeek)
+  * Changed references to readthedocs.org to be readthedocs.io.
+
 4.0.0a9 (27 Apr 2016)
 ---------------------
 
@@ -437,7 +465,7 @@ Be sure to read the updated command-line specific docs in the
 [wiki](https://github.com/elasticsearch/curator/wiki) and change your
 command-line arguments accordingly.
 
-The API docs are still at http://curator.readthedocs.org.  Be sure to read the
+The API docs are still at http://curator.readthedocs.io.  Be sure to read the
 latest docs, or select the docs for 3.0.0.
 
 **General**

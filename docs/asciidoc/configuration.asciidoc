@@ -384,7 +384,9 @@ You can change the client connection timeout value with this setting.
 NOTE: Actions <<snapshot,snapshot>> and <<forcemerge,forcemerge>> will override
     this value to `21600` if it is set at the default value of `30`.
 
-The default value is `30` (seconds).
+The default value is `30` (seconds).  The timeout can be overridden per action
+by setting <<option_timeout_override,timeout_override>> in the action
+<<options,options>>.
 
 [[master_only]]
 === master_only
@@ -400,6 +402,11 @@ In some situations, primarily with automated deployments, it makes sense to
 install Curator on every node. But you wouldn’t want it to run on each node.
 By setting `master_only` to `True`, this is possible. It tests for, and will
 only continue running on the node that is the elected master.
+
+WARNING: If `master_only` is `True`, and <<hosts,hosts>> has more than one
+    value, Curator will raise an Exception.  This setting should _only_ be used
+    with a single host in <<hosts,hosts>>, as its utility centers around
+    deploying to all nodes in the cluster.
 
 The default value is `False`.
 

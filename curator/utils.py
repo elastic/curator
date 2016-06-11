@@ -220,10 +220,14 @@ class TimestringSearch(object):
         if match:
             if match.group("date"):
                 timestamp = match.group("date")
-                return (
-                    (get_datetime(timestamp, self.timestring) -
-                    datetime(1970,1,1)).total_seconds()
+                # I would have used `total_seconds`, but apparently that's new
+                # to Python 2.7+, and due to so many people still using
+                # RHEL/CentOS 6, I need this to support Python 2.6.
+                tdelta = (
+                    get_datetime(timestamp, self.timestring) -
+                    datetime(1970,1,1)
                 )
+                return tdelta.seconds + tdelta.days * 24 * 3600
 
 def get_point_of_reference(unit, count, epoch=None):
     """
@@ -464,7 +468,9 @@ def get_client(**kwargs):
     :arg timeout: Number of seconds before the client will timeout.
     :type timeout: int
     :arg master_only: If `True`, the client will `only` connect if the
-        endpoint is the elected master node of the cluster.
+        endpoint is the elected master node of the cluster.  **This option does
+        not work if `hosts` has more than one value.**  It will raise an
+        Exception in that case.
     :type master_only: bool
     :rtype: :class:`elasticsearch.Elasticsearch`
     """
@@ -534,6 +540,12 @@ def get_client(**kwargs):
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
 
+    if master_only:
+        if len(kwargs['hosts']) > 1:
+            raise ConfigurationError(
+                '"master_only" cannot be True if more than one host is '
+                'specified. Hosts = {0}'.format(kwargs['hosts'])
+            )
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
         # Verify the version is acceptable.
@@ -985,9 +997,8 @@ def prune_nones(mydict):
     :arg mydict: The dictionary to act on
     :rtype: dict
     """
-    return {
-        k: v for k, v in mydict.items() if v != None and v != "None"
-    }
+    # Test for `None` instead of existence or zero values will be caught
+    return dict([(k,v) for k, v in mydict.items() if v != None and v != 'None'])
 
 def verify_args(action, options):
     """

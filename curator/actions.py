@@ -13,6 +13,7 @@ class Alias(object):
         :arg extra_settings: Extra settings, including filters and routing. For
             more information see
             https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-aliases.html
+        :type extra_settings: dict, representing the settings.
         """
         if not name:
             raise MissingArgument('No value for "name" provided.')
@@ -112,7 +113,9 @@ class Alias(object):
             report_failure(e)
 
 class Allocation(object):
-    def __init__(self, ilo, key=None, value=None, allocation_type='require'):
+    def __init__(self, ilo, key=None, value=None, allocation_type='require',
+        wait_for_completion=False, timeout=30,
+        ):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg key: An arbitrary metadata attribute key.  Must match the key
@@ -121,6 +124,10 @@ class Allocation(object):
             values associated with `key` assigned to at least some of your nodes
             to have any effect.
         :arg allocation_type: Type of allocation to apply. Default is `require`
+        :arg wait_for_completion: Wait (or not) for the operation
+            to complete before returning.  (default: `False`)
+        :type wait_for_completion: bool
+        :arg timeout: Number of seconds to `wait_for_completion`
 
         .. note::
             See:
@@ -150,6 +157,13 @@ class Allocation(object):
             'index.routing.allocation.'
             '{0}.{1}={2}'.format(allocation_type, key, value)
         )
+        #: Instance variable.
+        #: Internal reference to `wait_for_completion`
+        self.wfc        = wait_for_completion
+        #: Instance variable.
+        #: How long in seconds to `wait_for_completion` before returning with an
+        #: exception
+        self.timeout    = '{0}s'.format(timeout)
 
     def do_dry_run(self):
         """
@@ -176,18 +190,33 @@ class Allocation(object):
                 self.client.indices.put_settings(
                     index=to_csv(l), body=self.body
                 )
+                if self.wfc:
+                    logger.info(
+                        'Waiting for shards to complete relocation for indices:'
+                        ' {0}'.format(to_csv(l))
+                    )
+                    self.client.cluster.health(index=to_csv(l),
+                        level='indices', wait_for_relocation_shards=0,
+                        timeout=self.timeout,
+                    )
         except Exception as e:
             report_failure(e)
 
 class Close(object):
-    def __init__(self, ilo):
+    def __init__(self, ilo, delete_aliases=False):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
+        :arg delete_aliases: If `True`, will delete any associated aliases
+            before closing indices.
+        :type delete_aliases: bool
         """
         verify_index_list(ilo)
         #: Instance variable.
         #: Internal reference to `ilo`
         self.index_list = ilo
+        #: Instance variable.
+        #: Internal reference to `delete_aliases`
+        self.delete_aliases = delete_aliases
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client     = ilo.client
@@ -198,7 +227,8 @@ class Close(object):
         """
         Log what the output would be, but take no action.
         """
-        show_dry_run(self.index_list, 'close')
+        show_dry_run(
+            self.index_list, 'close', **{'delete_aliases':self.delete_aliases})
 
     def do_action(self):
         """
@@ -210,7 +240,12 @@ class Close(object):
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
-                # Do sync_flush from SyncFlush object after it's built?
+                if self.delete_aliases:
+                    self.loggit.info(
+                        'Deleting aliases from indices before closing.')
+                    self.loggit.debug('Deleting aliases from: {0}'.format(l))
+                    self.client.indices.delete_alias(
+                        index=to_csv(l), name='_all')
                 self.client.indices.flush(
                     index=to_csv(l), ignore_unavailable=True)
                 self.client.indices.close(
@@ -266,7 +301,6 @@ class CreateIndex(object):
             self.client.indices.create(index=self.name, body=self.body)
         except Exception as e:
             report_failure(e)
-
 
 class DeleteIndices(object):
     def __init__(self, ilo, master_timeout=30):
@@ -403,7 +437,7 @@ class ForceMerge(object):
                     'forceMerging index {0} to {1} segments per shard.  '
                     'Please wait...'.format(index_name, self.max_num_segments)
                 )
-                if get_version(self.client) < (5, 0, 0):
+                if get_version(self.client) < (2, 1, 0):
                     self.client.indices.optimize(index=index_name,
                         max_num_segments=self.max_num_segments)
                 else:
@@ -452,10 +486,13 @@ class Open(object):
             report_failure(e)
 
 class Replicas(object):
-    def __init__(self, ilo, count=None):
+    def __init__(self, ilo, count=None, wait_for_completion=False, timeout=30):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg count: The count of replicas per shard
+        :arg wait_for_completion: Wait (or not) for the operation
+            to complete before returning.  (default: `False`)
+        :type wait_for_completion: bool
         """
         verify_index_list(ilo)
         # It's okay for count to be zero
@@ -472,6 +509,13 @@ class Replicas(object):
         #: Instance variable.
         #: Internally accessible copy of `count`
         self.count      = count
+        #: Instance variable.
+        #: Internal reference to `wait_for_completion`
+        self.wfc        = wait_for_completion
+        #: Instance variable.
+        #: How long in seconds to `wait_for_completion` before returning with an
+        #: exception
+        self.timeout    = '{0}s'.format(timeout)
         self.loggit     = logging.getLogger('curator.actions.replicas')
 
     def do_dry_run(self):
@@ -499,6 +543,15 @@ class Replicas(object):
             for l in index_lists:
                 self.client.indices.put_settings(index=to_csv(l),
                     body='number_of_replicas={0}'.format(self.count))
+                if self.wfc and self.count > 0:
+                    logger.info(
+                        'Waiting for shards to complete replication for '
+                        'indices: {0}'.format(to_csv(l))
+                    )
+                    self.client.cluster.health(
+                        index=to_csv(l), wait_for_status='green',
+                        timeout=self.timeout,
+                    )
         except Exception as e:
             report_failure(e)
 
@@ -686,6 +739,222 @@ class Snapshot(object):
                     '"wait_for_completion" set to {0}. '
                     'Remember to check for successful completion '
                     'manually.'.format(self.wait_for_completion)
+                )
+        except Exception as e:
+            report_failure(e)
+
+class Restore(object):
+    def __init__(self, slo, name=None, indices=None, include_aliases=False,
+                ignore_unavailable=False, include_global_state=True,
+                partial=False, rename_pattern=None, rename_replacement=None,
+                extra_settings={}, wait_for_completion=True,
+                skip_repo_fs_check=False):
+        """
+        :arg slo: A :class:`curator.snapshotlist.SnapshotList` object
+        :arg name: Name of the snapshot to restore.  If no name is provided, it
+            will restore the most recent snapshot by age.
+        :type name: str
+        :arg indices: A list of indices to restore.  If no indices are provided,
+            it will restore all indices in the snapshot.
+        :type indices: list
+        :arg include_aliases: If set to `True`, restore aliases with the
+            indices. (default: `False`)
+        :type include_aliases: bool
+        :arg ignore_unavailable: Ignore unavailable shards/indices.
+            (default: `False`)
+        :type ignore_unavailable: bool
+        :arg include_global_state: Store cluster global state with snapshot.
+            (default: `True`)
+        :type include_global_state: bool
+        :arg partial: Do not fail if primary shard is unavailable. (default:
+            `False`)
+        :type partial: bool
+        :arg rename_pattern: A regular expression pattern with one or more
+            captures, e.g. ``index_(.+)``
+        :type rename_pattern: str
+        :arg rename_replacement: A target index name pattern with `$#` numbered
+            references to the captures in ``rename_pattern``, e.g.
+            ``restored_index_$1``
+        :type rename_replacement: str
+        :arg extra_settings: Extra settings, including shard count and settings
+            to omit. For more information see
+            https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html#_changing_index_settings_during_restore
+        :type extra_settings: dict, representing the settings.
+        :arg wait_for_completion: Wait (or not) for the operation
+            to complete before returning.  (default: `True`)
+        :type wait_for_completion: bool
+        :arg skip_repo_fs_check: Do not validate write access to repository on
+            all cluster nodes before proceeding. (default: `False`).  Useful for
+            shared filesystems where intermittent timeouts can affect
+            validation, but won't likely affect snapshot success.
+        :type skip_repo_fs_check: bool
+        """
+        self.loggit = logging.getLogger('curator.actions.snapshot')
+        verify_snapshot_list(slo)
+        # Get the most recent snapshot.
+        most_recent = slo.most_recent()
+        self.loggit.debug('"most_recent" snapshot: {0}'.format(most_recent))
+        #: Instance variable.
+        #: Will use a provided snapshot name, or the most recent snapshot in slo
+        self.name = name if name else most_recent
+        # Stop here now, if it's not a successful snapshot.
+        if slo.snapshot_info[self.name]['state'] == 'PARTIAL' \
+            and partial == True:
+            self.loggit.warn(
+                'Performing restore of snapshot in state PARTIAL.')
+        elif slo.snapshot_info[self.name]['state'] != 'SUCCESS':
+            raise CuratorException(
+                'Restore operation can only be performed on snapshots with '
+                'state "SUCCESS", or "PARTIAL" if partial=True.'
+            )
+        #: Instance variable.
+        #: The Elasticsearch Client object derived from `slo`
+        self.client              = slo.client
+        #: Instance variable.
+        #: Internal reference to `slo`
+        self.snapshot_list = slo
+        #: Instance variable.
+        #: `repository` derived from `slo`
+        self.repository          = slo.repository
+
+        if indices:
+            self.indices = ensure_list(indices)
+        else:
+            self.indices = slo.snapshot_info[self.name]['indices']
+        self.wfc                 = wait_for_completion
+        #: Instance variable version of ``rename_pattern``
+        self.rename_pattern = rename_pattern if rename_replacement is not None \
+            else ''
+        #: Instance variable version of ``rename_replacement``
+        self.rename_replacement = rename_replacement if rename_replacement \
+            is not None else ''
+        #: Also an instance variable version of ``rename_replacement``
+        #: but with Java regex group designations of ``$#``
+        #: converted to Python's ``\\#`` style.
+        self.py_rename_replacement = self.rename_replacement.replace('$', '\\')
+        #: Instance variable.
+        #: Internally accessible copy of `skip_repo_fs_check`
+        self.skip_repo_fs_check  = skip_repo_fs_check
+
+        #: Instance variable.
+        #: Populated at instance creation time from the other options
+        self.body                = {
+                'indices' : self.indices,
+                'include_aliases' : include_aliases,
+                'ignore_unavailable' : ignore_unavailable,
+                'include_global_state' : include_global_state,
+                'partial' : partial,
+                'rename_pattern' : self.rename_pattern,
+                'rename_replacement' : self.rename_replacement,
+            }
+        if extra_settings:
+            self.loggit.info(
+                'Adding extra_settings to restore body: '
+                '{0}'.format(extra_settings)
+            )
+            try:
+                self.body.update(extra_settings)
+            except:
+                self.loggit.error(
+                    'Unable to apply extra settings to restore body')
+        self.loggit.debug('REPOSITORY: {0}'.format(self.repository))
+        self.loggit.debug('WAIT_FOR_COMPLETION: {0}'.format(self.wfc))
+        self.loggit.debug(
+            'SKIP_REPO_FS_CHECK: {0}'.format(self.skip_repo_fs_check))
+        self.loggit.debug('BODY: {0}'.format(self.body))
+        # Populate the expected output index list.
+        self._get_expected_output()
+
+    def _get_expected_output(self):
+        if not self.rename_pattern and not self.rename_replacement:
+            self.expected_output = self.indices
+            return # Don't stick around if we're not replacing anything
+        self.expected_output = []
+        for index in self.indices:
+            self.expected_output.append(
+                re.sub(
+                    self.rename_pattern,
+                    self.py_rename_replacement,
+                    index
+                )
+            )
+            self.loggit.debug('index: {0} replacement: '
+                '{1}'.format(index, self.expected_output[-1])
+            )
+
+    def report_state(self):
+        """
+        Log the state of the restore
+        This should only be done if ``wait_for_completion`` is `True`, and only
+        after completing the restore.
+        """
+        all_indices = get_indices(self.client)
+        found_count = 0
+        missing = []
+        for index in self.expected_output:
+            if index in all_indices:
+                found_count += 1
+                self.loggit.info('Found restored index {0}'.format(index))
+            else:
+                missing.append(index)
+        if found_count == len(self.expected_output):
+            self.loggit.info('All indices appear to have been restored.')
+        else:
+            self.loggit.error(
+                'Some of the indices do not appear to have been restored. '
+                'Missing: {0}'.format(missing)
+            )
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        logger.info('DRY-RUN MODE.  No changes will be made.')
+        logger.info(
+            'DRY-RUN: restore: Repository: {0} Snapshot name: {1} Arguments: '
+            '{2}'.format(
+                self.name, self.repository,
+                { 'wait_for_completion' : self.wfc, 'body' : self.body }
+            )
+        )
+
+        for index in self.indices:
+            if self.rename_pattern and self.rename_replacement:
+                replacement_msg = 'as {0}'.format(
+                    re.sub(
+                        self.rename_pattern,
+                        self.py_rename_replacement,
+                        index
+                    )
+                )
+            else:
+                replacement_msg = ''
+            logger.info(
+                'DRY-RUN: restore: Index {0} {1}'.format(index, replacement_msg)
+            )
+
+
+    def do_action(self):
+        """
+        Restore indices with options passed.
+        """
+        if not self.skip_repo_fs_check:
+            test_repo_fs(self.client, self.repository)
+        if snapshot_running(self.client):
+            raise SnapshotInProgress(
+                'Cannot restore while a snapshot is in progress.')
+        try:
+            self.client.snapshot.restore(
+                repository=self.repository, snapshot=self.name, body=self.body,
+                wait_for_completion=self.wfc
+            )
+            if self.wfc:
+                self.report_state()
+            else:
+                self.loggit.warn(
+                    '"wait_for_completion" set to {0}. '
+                    'Remember to check for successful completion '
+                    'manually.'.format(self.wfc)
                 )
         except Exception as e:
             report_failure(e)

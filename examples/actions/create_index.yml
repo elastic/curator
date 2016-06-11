@@ -15,5 +15,6 @@ actions:
         settings:
           number_of_shards: 2
           number_of_replicas: 1
+      timeout_override:
       continue_if_exception: False
       disable_action: True

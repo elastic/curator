@@ -15,8 +15,7 @@ NOTE: This setting is used only when using the <<allocation,allocation action>>
 
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
-Read more about these settings at
-https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-allocation-filtering.html
+Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
 
@@ -59,6 +58,17 @@ forceMerging indices, to allow the cluster to quiesce.
 
 There is no default value.
 
+[[option_delete_aliases]]
+== delete_aliases
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+The value for this setting determines whether aliases will be deleted from
+indices before closing.
+
+The default value is `False`.
+
 [[option_disable]]
 == disable_action
 
@@ -77,6 +87,18 @@ This setting must be either `True` or `False`.
 
 When the ignore_unavailable option is `False` and an index is missing the
 snapshot request will fail.
+
+The default value of this setting is `False`
+
+[[option_include_aliases]]
+== include_aliases
+
+NOTE: This setting is only used by the <<restore,restore>> action.
+
+This setting must be either `True` or `False`.
+
+The value of this setting determines whether Elasticsearch should include index
+aliases when restoring the snapshot.
 
 The default value of this setting is `False`
 
@@ -198,7 +220,43 @@ by setting partial to `True`.
 
 The default value of this setting is `False`
 
+[[option_rename_pattern]]
+== rename_pattern
 
+NOTE: This setting is only used by the <<restore, restore>> action.
+
+[TIP]
+.from the Elasticsearch documentation
+======================================
+The <<option_rename_pattern,rename_pattern>> and
+<<option_rename_replacement,rename_replacement>> options can be also used to
+rename indices on restore using regular expression that supports referencing the
+original text as explained
+http://docs.oracle.com/javase/6/docs/api/java/util/regex/Matcher.html#appendReplacement(java.lang.StringBuffer,%20java.lang.String)[here].
+======================================
+
+Read more about this setting at {ref}/modules-snapshots.html#_restore
+
+There is no default value.
+
+[[option_rename_replacement]]
+== rename_replacement
+
+NOTE: This setting is only used by the <<restore, restore>> action.
+
+[TIP]
+.From the Elasticsearch documentation
+======================================
+The <<option_rename_pattern,rename_pattern>> and
+<<option_rename_replacement,rename_replacement>> options can be also used to
+rename indices on restore using regular expression that supports referencing the
+original text as explained
+http://docs.oracle.com/javase/6/docs/api/java/util/regex/Matcher.html#appendReplacement(java.lang.StringBuffer,%20java.lang.String)[here].
+======================================
+
+Read more about this setting at {ref}/modules-snapshots.html#_restore
+
+There is no default value.
 
 [[option_repository]]
 == repository
@@ -245,6 +303,21 @@ this to `True.`
 The default value of this setting is `False`
 
 
+[[option_timeout_override]]
+== timeout_override
+
+NOTE: This setting is available in all actions.
+
+This setting must be an integer number of seconds, or it will be ignored, and
+the default <<timeout,timeout>> will be used.
+
+This setting is particularly useful for the <<forcemerge,forceMerge>> action,
+the <<snapshot,snapshot>> action, and any other action where a longer timeout
+from the client-defined default would be desirable.
+
+The default value of this setting is `None`
+
+
 
 [[option_value]]
 == value
@@ -274,16 +347,20 @@ will be raised, and execution will halt.
 [[option_wfc]]
 == wait_for_completion
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+NOTE: This setting is used by the <<allocation,allocation>>,
+    <<replicas,replicas>>, and <<snapshot,snapshot>> actions.
 
 This setting must be either `True` or `False`.
 
-This setting specifies whether or not the request should return immediately
-after snapshot initialization or wait for snapshot completion.
+This setting specifies whether or not the request should return immediately or
+wait for the operation to complete before returning.
 
-During snapshot initialization, information about all previous snapshots is
-loaded into the memory, which means that in large repositories it may take
-several seconds (or even minutes) for this command to return even if the
-`wait_for_completion` setting is set to `False`.
 
-The default value of this setting is `True`
+TIP: During snapshot initialization, information about all previous snapshots is
+    loaded into the memory, which means that in large repositories it may take
+    several seconds (or even minutes) for this command to return even if the
+    `wait_for_completion` setting is set to `False`.
+
+The default value of this setting differs for each action.  The default for the
+<<allocation,allocation>> and <<replicas,replicas>> actions is `False`.  The
+default for the <<snapshot,snapshot>> action is `True`.

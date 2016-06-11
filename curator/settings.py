@@ -30,6 +30,7 @@ LOGGING_DEFAULTS = {
 }
 
 OPTION_DEFAULTS = {
+    'timeout_override': None,
     'continue_if_exception': False,
     'disable_action': False,
 }
@@ -63,13 +64,15 @@ ACTION_DEFAULTS = {
         'key' : None,
         'value' : None,
         'allocation_type' : 'require',
+        'wait_for_completion' : False,
+        'timeout' : 30,
     },
-    'close' : {},
+    'close' : { 'delete_aliases' : False },
     'create_index' : {
         'name' : None,
         'extra_settings' : {},
     },
-    'delete_indices' : {},
+    'delete_indices' : { 'master_timeout' : 30 },
     'delete_snapshots' : {
         'repository' : None,
         'retry_interval' : 120,
@@ -80,7 +83,25 @@ ACTION_DEFAULTS = {
         'max_num_segments' : 2,
     },
     'open' : {},
-    'replicas' : { 'count' : None },
+    'replicas' : {
+        'count' : None,
+        'wait_for_completion' : False,
+        'timeout' : 30,
+    },
+    'restore' : {
+        'repository' : None,
+        'name' : None,
+        'indices' : None,
+        'include_aliases' : False,
+        'ignore_unavailable' : False,
+        'include_global_state' : True,
+        'partial' : False,
+        'rename_pattern' : None,
+        'rename_replacement' : None,
+        'extra_settings' : {},
+        'wait_for_completion' : True,
+        'skip_repo_fs_check' : False,
+    },
     'snapshot' : {
         'repository' : None,
         'name' : 'curator-%Y%m%d%H%M%S',
@@ -121,5 +142,6 @@ SNAP_FILTER_DEFAULTS = {
         'unit':None, 'unit_count':None, 'epoch':None, 'exclude':False
     },
     'none': {},
-    'pattern': {'kind':None, 'value':None, 'exclude':False}
+    'pattern': {'kind':None, 'value':None, 'exclude':False},
+    'state': {'state':'SUCCESS', 'exclude':False}
 }

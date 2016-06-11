@@ -340,7 +340,7 @@ class IndexList(object):
         if source == 'name':
             if not timestring:
                 raise MissingArgument(
-                    'source "name" requires the "timestamp" keyword argument'
+                    'source "name" requires the "timestring" keyword argument'
                 )
             self._get_name_based_ages(timestring)
         elif source == 'creation_date':
