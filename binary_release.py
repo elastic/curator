@@ -31,24 +31,26 @@ platform = sys.platform
 pyver = str(sys.version_info[0]) + '.' + str(sys.version_info[1])
 if platform == 'win32':
     # Win32 stuff
-    sys_string = platform
     archive_format = 'zip'
+    build_name = 'exe.win-' + enviro['PROCESSOR_ARCHITECTURE'].lower() + '-' + pyver
+    target_name = "curator-" + str(get_version()) + "-win32"
 elif platform == 'linux' or platform == 'linux2':
-    sys_type = enviro['_system_type'].lower()
-    sys_arch = enviro['_system_arch'].lower()
-    sys_string = sys_type + '-' + sys_arch
+    sys_string = enviro['_system_type'].lower() + '-' + enviro['_system_arch'].lower()
+    build_name = 'exe.' + sys_string + '-' + pyver
+    target_name = "curator-" + str(get_version()) + "-" + sys_string
 else:
     # Unsupported platform?
     print('Your platform ({0}) is not yet supported for binary build/distribution.'.format(platform))
     sys.exit(1)
-
-build_name = 'exe.' + sys_string + '-' + pyver
+    
+#sys_string = sys_type + '-' + sys_arch
+#build_name = 'exe.' + sys_string + '-' + pyver
 #print('Expected build directory: {0}'.format(build_name))
 build_path = os.path.join('build', build_name)
 
 if os.path.exists(build_path):
     #print("I found the path: {0}".format(build_path))
-    target_name = "curator-" + str(get_version()) + "-" + sys_string
+    
     target_path = os.path.join('.', target_name)
 
     # Check to see if an older directory exists...
