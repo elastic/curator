@@ -39,6 +39,7 @@ class TestCLIReplicas(CuratorTestCase):
                 index=idx)[idx]['settings']['index']['number_of_replicas'])
         )
     def test_no_count(self):
+        self.create_index('foo')
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -53,6 +54,7 @@ class TestCLIReplicas(CuratorTestCase):
                     )
         self.assertEqual(1, result.exit_code)
     def test_extra_option(self):
+        self.create_index('foo')
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],

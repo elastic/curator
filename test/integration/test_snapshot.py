@@ -38,6 +38,7 @@ class TestCLISnapshot(CuratorTestCase):
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
     def test_no_repository(self):
+        self.create_indices(5)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -52,6 +53,7 @@ class TestCLISnapshot(CuratorTestCase):
                     )
         self.assertEqual(1, result.exit_code)
     def test_extra_option(self):
+        self.create_indices(5)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],

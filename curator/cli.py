@@ -221,15 +221,22 @@ def cli(config, dry_run, action_file):
             )
             process_action(client, actions[idx], **kwargs)
         except Exception as e:
-            logger.error(
-                'Failed to complete action: {0}.  {1}: '
-                '{2}'.format(action, type(e), e)
-            )
-            if continue_if_exception:
+            if str(type(e)) == "<class 'curator.exceptions.NoIndices'>" or \
+                str(type(e)) == "<class 'curator.exceptions.NoSnapshots'>":
                 logger.info(
-                    'Continuing execution with next action because '
-                    '"continue_if_exception" is set to True for action '
-                    '{0}'.format(action)
+                    'Action "{0}" not taken due to empty list: '
+                    '{1}'.format(action, type(e))
                 )
             else:
-                sys.exit(1)
+                logger.error(
+                    'Failed to complete action: {0}.  {1}: '
+                    '{2}'.format(action, type(e), e)
+                )
+                if continue_if_exception:
+                    logger.info(
+                        'Continuing execution with next action because '
+                        '"continue_if_exception" is set to True for action '
+                        '{0}'.format(action)
+                    )
+                else:
+                    sys.exit(1)
