@@ -62,6 +62,26 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEquals(0, len(curator.get_indices(self.client)))
+    def test_empty_list(self):
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.delete_proto.format(
+                'age', 'creation_date', 'older', ' ', 'days', 90,
+                ' ', ' ', int(time.time())
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEquals(10, len(curator.get_indices(self.client)))
+        self.assertEqual(0, result.exit_code)
     def test_extra_options(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))

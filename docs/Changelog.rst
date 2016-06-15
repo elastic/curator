@@ -3,6 +3,17 @@
 Changelog
 =========
 
+4.0.0b2 (? ? ?)
+---------------
+
+**Second beta release of the 4.0 branch**
+
+**General**
+
+  * Empty index or snapshot list no longer results in an error.  It will still
+    log that the action was not performed, but will continue to the next action.
+    (untergeek)
+
 4.0.0b1 (13 June 2016)
 ----------------------
 
