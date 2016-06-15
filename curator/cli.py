@@ -184,6 +184,8 @@ def cli(config, dry_run, action_file):
         continue_if_exception = (
             actions[idx]['options'].pop('continue_if_exception', False))
         timeout_override = actions[idx]['options'].pop('timeout_override', None)
+        ignore_empty_list = actions[idx]['options'].pop(
+            'ignore_empty_list', None)
         logger.debug(
             'continue_if_exception = {0}'.format(continue_if_exception))
         logger.debug('timeout_override = {0}'.format(timeout_override))
@@ -223,10 +225,17 @@ def cli(config, dry_run, action_file):
         except Exception as e:
             if str(type(e)) == "<class 'curator.exceptions.NoIndices'>" or \
                 str(type(e)) == "<class 'curator.exceptions.NoSnapshots'>":
-                logger.info(
-                    'Action "{0}" not taken due to empty list: '
-                    '{1}'.format(action, type(e))
-                )
+                if ignore_empty_list:
+                    logger.info(
+                        'Skipping action "{0}" due to empty list: '
+                        '{1}'.format(action, type(e))
+                    )
+                else:
+                    logger.error(
+                        'Unable to complete action "{0}".  No actionable items '
+                        'in list: {1}'.format(action, type(e))
+                    )
+                    sys.exit(1)
             else:
                 logger.error(
                     'Failed to complete action: {0}.  {1}: '

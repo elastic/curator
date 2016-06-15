@@ -8,11 +8,12 @@ Changelog
 
 **Second beta release of the 4.0 branch**
 
-**General**
+**New Feature**
 
-  * Empty index or snapshot list no longer results in an error.  It will still
-    log that the action was not performed, but will continue to the next action.
-    (untergeek)
+  * An empty index or snapshot list no longer results in an error if you set
+    ``ignore_empty_list`` to `True`.  If `True` it will still log that the
+    action was not performed, but will continue to the next action. If 'False'
+    it will log an ERROR and exit with code 1. (untergeek)
 
 4.0.0b1 (13 June 2016)
 ----------------------
