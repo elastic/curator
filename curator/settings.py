@@ -30,6 +30,7 @@ LOGGING_DEFAULTS = {
 }
 
 OPTION_DEFAULTS = {
+    'ignore_empty_list': False,
     'timeout_override': None,
     'continue_if_exception': False,
     'disable_action': False,
