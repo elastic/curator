@@ -46,20 +46,6 @@ class TestCLIforceMerge(CuratorTestCase):
         ilo2 = curator.IndexList(self.client)
         ilo2._get_segmentcounts()
         self.assertEqual(count, ilo2.index_info[idx]['segments'])
-    def test_no_max_num_segments(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-            testvars.forcemerge_test.format(' ', 0))
-        test = clicktest.CliRunner()
-        result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
-        self.assertEqual(1, result.exit_code)
     def test_extra_option(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))

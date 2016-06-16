@@ -78,6 +78,7 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_extra_settings,extra_settings>> (No default value.)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -136,6 +137,7 @@ Optional settings
     optionally be changed)
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -174,6 +176,7 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_delete_aliases,delete_aliases>> (has a default value which can
     optionally be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -272,6 +275,7 @@ This action deletes the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -323,6 +327,7 @@ Optional settings
     optionally be changed)
 * <<option_retry_count,retry_count>> (has a default value which can optionally
     be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -358,6 +363,7 @@ This action opens the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -404,6 +410,7 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_delay,delay>> (has a default value which can optionally be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -456,6 +463,7 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -558,6 +566,7 @@ Optional settings
     be changed)
 * <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
     optionally be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -624,6 +633,7 @@ Optional settings
     be changed)
 * <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
     optionally be changed)
+* <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
