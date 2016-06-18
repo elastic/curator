@@ -12,11 +12,15 @@ Elasticsearch Curator helps you curate, or manage your indices.
 Build Status
 ------------
 
-Master: |master|
-
-4.x: |4_x|
-
-4.0: |4_0|
++--------+----------+
+| Branch | Status   |
++========+==========+
+| Master | |master| |
++--------+----------+
+| 4.x    | |4_x|    |
++--------+----------+
+| 4.0    | |4_0|    |
++--------+----------+
 
 PyPI: |pypi_pkg|
 
@@ -28,7 +32,7 @@ PyPI: |pypi_pkg|
     :target: https://travis-ci.org/elastic/curator
 .. |pypi_pkg| image:: https://badge.fury.io/py/elasticsearch-curator.svg
     :target: https://badge.fury.io/py/elasticsearch-curator
-    
+
 `Curator API Documentation`_
 ----------------------------
 
