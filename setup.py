@@ -84,7 +84,7 @@ try:
             "Programming Language :: Python :: 3.5",
         ],
         test_suite = "test.run_tests.run_all",
-        tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"],
+        tests_require = ["mock", "nose", "coverage", "nosexcover"],
         options = {"build_exe" : buildOptions},
         executables = [curator_exe]
     )
@@ -119,5 +119,5 @@ except ImportError:
             "Programming Language :: Python :: 3.5",
         ],
         test_suite = "test.run_tests.run_all",
-        tests_require = ["mock==1.0.1", "nose", "coverage", "nosexcover"]
+        tests_require = ["mock", "nose", "coverage", "nosexcover"]
     )
