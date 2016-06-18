@@ -70,7 +70,8 @@ def verify_client_object(test):
     :rtype: None
     """
     # Ignore mock type for testing
-    if str(type(test)) == "<class 'mock.Mock'>":
+    if str(type(test)) == "<class 'mock.Mock'>" or \
+        str(type(test)) == "<class 'mock.mock.Mock'>":
         pass
     elif not type(test) == type(elasticsearch.Elasticsearch()):
         raise TypeError(
