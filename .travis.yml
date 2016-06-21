@@ -5,6 +5,13 @@ python:
   - "3.4"
   - "3.5"
 
+env:
+  - ES_VERSION=2.0.0
+  - ES_VERSION=2.1.1
+  - ES_VERSION=2.2.2
+  - ES_VERSION=2.3.3
+  - ES_VERSION=5.0.0-alpha3
+
 os: linux
 
 cache:
@@ -16,12 +23,10 @@ jdk:
 install:
   - pip install -r requirements.txt
   - pip install .
-  - mkdir /tmp/elasticsearch
-  - wget -O - https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-2.3.3.tar.gz | tar xz --directory=/tmp/elasticsearch --strip-components=1
-
-before_script:
-  - /tmp/elasticsearch/bin/elasticsearch -d -D es.path.data=/tmp -D es.path.repo /
-  - sleep 10
 
 script:
-  - python setup.py test
+  - sudo apt-get update && sudo apt-get install oracle-java8-installer
+  - java -version
+  - sudo update-alternatives --set java /usr/lib/jvm/java-8-oracle/jre/bin/java
+  - java -version
+  - ./travis-run.sh
