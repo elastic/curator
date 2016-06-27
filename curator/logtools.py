@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import time
 
 class LogstashFormatter(logging.Formatter):
     # The LogRecord attributes we want to carry over to the Logstash message,
@@ -15,6 +16,7 @@ class LogstashFormatter(logging.Formatter):
     #     return time.gmtime(timevalue)
 
     def format(self, record):
+        self.converter = time.gmtime
         timestamp = '%s.%03dZ' % (
             self.formatTime(record, datefmt='%Y-%m-%dT%H:%M:%S'), record.msecs)
         result = {'message': record.getMessage(),

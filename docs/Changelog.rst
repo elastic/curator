@@ -3,6 +3,14 @@
 Changelog
 =========
 
+4.0.1 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Coerce Logstash/JSON logformat type timestamp value to always use UTC.
+    #661 (untergeek)
+
 4.0.0 (24 June 2016)
 --------------------
 
