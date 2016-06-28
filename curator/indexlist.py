@@ -152,9 +152,18 @@ class IndexList(object):
                 for index in list(working_list.keys()):
                     s = self.index_info[index]
                     wl = working_list[index]
-                    s['age']['creation_date'] = (
-                        fix_epoch(wl['settings']['index']['creation_date'])
-                    )
+                    if not 'creation_date' in wl['settings']['index']:
+                        self.loggit.warn(
+                            'Index: {0} has no "creation_date"! This implies '
+                            'that the index predates Elasticsearch v1.4. For '
+                            'safety, this index will be removed from the '
+                            'actionable list.'.format(index)
+                        )
+                        self.__not_actionable(index)
+                    else:
+                        s['age']['creation_date'] = (
+                            fix_epoch(wl['settings']['index']['creation_date'])
+                        )
                     s['number_of_replicas'] = (
                         wl['settings']['index']['number_of_replicas']
                     )

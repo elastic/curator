@@ -239,6 +239,35 @@ settings_2_closed = {
     }
 }
 
+settings_two_no_cd  = {
+    u'index-2016.03.03': {
+        u'state': u'open',
+        u'aliases': [u'my_alias'],
+        u'mappings': {},
+        u'settings': {
+            u'index': {
+                u'number_of_replicas': u'1', u'uuid': u'random_uuid_string_here',
+                u'number_of_shards': u'5', u'creation_date': u'1456963200172',
+                u'routing': {u'allocation': {u'include': {u'tag': u'foo'}}},
+                u'version': {u'created': u'2020099'}, u'refresh_interval': u'5s'
+            }
+        }
+    },
+    u'index-2016.03.04': {
+        u'state': u'open',
+        u'aliases': [u'my_alias'],
+        u'mappings': {},
+        u'settings': {
+            u'index': {
+                u'number_of_replicas': u'1', u'uuid': u'another_random_uuid_string',
+                u'number_of_shards': u'5',
+                u'routing': {u'allocation': {u'include': {u'tag': u'bar'}}},
+                u'version': {u'created': u'2020099'}, u'refresh_interval': u'5s'
+            }
+        }
+    }
+}
+
 settings_four  = {
     u'a-2016.03.03': {
         u'state': u'open',
@@ -336,6 +365,11 @@ clu_state_two  = {
 cs_two_closed  = {
     u'metadata': {
         u'indices': settings_2_closed
+    }
+}
+clu_state_two_no_cd  = {
+    u'metadata': {
+        u'indices': settings_two_no_cd
     }
 }
 clu_state_four = {
