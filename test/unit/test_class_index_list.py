@@ -37,7 +37,13 @@ class TestIndexListClientAndInit(TestCase):
         client.indices.stats.return_value = testvars.stats_two
         il = curator.IndexList(client)
         self.assertEqual('close', il.index_info['index-2016.03.03']['state'])
-
+    def test_skip_index_without_creation_date(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two_no_cd
+        client.cluster.state.return_value = testvars.clu_state_two_no_cd
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertEqual(['index-2016.03.03'], sorted(il.indices))
 class TestIndexListOtherMethods(TestCase):
     def test_empty_list(self):
         client = Mock()

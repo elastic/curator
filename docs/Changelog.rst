@@ -10,6 +10,9 @@ Changelog
 
   * Coerce Logstash/JSON logformat type timestamp value to always use UTC.
     #661 (untergeek)
+  * Catch and remove indices from the actionable list if they do not have a
+    `creation_date` field in settings.  This field was introduced in ES v1.4, so
+    that indicates a rather old index. #663 (untergeek)
 
 4.0.0 (24 June 2016)
 --------------------
