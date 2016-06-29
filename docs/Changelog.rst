@@ -14,6 +14,9 @@ Changelog
     `creation_date` field in settings.  This field was introduced in ES v1.4, so
     that indicates a rather old index. #663 (untergeek)
   * Replace missing ``state`` filter for ``snapshotlist``. #665 (untergeek)
+  * Restore ``es_repo_mgr`` as a stopgap until other CLI scripts are added.  It
+    will remain undocumented for now, as I am debating whether to make
+    repository creation its own action in the API. #668 (untergeek)
 
 4.0.0 (24 June 2016)
 --------------------
