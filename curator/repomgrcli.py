@@ -27,6 +27,7 @@ def delete_callback(ctx, param, value):
 def fix_hosts(ctx):
     if "host" in ctx.parent.params:
         ctx.parent.params['hosts'] = ctx.parent.params['host']
+        del ctx.parent.params['host']
 
 def show_repos(client):
     for repository in sorted(get_repository(client, '_all').keys()):
