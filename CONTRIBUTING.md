@@ -46,7 +46,7 @@ irc.freenode.org and ask for help there!
 
 If you think you found a bug, it probably is a bug.
 
-* File it on [github](https://github.com/elastic/logstash/issues)
+* File it on [github](https://github.com/elastic/curator/issues)
 
 # Contributing Documentation and Code Changes
 
@@ -54,7 +54,7 @@ If you have a bugfix or new feature that you would like to contribute to
 Curator, and you think it will take more than a few minutes to produce the fix
 (ie; write code), it is worth discussing the change with the Curator users and
 developers first! You can reach us via
-[github](https://github.com/elastic/logstash/issues), or via IRC (#logstash or
+[github](https://github.com/elastic/curator/issues), or via IRC (#logstash or
  #elasticsearch on freenode irc)
 
 Documentation is in two parts: API and CLI documentation.
