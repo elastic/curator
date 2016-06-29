@@ -443,7 +443,7 @@ def get_client(**kwargs):
 
     :arg hosts: A list of one or more Elasticsearch client hostnames or IP
         addresses to connect to.  Can send a single host.
-    :type port: list
+    :type hosts: list
     :arg port: The Elasticsearch client port to connect to.
     :type port: int
     :arg url_prefix: `Optional` url prefix, if needed to reach the Elasticsearch
