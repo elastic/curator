@@ -46,12 +46,25 @@ try:
         targetName = "curator",
         compress = True
     )
+    repomgr_exe = Executable(
+        "run_es_repo_mgr.py",
+        base=base,
+        targetName = "es_repo_mgr.exe",
+        compress = True
+    )
 
     if sys.platform == "win32":
         curator_exe = Executable(
             "run_curator.py",
             base=base,
             targetName = "curator.exe",
+            compress = True,
+            icon = icon
+        )
+        repomgr_exe = Executable(
+            "run_es_repo_mgr.py",
+            base=base,
+            targetName = "es_repo_mgr.exe",
             compress = True,
             icon = icon
         )
@@ -87,7 +100,7 @@ try:
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"],
         options = {"build_exe" : buildOptions},
-        executables = [curator_exe]
+        executables = [curator_exe,repomgr_exe]
     )
     ### end cx_Freeze ###
 except ImportError:
