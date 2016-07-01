@@ -95,7 +95,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [source,text]
 -------------
 action: allocation
-description: "Add/Remove selected indices to or from the specified alias"
+description: "Apply shard allocation filtering rules to the specified indices"
 options:
   key:
   value:

@@ -717,7 +717,11 @@ class Snapshot(object):
         """
         Log what the output would be, but take no action.
         """
-        show_dry_run(self.index_list, 'snapshot', body=self.body)
+        self.loggit.info('DRY-RUN MODE.  No changes will be made.')
+        self.loggit.info(
+            'DRY-RUN: snapshot: {0} in repository {1} with arguments: '
+            '{2}'.format(self.name, self.repository, self.body)
+        )
 
     def do_action(self):
         """

@@ -85,6 +85,7 @@ class SnapshotList(object):
             'age': self.filter_by_age,
             'none': self.filter_none,
             'pattern': self.filter_by_regex,
+            'state': self.filter_by_state,
         }
         return methods[ft]
 

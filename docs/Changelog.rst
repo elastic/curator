@@ -3,6 +3,22 @@
 Changelog
 =========
 
+4.0.1 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Coerce Logstash/JSON logformat type timestamp value to always use UTC.
+    #661 (untergeek)
+  * Catch and remove indices from the actionable list if they do not have a
+    `creation_date` field in settings.  This field was introduced in ES v1.4, so
+    that indicates a rather old index. #663 (untergeek)
+  * Replace missing ``state`` filter for ``snapshotlist``. #665 (untergeek)
+  * Restore ``es_repo_mgr`` as a stopgap until other CLI scripts are added.  It
+    will remain undocumented for now, as I am debating whether to make
+    repository creation its own action in the API. #668 (untergeek)
+  * Fix dry run results for snapshot action. #673 (untergeek)
+
 4.0.0 (24 June 2016)
 --------------------
 
