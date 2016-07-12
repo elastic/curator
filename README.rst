@@ -12,10 +12,13 @@ Elasticsearch Curator helps you curate, or manage your indices.
 Compatibility Matrix
 =======
 
-Curator Version | ES 1.x | ES 2.x | ES 5.x
--------- | -------- | -------- | --------
-**3** | yes | yes | no 
-**4** | no | yes | yes
++--------+----------+----------+----------+
+|Version | ES 1.x   | ES 2.x   | ES 5.x   |
++========+==========+==========+==========+
+|    3   |    |yes| |    |yes| |    |no|  |
++--------+----------+----------+----------+
+|    4   |    |no|  |    |yes| |    |yes| |
++--------+----------+----------+----------+
 
 Build Status
 ------------
