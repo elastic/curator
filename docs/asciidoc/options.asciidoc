@@ -30,6 +30,8 @@ There is no default value.
 [[option_continue]]
 == continue_if_exception
 
+NOTE: This setting is available in all actions.
+
 If `continue_if_exception` is set to `True`, Curator will attempt to continue on
 to the next action, if any, even if an exception is encountered. Curator will
 log but ignore the exception that was raised.
@@ -71,6 +73,8 @@ The default value is `False`.
 
 [[option_disable]]
 == disable_action
+
+NOTE: This setting is available in all actions.
 
 If `disable_action` is set to `True`, Curator will ignore the current action.
 This may be useful for temporarily disabling actions in a large configuration
