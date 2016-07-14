@@ -114,7 +114,7 @@ Optional settings
    timestring: '%Y.%m.%d'
    unit: days
    unit_count: 3
-   field
+   field:
    stats_result:
    epoch:
    exclude: False
