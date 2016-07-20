@@ -9,6 +9,17 @@ Have indices in Elasticsearch? This is the tool for you!
 Like a museum curator manages the exhibits and collections on display,
 Elasticsearch Curator helps you curate, or manage your indices.
 
+Compatibility Matrix
+=======
+
++--------+----------+----------+----------+
+|Version | ES 1.x   | ES 2.x   | ES 5.x   |
++========+==========+==========+==========+
+|    3   |    yes   |     yes  |     no   |
++--------+----------+----------+----------+
+|    4   |    no    |     yes  |     yes  |
++--------+----------+----------+----------+
+
 Build Status
 ------------
 
