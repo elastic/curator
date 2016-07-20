@@ -1,6 +1,9 @@
 #!/bin/bash
 set -ex
 
+# There's at least 1 expected, skipped test, only with 5.0.0-alpha4 right now
+expected_skips=1
+
 setup_es() {
   download_url=$1
   curl -sL $download_url > elasticsearch.tar.gz
@@ -27,9 +30,15 @@ else
   start_es $java_home '-d -Des.path.repo=/'
 fi
 python setup.py test
-result=$(head -1 nosetests.xml | awk '{print $6 " " $7 " " $8}' | awk -F\> '{print $1}')
-expected='errors="0" failures="0" skip="0"'
+result=$(head -1 nosetests.xml | awk '{print $6 " " $7 " " $8}' | awk -F\> '{print $1}' | tr -d '"')
 echo "Result = $result"
-if [[ "$result" != "$expected" ]]; then
+errors=$(echo $result | awk '{print $1}' | awk -F\= '{print $2}')
+failures=$(echo $result | awk '{print $2}' | awk -F\= '{print $2}')
+skips=$(echo $result | awk '{print $3}' | awk -F\= '{print $2}')
+if [[ $errors -gt 0 ]]; then
+  exit 1
+elif [[ $failures -gt 0 ]]; then
+  exit 1
+elif [[ $skips -gt $expected_skips ]]; then
   exit 1
 fi

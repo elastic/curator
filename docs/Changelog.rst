@@ -3,6 +3,20 @@
 Changelog
 =========
 
+4.0.2 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * All default settings are now values returned from functions instead of
+    constants.  This was resulting in settings getting stomped on. New test
+    addresses the original complaint.  This removes the need for ``deepcopy``.
+    See issue #687 (untergeek)
+  * Fix ``host`` vs. ``hosts`` issue in ``get_client()`` rather than the
+    non-functional function in ``repomgrcli.py``.
+  * Update versions being tested.
+  * Community contributed doc fixes.
+
 4.0.1 (1 July 2016)
 -------------------
 
