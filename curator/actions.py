@@ -107,6 +107,7 @@ class Alias(object):
         Run the API call `update_aliases` with the results of `body()`
         """
         self.loggit.info('Updating aliases...')
+        self.loggit.info('Alias actions: {0}'.format(self.body()))
         try:
             self.client.indices.update_aliases(body=self.body())
         except Exception as e:
@@ -176,7 +177,7 @@ class Allocation(object):
         Change allocation settings for indices in `index_list.indices` with the
         settings in `body`.
         """
-        self.loggit.info(
+        self.loggit.debug(
             'Cannot get change shard routing allocation of closed indices.  '
             'Omitting any closed indices.'
         )
@@ -191,7 +192,7 @@ class Allocation(object):
                     index=to_csv(l), body=self.body
                 )
                 if self.wfc:
-                    logger.info(
+                    logger.debug(
                         'Waiting for shards to complete relocation for indices:'
                         ' {0}'.format(to_csv(l))
                     )
@@ -236,7 +237,8 @@ class Close(object):
         """
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
-        self.loggit.info('Closing selected indices')
+        self.loggit.info(
+            'Closing selected indices: {0}'.format(self.index_list.indices))
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -381,7 +383,8 @@ class DeleteIndices(object):
         Delete indices in `index_list.indices`
         """
         self.index_list.empty_list_check()
-        self.loggit.info('Deleting selected indices')
+        self.loggit.info(
+            'Deleting selected indices: {0}'.format(self.index_list.indices))
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -477,7 +480,8 @@ class Open(object):
         Open closed indices in `index_list.indices`
         """
         self.index_list.empty_list_check()
-        self.loggit.info('Opening selected indices')
+        self.loggit.info(
+            'Opening selected indices: {0}'.format(self.index_list.indices))
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -529,14 +533,14 @@ class Replicas(object):
         Update the replica count of indices in `index_list.indices`
         """
         self.index_list.empty_list_check()
-        self.loggit.info(
+        self.loggit.debug(
             'Cannot get update replica count of closed indices.  '
             'Omitting any closed indices.'
         )
         self.index_list.filter_closed()
         self.loggit.info(
-            'Updating the replica count of selected indices to '
-            '{0}'.format(self.count)
+            'Setting the replica count to {0} for indices: '
+            '{1}'.format(self.count, self.index_list.indices)
         )
         try:
             index_lists = chunk_index_list(self.index_list.indices)
@@ -544,7 +548,7 @@ class Replicas(object):
                 self.client.indices.put_settings(index=to_csv(l),
                     body='number_of_replicas={0}'.format(self.count))
                 if self.wfc and self.count > 0:
-                    logger.info(
+                    logger.debug(
                         'Waiting for shards to complete replication for '
                         'indices: {0}'.format(to_csv(l))
                     )
@@ -732,6 +736,9 @@ class Snapshot(object):
         if snapshot_running(self.client):
             raise SnapshotInProgress('Snapshot already in progress.')
         try:
+            self.loggit.info('Creating snapshot "{0}" from indices: '
+                '{1}'.format(self.name, self.index_list.indices)
+            )
             self.client.snapshot.create(
                 repository=self.repository, snapshot=self.name, body=self.body,
                 wait_for_completion=self.wait_for_completion
@@ -852,7 +859,7 @@ class Restore(object):
                 'rename_replacement' : self.rename_replacement,
             }
         if extra_settings:
-            self.loggit.info(
+            self.loggit.debug(
                 'Adding extra_settings to restore body: '
                 '{0}'.format(extra_settings)
             )
@@ -948,6 +955,9 @@ class Restore(object):
             raise SnapshotInProgress(
                 'Cannot restore while a snapshot is in progress.')
         try:
+            self.loggit.info('Restoring indices "{0}" from snapshot: '
+                '{1}'.format(self.indices, self.name)
+            )
             self.client.snapshot.restore(
                 repository=self.repository, snapshot=self.name, body=self.body,
                 wait_for_completion=self.wfc
