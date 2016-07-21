@@ -1,10 +1,9 @@
-
 from datetime import timedelta, datetime, date
 import time
 import re
 import logging
+from .defaults import settings
 from .exceptions import *
-from .settings import *
 from .utils import *
 
 
@@ -292,9 +291,9 @@ class IndexList(object):
             )
 
         if kind == 'timestring':
-            regex = REGEX_MAP[kind].format(get_date_regex(value))
+            regex = settings.regex_map()[kind].format(get_date_regex(value))
         else:
-            regex = REGEX_MAP[kind].format(value)
+            regex = settings.regex_map()[kind].format(value)
 
         self.empty_list_check()
         pattern = re.compile(regex)
@@ -715,7 +714,7 @@ class IndexList(object):
                     '{0}'.format(f['filtertype'])
                 )
             try:
-                f_args = IDX_FILTER_DEFAULTS[ft]
+                f_args = settings.index_filter()[ft]
                 method = self.__map_method(ft)
             except:
                 raise ConfigurationError(
