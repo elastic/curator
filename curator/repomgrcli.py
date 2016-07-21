@@ -3,13 +3,13 @@ import click
 import re
 import sys
 import logging
-from .settings import CLIENT_DEFAULTS, LOGGING_DEFAULTS
+from .defaults import settings
 from .exceptions import *
 from .utils import *
 from ._version import __version__
 from .logtools import LogInfo
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('curator.repomgrcli')
 
 try:
     from logging import NullHandler
@@ -23,11 +23,6 @@ except ImportError:
 def delete_callback(ctx, param, value):
     if not value:
         ctx.abort()
-
-def fix_hosts(ctx):
-    if "host" in ctx.parent.params:
-        ctx.parent.params['hosts'] = ctx.parent.params['host']
-        del ctx.parent.params['host']
 
 def show_repos(client):
     for repository in sorted(get_repository(client, '_all').keys()):
@@ -55,7 +50,6 @@ def fs(
     """
     Create a filesystem repository.
     """
-    fix_hosts(ctx)
     client = get_client(**ctx.parent.parent.params)
     try:
         create_repository(client, repo_type='fs', **ctx.params)
@@ -91,7 +85,6 @@ def s3(
     """
     Create an S3 repository.
     """
-    fix_hosts(ctx)
     client = get_client(**ctx.parent.parent.params)
     try:
         create_repository(client, repo_type='s3', **ctx.params)
@@ -102,24 +95,24 @@ def s3(
 
 @click.group()
 @click.option(
-    '--host', help='Elasticsearch host.', default=CLIENT_DEFAULTS['hosts'])
+    '--host', help='Elasticsearch host.', default=settings.client()['hosts'])
 @click.option(
     '--url_prefix', help='Elasticsearch http url prefix.',
-    default=CLIENT_DEFAULTS['url_prefix']
+    default=settings.client()['url_prefix']
 )
-@click.option('--port', help='Elasticsearch port.', default=CLIENT_DEFAULTS['port'], type=int)
-@click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=CLIENT_DEFAULTS['use_ssl'])
+@click.option('--port', help='Elasticsearch port.', default=settings.client()['port'], type=int)
+@click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=settings.client()['use_ssl'])
 @click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
 @click.option('--client-cert', help='Path to file containing SSL certificate for client auth. (OPTIONAL)', type=str, default=None)
 @click.option('--client-key', help='Path to file containing SSL key for client auth. (OPTIONAL)', type=str, default=None)
 @click.option('--ssl-no-validate', help='Do not validate server\'s SSL certificate', is_flag=True)
-@click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=CLIENT_DEFAULTS['http_auth'])
-@click.option('--timeout', help='Connection timeout in seconds.', default=CLIENT_DEFAULTS['timeout'], type=int)
+@click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=settings.client()['http_auth'])
+@click.option('--timeout', help='Connection timeout in seconds.', default=settings.client()['timeout'], type=int)
 @click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
 @click.option('--debug', is_flag=True, help='Debug mode')
-@click.option('--loglevel', help='Log level', default=LOGGING_DEFAULTS['loglevel'])
-@click.option('--logfile', help='log file', default=LOGGING_DEFAULTS['logfile'])
-@click.option('--logformat', help='Log output format [default|logstash].', default=LOGGING_DEFAULTS['logformat'])
+@click.option('--loglevel', help='Log level', default=settings.logs()['loglevel'])
+@click.option('--logfile', help='log file', default=settings.logs()['logfile'])
+@click.option('--logformat', help='Log output format [default|logstash].', default=settings.logs()['logformat'])
 @click.version_option(version=__version__)
 @click.pass_context
 def repo_mgr_cli(
@@ -153,7 +146,6 @@ def show(ctx):
     """
     Show all repositories
     """
-    fix_hosts(ctx)
     client = get_client(**ctx.parent.params)
     show_repos(client)
 
@@ -165,7 +157,6 @@ def show(ctx):
 @click.pass_context
 def _delete(ctx, repository):
     """Delete an Elasticsearch repository"""
-    fix_hosts(ctx)
     client = get_client(**ctx.parent.params)
     try:
         logger.info('Deleting repository {0}...'.format(repository))

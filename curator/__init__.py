@@ -1,5 +1,5 @@
 from .exceptions import *
-from .settings import *
+from .defaults import settings
 from .logtools import *
 from .utils import *
 from .indexlist import IndexList

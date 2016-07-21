@@ -56,6 +56,7 @@ class LogInfo(object):
                 self.handler.addFilter(
                     Whitelist(
                         'root', '__main__', 'curator.cli', 'curator.curator',
+                        'curator.repomgrcli',
                         'curator.indexlist', 'curator.snapshotlist',
                         'curator.actions.alias', 'curator.actions.allocation',
                         'curator.actions.close', 'curator.actions.delete_indices',

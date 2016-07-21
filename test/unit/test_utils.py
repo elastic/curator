@@ -254,6 +254,16 @@ class TestGetClient(TestCase):
             curator.ConfigurationError,
             curator.get_client, **kwargs
         )
+    def test_host_with_hosts(self):
+        kwargs = {
+            'url_prefix': '',
+            'host' : '127.0.0.1',
+            'hosts' : ['127.0.0.2'],
+        }
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.get_client, **kwargs
+        )
     def test_certificate_logic(self):
         kwargs = { 'use_ssl' : True, 'certificate' : 'mycert.pem' }
         self.assertRaises(
