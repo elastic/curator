@@ -17,7 +17,8 @@ client_config = ('---\n'
 'logging:\n'
 '  loglevel: DEBUG\n'
 '  logfile:\n'
-'  logformat: default\n')
+'  logformat: default\n'
+'  blacklist: []\n')
 
 no_client_config = ('---\n'
 'misspelled:\n'
