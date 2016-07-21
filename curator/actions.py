@@ -731,6 +731,7 @@ class Snapshot(object):
         """
         Snapshot indices in `index_list.indices`, with options passed.
         """
+        self.index_list.empty_list_check()
         if not self.skip_repo_fs_check:
             test_repo_fs(self.client, self.repository)
         if snapshot_running(self.client):
