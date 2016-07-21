@@ -397,7 +397,7 @@ actions:
       skip_repo_fs_check: False
       timeout_override:
       continue_if_exception: False
-      disable_action: False
+      disable_action: True
     filters:
     - filtertype: pattern
       kind: prefix
@@ -440,7 +440,7 @@ actions:
       skip_repo_fs_check: False
       timeout_override:
       continue_if_exception: False
-      disable_action: False
+      disable_action: True
     filters:
     - filtertype: pattern
       kind: prefix
