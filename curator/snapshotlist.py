@@ -41,11 +41,11 @@ class SnapshotList(object):
 
 
     def __actionable(self, snap):
-        self.loggit.info(
+        self.loggit.debug(
             'Snapshot {0} is actionable and remains in the list.'.format(snap))
 
     def __not_actionable(self, snap):
-            self.loggit.info(
+            self.loggit.debug(
                 'Snapshot {0} is not actionable, removing from '
                 'list.'.format(snap)
             )
@@ -67,7 +67,7 @@ class SnapshotList(object):
                 text = "Removed from actionable list"
                 self.__not_actionable(snap)
         if msg:
-            self.loggit.info('{0}: {1}'.format(text, msg))
+            self.loggit.debug('{0}: {1}'.format(text, msg))
 
     def __get_snapshots(self):
         """
@@ -275,7 +275,7 @@ class SnapshotList(object):
                 self.__excludify(False, exclude, snapshot)
 
     def filter_none(self):
-        self.loggit.info('"None" filter selected.  No filtering will be done.')
+        self.loggit.debug('"None" filter selected.  No filtering will be done.')
 
     def iterate_filters(self, config):
         """

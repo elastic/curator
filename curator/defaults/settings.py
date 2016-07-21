@@ -32,6 +32,7 @@ def logs():
         'loglevel': 'INFO',
         'logfile': None,
         'logformat': 'default',
+        'blacklist': ['elasticsearch', 'urllib3'],
     }
 
 def options():

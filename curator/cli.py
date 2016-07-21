@@ -9,7 +9,7 @@ from .indexlist import IndexList
 from .snapshotlist import SnapshotList
 from .actions import *
 from ._version import __version__
-from .logtools import LogInfo
+from .logtools import LogInfo, Whitelist, Blacklist
 
 try:
     from logging import NullHandler
@@ -142,6 +142,10 @@ def cli(config, dry_run, action_file):
     # Set up NullHandler() to handle nested elasticsearch.trace Logger
     # instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
+    if log_opts['blacklist']:
+        for bl_entry in ensure_list(log_opts['blacklist']):
+            for handler in logging.root.handlers:
+                handler.addFilter(Blacklist(bl_entry))
 
     # Get default client options and overwrite with any changes
     try:
@@ -245,3 +249,5 @@ def cli(config, dry_run, action_file):
                     )
                 else:
                     sys.exit(1)
+        logger.info('Action #{0}: completed'.format(idx))
+    logger.info('Job completed.')

@@ -16,6 +16,11 @@ Changelog
     non-functional function in ``repomgrcli.py``.
   * Update versions being tested.
   * Community contributed doc fixes.
+  * Reduced logging verbosity by making most messages debug level. #684
+    (untergeek)
+  * Fixed log whitelist behavior (and switched to blacklisting instead).
+    Default behavior will now filter traffic from the ``elasticsearch`` and
+    ``urllib3`` modules.
 
 4.0.1 (1 July 2016)
 -------------------

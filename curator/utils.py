@@ -506,7 +506,7 @@ def get_client(**kwargs):
         if kwargs['ssl_no_validate']:
             kwargs['verify_certs'] = False # Not needed, but explicitly defined
         else:
-            logger.info('Attempting to verify SSL certificate.')
+            logger.debug('Attempting to verify SSL certificate.')
             # If user provides a certificate:
             if kwargs['certificate']:
                 kwargs['verify_certs'] = True
@@ -582,7 +582,7 @@ def override_timeout(timeout, action):
                 retval = 21600
             elif action == 'sync_flush':
                 retval = 180
-            logger.info(
+            logger.debug(
                 'Overriding default connection timeout for {0} action.  '
                 'New timeout: {1}'.format(action.upper(),timeout)
             )
@@ -860,20 +860,20 @@ def create_repository(client, **kwargs):
 
     try:
         body = create_repo_body(**kwargs)
-        logger.info(
+        logger.debug(
             'Checking if repository {0} already exists...'.format(repository)
         )
         result = get_repository(client, repository=repository)
         logger.debug("Result = {0}".format(result))
         if not result:
-            logger.info(
+            logger.debug(
                 'Repository {0} not in Elasticsearch. Continuing...'.format(
                     repository
                 )
             )
             client.snapshot.create_repository(repository=repository, body=body)
         elif result is not None and repository not in result:
-            logger.info(
+            logger.debug(
                 'Repository {0} not in Elasticsearch. Continuing...'.format(
                     repository
                 )
@@ -893,7 +893,7 @@ def create_repository(client, **kwargs):
                 repository, e.status_code, e.error
                 )
         )
-    logger.info("Repository {0} creation initiated...".format(repository))
+    logger.debug("Repository {0} creation initiated...".format(repository))
     return True
 
 def repository_exists(client, repository=None):
@@ -908,10 +908,10 @@ def repository_exists(client, repository=None):
         raise MissingArgument('No value for "repository" provided')
     test_result = get_repository(client, repository)
     if repository in test_result:
-        logger.info("Repository {0} exists.".format(repository))
+        logger.debug("Repository {0} exists.".format(repository))
         return True
     else:
-        logger.info("Repository {0} not found...".format(repository))
+        logger.debug("Repository {0} not found...".format(repository))
         return False
 
 def test_repo_fs(client, repository=None):
@@ -924,7 +924,7 @@ def test_repo_fs(client, repository=None):
     try:
         nodes = client.snapshot.verify_repository(
             repository=repository)['nodes']
-        logger.info('All nodes can write to the repository')
+        logger.debug('All nodes can write to the repository')
         logger.debug(
             'Nodes with verified repository access: {0}'.format(nodes))
     except Exception as e:

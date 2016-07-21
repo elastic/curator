@@ -32,6 +32,10 @@ class Whitelist(logging.Filter):
     def filter(self, record):
         return any(f.filter(record) for f in self.whitelist)
 
+class Blacklist(Whitelist):
+    def filter(self, record):
+        return not Whitelist.filter(self, record)
+
 class LogInfo(object):
     def __init__(self, cfg):
         cfg['loglevel'] = 'INFO' if not 'loglevel' in cfg else cfg['loglevel']
@@ -51,20 +55,6 @@ class LogInfo(object):
                 '%(asctime)s %(levelname)-9s %(name)22s '
                 '%(funcName)22s:%(lineno)-4d %(message)s'
             )
-        else:
-            for handler in logging.root.handlers:
-                self.handler.addFilter(
-                    Whitelist(
-                        'root', '__main__', 'curator.cli', 'curator.curator',
-                        'curator.repomgrcli',
-                        'curator.indexlist', 'curator.snapshotlist',
-                        'curator.actions.alias', 'curator.actions.allocation',
-                        'curator.actions.close', 'curator.actions.delete_indices',
-                        'curator.actions.delete_snapshots',
-                        'curator.actions.forcemerge', 'curator.actions.open',
-                        'curator.actions.replicas', 'curator.actions.snapshot',
-                    )
-                )
 
         if cfg['logformat'] == 'json' or cfg['logformat'] == 'logstash':
             self.handler.setFormatter(LogstashFormatter())
