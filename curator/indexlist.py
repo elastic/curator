@@ -1,10 +1,9 @@
-
 from datetime import timedelta, datetime, date
 import time
 import re
 import logging
+from .defaults import settings
 from .exceptions import *
-from .settings import *
 from .utils import *
 
 
@@ -31,11 +30,11 @@ class IndexList(object):
         self.__get_indices()
 
     def __actionable(self, idx):
-        self.loggit.info(
+        self.loggit.debug(
             'Index {0} is actionable and remains in the list.'.format(idx))
 
     def __not_actionable(self, idx):
-            self.loggit.info(
+            self.loggit.debug(
                 'Index {0} is not actionable, removing from list.'.format(idx))
             self.indices.remove(idx)
 
@@ -55,7 +54,7 @@ class IndexList(object):
                 text = "Removed from actionable list"
                 self.__not_actionable(index)
         if msg:
-            self.loggit.info('{0}: {1}'.format(text, msg))
+            self.loggit.debug('{0}: {1}'.format(text, msg))
 
     def __get_indices(self):
         """
@@ -238,7 +237,7 @@ class IndexList(object):
             elasticsearch as a date datatype.  Default: ``@timestamp``
         """
         self.loggit.debug('Getting index date from field_stats API')
-        self.loggit.info(
+        self.loggit.debug(
             'Cannot use field_stats on closed indices.  '
             'Omitting any closed indices.'
         )
@@ -292,9 +291,9 @@ class IndexList(object):
             )
 
         if kind == 'timestring':
-            regex = REGEX_MAP[kind].format(get_date_regex(value))
+            regex = settings.regex_map()[kind].format(get_date_regex(value))
         else:
-            regex = REGEX_MAP[kind].format(value)
+            regex = settings.regex_map()[kind].format(value)
 
         self.empty_list_check()
         pattern = re.compile(regex)
@@ -393,7 +392,7 @@ class IndexList(object):
                     agetest = self.index_info[index]['age'][keyfield] > PoR
                 self.__excludify(agetest, exclude, index, msg)
             except KeyError:
-                self.loggit.info(
+                self.loggit.debug(
                     'Index "{0}" does not meet provided criteria. '
                     'Removing from list.'.format(index, source))
                 self.indices.remove(index)
@@ -449,7 +448,7 @@ class IndexList(object):
         disk_usage = 0.0
         disk_limit = disk_space * 2**30
 
-        self.loggit.info(
+        self.loggit.debug(
             'Cannot get disk usage info from closed indices.  '
             'Omitting any closed indices.'
         )
@@ -514,21 +513,6 @@ class IndexList(object):
                 )
             )
             self.__excludify((disk_usage > disk_limit), exclude, index, msg)
-            # if disk_usage > disk_limit:
-            #     if exclude:
-            #         text = "Removed from actionable list"
-            #         self.__not_actionable(index)
-            #     else:
-            #         text = "Remains in actionable list"
-            #         self.__actionable(index)
-            # else:
-            #     if exclude:
-            #         text = "Remains in actionable list"
-            #         self.__actionable(index)
-            #     else:
-            #         text = "Removed from actionable list"
-            #         self.__not_actionable(index)
-            # self.loggit.info('{0}: {1}'.format(text, msg))
 
     def filter_kibana(self, exclude=True):
         """
@@ -562,7 +546,7 @@ class IndexList(object):
         self.loggit.debug('Filtering forceMerged indices')
         if not max_num_segments:
             raise MissingArgument('Missing value for "max_num_segments"')
-        self.loggit.info(
+        self.loggit.debug(
             'Cannot get segment count of closed indices.  '
             'Omitting any closed indices.'
         )
@@ -669,7 +653,7 @@ class IndexList(object):
                     self.__excludify(has_routing, exclude, index, msg)
 
     def filter_none(self):
-        self.loggit.info('"None" filter selected.  No filtering will be done.')
+        self.loggit.debug('"None" filter selected.  No filtering will be done.')
 
     def iterate_filters(self, filter_dict):
         """
@@ -715,7 +699,7 @@ class IndexList(object):
                     '{0}'.format(f['filtertype'])
                 )
             try:
-                f_args = IDX_FILTER_DEFAULTS[ft]
+                f_args = settings.index_filter()[ft]
                 method = self.__map_method(ft)
             except:
                 raise ConfigurationError(

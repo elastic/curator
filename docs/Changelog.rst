@@ -3,6 +3,58 @@
 Changelog
 =========
 
+4.0.3 (22 July 2016)
+--------------------
+
+**General**
+
+  * 4.0.2 didn't work for ``pip`` installs due to an omission in the
+    MANIFEST.in file.  This came up during release testing, but before the
+    release was fully published. As the release was never fully published, this
+    should not have actually affected anyone.
+
+**Bug Fixes**
+
+  * These are the same as 4.0.2, but it was never fully released.
+  * All default settings are now values returned from functions instead of
+    constants.  This was resulting in settings getting stomped on. New test
+    addresses the original complaint.  This removes the need for ``deepcopy``.
+    See issue #687 (untergeek)
+  * Fix ``host`` vs. ``hosts`` issue in ``get_client()`` rather than the
+    non-functional function in ``repomgrcli.py``.
+  * Update versions being tested.
+  * Community contributed doc fixes.
+  * Reduced logging verbosity by making most messages debug level. #684
+    (untergeek)
+  * Fixed log whitelist behavior (and switched to blacklisting instead).
+    Default behavior will now filter traffic from the ``elasticsearch`` and
+    ``urllib3`` modules.
+  * Fix Travis CI testing to accept some skipped tests, as needed. #695
+    (untergeek)
+  * Fix missing empty index test in snapshot action. #682 (sherzberg)
+
+4.0.2 (22 July 2016)
+--------------------
+
+**Bug Fixes**
+
+  * All default settings are now values returned from functions instead of
+    constants.  This was resulting in settings getting stomped on. New test
+    addresses the original complaint.  This removes the need for ``deepcopy``.
+    See issue #687 (untergeek)
+  * Fix ``host`` vs. ``hosts`` issue in ``get_client()`` rather than the
+    non-functional function in ``repomgrcli.py``.
+  * Update versions being tested.
+  * Community contributed doc fixes.
+  * Reduced logging verbosity by making most messages debug level. #684
+    (untergeek)
+  * Fixed log whitelist behavior (and switched to blacklisting instead).
+    Default behavior will now filter traffic from the ``elasticsearch`` and
+    ``urllib3`` modules.
+  * Fix Travis CI testing to accept some skipped tests, as needed. #695
+    (untergeek)
+  * Fix missing empty index test in snapshot action. #682 (sherzberg)
+
 4.0.1 (1 July 2016)
 -------------------
 

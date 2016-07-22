@@ -1,13 +1,12 @@
 from datetime import timedelta, datetime, date
 import elasticsearch
-import copy
 import time
 import re
 import sys
 import logging
 import yaml
+from .defaults import settings
 from .exceptions import *
-from .settings import DATE_REGEX, VERSION_MAX, VERSION_MIN, ACTION_DEFAULTS
 from ._version import __version__
 logger = logging.getLogger(__name__)
 
@@ -129,8 +128,8 @@ def get_date_regex(timestring):
         curr = timestring[s]
         if curr == '%':
             pass
-        elif curr in DATE_REGEX and prev == '%':
-            regex += '\d{' + DATE_REGEX[curr] + '}'
+        elif curr in settings.date_regex() and prev == '%':
+            regex += '\d{' + settings.date_regex()[curr] + '}'
         elif curr in ['.', '-']:
             regex += "\\" + curr
         else:
@@ -412,7 +411,8 @@ def check_version(client):
         'Detected Elasticsearch version '
         '{0}'.format(".".join(map(str,version_number)))
     )
-    if version_number >= VERSION_MAX or version_number < VERSION_MIN:
+    if version_number >= settings.version_max() \
+        or version_number < settings.version_min():
         raise CuratorException(
             'Elasticsearch version {0} incompatible '
             'with this version of Curator '
@@ -481,6 +481,12 @@ def get_client(**kwargs):
                 kwargs['url_prefix'] == "None"
             ):
             kwargs['url_prefix'] = ''
+    if 'host' in kwargs and 'hosts' in kwargs:
+        raise ConfigurationError(
+            'Both "host" and "hosts" are defined.  Pick only one.')
+    elif 'host' in kwargs and not 'hosts' in kwargs:
+        kwargs['hosts'] = kwargs['host']
+        del kwargs['host']
     kwargs['hosts'] = '127.0.0.1' if not 'hosts' in kwargs else kwargs['hosts']
     kwargs['master_only'] = False if not 'master_only' in kwargs \
         else kwargs['master_only']
@@ -500,7 +506,7 @@ def get_client(**kwargs):
         if kwargs['ssl_no_validate']:
             kwargs['verify_certs'] = False # Not needed, but explicitly defined
         else:
-            logger.info('Attempting to verify SSL certificate.')
+            logger.debug('Attempting to verify SSL certificate.')
             # If user provides a certificate:
             if kwargs['certificate']:
                 kwargs['verify_certs'] = True
@@ -576,7 +582,7 @@ def override_timeout(timeout, action):
                 retval = 21600
             elif action == 'sync_flush':
                 retval = 180
-            logger.info(
+            logger.debug(
                 'Overriding default connection timeout for {0} action.  '
                 'New timeout: {1}'.format(action.upper(),timeout)
             )
@@ -796,21 +802,21 @@ def create_repo_body(repo_type=None,
     body = {}
     body['type'] = argdict['repo_type']
     body['settings'] = {}
-    settings = []
+    settingz = [] # Differentiate from module settings
     maybes   = [
                 'compress', 'chunk_size',
                 'max_restore_bytes_per_sec', 'max_snapshot_bytes_per_sec'
                ]
     s3       = ['bucket', 'region', 'base_path', 'access_key', 'secret_key']
 
-    settings += [i for i in maybes if argdict[i]]
+    settingz += [i for i in maybes if argdict[i]]
     # Type 'fs'
     if argdict['repo_type'] == 'fs':
-        settings.append('location')
+        settingz.append('location')
     # Type 's3'
     if argdict['repo_type'] == 's3':
-        settings += [i for i in s3 if argdict[i]]
-    for k in settings:
+        settingz += [i for i in s3 if argdict[i]]
+    for k in settingz:
         body['settings'][k] = argdict[k]
     return body
 
@@ -854,20 +860,20 @@ def create_repository(client, **kwargs):
 
     try:
         body = create_repo_body(**kwargs)
-        logger.info(
+        logger.debug(
             'Checking if repository {0} already exists...'.format(repository)
         )
         result = get_repository(client, repository=repository)
         logger.debug("Result = {0}".format(result))
         if not result:
-            logger.info(
+            logger.debug(
                 'Repository {0} not in Elasticsearch. Continuing...'.format(
                     repository
                 )
             )
             client.snapshot.create_repository(repository=repository, body=body)
         elif result is not None and repository not in result:
-            logger.info(
+            logger.debug(
                 'Repository {0} not in Elasticsearch. Continuing...'.format(
                     repository
                 )
@@ -887,7 +893,7 @@ def create_repository(client, **kwargs):
                 repository, e.status_code, e.error
                 )
         )
-    logger.info("Repository {0} creation initiated...".format(repository))
+    logger.debug("Repository {0} creation initiated...".format(repository))
     return True
 
 def repository_exists(client, repository=None):
@@ -902,10 +908,10 @@ def repository_exists(client, repository=None):
         raise MissingArgument('No value for "repository" provided')
     test_result = get_repository(client, repository)
     if repository in test_result:
-        logger.info("Repository {0} exists.".format(repository))
+        logger.debug("Repository {0} exists.".format(repository))
         return True
     else:
-        logger.info("Repository {0} not found...".format(repository))
+        logger.debug("Repository {0} not found...".format(repository))
         return False
 
 def test_repo_fs(client, repository=None):
@@ -918,7 +924,7 @@ def test_repo_fs(client, repository=None):
     try:
         nodes = client.snapshot.verify_repository(
             repository=repository)['nodes']
-        logger.info('All nodes can write to the repository')
+        logger.debug('All nodes can write to the repository')
         logger.debug(
             'Nodes with verified repository access: {0}'.format(nodes))
     except Exception as e:
@@ -982,7 +988,7 @@ def parse_date_pattern(name):
         curr = name[s]
         if curr == '%':
             pass
-        elif curr in DATE_REGEX and prev == '%':
+        elif curr in settings.date_regex() and prev == '%':
             rendered += str(datetime.utcnow().strftime('%{0}'.format(curr)))
         else:
             rendered += curr
@@ -1017,8 +1023,6 @@ def verify_args(action, options):
         )
         return sorted(list(options.keys())) == sorted(list(mydict.keys()))
 
-    # deepcopy guarantees clean copies of the defaults, and nothing getting
-    # altered in "pass by reference," which was happening in testing.
-    if not matches_keys(copy.deepcopy(ACTION_DEFAULTS[action])):
+    if not matches_keys(settings.action_defaults()[action]):
         raise ConfigurationError(
             'Invalid option in configuration: {0}'.format(options))

@@ -1,10 +1,11 @@
-from .exceptions import *
-from .utils import *
 from datetime import timedelta, datetime, date
 import time
 import re
-from .settings import *
 import logging
+from .defaults import settings
+from .exceptions import *
+from .utils import *
+
 
 class SnapshotList(object):
     def __init__(self, client, repository=None):
@@ -40,11 +41,11 @@ class SnapshotList(object):
 
 
     def __actionable(self, snap):
-        self.loggit.info(
+        self.loggit.debug(
             'Snapshot {0} is actionable and remains in the list.'.format(snap))
 
     def __not_actionable(self, snap):
-            self.loggit.info(
+            self.loggit.debug(
                 'Snapshot {0} is not actionable, removing from '
                 'list.'.format(snap)
             )
@@ -66,7 +67,7 @@ class SnapshotList(object):
                 text = "Removed from actionable list"
                 self.__not_actionable(snap)
         if msg:
-            self.loggit.info('{0}: {1}'.format(text, msg))
+            self.loggit.debug('{0}: {1}'.format(text, msg))
 
     def __get_snapshots(self):
         """
@@ -167,9 +168,9 @@ class SnapshotList(object):
             )
 
         if kind == 'timestring':
-            regex = REGEX_MAP[kind].format(get_date_regex(value))
+            regex = settings.regex_map()[kind].format(get_date_regex(value))
         else:
-            regex = REGEX_MAP[kind].format(value)
+            regex = settings.regex_map()[kind].format(value)
 
         self.empty_list_check()
         pattern = re.compile(regex)
@@ -274,7 +275,7 @@ class SnapshotList(object):
                 self.__excludify(False, exclude, snapshot)
 
     def filter_none(self):
-        self.loggit.info('"None" filter selected.  No filtering will be done.')
+        self.loggit.debug('"None" filter selected.  No filtering will be done.')
 
     def iterate_filters(self, config):
         """
@@ -322,7 +323,7 @@ class SnapshotList(object):
                     '{0}'.format(f['filtertype'])
                 )
             try:
-                f_args = SNAP_FILTER_DEFAULTS[ft]
+                f_args = settings.snapshot_filter()[ft]
                 method = self.__map_method(ft)
             except:
                 raise ConfigurationError(

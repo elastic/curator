@@ -133,6 +133,7 @@ logging:
   loglevel: INFO
   logfile:
   logformat: default
+  blacklist: ['elasticsearch', 'urllib3']
 -----------
 
 It is a YAML configuration file.  The two root keys must be `client` and
@@ -285,6 +286,8 @@ SSL key. The key file must be an unencrypted key in PEM format.
 [[aws_key]]
 === aws_key
 
+IMPORTANT: This is an experimental feature and may not yet work as expected.
+
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -312,12 +315,16 @@ This should be an AWS IAM secret access key, or left empty.
 aws_secret_key:
 -----------
 
+IMPORTANT: This is an experimental feature and may not yet work as expected.
+
 IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
     It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
     name due to the different connection module used.
 
 [[aws_region]]
 === aws_region
+
+IMPORTANT: This is an experimental feature and may not yet work as expected.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -469,3 +476,23 @@ The `json` or `logstash` formats look like:
 -----------
 
 The default value is `default`.
+
+[[blacklist]]
+=== blacklist
+
+This should be an empty array `[]`, an array of log handler strings, or left
+empty.
+
+[source,sh]
+-----------
+blacklist: ['elasticsearch', 'urllib3']
+-----------
+
+The default value is `['elasticsearch', 'urllib3']`, which will result in
+logs for the `elasticsearch` and `urllib3` Python modules _not_ being output.
+These can be quite verbose, so unless you need them to debug an issue, you
+should accept the default value.
+
+TIP: If you do need to troubleshoot an issue, set `blacklist` to `[]`, which is
+an empty array.  Leaving it unset will result in the default behavior, which is
+to filter out `elasticsearch` and `urllib3` log traffic.

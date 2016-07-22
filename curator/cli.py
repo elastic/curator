@@ -2,16 +2,14 @@ import os, sys
 import yaml
 import logging
 import click
-import copy
-from .settings import ACTION_DEFAULTS, CONFIG_FILE, CLIENT_DEFAULTS, \
-    LOGGING_DEFAULTS, OPTION_DEFAULTS
+from .defaults import settings
 from .exceptions import *
 from .utils import *
 from .indexlist import IndexList
 from .snapshotlist import SnapshotList
 from .actions import *
 from ._version import __version__
-from .logtools import LogInfo
+from .logtools import LogInfo, Whitelist, Blacklist
 
 try:
     from logging import NullHandler
@@ -53,9 +51,7 @@ def process_action(client, config, **kwargs):
     mykwargs = {}
 
     if action in CLASS_MAP:
-        # deepcopy guarantees clean copies of the defaults, and nothing getting
-        # altered in "pass by reference," which was happening in testing.
-        mykwargs = copy.deepcopy(ACTION_DEFAULTS[action])
+        mykwargs = settings.action_defaults()[action]
         action_class = CLASS_MAP[action]
     else:
         raise ConfigurationError(
@@ -117,7 +113,7 @@ def process_action(client, config, **kwargs):
 @click.command()
 @click.option('--config',
     help="Path to configuration file. Default: ~/.curator/curator.yml",
-    type=click.Path(exists=True), default=CONFIG_FILE
+    type=click.Path(exists=True), default=settings.config_file()
 )
 @click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
 @click.argument('action_file', type=click.Path(exists=True), nargs=1)
@@ -133,11 +129,11 @@ def cli(config, dry_run, action_file):
     # Get default options and overwrite with any changes
     try:
         yaml_log_opts = prune_nones(yaml_config['logging'])
-        log_opts      = LOGGING_DEFAULTS
+        log_opts      = settings.logs()
         log_opts.update(yaml_log_opts)
     except KeyError:
         # Use the defaults if there is no logging section
-        log_opts = LOGGING_DEFAULTS
+        log_opts = settings.logs()
     # Set up logging
     loginfo = LogInfo(log_opts)
     logging.root.addHandler(loginfo.handler)
@@ -146,11 +142,15 @@ def cli(config, dry_run, action_file):
     # Set up NullHandler() to handle nested elasticsearch.trace Logger
     # instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
+    if log_opts['blacklist']:
+        for bl_entry in ensure_list(log_opts['blacklist']):
+            for handler in logging.root.handlers:
+                handler.addFilter(Blacklist(bl_entry))
 
     # Get default client options and overwrite with any changes
     try:
         yaml_client  = prune_nones(yaml_config['client'])
-        client_args  = CLIENT_DEFAULTS
+        client_args  = settings.client()
         client_args.update(yaml_client)
     except KeyError:
         logger.critical(
@@ -177,7 +177,7 @@ def cli(config, dry_run, action_file):
         logger.info('Action #{0}: {1}'.format(idx, action))
         if not 'options' in actions[idx] or \
                 type(actions[idx]['options']) is not type(dict()):
-            actions[idx]['options'] = OPTION_DEFAULTS
+            actions[idx]['options'] = settings.options()
         # Assign and remove these keys from the options as the action will
         # raise an exception if they are passed as kwargs
         action_disabled = actions[idx]['options'].pop('disable_action', False)
@@ -249,3 +249,5 @@ def cli(config, dry_run, action_file):
                     )
                 else:
                     sys.exit(1)
+        logger.info('Action #{0}: completed'.format(idx))
+    logger.info('Job completed.')
