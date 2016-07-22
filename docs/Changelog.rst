@@ -3,8 +3,8 @@
 Changelog
 =========
 
-4.0.2 (? ? ?)
--------------
+4.0.2 (22 July 2016)
+--------------------
 
 **Bug Fixes**
 
@@ -21,6 +21,9 @@ Changelog
   * Fixed log whitelist behavior (and switched to blacklisting instead).
     Default behavior will now filter traffic from the ``elasticsearch`` and
     ``urllib3`` modules.
+  * Fix Travis CI testing to accept some skipped tests, as needed. #695
+    (untergeek)
+  * Fix missing empty index test in snapshot action. #682 (sherzberg)
 
 4.0.1 (1 July 2016)
 -------------------

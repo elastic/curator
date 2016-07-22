@@ -286,6 +286,8 @@ SSL key. The key file must be an unencrypted key in PEM format.
 [[aws_key]]
 === aws_key
 
+IMPORTANT: This is an experimental feature and may not yet work as expected.
+
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -313,12 +315,16 @@ This should be an AWS IAM secret access key, or left empty.
 aws_secret_key:
 -----------
 
+IMPORTANT: This is an experimental feature and may not yet work as expected.
+
 IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
     It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
     name due to the different connection module used.
 
 [[aws_region]]
 === aws_region
+
+IMPORTANT: This is an experimental feature and may not yet work as expected.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
