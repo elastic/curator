@@ -5,8 +5,11 @@ include README.rst
 include Dockerfile
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
+recursive-include curator *
 recursive-include test *
 recursive-include docs *
+recursive-exclude curator *.pyc
+recursive-exclude curator *.pyo
 recursive-exclude docs *.pyc
 recursive-exclude docs *.pyo
 recursive-exclude test *.pyc
