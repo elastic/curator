@@ -6,6 +6,9 @@
 
 These are the higher-level configuration settings used by the configuration
 files.  <<actions,Actions>> and <<filters,filters>> are documented separately.
+
+* <<actionfile,Action File>>
+* <<configfile,Configuration File>>
 --
 
 [[actionfile]]

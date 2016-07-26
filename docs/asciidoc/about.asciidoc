@@ -14,8 +14,18 @@ remove indices (or snapshots) from this _actionable list_ as needed.
 3. Perform various <<actions,actions>> on the items which remain in the
 _actionable list._
 
+Learn More:
+
+* <<about-origin,Origin>>
+* <<about-features,Features>>
+* <<about-cli,Command-Line Interface (CLI)>>
+* <<about-api,Application Program Interface (API)>>
+* <<license,License>>
+* <<site-corrections,Site Corrections>>
+* <<about-contributing,Contributing>>
 --
 
+[[about-origin]]
 == Origin
 
 Curator was first called
@@ -32,6 +42,7 @@ Curator and is now hosted at https://github.com/elastic/curator
 Curator now performs many operations on your Elasticsearch indices, from delete
 to snapshot to shard allocation routing.
 
+[[about-features]]
 == Features
 
 Curator allows for many different operations to be performed to both indices and
@@ -40,12 +51,14 @@ snapshots, including:
 * Add or remove indices (or both!) from an <<alias,alias>>
 * Change shard routing <<allocation,allocation>>
 * <<close,Close>> indices
+* <<create_index,Create index>>
 * <<delete_indices,Delete indices>>
 * <<delete_snapshots,Delete snapshots>>
 * <<open,Open>> closed indices
 * <<forcemerge,forceMerge>> indices
 * Change the number of <<replicas,replicas>> per shard for indices
-* Take a <<snapshot,snapshot>> (backup) of indices.
+* Take a <<snapshot,snapshot>> (backup) of indices
+* <<restore,Restore>> snapshots
 
 [[about-cli]]
 == Command-Line Interface (CLI)
@@ -110,6 +123,7 @@ https://github.com/elastic/curator/issues[GitHub Issue] with your suggested
 correction instead.
 * Changes will be reviewed and merged, if acceptable.
 
+[[about-contributing]]
 == Contributing
 
 We welcome contributions and bug fixes to Curator's API and CLI.
