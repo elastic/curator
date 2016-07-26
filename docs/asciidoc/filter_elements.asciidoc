@@ -2,6 +2,25 @@
 [[filter_elements]]
 = Filter Elements
 
+[partintro]
+--
+* <<fe_direction,direction>>
+* <<fe_disk_space,disk_space>>
+* <<fe_epoch,epoch>>
+* <<fe_exclude,exclude>>
+* <<fe_field,field>>
+* <<fe_kind,kind>>
+* <<fe_reverse,reverse>>
+* <<fe_source,source>>
+* <<fe_state,state>>
+* <<fe_stats_result,stats_result>>
+* <<fe_timestring,timestring>>
+* <<fe_unit,unit>>
+* <<fe_unit_count,unit_count>>
+* <<fe_use_age,use_age>>
+* <<fe_value,value>>
+--
+
 [[fe_direction]]
 == direction
 

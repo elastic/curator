@@ -10,11 +10,13 @@ once created, can only be deleted.
 * <<alias,Alias>>
 * <<allocation,Allocation>>
 * <<close,Close>>
+* <<create_index,Create Index>>
 * <<delete_indices,Delete Indices>>
 * <<delete_snapshots,Delete Snapshots>>
 * <<open,Open>>
 * <<forcemerge,forceMerge>>
 * <<replicas,Replicas>>
+* <<restore,Restore>>
 * <<snapshot,Snapshot>>
 --
 
