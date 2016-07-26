@@ -1,6 +1,12 @@
 [[cli]]
 = Command Line
 
+[partintro]
+--
+* <<command-line,Command Line Interface>>
+* <<exit-codes,Exit Codes>>
+--
+
 [[command-line]]
 == Command Line Interface
 

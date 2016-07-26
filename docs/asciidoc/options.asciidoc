@@ -5,6 +5,31 @@
 --
 
 Options are settings used by <<actions,actions>>.
+
+* <<option_allocation_type,allocation_type>>
+* <<option_extra_settings,extra_settings>>
+* <<option_continue,continue_if_exception>>
+* <<option_count,count>>
+* <<option_delay,delay>>
+* <<option_delete_aliases,delete_aliases>>
+* <<option_disable,disable_action>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_ignore,ignore_unavailable>>
+* <<option_include_aliases,include_aliases>>
+* <<option_include_gs,include_global_state>>
+* <<option_key,key>>
+* <<option_mns,max_num_segments>>
+* <<option_name,name>>
+* <<option_partial,partial>>
+* <<option_rename_pattern,rename_pattern>>
+* <<option_rename_replacement,rename_replacement>>
+* <<option_repository,repository>>
+* <<option_retry_count,retry_count>>
+* <<option_retry_interval,retry_interval>>
+* <<option_skip_fsck,skip_repo_fs_check>>
+* <<option_timeout_override,timeout_override>>
+* <<option_value,value>>
+* <<option_wfc,wait_for_completion>>
 --
 
 [[option_allocation_type]]
