@@ -197,7 +197,7 @@ class Allocation(object):
                         ' {0}'.format(to_csv(l))
                     )
                     self.client.cluster.health(index=to_csv(l),
-                        level='indices', wait_for_relocation_shards=0,
+                        level='indices', wait_for_relocating_shards=0,
                         timeout=self.timeout,
                     )
         except Exception as e:
