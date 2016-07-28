@@ -50,6 +50,13 @@ greater):
 . `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.3.tar.gz`
 . `pip install click-6.3.tar.gz`
 
+&nbsp;
+
+Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10 or
+greater):
+
+. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
+. `pip install PyYAML-3.11.tar.gz`
 
 &nbsp;
 
