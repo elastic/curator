@@ -64,9 +64,19 @@ This will result in the `curator` end-point being installed in the current
 user's home directory, in the `.local` directory, in the `bin` subdirectory. The
 full path might look something like this:
 
+<<<<<<< 04350ebafbdd151c1467bf0da7a00acd765aac80
 -----------------------------
 /home/user/.local/bin/curator
 -----------------------------
+=======
+&nbsp;
+
+Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10 or
+greater):
+
+. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
+. `pip install PyYAML-3.11.tar.gz`
+>>>>>>> add pyyaml dependency
 
 You can make an alias or a symlink to this so you can call it more easily.
 
@@ -349,6 +359,14 @@ or uncompress and run `python setup.py install`
 
 &nbsp;
 
+=== certifi
+Download and install the certifi dependency.  Always use the most recent version.
+
+. `wget https://github.com/certifi/python-certifi/archive/2016.09.26.tar.gz -O certifi.tar.gz`
+. `pip install certifi.tar.gz`
+
+&nbsp;
+
 === PyYAML
 Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10
 or greater):
@@ -389,13 +407,3 @@ Download and install Curator:
 
 or uncompress and run `python setup.py install`.  At this point you could also
 run `run_curator.py` from the source directory as well.
-
-=== Optional additional module(s)
-
-The following module(s) provide some additional features, but are not required
-for basic functionality.
-
-For each of these, installation follows the same pattern as above:
-
-* https://github.com/certifi/python-certifi/archive/2016.09.26.tar.gz[certifi]
-  provides SSL certificate validation for most major signing organizations.
