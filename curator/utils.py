@@ -743,7 +743,7 @@ def create_snapshot_body(indices, ignore_unavailable=False,
     :rtype: dict
     """
     if not indices:
-        logger.error('Missing required repository parameter')
+        logger.error('No indices provided.')
         return False
     body = {
         "ignore_unavailable": ignore_unavailable,

@@ -3,6 +3,22 @@
 Changelog
 =========
 
+4.0.4 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Fix incorrect variable name in Allocation action. #706 (lukewaite)
+  * Incorrect error message in ``create_snapshot_body`` reported in #711
+    (untergeek)
+  * Test for empty index list object should happen in action initialization for
+    snapshot action. Discovered in #711. (untergeek)
+
+**Doc Fixes**
+
+  * Add menus to asciidoc chapters #704 (untergeek)
+  * Add pyyaml dependency #710 (dtrv)
+
 4.0.3 (22 July 2016)
 --------------------
 

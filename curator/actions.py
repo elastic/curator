@@ -649,6 +649,9 @@ class Snapshot(object):
         :type skip_repo_fs_check: bool
         """
         verify_index_list(ilo)
+        # Check here and don't bother with the rest of this if there are no
+        # indices in the index list.
+        ilo.empty_list_check()
         if not repository_exists(ilo.client, repository=repository):
             raise ActionError(
                 'Cannot snapshot indices to missing repository: '
@@ -731,7 +734,6 @@ class Snapshot(object):
         """
         Snapshot indices in `index_list.indices`, with options passed.
         """
-        self.index_list.empty_list_check()
         if not self.skip_repo_fs_check:
             test_repo_fs(self.client, self.repository)
         if snapshot_running(self.client):
