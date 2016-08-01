@@ -20,6 +20,21 @@ Compatibility Matrix
 |    4   |    no    |     yes  |     yes  |
 +--------+----------+----------+----------+
 
+It is important to note that Curator 4 will not work with indices created in
+versions of Elasticsearch older than 1.4 (if they have been subsequently
+re-indexed, they will work).  This is because those older indices lack index
+metadata that Curator 4 requires.  Curator 4 will simply exclude any such
+indices from being acted on, and you will get a warning message like the
+following:
+
+::
+
+    2016-07-31 10:36:17,423 WARNING Index: YOUR_INDEX_NAME has no
+    "creation_date"! This implies that the index predates Elasticsearch v1.4.
+    For safety, this index will be removed from the actionable list.
+
+
+
 Build Status
 ------------
 
