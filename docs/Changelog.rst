@@ -10,6 +10,9 @@ Changelog
 
 **New Features**
 
+**Bug Fixes**
+
+  * Fix incorrect variable name for AWS Region reported in #679 (basex)
 
 4.0.4 (1 August 2016)
 ---------------------
