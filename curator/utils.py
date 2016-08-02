@@ -524,14 +524,14 @@ def get_client(**kwargs):
             else kwargs['aws_key']
         kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
             else kwargs['aws_secret_key']
-        kwargs['region'] = False if not 'region' in kwargs \
-            else kwargs['region']
+        kwargs['aws_region'] = False if not 'aws_region' in kwargs \
+            else kwargs['aws_region']
         if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['region']:
             if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
-                    and kwargs['region']:
+                    and kwargs['aws_region']:
                 raise MissingArgument(
                     'Missing one or more of "aws_key", "aws_secret_key", '
-                    'or "region".'
+                    'or "aws_region".'
                 )
             # Override these kwargs
             kwargs['use_ssl'] = True
@@ -540,7 +540,7 @@ def get_client(**kwargs):
             kwargs['http_auth'] = (
                 AWS4Auth(
                     kwargs['aws_key'], kwargs['aws_secret_key'],
-                    kwargs['region'], 'es')
+                    kwargs['aws_region'], 'es')
             )
         else:
             logger.debug('"requests_aws4auth" module present, but not used.')
