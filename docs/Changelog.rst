@@ -3,16 +3,19 @@
 Changelog
 =========
 
-4.1.0 (? ? ?)
--------------
-
-**General**
-
-**New Features**
+4.0.5 (3 August 2016)
+---------------------
 
 **Bug Fixes**
 
   * Fix incorrect variable name for AWS Region reported in #679 (basex)
+  * Fix ``filter_by_space()`` to not fail when index age metadata is not
+    present.  Indices without the appropriate age metadata will instead be
+    excluded, with a debug-level message. Reported in #724 (untergeek)
+
+**Doc Fixes**
+
+  * Fix documentation for the space filter and the source filter element.
 
 4.0.4 (1 August 2016)
 ---------------------
