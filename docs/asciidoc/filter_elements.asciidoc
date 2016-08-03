@@ -136,12 +136,12 @@ The _source_ from which to derive the index or snapshot age. Can be one of
 `name`, `creation_date`, or `field_stats`.
 
 NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
-with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
+with the <<filtertype_space,space>> filtertype when <<fe_use_age,use_age>> is
 set to `True`.
 
-NOTE: All source's require <<fe_direction,direction>>, <<fe_unit,unit>>, and +
-<<fe_unit_count,unit_count>>. Additionally, each source can use the optional +
-setting, <<fe_epoch,epoch>>.
+NOTE: When using the <<filtertype_age,age>> filtertype, source requires +
+<<fe_direction,direction>>, <<fe_unit,unit>>, <<fe_unit_count,unit_count>>, +
+and additionally, the optional setting, <<fe_epoch,epoch>>.
 
 [float]
 name
@@ -151,8 +151,8 @@ Setting source to `name` tells Curator to derive an epoch timestamp from an
 index or snapshot name based on a <<fe_timestring,timestring>>.  This was the
 only available behavior in previous versions of Curator.
 
-This source requires <<fe_timestring,timestring>> to be set, in additon to <<fe_direction,direction>>,
-<<fe_unit,unit>>, and <<fe_unit_count,unit_count>>.
+This source requires <<fe_timestring,timestring>> to be set, in addition to
+<<fe_direction,direction>>, <<fe_unit,unit>>, and <<fe_unit_count,unit_count>>.
 
 [float]
 creation_date

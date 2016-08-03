@@ -490,7 +490,14 @@ class IndexList(object):
             # as the key and value, respectively
             intermediate = {}
             for index in working_list:
-                intermediate[index] = self.index_info[index]['age'][keyfield]
+                if keyfield in self.index_info[index]['age']:
+                    intermediate[index] = self.index_info[index]['age'][keyfield]
+                else:
+                    msg = (
+                        '{0} does not have age key "{1}" in IndexList '
+                        ' metadata'.format(index, keyfield)
+                    )
+                    self.__excludify(True, True, index, msg)
 
             # This will sort the indices the youngest first. Effectively, this
             # should set us up to delete everything older than fits into
