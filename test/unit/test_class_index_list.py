@@ -81,12 +81,10 @@ class TestIndexListAgeFilterName(TestCase):
         nomatch = curator.IndexList(client)
         nomatch._get_name_based_ages('%Y-%m-%d')
         self.assertEqual(
-            { 'creation_date' :
-                curator.fix_epoch(
-                    testvars.settings_two['index-2016.03.03']['settings']['index']['creation_date']
-                )
-            },
-            nomatch.index_info['index-2016.03.03']['age']
+            curator.fix_epoch(
+                testvars.settings_two['index-2016.03.03']['settings']['index']['creation_date']
+            ),
+            nomatch.index_info['index-2016.03.03']['age']['creation_date']
         )
 
 class TestIndexListAgeFilterStatsAPI(TestCase):
@@ -557,6 +555,18 @@ class TestIndexListFilterBySpace(TestCase):
             source='name', timestring='%Y.%m.%d'
         )
         self.assertEqual(['a-2016.03.03'], sorted(il.indices))
+    def test_filter_result_by_date_non_matching_timestring(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_four
+        client.cluster.state.return_value = testvars.clu_state_four
+        client.indices.stats.return_value = testvars.stats_four
+        client.field_stats.return_value = testvars.fieldstats_four
+        il = curator.IndexList(client)
+        il.filter_by_space(
+            disk_space=2.1, use_age=True,
+            source='name', timestring='%Y.%m.%d.%H'
+        )
+        self.assertEqual([], sorted(il.indices))
     def test_filter_result_by_date_field_stats_raise(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_four
