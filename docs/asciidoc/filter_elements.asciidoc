@@ -320,5 +320,9 @@ The value of this setting is used by <<fe_kind,kind>> as follows:
     include `logstash-2016.04.01` and `.marvel-2016.04.01`, but not
     `myindex-2016-04-01`, as the pattern is different.
 
+IMPORTANT: Whatever you provide for `value` is always going to be a part of a +
+    regular expression.  The safest practice is to always encapsulate within
+    single quotes.  For example: `value: '-suffix'`, or `value: 'prefix-'`
+
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.

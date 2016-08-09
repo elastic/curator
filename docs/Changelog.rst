@@ -3,6 +3,14 @@
 Changelog
 =========
 
+4.1.0 (? ? ?)
+-------------
+
+**Doc Fixes**
+
+  * Add section detailing that the value of a ``value`` filter element should be
+    encapsulated in single quotes. Reported in #726. (untergeek)
+
 4.0.5 (3 August 2016)
 ---------------------
 
