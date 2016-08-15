@@ -154,10 +154,8 @@ class Allocation(object):
         #: Instance variable.
         #: Populated at instance creation time. Value is
         #: ``index.routing.allocation.`` `allocation_type` ``.`` `key` ``.`` `value`
-        self.body       = (
-            'index.routing.allocation.'
-            '{0}.{1}={2}'.format(allocation_type, key, value)
-        )
+        bkey = 'index.routing.allocation.{0}.{1}'.format(allocation_type, key)
+        self.body       = { bkey : value }
         #: Instance variable.
         #: Internal reference to `wait_for_completion`
         self.wfc        = wait_for_completion

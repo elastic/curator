@@ -3,8 +3,13 @@
 Changelog
 =========
 
-4.1.0 (? ? ?)
--------------
+4.0.6 (15 August 2016)
+----------------------
+
+**Bug Fixes**
+
+  * Update old calls used with ES 1.x to reflect changes in 2.x+. This was
+    necessary to work with Elasticsearch 5.0.0-alpha5. Fixed in #728 (untergeek)
 
 **Doc Fixes**
 
