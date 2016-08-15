@@ -50,7 +50,7 @@ class TestActionAllocation(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
         ao = curator.Allocation(ilo, key='key', value='value')
-        self.assertEqual('index.routing.allocation.require.key=value', ao.body)
+        self.assertEqual({'index.routing.allocation.require.key': 'value'}, ao.body)
     def test_do_action_raise_on_put_settings(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_one
