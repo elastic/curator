@@ -255,6 +255,43 @@ reference with this formula:
 point_of_reference = epoch - ((number of seconds in unit) * unit_count)
 -----------
 
+The following table helps to illustrate this:
+
+.Time unit reference
+|===
+|Unit |Number of Seconds |Note
+
+|`seconds`
+|1
+|One second
+
+|`minutes`
+|60
+|Calculated as 60 seconds
+
+|`hours`
+|3600
+|Calculated as 60 minutes (60 * 60)
+
+|`days`
+|86400
+|Calculated as 24 hours (24 * 3600)
+
+|`weeks`
+|604800
+|Calculated as 7 days (7 * 86400)
+
+|`months`
+|2592000
+|Calculated as 30 days (30 * 86400)
+
+|`years`
+|31536000
+|Calculated as 365 days (365 * 86400)
+
+|===
+
+
 If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
 a point of reference in the future by using a negative value for
 <<fe_unit_count,unit_count>>.
