@@ -154,10 +154,8 @@ class Allocation(object):
         #: Instance variable.
         #: Populated at instance creation time. Value is
         #: ``index.routing.allocation.`` `allocation_type` ``.`` `key` ``.`` `value`
-        self.body       = (
-            'index.routing.allocation.'
-            '{0}.{1}={2}'.format(allocation_type, key, value)
-        )
+        bkey = 'index.routing.allocation.{0}.{1}'.format(allocation_type, key)
+        self.body       = { bkey : value }
         #: Instance variable.
         #: Internal reference to `wait_for_completion`
         self.wfc        = wait_for_completion
@@ -546,7 +544,7 @@ class Replicas(object):
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
                 self.client.indices.put_settings(index=to_csv(l),
-                    body='number_of_replicas={0}'.format(self.count))
+                    body={'number_of_replicas' : self.count})
                 if self.wfc and self.count > 0:
                     logger.debug(
                         'Waiting for shards to complete replication for '
