@@ -544,7 +544,7 @@ class Replicas(object):
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
                 self.client.indices.put_settings(index=to_csv(l),
-                    body='number_of_replicas={0}'.format(self.count))
+                    body={'number_of_replicas' : self.count})
                 if self.wfc and self.count > 0:
                     logger.debug(
                         'Waiting for shards to complete replication for '
