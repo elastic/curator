@@ -555,6 +555,8 @@ Optional settings
 * <<option_name,name>> (has no default value)
 * <<option_include_aliases,include_aliases>> (has a default value which can
     optionally be changed)
+* <<option_indices,indices>> (has a default value which can optionally be
+    changed)
 * <<option_ignore,ignore_unavailable>> (has a default value which can optionally
     be changed)
 * <<option_include_gs,include_global_state>> (has a default value which can

@@ -4,12 +4,15 @@
 
 [partintro]
 --
+* <<fe_allocation_type,allocation_type>>
 * <<fe_direction,direction>>
 * <<fe_disk_space,disk_space>>
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>>
 * <<fe_field,field>>
+* <<fe_key,key>>
 * <<fe_kind,kind>>
+* <<fe_max_num_segments,max_num_segments>>
 * <<fe_reverse,reverse>>
 * <<fe_source,source>>
 * <<fe_state,state>>
@@ -20,6 +23,18 @@
 * <<fe_use_age,use_age>>
 * <<fe_value,value>>
 --
+
+[[fe_allocation_type]]
+== allocation_type
+
+NOTE: This setting is used only when using the
+    <<filtertype_allocated,allocated>> filter.
+
+The value of this setting must be one of `require`, `include`, or `exclude`.
+
+Read more about these settings at {ref}/shard-allocation-filtering.html
+
+The default value for this setting is `require`.
 
 [[fe_direction]]
 == direction
@@ -99,7 +114,50 @@ This setting is only used when <<fe_source,source>> is `field_stats`.
 
 The default value for this setting is `@timestamp`.
 
+[[fe_key]]
+== key
 
+NOTE: This setting is required when using the
+    <<filtertype_allocated,allocated filtertype>>.
+
+The value of this setting should correspond to a node setting on one or more
+nodes in your cluster.
+
+For example, you might have set
+
+[source,sh]
+-----------
+node.tag: myvalue
+-----------
+
+in your `elasticsearch.yml` file for one or more of your nodes.  To match
+allocation in this case, set key to `tag`.
+
+These special attributes are also supported:
+
+[cols="2*", options="header"]
+|===
+|attribute
+|description
+
+|`_name`
+|Match nodes by node name
+
+|`_host_ip`
+|Match nodes by host IP address (IP associated with hostname)
+
+|`_publish_ip`
+|Match nodes by publish IP address
+
+|`_ip`
+|Match either `_host_ip` or `_publish_ip`
+
+|`_host`
+|Match nodes by hostname
+|===
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
 
 [[fe_kind]]
 == kind
@@ -114,7 +172,19 @@ and `regex`.
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+[[fe_max_num_segments]]
+== max_num_segments
 
+NOTE: This setting is only used with the <<filtertype_forcemerged,forcemerged>>
+  filtertype.
+
+The value for this setting is the cutoff number of segments per shard.  Indices
+which have this number of segments per shard, or fewer, will be actionable
+depending on the value of <<fe_exclude,exclude>>, which is `True` by default for
+the <<filtertype_forcemerged,forcemerged>> filter type.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
 
 [[fe_reverse]]
 == reverse
@@ -258,37 +328,16 @@ point_of_reference = epoch - ((number of seconds in unit) * unit_count)
 The following table helps to illustrate this:
 
 .Time unit reference
+[width="50%", cols="<m,<m,", options="header"]
 |===
-|Unit |Number of Seconds |Note
-
-|`seconds`
-|1
-|One second
-
-|`minutes`
-|60
-|Calculated as 60 seconds
-
-|`hours`
-|3600
-|Calculated as 60 minutes (60 * 60)
-
-|`days`
-|86400
-|Calculated as 24 hours (24 * 3600)
-
-|`weeks`
-|604800
-|Calculated as 7 days (7 * 86400)
-
-|`months`
-|2592000
-|Calculated as 30 days (30 * 86400)
-
-|`years`
-|31536000
-|Calculated as 365 days (365 * 86400)
-
+|Unit|Seconds|Note
+|seconds|1|One second
+|minutes|60|Calculated as 60 seconds
+|hours|3600|Calculated as 60 minutes (60 * 60)
+|days|86400|Calculated as 24 hours (24 * 3600)
+|weeks|604800|Calculated as 7 days (7 * 86400)
+|months|2592000|Calculated as 30 days (30 * 86400)
+|years|31536000|Calculated as 365 days (365 * 86400)
 |===
 
 

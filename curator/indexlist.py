@@ -3,9 +3,9 @@ import time
 import re
 import logging
 from .defaults import settings
+from .validators import SchemaCheck, filters
 from .exceptions import *
 from .utils import *
-
 
 class IndexList(object):
     def __init__(self, client):
@@ -691,35 +691,25 @@ class IndexList(object):
         self.loggit.debug('All filters: {0}'.format(filter_dict['filters']))
         for f in filter_dict['filters']:
             self.loggit.debug('Top of the loop: {0}'.format(self.indices))
-            logger.debug('Un-parsed filter args: {0}'.format(f))
-            f_args = None
+            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
             # Make sure we got at least this much in the configuration
-            if not 'filtertype' in f:
-                raise ConfigurationError(
-                    'No "filtertype" in filter definition.'
+            self.loggit.debug('Parsed filter args: {0}'.format(
+                    SchemaCheck(
+                        f,
+                        filters.structure(),
+                        'filter',
+                        'IndexList.iterate_filters'
+                    ).result()
                 )
-            try:
-                ft = f['filtertype'].lower()
-            except Exception as e:
-                raise ValueError(
-                    'Invalid value for "filtertype": '
-                    '{0}'.format(f['filtertype'])
-                )
-            try:
-                f_args = settings.index_filter()[ft]
-                method = self.__map_method(ft)
-            except:
-                raise ConfigurationError(
-                    'Unrecognized filtertype: {0}'.format(ft))
-            # Remove key 'filtertype' from dictionary 'f'
+            )
+            method = self.__map_method(f['filtertype'])
             del f['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            if f_args:
-                f_args.update(prune_nones(f))
-                logger.debug('Filter args: {0}'.format(f_args))
+            if f:
+                logger.debug('Filter args: {0}'.format(f))
                 logger.debug('Pre-instance: {0}'.format(self.indices))
-                method(**f_args)
+                method(**f)
                 logger.debug('Post-instance: {0}'.format(self.indices))
             else:
                 # Otherwise, it's a settingless filter.

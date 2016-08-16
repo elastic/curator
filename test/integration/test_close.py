@@ -88,7 +88,7 @@ class TestCLIClose(CuratorTestCase):
             {
                 "dummy":{"aliases":{"testalias":{}}},
                 "my_index":{"aliases":{"testalias":{}}}
-            }, 
+            },
             self.client.indices.get_alias(name=alias)
         )
         # Now close `index` with delete_aliases=True (dummy stays open)
@@ -146,4 +146,4 @@ class TestCLIClose(CuratorTestCase):
                 metric='metadata',
             )['metadata']['indices']['dummy']['state']
         )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)

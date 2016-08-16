@@ -2,7 +2,9 @@ import os, sys
 import yaml
 import logging
 import click
+from voluptuous import Schema
 from .defaults import settings
+from .validators import SchemaCheck, config_file
 from .exceptions import *
 from .utils import *
 from .indexlist import IndexList
@@ -46,18 +48,15 @@ def process_action(client, config, **kwargs):
     logger.debug('Configuration dictionary: {0}'.format(config))
     logger.debug('kwargs: {0}'.format(kwargs))
     action = config['action']
-    opts = config['options'] if 'options' in config else {}
+    # This will always have some defaults now, so no need to do the if...
+    # # OLD WAY: opts = config['options'] if 'options' in config else {}
+    opts = config['options']
     logger.debug('opts: {0}'.format(opts))
     mykwargs = {}
 
-    if action in CLASS_MAP:
-        mykwargs = settings.action_defaults()[action]
-        action_class = CLASS_MAP[action]
-    else:
-        raise ConfigurationError(
-            'Unrecognized action: {0}'.format(action))
+    action_class = CLASS_MAP[action]
 
-    # Override some settings...
+    # Add some settings to mykwargs...
     if action == 'delete_indices':
         mykwargs['master_timeout'] = (
             kwargs['master_timeout'] if 'master_timeout' in kwargs else 30)
@@ -65,13 +64,13 @@ def process_action(client, config, **kwargs):
         # Setting the operation timeout to the client timeout
         mykwargs['timeout'] = (
             kwargs['timeout'] if 'timeout' in kwargs else 30)
-    logger.debug('MYKWARGS = {0}'.format(mykwargs))
 
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(opts))
     logger.debug('Action kwargs: {0}'.format(mykwargs))
-    # Verify the args we're going to pass match the action
-    verify_args(action, mykwargs)
+    # This is no longer necessary with the config schema validator
+    # # Verify the args we're going to pass match the action
+    # verify_args(action, mykwargs)
 
     ### Set up the action ###
     if action == 'alias':
@@ -126,15 +125,21 @@ def cli(config, dry_run, action_file):
     """
     # Get config from yaml file
     yaml_config  = get_yaml(config)
-    # Get default options and overwrite with any changes
-    try:
-        yaml_log_opts = prune_nones(yaml_config['logging'])
-        log_opts      = settings.logs()
-        log_opts.update(yaml_log_opts)
-    except KeyError:
-        # Use the defaults if there is no logging section
-        log_opts = settings.logs()
+    # if the file is empty, which is still valid yaml, set as an empty dict
+    yaml_config = {} if not yaml_config else prune_nones(yaml_config)
+    # Voluptuous can't verify the schema of a dict if it doesn't have keys,
+    # so make sure the keys are at least there and are dict()
+    for k in ['client', 'logging']:
+        if k not in yaml_config:
+            yaml_config[k] = {}
+        elif yaml_config[k] == None:
+            yaml_config[k] = {}
+        else:
+            yaml_config[k] = prune_nones(yaml_config[k])
+    config_dict = SchemaCheck(yaml_config, config_file.client(),
+        'Client Configuration', 'full configuration dictionary').result()
     # Set up logging
+    log_opts = config_dict['logging']
     loginfo = LogInfo(log_opts)
     logging.root.addHandler(loginfo.handler)
     logging.root.setLevel(loginfo.numeric_log_level)
@@ -147,18 +152,9 @@ def cli(config, dry_run, action_file):
             for handler in logging.root.handlers:
                 handler.addFilter(Blacklist(bl_entry))
 
-    # Get default client options and overwrite with any changes
-    try:
-        yaml_client  = prune_nones(yaml_config['client'])
-        client_args  = settings.client()
-        client_args.update(yaml_client)
-    except KeyError:
-        logger.critical(
-            'Unable to read client configuration. '
-            'Please check the configuration file: {0}'.format(config)
-        )
-        sys.exit(1)
+    client_args = config_dict['client']
     test_client_options(client_args)
+    logger.debug('Client and logging options validated.')
 
     # Extract this and save it for later, in case there's no timeout_override.
     default_timeout = client_args.pop('timeout')
@@ -166,38 +162,33 @@ def cli(config, dry_run, action_file):
     #########################################
     ### Start working on the actions here ###
     #########################################
-    actions = get_yaml(action_file)['actions']
+    action_config = get_yaml(action_file)
+    action_dict = validate_actions(action_config)
+    actions = action_dict['actions']
     logger.debug('Full list of actions: {0}'.format(actions))
     action_keys = sorted(list(actions.keys()))
     for idx in action_keys:
-        if 'action' in actions[idx] and actions[idx]['action'] is not None:
-            action = actions[idx]['action'].lower()
-        else:
-            raise MissingArgument('No value for "action" provided')
-        logger.info('Action #{0}: {1}'.format(idx, action))
-        if not 'options' in actions[idx] or \
-                type(actions[idx]['options']) is not type(dict()):
-            actions[idx]['options'] = settings.options()
-        # Assign and remove these keys from the options as the action will
-        # raise an exception if they are passed as kwargs
-        action_disabled = actions[idx]['options'].pop('disable_action', False)
+        action = actions[idx]['action']
+        action_disabled = actions[idx]['options'].pop('disable_action')
+        logger.debug('action_disabled = {0}'.format(action_disabled))
         continue_if_exception = (
-            actions[idx]['options'].pop('continue_if_exception', False))
-        timeout_override = actions[idx]['options'].pop('timeout_override', None)
-        ignore_empty_list = actions[idx]['options'].pop(
-            'ignore_empty_list', None)
+            actions[idx]['options'].pop('continue_if_exception'))
         logger.debug(
             'continue_if_exception = {0}'.format(continue_if_exception))
+        timeout_override = actions[idx]['options'].pop('timeout_override')
         logger.debug('timeout_override = {0}'.format(timeout_override))
+        ignore_empty_list = actions[idx]['options'].pop('ignore_empty_list')
+        logger.debug('ignore_empty_list = {0}'.format(ignore_empty_list))
 
         ### Skip to next action if 'disabled'
         if action_disabled:
             logger.info(
-                'Action "{0}" not performed because "disable_action" is set to '
-                'True'.format(action)
+                'Action ID: {0}: "{1}" not performed because "disable_action" '
+                'is set to True'.format(idx, action)
             )
             continue
-
+        else:
+            logger.info('Preparing Action ID: {0}, "{1}"'.format(idx, action))
         # Override the timeout, if specified, otherwise use the default.
         if type(timeout_override) == type(int()):
             client_args['timeout'] = timeout_override
@@ -249,5 +240,5 @@ def cli(config, dry_run, action_file):
                     )
                 else:
                     sys.exit(1)
-        logger.info('Action #{0}: completed'.format(idx))
+        logger.info('Action ID: {0}, "{1}" completed.'.format(idx, action))
     logger.info('Job completed.')

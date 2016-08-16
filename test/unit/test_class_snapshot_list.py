@@ -297,7 +297,8 @@ class TestIterateFiltersSnaps(TestCase):
         client.snapshot.get_repository.return_value = testvars.test_repo
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
         config = {'filters': [{'filtertype':12345.6789}]}
-        self.assertRaises(ValueError, slo.iterate_filters, config)
+        self.assertRaises(
+            curator.ConfigurationError, slo.iterate_filters, config)
     def test_invalid_filtertype(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshots

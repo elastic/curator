@@ -102,7 +102,7 @@ class TestCLIAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)
     def test_extra_option(self):
         key = 'tag'
         value = 'value'
@@ -121,7 +121,7 @@ class TestCLIAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)
     def test_skip_closed(self):
         key = 'tag'
         value = 'value'
