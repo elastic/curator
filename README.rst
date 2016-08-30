@@ -33,7 +33,10 @@ following:
     "creation_date"! This implies that the index predates Elasticsearch v1.4.
     For safety, this index will be removed from the actionable list.
 
-
+It is also important to note that Curator 4 requires access to the 
+``/_cluster/state/metadata`` endpoint.  Forks of Elasticsearch which do not 
+support this endpoint (such as AWS ES, see #717) *will not* be able to use 
+Curator version 4.
 
 Build Status
 ------------
