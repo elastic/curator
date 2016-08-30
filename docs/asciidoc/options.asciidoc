@@ -36,7 +36,7 @@ Options are settings used by <<actions,actions>>.
 [[option_allocation_type]]
 == allocation_type
 
-NOTE: This setting is used only when using the <<allocation,allocation action>>..
+NOTE: This setting is used only when using the <<allocation,allocation action>>
 
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
