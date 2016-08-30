@@ -83,6 +83,7 @@ class TestCLIClose(CuratorTestCase):
         index = 'my_index'
         self.create_index(index)
         self.create_index('dummy')
+        self.create_index('my_other')
         self.client.indices.put_alias(index='my_index,dummy', name=alias)
         self.assertEquals(
             {
@@ -110,6 +111,13 @@ class TestCLIClose(CuratorTestCase):
                 index=index,
                 metric='metadata',
             )['metadata']['indices'][index]['state']
+        )
+        self.assertEquals(
+            'close',
+            self.client.cluster.state(
+                index='my_other',
+                metric='metadata',
+            )['metadata']['indices']['my_other']['state']
         )
         # Now open the indices and verify that the alias is still gone.
         self.client.indices.open(index=index)

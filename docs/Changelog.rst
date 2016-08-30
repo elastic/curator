@@ -16,6 +16,12 @@ Changelog
   * New requirement! ``voluptuous`` Python schema validation module
   * Requirement version bump:  Now requires ``elasticsearch-py`` 2.4.0
 
+**Bug Fixes**
+
+  * ``delete_aliases`` option in ``close`` action no longer results in an error
+    if not all selected indices have an alias.  Add test to confirm expected
+    behavior. Reported in #736 (untergeek)
+
 4.0.6 (15 August 2016)
 ----------------------
 
