@@ -28,7 +28,9 @@ def structure(data, location):
     ).result()
     # Build a valid schema knowing that the action has already been validated
     retval = valid_action()
-    retval.update({ Optional('description'): str })
+    retval.update(
+        { Optional('description', default='No description given'): str }
+    )
     retval.update(
         { Optional('options', default=settings.default_options()): dict } )
     action = data['action']
