@@ -54,8 +54,9 @@ def snapshot_actions():
 def all_actions():
     return sorted(index_actions() + snapshot_actions())
 
-def all_filtertypes():
+def index_filtertypes():
     return [
+        'alias',
         'allocated',
         'age',
         'closed',
@@ -65,8 +66,13 @@ def all_filtertypes():
         'opened',
         'pattern',
         'space',
-        'state',
     ]
+
+def snapshot_filtertypes():
+    return ['age', 'none', 'pattern', 'state']
+
+def all_filtertypes():
+    return sorted(list(set(index_filtertypes() + snapshot_filtertypes())))
 
 def default_options():
     return {

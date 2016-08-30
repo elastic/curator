@@ -3,6 +3,10 @@ from ..defaults import settings
 
 ### Schema information ###
 
+def aliases(**kwargs):
+    # This setting is used by the alias filtertype and is required
+    return { Required('aliases'): Any(str, [str]) }
+
 def allocation_type(**kwargs):
     return { Optional('allocation_type', default='require'): All(
         str, Any('require', 'include', 'exclude')) }

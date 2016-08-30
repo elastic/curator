@@ -8,6 +8,7 @@ Filters are the way to select only the indices (or snapshots) you want.
 
 The index filtertypes are:
 
+* <<filtertype_alias,alias>>
 * <<filtertype_age,age>>
 * <<filtertype_pattern,pattern>>
 * <<filtertype_space,space>>
@@ -66,6 +67,34 @@ The snapshot filtertypes are:
 * <<filtertype_age,age>>
 * <<filtertype_pattern,pattern>>
 
+[[filtertype_alias]]
+== alias
+
+[source,text]
+-------------
+- filtertype: alias
+  aliases:
+  exclude: True
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given
+    <<filtertype,filtertype>>, it will be ignored.
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices based on whether they are associated with the given
+<<fe_aliases,aliases>>.  They will remain in, or be removed from the actionable
+list based on the value of <<fe_exclude,exclude>>.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+* <<fe_aliases,aliases>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<fe_exclude,exclude>> (default is `False`)
 
 [[filtertype_allocated]]
 == allocated

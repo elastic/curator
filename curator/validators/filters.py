@@ -19,6 +19,7 @@ def structure():
     # This is to first ensure that only the possible keys/filter elements are
     # there, and get a dictionary back to work with.
     retval = {
+        Optional('aliases'): Any(str, [str]),
         Optional('allocation_type'): str,
         Optional('direction'): str,
         Optional('disk_space'): float,
