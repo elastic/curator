@@ -1009,6 +1009,30 @@ def prune_nones(mydict):
     # Test for `None` instead of existence or zero values will be caught
     return dict([(k,v) for k, v in mydict.items() if v != None and v != 'None'])
 
+def validate_filters(action, filters):
+    """
+    Validate that the filters are appropriate for the action type, e.g. no
+    index filters applied to a snapshot list.
+
+    :arg action: An action name
+    :arg filters: A list of filters to test.
+    """
+    # Define which set of filtertypes to use for testing
+    if action in settings.snapshot_actions():
+        filtertypes = settings.snapshot_filtertypes()
+    else:
+        filtertypes = settings.index_filtertypes()
+    for f in filters:
+        if f['filtertype'] not in filtertypes:
+            raise ConfigurationError(
+                '"{0}" filtertype is not compatible with action "{1}"'.format(
+                    f['filtertype'],
+                    action
+                )
+            )
+    # If we get to this point, we're still valid.  Return the original list
+    return filters
+
 def validate_actions(data):
     """
     Validate an Action configuration dictionary, as imported from actions.yml,
@@ -1085,12 +1109,13 @@ def validate_actions(data):
             # create_index should not have a filters
             pass
         else: # Filters key only appears in non-alias actions
-            clean_filters = SchemaCheck(
+            valid_filters = SchemaCheck(
                 valid_structure['filters'],
                 Schema(filters.Filters(current_action, location=loc)),
                 'filters',
                 '{0}, "filters"'.format(loc)
             ).result()
+            clean_filters = validate_filters(current_action, valid_filters)
             clean_config[action_id].update({'filters' : clean_filters})
 
     # if we've gotten this far without any Exceptions raised, it's valid!

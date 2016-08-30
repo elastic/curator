@@ -6,6 +6,12 @@ logger = logging.getLogger(__name__)
 
 ### Schema information ###
 
+def alias(action, config):
+    return [
+        filter_elements.aliases(),
+        filter_elements.exclude(),
+    ]
+
 def age(action, config):
     # Required & Optional
     retval = [

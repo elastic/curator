@@ -4,6 +4,7 @@
 
 [partintro]
 --
+* <<fe_aliases,aliases>>
 * <<fe_allocation_type,allocation_type>>
 * <<fe_direction,direction>>
 * <<fe_disk_space,disk_space>>
@@ -23,6 +24,52 @@
 * <<fe_use_age,use_age>>
 * <<fe_value,value>>
 --
+
+[[fe_aliases]]
+== aliases
+
+NOTE: This setting is used only when using the <<filtertype_alias,alias>>
+    filter.
+
+The value of this setting must be a single alias name, or a list of alias names.
+This can be done in any of the ways YAML allows for lists or arrays.  Here are
+a few examples.
+
+**Single**
+[source,txt]
+-------
+filters:
+- filtertype: alias
+  aliases: my_alias
+  exclude: False
+-------
+
+**List**
+
+- Flow style:
++
+[source,txt]
+-------
+filters:
+- filtertype: alias
+  aliases: [ my_alias, another_alias ]
+  exclude: False
+-------
+
+- Block style:
++
+[source,txt]
+-------
+filters:
+- filtertype: alias
+  aliases:
+    - my_alias
+    - another_alias
+  exclude: False
+-------
+
+There is no default value. This setting must be set by the user or an
+exception will be raised, and execution will halt.
 
 [[fe_allocation_type]]
 == allocation_type

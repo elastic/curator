@@ -4,6 +4,7 @@ from voluptuous import *
 fake_fail      = Exception('Simulated Failure')
 four_oh_one    = elasticsearch.TransportError(401, "simulated error")
 four_oh_four   = elasticsearch.TransportError(404, "simulated error")
+get_alias_fail = elasticsearch.NotFoundError(404, "simulated error")
 named_index    = 'index_name'
 named_indices  = [ "index-2015.01.01", "index-2015.02.01" ]
 open_index     = {'metadata': {'indices' : { named_index : {'state' : 'open'}}}}
@@ -209,6 +210,11 @@ settings_two  = {
             }
         }
     }
+}
+
+settings_2_get_aliases = {
+    "index-2016.03.03": { "aliases" : { 'my_alias' : { } } },
+    "index-2016.03.04": { "aliases" : { 'my_alias' : { } } },
 }
 
 settings_2_closed = {

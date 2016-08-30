@@ -301,6 +301,20 @@ delete_ignore_proto = ('---\n'
 '        stats_result: {7}\n'
 '        epoch: {8}\n')
 
+filter_by_alias = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Delete indices as filtered"\n'
+'    action: delete_indices\n'
+'    options:\n'
+'      ignore_empty_list: True\n'
+'      continue_if_exception: False\n'
+'      disable_action: False\n'
+'    filters:\n'
+'      - filtertype: alias\n'
+'        aliases: {0}\n'
+'        exclude: {1}\n')
+
 bad_option_proto_test = ('---\n'
 'actions:\n'
 '  1:\n'

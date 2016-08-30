@@ -886,3 +886,42 @@ class TestIterateFiltersIndex(TestCase):
             curator.ConfigurationError,
             ilo.iterate_filters, config
         )
+class TestIndexListFilterAlias(TestCase):
+    def test_raise(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        il = curator.IndexList(client)
+        self.assertRaises(curator.MissingArgument, il.filter_by_alias)
+    def test_positive(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_alias(aliases=['my_alias'])
+        self.assertEqual(
+            sorted(list(testvars.settings_two.keys())), sorted(il.indices))
+    def test_negative(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = {}
+        il = curator.IndexList(client)
+        il.filter_by_alias(aliases=['not_my_alias'])
+        self.assertEqual(
+            sorted([]), sorted(il.indices))
+    def test_get_alias_raises(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.side_effect = testvars.get_alias_fail
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_alias(aliases=['my_alias'])
+        self.assertEqual(
+            sorted([]), sorted(il.indices))

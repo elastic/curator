@@ -6,6 +6,14 @@ from voluptuous import *
 import curator
 
 
+def shared_result(config, action):
+    return curator.validators.SchemaCheck(
+        config,
+        Schema(curator.validators.filters.Filters(action)),
+        'filters',
+        'testing'
+    ).result()
+
 class TestFilters(TestCase):
     def test_single_raises_configuration_error(self):
         data = {'max_num_segments': 1, 'exclude': True}
@@ -17,6 +25,16 @@ class TestFilters(TestCase):
         )
 
 class TestFilterTypes(TestCase):
+    def test_alias(self):
+        action = 'delete_indices'
+        config = [
+            {
+                'filtertype' : 'alias',
+                'aliases' : ['alias1', 'alias2'],
+                'exclude' : False,
+            }
+        ]
+        self.assertEqual(config, shared_result(config, action))
     def test_age(self):
         action = 'delete_indices'
         config = [
@@ -29,13 +47,7 @@ class TestFilterTypes(TestCase):
                 'field'  : '@timestamp',
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_allocated(self):
         action = 'delete_indices'
         config = [
@@ -47,13 +59,7 @@ class TestFilterTypes(TestCase):
                 'exclude' : False,
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_closed(self):
         action = 'delete_indices'
         config = [
@@ -62,13 +68,7 @@ class TestFilterTypes(TestCase):
                 'exclude' : False,
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_forcemerged(self):
         action = 'delete_indices'
         config = [
@@ -78,13 +78,7 @@ class TestFilterTypes(TestCase):
                 'exclude' : False,
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_kibana(self):
         action = 'delete_indices'
         config = [
@@ -93,13 +87,7 @@ class TestFilterTypes(TestCase):
                 'exclude' : False,
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_opened(self):
         action = 'delete_indices'
         config = [
@@ -108,13 +96,7 @@ class TestFilterTypes(TestCase):
                 'exclude' : False,
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_space_name_age(self):
         action = 'delete_indices'
         config = [
@@ -127,13 +109,7 @@ class TestFilterTypes(TestCase):
                 'timestring' : '%Y.%m.%d',
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_space_name_age_no_ts(self):
         action = 'delete_indices'
         config = [
@@ -164,13 +140,7 @@ class TestFilterTypes(TestCase):
                 'field' : '@timestamp',
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_space_field_stats_age_no_field(self):
         action = 'delete_indices'
         config = [
@@ -200,13 +170,7 @@ class TestFilterTypes(TestCase):
                 'source' : 'creation_date',
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))
     def test_state(self):
         action = 'delete_snapshots'
         config = [
@@ -216,10 +180,4 @@ class TestFilterTypes(TestCase):
                 'exclude' : False,
             }
         ]
-        result = curator.validators.SchemaCheck(
-            config,
-            Schema(curator.validators.filters.Filters(action)),
-            'filters',
-            'testing'
-        ).result()
-        self.assertEqual(config, result)
+        self.assertEqual(config, shared_result(config, action))

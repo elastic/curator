@@ -2,6 +2,7 @@ from datetime import timedelta, datetime, date
 import time
 import re
 import logging
+import elasticsearch
 from .defaults import settings
 from .validators import SchemaCheck, filters
 from .exceptions import *
@@ -90,6 +91,7 @@ class IndexList(object):
 
     def __map_method(self, ft):
         methods = {
+            'alias': self.filter_by_alias,
             'age': self.filter_by_age,
             'allocated': self.filter_allocated,
             'closed': self.filter_closed,
@@ -662,6 +664,49 @@ class IndexList(object):
 
     def filter_none(self):
         self.loggit.debug('"None" filter selected.  No filtering will be done.')
+
+    def filter_by_alias(self, aliases=None, exclude=False):
+        """
+        Match indices which are associated with the alias identified by `name`
+
+        :arg aliases: A list of alias names.
+        :type aliases: list
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
+        """
+        self.loggit.debug(
+            'Filtering indices matching aliases: "{0}"'.format(aliases))
+        if not aliases:
+            raise MissingArgument('No value for "aliases" provided')
+        aliases = ensure_list(aliases)
+        self.empty_list_check()
+        index_lists = chunk_index_list(self.indices)
+        for l in index_lists:
+            try:
+                # get_alias will either return {} or a NotFoundError.
+                has_alias = list(self.client.indices.get_alias(
+                    index=to_csv(l),
+                    name=to_csv(aliases)
+                ).keys())
+                self.loggit.debug('has_alias: {0}'.format(has_alias))
+            except elasticsearch.exceptions.NotFoundError:
+                # if we see the NotFoundError, we need to set working_list to {}
+                has_alias = []
+            for index in l:
+                if index in has_alias:
+                    isOrNot = 'is'
+                    condition = True
+                else:
+                    isOrNot = 'is not'
+                    condition = False
+                msg = (
+                    '{0} {1} associated with aliases: {2}'.format(
+                        index, isOrNot, aliases
+                    )
+                )
+                self.__excludify(condition, exclude, index, msg)
 
     def iterate_filters(self, filter_dict):
         """
