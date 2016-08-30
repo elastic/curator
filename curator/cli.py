@@ -132,8 +132,6 @@ def cli(config, dry_run, action_file):
     for k in ['client', 'logging']:
         if k not in yaml_config:
             yaml_config[k] = {}
-        elif yaml_config[k] == None:
-            yaml_config[k] = {}
         else:
             yaml_config[k] = prune_nones(yaml_config[k])
     config_dict = SchemaCheck(yaml_config, config_file.client(),
@@ -209,8 +207,8 @@ def cli(config, dry_run, action_file):
         ### Process the action ###
         ##########################
         try:
-            logger.debug('TRY: actions: {0} kwargs: '
-                '{1}'.format(actions[idx], kwargs)
+            logger.info('Trying Action ID: {0}, "{1}": '
+                '{2}'.format(idx, action, actions[idx]['description'])
             )
             process_action(client, actions[idx], **kwargs)
         except Exception as e:
