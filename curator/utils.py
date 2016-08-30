@@ -1049,6 +1049,7 @@ def validate_actions(data):
         ).result()
         clean_config[action_id] = {
             'action' : current_action,
+            'description' : valid_structure['description'],
             'options' : clean_options,
         }
         if current_action == 'alias':
