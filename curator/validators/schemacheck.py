@@ -23,8 +23,8 @@ class SchemaCheck(object):
         """
         self.loggit = logging.getLogger('curator.validators.SchemaCheck')
         # Set the Schema for validation...
-        self.loggit.info('Schema: {0}'.format(schema))
-        self.loggit.info('"{0}" config: {1}'.format(test_what, config))
+        self.loggit.debug('Schema: {0}'.format(schema))
+        self.loggit.debug('"{0}" config: {1}'.format(test_what, config))
         self.config = config
         self.schema = schema
         self.test_what = test_what
