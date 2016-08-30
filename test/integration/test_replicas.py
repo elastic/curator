@@ -52,7 +52,7 @@ class TestCLIReplicas(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)
     def test_extra_option(self):
         self.create_index('foo')
         self.write_config(
@@ -67,4 +67,4 @@ class TestCLIReplicas(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)

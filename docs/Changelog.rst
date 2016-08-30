@@ -3,6 +3,19 @@
 Changelog
 =========
 
+4.1.0.dev0 (? ? ?)
+------------------
+
+**New Features**
+
+  * Configuration and Action file schema validation.  Requested in #674
+    (untergeek)
+
+**General**
+
+  * New requirement! ``voluptuous`` Python schema validation module
+  * Requirement version bump:  Now requires ``elasticsearch-py`` 2.4.0
+
 4.0.6 (15 August 2016)
 ----------------------
 

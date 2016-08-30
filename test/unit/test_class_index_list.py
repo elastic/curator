@@ -780,7 +780,8 @@ class TestIterateFiltersIndex(TestCase):
         client.indices.stats.return_value = testvars.stats_four
         ilo = curator.IndexList(client)
         config = {'filters': [{'filtertype':12345.6789}]}
-        self.assertRaises(ValueError, ilo.iterate_filters, config)
+        self.assertRaises(
+            curator.ConfigurationError, ilo.iterate_filters, config)
     def test_pattern_filtertype(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_four

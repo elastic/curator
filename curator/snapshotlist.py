@@ -3,6 +3,7 @@ import time
 import re
 import logging
 from .defaults import settings
+from .validators import SchemaCheck, filters
 from .exceptions import *
 from .utils import *
 
@@ -308,32 +309,22 @@ class SnapshotList(object):
         self.loggit.debug('All filters: {0}'.format(config['filters']))
         for f in config['filters']:
             self.loggit.debug('Top of the loop: {0}'.format(self.snapshots))
-            logger.debug('Un-parsed filter args: {0}'.format(f))
-            f_args = None
-            # Make sure we got at least this much in the configuration
-            if not 'filtertype' in f:
-                raise ConfigurationError(
-                    'No "filtertype" in filter definition.'
+            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
+            self.loggit.debug('Parsed filter args: {0}'.format(
+                    SchemaCheck(
+                        f,
+                        filters.structure(),
+                        'filter',
+                        'SnapshotList.iterate_filters'
+                    ).result()
                 )
-            try:
-                ft = f['filtertype'].lower()
-            except Exception as e:
-                raise ValueError(
-                    'Invalid value for "filtertype": '
-                    '{0}'.format(f['filtertype'])
-                )
-            try:
-                f_args = settings.snapshot_filter()[ft]
-                method = self.__map_method(ft)
-            except:
-                raise ConfigurationError(
-                    'Unrecognized filtertype: {0}'.format(ft))
+            )
+            method = self.__map_method(f['filtertype'])
             # Remove key 'filtertype' from dictionary 'f'
             del f['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            f_args.update(prune_nones(f))
-            logger.debug('Filter args: {0}'.format(f_args))
+            logger.debug('Filter args: {0}'.format(f))
             logger.debug('Pre-instance: {0}'.format(self.snapshots))
-            method(**f_args)
+            method(**f)
             logger.debug('Post-instance: {0}'.format(self.snapshots))

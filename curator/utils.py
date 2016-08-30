@@ -5,8 +5,10 @@ import re
 import sys
 import logging
 import yaml
-from .defaults import settings
+from voluptuous import Schema
 from .exceptions import *
+from .defaults import settings
+from .validators import SchemaCheck, actions, filters, options
 from ._version import __version__
 logger = logging.getLogger(__name__)
 
@@ -1007,22 +1009,88 @@ def prune_nones(mydict):
     # Test for `None` instead of existence or zero values will be caught
     return dict([(k,v) for k, v in mydict.items() if v != None and v != 'None'])
 
-def verify_args(action, options):
+def validate_actions(data):
     """
-    Verify that only acceptable argument names in `options` have been passed for
-    any given `action`
+    Validate an Action configuration dictionary, as imported from actions.yml,
+    for example.
 
-    :arg action: The name of an action to be performed
-    :arg options: A dictionary of options.
+    The method returns a validated and sanitized configuration dictionary.
+
+    :arg data: The configuration dictionary
+    :rtype: dict
     """
-    logger.debug('Arguments for action "{0}": {1}'.format(action, options))
-    def matches_keys(mydict):
-        logger.debug(
-            'options.keys = {0} mydict.keys = '
-            '{1}'.format(options.keys(), mydict.keys())
-        )
-        return sorted(list(options.keys())) == sorted(list(mydict.keys()))
+    # data is the ENTIRE schema...
+    clean_config = { }
+    # Let's break it down into smaller chunks...
+    # First, let's make sure it has "actions" as a key, with a subdictionary
+    root = SchemaCheck(data, actions.root(), 'Actions File', 'root').result()
+    # We've passed the first step.  Now let's iterate over the actions...
+    for action_id in root['actions']:
+        # Now, let's ensure that the basic action structure is correct, with
+        # the proper possibilities for 'action'
+        action_dict = root['actions'][action_id]
+        loc = 'Action ID "{0}"'.format(action_id)
+        valid_structure = SchemaCheck(
+            action_dict,
+            actions.structure(action_dict, loc),
+            'structure',
+            loc
+        ).result()
+        # With the basic structure validated, now we extract the action name
+        current_action = valid_structure['action']
+        # And let's update the location with the action.
+        loc = 'Action ID "{0}", action "{1}"'.format(
+            action_id, current_action)
+        clean_options = SchemaCheck(
+            prune_nones(valid_structure['options']),
+            options.get_schema(current_action),
+            'options',
+            loc
+        ).result()
+        clean_config[action_id] = {
+            'action' : current_action,
+            'options' : clean_options,
+        }
+        if current_action == 'alias':
+            add_remove = {}
+            for k in ['add', 'remove']:
+                if k in valid_structure:
+                    current_filters = SchemaCheck(
+                        valid_structure[k]['filters'],
+                        Schema(filters.Filters(current_action, location=loc)),
+                        '"{0}" filters',
+                        '{1}, "filters"'.format(k, loc)
+                    ).result()
+                    add_remove.update(
+                        {
+                            k: {
+                                'filters' : SchemaCheck(
+                                        current_filters,
+                                        Schema(
+                                            filters.Filters(
+                                                current_action,
+                                                location=loc
+                                            )
+                                        ),
+                                        'filters',
+                                        '{0}, "{1}", "filters"'.format(loc, k)
+                                    ).result()
+                                }
+                        }
+                    )
+            # Add/Remove here
+            clean_config[action_id].update(add_remove)
+        elif current_action == 'create_index':
+            # create_index should not have a filters
+            pass
+        else: # Filters key only appears in non-alias actions
+            clean_filters = SchemaCheck(
+                valid_structure['filters'],
+                Schema(filters.Filters(current_action, location=loc)),
+                'filters',
+                '{0}, "filters"'.format(loc)
+            ).result()
+            clean_config[action_id].update({'filters' : clean_filters})
 
-    if not matches_keys(settings.action_defaults()[action]):
-        raise ConfigurationError(
-            'Invalid option in configuration: {0}'.format(options))
+    # if we've gotten this far without any Exceptions raised, it's valid!
+    return { 'actions' : clean_config }

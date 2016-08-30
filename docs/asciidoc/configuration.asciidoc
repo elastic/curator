@@ -389,14 +389,14 @@ This should be an integer number of seconds, or left empty.
 timeout:
 -----------
 
-You can change the client connection timeout value with this setting.
+You can change the default client connection timeout value with this setting.
 
-NOTE: Actions <<snapshot,snapshot>> and <<forcemerge,forcemerge>> will override
-    this value to `21600` if it is set at the default value of `30`.
-
-The default value is `30` (seconds).  The timeout can be overridden per action
-by setting <<option_timeout_override,timeout_override>> in the action
-<<options,options>>.
+The default value is `30` (seconds) should typically not be changed to be very
+large.  If a longer timeout is necessary for a given action, such as
+<<snapshot,snapshot>>, <<restore,restore>>, or <<forcemerge,forcemerge>>, the
+client timeout can be overridden on per action basis by setting
+<<option_timeout_override,timeout_override>> in the action <<options,options>>.
+There are default override values for some of those longer running actions.
 
 [[master_only]]
 === master_only

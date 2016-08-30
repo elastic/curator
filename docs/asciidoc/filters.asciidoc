@@ -92,13 +92,13 @@ or be removed from the actionable list based on the value of
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_key,key>> (required)
-* <<option_value,value>> (required)
+* <<fe_key,key>> (required)
+* <<fe_value,value>> (required)
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_allocation_type,allocation_type>> (has a default value which can optionally be changed)
+* <<fe_allocation_type,allocation_type>> (has a default value which can optionally be changed)
 * <<fe_exclude,exclude>> (default is `True`)
 
 
@@ -197,7 +197,7 @@ remain in, or be removed from the actionable list based on the value of
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_mns,max_num_segments>> (required)
+* <<fe_max_num_segments,max_num_segments>> (required)
 
 [float]
 Optional settings

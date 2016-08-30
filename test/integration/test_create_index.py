@@ -80,4 +80,4 @@ class TestCLICreateIndex(CuratorTestCase):
                     ],
                     )
         self.assertEqual([], curator.get_indices(self.client))
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)

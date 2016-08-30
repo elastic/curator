@@ -1,4 +1,5 @@
 import elasticsearch
+from voluptuous import *
 
 fake_fail      = Exception('Simulated Failure')
 four_oh_one    = elasticsearch.TransportError(401, "simulated error")
