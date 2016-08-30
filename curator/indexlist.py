@@ -75,7 +75,8 @@ class IndexList(object):
         Ensure that `index` is a key in `index_info`. If not, create a
         sub-dictionary structure under that key.
         """
-        self.loggit.debug('Building index info dictionary')
+        self.loggit.debug(
+            'Building preliminary index metadata for {0}'.format(index))
         if not index in self.index_info:
             self.index_info[index] = {
                 "age" : {},
