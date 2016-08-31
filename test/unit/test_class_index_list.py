@@ -596,7 +596,7 @@ class TestIndexListFilterBySpace(TestCase):
         client.indices.stats.return_value = testvars.stats_four
         client.field_stats.return_value = testvars.fieldstats_four
         il = curator.IndexList(client)
-        self.assertRaises(curator.ConfigurationError,
+        self.assertRaises(ValueError,
             il.filter_by_space, disk_space=2.1, use_age=True,
             source='field_stats', field='timestamp', stats_result='invalid'
         )
@@ -925,3 +925,62 @@ class TestIndexListFilterAlias(TestCase):
         il.filter_by_alias(aliases=['my_alias'])
         self.assertEqual(
             sorted([]), sorted(il.indices))
+
+class TestIndexListFilterCount(TestCase):
+    def test_raise(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        il = curator.IndexList(client)
+        self.assertRaises(curator.MissingArgument, il.filter_by_count)
+    def test_without_age(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_count(count=1)
+        self.assertEqual([u'index-2016.03.03'], il.indices)
+    def test_without_age_reversed(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_count(count=1, reverse=False)
+        self.assertEqual([u'index-2016.03.04'], il.indices)
+    def test_with_age(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_count(
+            count=1, use_age=True, source='name', timestring='%Y.%m.%d'
+        )
+        self.assertEqual([u'index-2016.03.03'], il.indices)
+    def test_with_age_creation_date(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_count(count=1, use_age=True)
+        self.assertEqual([u'index-2016.03.03'], il.indices)
+    def test_with_age_reversed(self):
+        client = Mock()
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
+        il = curator.IndexList(client)
+        il.filter_by_count(
+            count=1, use_age=True, source='name', timestring='%Y.%m.%d',
+            reverse=False
+        )
+        self.assertEqual([u'index-2016.03.04'], il.indices)

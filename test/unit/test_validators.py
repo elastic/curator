@@ -69,6 +69,17 @@ class TestFilterTypes(TestCase):
             }
         ]
         self.assertEqual(config, shared_result(config, action))
+    def test_count(self):
+        action = 'delete_indices'
+        config = [
+            {
+                'filtertype' : 'count',
+                'count' : 1,
+                'reverse' : True,
+                'exclude' : False,
+            }
+        ]
+        self.assertEqual(config, shared_result(config, action))
     def test_forcemerged(self):
         action = 'delete_indices'
         config = [

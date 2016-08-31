@@ -6,6 +6,7 @@
 --
 * <<fe_aliases,aliases>>
 * <<fe_allocation_type,allocation_type>>
+* <<fe_count,count>>
 * <<fe_direction,direction>>
 * <<fe_disk_space,disk_space>>
 * <<fe_epoch,epoch>>
@@ -82,6 +83,20 @@ The value of this setting must be one of `require`, `include`, or `exclude`.
 Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
+
+[[fe_count]]
+== count
+
+NOTE: This setting is only used with the <<filtertype_count,count>> filtertype +
+    and is a required setting.
+
+The value for this setting is a number of indices or snapshots to match.
+
+Items will remain in the actionable list depending on the value of
+<<fe_exclude,exclude>>, and <<fe_reverse,reverse>>.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
 
 [[fe_direction]]
 == direction

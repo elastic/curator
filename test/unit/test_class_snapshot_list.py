@@ -336,3 +336,53 @@ class TestIterateFiltersSnaps(TestCase):
         slo.iterate_filters(config)
         self.assertEqual(
             ['snap_name', 'snapshot-2015.03.01'], sorted(slo.snapshots))
+
+class TestSnapshotListFilterCount(TestCase):
+    def test_missing_count(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertRaises(curator.MissingArgument, slo.filter_by_count)
+    def test_without_age(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        slo.filter_by_count(count=1)
+        self.assertEqual(['snap_name'], slo.snapshots)
+    def test_without_age_reversed(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        slo.filter_by_count(count=1, reverse=False)
+        self.assertEqual(['snapshot-2015.03.01'], slo.snapshots)
+    def test_with_age(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        slo.filter_by_count(
+            count=1, source='creation_date', use_age=True
+        )
+        self.assertEqual(['snap_name'], slo.snapshots)
+    def test_with_age_reversed(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        slo.filter_by_count(
+            count=1, source='creation_date', use_age=True, reverse=False
+        )
+        self.assertEqual(['snapshot-2015.03.01'], slo.snapshots)
+    def test_sort_by_age(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        slo._calculate_ages()
+        slo.age_keyfield = 'invalid'
+        snaps = slo.snapshots
+        slo._sort_by_age(snaps)
+        self.assertEqual(['snapshot-2015.03.01'], slo.snapshots)
