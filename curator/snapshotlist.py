@@ -124,6 +124,33 @@ class SnapshotList(object):
             else:
                 self.snapshot_info[snapshot]['age_by_name'] = None
 
+    def _calculate_ages(self, source=None, timestring=None):
+        """
+        This method initiates snapshot age calculation based on the given
+        parameters.  Exceptions are raised when they are improperly configured.
+
+        Set instance variable `age_keyfield` for use later, if needed.
+
+        :arg source: Source of index age. Can be one of 'name', 'creation_date',
+            or 'field_stats'
+        :arg timestring: An strftime string to match the datestamp in an index
+            name. Only used for index filtering by ``name``.
+        """
+        if source == 'name':
+            self.age_keyfield = 'age_by_name'
+            if not timestring:
+                raise MissingArgument(
+                    'source "name" requires the "timestring" keyword argument'
+                )
+            self._get_name_based_ages(timestring)
+        elif source == 'creation_date':
+            self.age_keyfield = 'start_time_in_millis'
+        else:
+            raise ValueError(
+                'Invalid source: {0}.  '
+                'Must be "name", or "creation_date".'.format(source)
+            )
+
     def most_recent(self):
         """
         Return the most recent snapshot based on `start_time_in_millis`.
@@ -215,23 +242,9 @@ class SnapshotList(object):
             raise ValueError(
                 'Invalid value for "direction": {0}'.format(direction)
             )
-        if source == 'name':
-            keyfield = 'age_by_name'
-            if not timestring:
-                raise MissingArgument(
-                    'source "name" requires the "timestamp" keyword argument'
-                )
-            self._get_name_based_ages(timestring)
-        elif source == 'creation_date':
-            keyfield = 'start_time_in_millis'
-        else:
-            raise ValueError(
-                'Invalid source: {0}.  '
-                'Must be "name", or "creation_date".'.format(source)
-            )
-
+        self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
-            if not self.snapshot_info[snapshot][keyfield]:
+            if not self.snapshot_info[snapshot][self.age_keyfield]:
                 self.loggit.debug('Removing snapshot {0} for having no age')
                 self.snapshots.remove(snapshot)
                 continue
@@ -239,17 +252,19 @@ class SnapshotList(object):
                 'Snapshot "{0}" age ({1}), direction: "{2}", point of '
                 'reference, ({3})'.format(
                     snapshot,
-                    fix_epoch(self.snapshot_info[snapshot][keyfield]),
+                    fix_epoch(self.snapshot_info[snapshot][self.age_keyfield]),
                     direction,
                     PoR
                 )
             )
             # Because time adds to epoch, smaller numbers are actually older
             # timestamps.
+            snapshot_age = fix_epoch(
+                self.snapshot_info[snapshot][self.age_keyfield])
             if direction == 'older':
-                agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR
+                agetest = snapshot_age < PoR
             else: # 'younger'
-                agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR
+                agetest = snapshot_age > PoR
             self.__excludify(agetest, exclude, snapshot, msg)
 
     def filter_by_state(self, state=None, exclude=False):
