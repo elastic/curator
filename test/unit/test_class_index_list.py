@@ -596,7 +596,7 @@ class TestIndexListFilterBySpace(TestCase):
         client.indices.stats.return_value = testvars.stats_four
         client.field_stats.return_value = testvars.fieldstats_four
         il = curator.IndexList(client)
-        self.assertRaises(curator.ConfigurationError,
+        self.assertRaises(ValueError,
             il.filter_by_space, disk_space=2.1, use_age=True,
             source='field_stats', field='timestamp', stats_result='invalid'
         )

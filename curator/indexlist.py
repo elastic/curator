@@ -265,6 +265,84 @@ class IndexList(object):
                             '"{1}"'.format(field, index)
                         )
 
+    def _calculate_ages(self, source=None, timestring=None, field=None,
+            stats_result=None
+        ):
+        """
+        This method initiates index age calculation based on the given
+        parameters.  Exceptions are raised when they are improperly configured.
+
+        Set instance variable `age_keyfield` for use later, if needed.
+
+        :arg source: Source of index age. Can be one of 'name', 'creation_date',
+            or 'field_stats'
+        :arg timestring: An strftime string to match the datestamp in an index
+            name. Only used for index filtering by ``name``.
+        :arg field: A timestamp field name.  Only used for ``field_stats`` based
+            calculations.
+        :arg stats_result: Either `min_value` or `max_value`.  Only used in
+            conjunction with `source`=``field_stats`` to choose whether to
+            reference the minimum or maximum result value.
+        """
+        self.age_keyfield = source
+        if source == 'name':
+            if not timestring:
+                raise MissingArgument(
+                    'source "name" requires the "timestring" keyword argument'
+                )
+            self._get_name_based_ages(timestring)
+        elif source == 'creation_date':
+            # Nothing to do here as this comes from `get_metadata` in __init__
+            pass
+        elif source == 'field_stats':
+            if not field:
+                raise MissingArgument(
+                    'source "field_stats" requires the "field" keyword argument'
+                )
+            if stats_result not in ['min_value', 'max_value']:
+                raise ValueError(
+                    'Invalid value for "stats_result": {0}'.format(stats_result)
+                )
+            self.age_keyfield = stats_result
+            self._get_field_stats_dates(field=field)
+        else:
+            raise ValueError(
+                'Invalid source: {0}.  '
+                'Must be one of "name", '
+                '"creation_date", "field_stats".'.format(source)
+            )
+
+    def _sort_by_age(self, index_list, reverse=True):
+        """
+        Take a list of indices and sort them by date.
+
+        By default, the youngest are first with `reverse=True`, but the oldest
+        can be first by setting `reverse=False`
+        """
+        # Do the age-based sorting here.
+        # First, build an temporary dictionary with just index and age
+        # as the key and value, respectively
+        temp = {}
+        for index in index_list:
+            if self.age_keyfield in self.index_info[index]['age']:
+                temp[index] = self.index_info[index]['age'][self.age_keyfield]
+            else:
+                msg = (
+                    '{0} does not have age key "{1}" in IndexList '
+                    ' metadata'.format(index, self.age_keyfield)
+                )
+                self.__excludify(True, True, index, msg)
+
+        # If reverse is True, this will sort so the youngest indices are first.
+        # However, if you want oldest first, set reverse to False.
+        # Effectively, this should set us up to act on everything older than
+        # meets the other set criteria.
+        # It starts as a tuple, but then becomes a list.
+        sorted_tuple = (
+            sorted(temp.items(), key=lambda k: k[1], reverse=reverse)
+        )
+        return [x[0] for x in sorted_tuple]
+
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
         Match indices by regular expression (pattern).
@@ -341,48 +419,23 @@ class IndexList(object):
         self.loggit.debug('Filtering indices by age')
         # Get timestamp point of reference, PoR
         PoR = get_point_of_reference(unit, unit_count, epoch)
-        keyfield = source
         if not direction:
             raise MissingArgument('Must provide a value for "direction"')
         if direction not in ['older', 'younger']:
             raise ValueError(
                 'Invalid value for "direction": {0}'.format(direction)
             )
-        if source == 'name':
-            if not timestring:
-                raise MissingArgument(
-                    'source "name" requires the "timestring" keyword argument'
-                )
-            self._get_name_based_ages(timestring)
-        elif source == 'creation_date':
-            # Nothing to do here as this comes from `get_metadata` in __init__
-            pass
-        elif source == 'field_stats':
-            if not field:
-                raise MissingArgument(
-                    'source "field_stats" requires the "field" keyword argument'
-                )
-            if stats_result not in ['min_value', 'max_value']:
-                raise ValueError(
-                    'Invalid value for "stats_result": {0}'.format(stats_result)
-                )
-            keyfield = stats_result
-            self._get_field_stats_dates(field=field)
-        else:
-            raise ValueError(
-                'Invalid source: {0}.  '
-                'Must be one of "name", '
-                '"creation_date", "field_stats".'.format(source)
-            )
-
+        self._calculate_ages(
+            source=source, timestring=timestring, field=field,
+            stats_result=stats_result
+        )
         for index in self.working_list():
-
             try:
                 msg = (
                     'Index "{0}" age ({1}), direction: "{2}", point of '
                     'reference, ({3})'.format(
                         index,
-                        int(self.index_info[index]['age'][keyfield]),
+                        int(self.index_info[index]['age'][self.age_keyfield]),
                         direction,
                         PoR
                     )
@@ -390,9 +443,9 @@ class IndexList(object):
                 # Because time adds to epoch, smaller numbers are actually older
                 # timestamps.
                 if direction == 'older':
-                    agetest = self.index_info[index]['age'][keyfield] < PoR
+                    agetest = self.index_info[index]['age'][self.age_keyfield] < PoR
                 else:
-                    agetest = self.index_info[index]['age'][keyfield] > PoR
+                    agetest = self.index_info[index]['age'][self.age_keyfield] > PoR
                 self.__excludify(agetest, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(
@@ -461,54 +514,12 @@ class IndexList(object):
         working_list = self.working_list()
 
         if use_age:
-            keyfield = source
-            if source not in ['creation_date', 'name', 'field_stats']:
-                raise ValueError(
-                    'Invalid value for "source": {0}'.format(source)
-                )
-            if source == 'field_stats':
-                if not field:
-                    raise MissingArgument(
-                        'No value for "field" provided. "field" is required '
-                        'with source "field_stats"'
-                    )
-                if stats_result not in ['min_value', 'max_value']:
-                    raise ConfigurationError(
-                        'Incorrect value for "stats_result" provided: {0}. '
-                        'Must be either "min_value" or '
-                        '"max_value"'.format(stats_result)
-                    )
-                keyfield = stats_result
-                self._get_field_stats_dates(field=field)
-            if source == 'name':
-                if not timestring:
-                    raise MissingArgument(
-                        'No value for "timestring" provided. "timestring" is '
-                        'required with source "name"'
-                    )
-                self._get_name_based_ages(timestring)
-
-            # Do the age-based sorting here.
-            # First, build an intermediate dictionary with just index and age
-            # as the key and value, respectively
-            intermediate = {}
-            for index in working_list:
-                if keyfield in self.index_info[index]['age']:
-                    intermediate[index] = self.index_info[index]['age'][keyfield]
-                else:
-                    msg = (
-                        '{0} does not have age key "{1}" in IndexList '
-                        ' metadata'.format(index, keyfield)
-                    )
-                    self.__excludify(True, True, index, msg)
-
-            # This will sort the indices the youngest first. Effectively, this
-            # should set us up to delete everything older than fits into
-            # `disk_space`.  It starts as a tuple, but then becomes a list.
-            sorted_tuple = (
-                sorted(intermediate.items(), key=lambda k: k[1], reverse=True)
+            self._calculate_ages(
+                source=source, timestring=timestring, field=field,
+                stats_result=stats_result
             )
-            sorted_indices = [x[0] for x in sorted_tuple]
+            # Using default value of reverse=True in self._sort_by_age()
+            sorted_indices = self._sort_by_age(working_list)
 
         else:
             # Default to sorting by index name
