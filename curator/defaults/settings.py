@@ -60,6 +60,7 @@ def index_filtertypes():
         'allocated',
         'age',
         'closed',
+        'count',
         'forcemerged',
         'kibana',
         'none',
@@ -69,7 +70,7 @@ def index_filtertypes():
     ]
 
 def snapshot_filtertypes():
-    return ['age', 'none', 'pattern', 'state']
+    return ['age', 'count', 'none', 'pattern', 'state']
 
 def all_filtertypes():
     return sorted(list(set(index_filtertypes() + snapshot_filtertypes())))

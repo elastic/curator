@@ -95,6 +95,7 @@ class IndexList(object):
             'age': self.filter_by_age,
             'allocated': self.filter_allocated,
             'closed': self.filter_closed,
+            'count': self.filter_by_count,
             'forcemerged': self.filter_forceMerged,
             'kibana': self.filter_kibana,
             'none': self.filter_none,
@@ -718,6 +719,82 @@ class IndexList(object):
                     )
                 )
                 self.__excludify(condition, exclude, index, msg)
+
+    def filter_by_count(
+        self, count=None, reverse=True, use_age=False,
+        source='creation_date', timestring=None, field=None,
+        stats_result='min_value', exclude=True):
+        """
+        Remove indices from the actionable list beyond the number `count`,
+        sorted reverse-alphabetically by default.  If you set `reverse` to
+        `False`, it will be sorted alphabetically.
+
+        The default is usually what you will want. If only one kind of index is
+        provided--for example, indices matching ``logstash-%Y.%m.%d``--then
+        reverse alphabetical sorting will mean the oldest will remain in the
+        list, because lower numbers in the dates mean older indices.
+
+        By setting `reverse` to `False`, then ``index3`` will be deleted before
+        ``index2``, which will be deleted before ``index1``
+
+        `use_age` allows ordering indices by age. Age is determined by the index
+        creation date by default, but you can specify an `source` of ``name``,
+        ``max_value``, or ``min_value``.  The ``name`` `source` requires the
+        timestring argument.
+
+        :arg count: Filter indices beyond `count`.
+        :arg reverse: The filtering direction. (default: `True`).
+        :arg use_age: Sort indices by age.  ``source`` is required in this
+            case.
+        :arg source: Source of index age. Can be one of ``name``,
+            ``creation_date``, or ``field_stats``. Default: ``creation_date``
+        :arg timestring: An strftime string to match the datestamp in an index
+            name. Only used if `source` ``name`` is selected.
+        :arg field: A timestamp field name.  Only used if `source`
+            ``field_stats`` is selected.
+        :arg stats_result: Either `min_value` or `max_value`.  Only used if
+            `source` ``field_stats`` is selected. It determines whether to
+            reference the minimum or maximum value of `field` in each index.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
+        """
+        self.loggit.debug('Filtering indices by count')
+        if not count:
+            raise MissingArgument('No value for "count" provided')
+
+        # Create a copy-by-value working list
+        working_list = self.working_list()
+
+        if use_age:
+            if source is not 'name':
+                self.loggit.warn(
+                    'Cannot get age information from closed indices unless '
+                    'source="name".  Omitting any closed indices.'
+                )
+                self.filter_closed()
+            self._calculate_ages(
+                source=source, timestring=timestring, field=field,
+                stats_result=stats_result
+            )
+            # Using default value of reverse=True in self._sort_by_age()
+            sorted_indices = self._sort_by_age(working_list, reverse=reverse)
+
+        else:
+            # Default to sorting by index name
+            sorted_indices = sorted(working_list, reverse=reverse)
+
+        idx = 1
+        for index in sorted_indices:
+            msg = (
+                '{0} is {1} of specified count of {2}.'.format(
+                    index, idx, count
+                )
+            )
+            condition = True if idx <= count else False
+            self.__excludify(condition, exclude, index, msg)
+            idx += 1
 
     def iterate_filters(self, filter_dict):
         """

@@ -21,6 +21,7 @@ def structure():
     retval = {
         Optional('aliases'): Any(str, [str]),
         Optional('allocation_type'): str,
+        Optional('count'): int,
         Optional('direction'): str,
         Optional('disk_space'): float,
         Optional('epoch'): Any(int, None),

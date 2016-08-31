@@ -11,6 +11,10 @@ def allocation_type(**kwargs):
     return { Optional('allocation_type', default='require'): All(
         str, Any('require', 'include', 'exclude')) }
 
+def count(**kwargs):
+    # This setting is only used with the count filtertype and is required
+    return { Required('count'): All(int, Range(min=1)) }
+
 def direction(**kwargs):
     # This setting is only used with the age filtertype.
     return { Required('direction'): Any('older', 'younger') }
