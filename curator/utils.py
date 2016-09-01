@@ -1,10 +1,8 @@
 from datetime import timedelta, datetime, date
 import elasticsearch
 import time
-import re
-import sys
 import logging
-import yaml
+import yaml, os, re, sys
 from voluptuous import Schema
 from .exceptions import *
 from .defaults import settings
@@ -35,6 +33,21 @@ def get_yaml(path):
     :arg path: The path to a YAML configuration file.
     :rtype: dict
     """
+    # Set the stage here to parse single scalar value environment vars from
+    # the YAML file being read
+    single = re.compile( r'^\$\{(.*)\}$' )
+    yaml.add_implicit_resolver ( "!single", single )
+    def single_constructor(loader,node):
+        value = loader.construct_scalar(node)
+        proto = single.match(value).group(1)
+        default = None
+        if len(proto.split(':')) > 1:
+            envvar, default = proto.split(':')
+        else:
+            envvar = proto
+        return os.environ[envvar] if envvar in os.environ else default
+    yaml.add_constructor('!single', single_constructor)
+
     raw = read_file(path)
     try:
         cfg = yaml.load(raw)

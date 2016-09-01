@@ -3,6 +3,9 @@
 
 These examples should help illustrate how to build your own <<actions,actions>>.
 
+Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
+configuration files.
+
 [[ex_alias]]
 === alias
 

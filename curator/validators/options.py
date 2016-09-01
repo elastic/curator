@@ -12,12 +12,12 @@ def continue_if_exception():
         Any(int, bool), Coerce(bool)) }
 
 def count():
-    return { Required('count'): All(int, Range(min=0, max=10)) }
+    return { Required('count'): All(Coerce(int), Range(min=0, max=10)) }
 
 def delay():
     return {
         Optional('delay', default=0): All(
-                Any(int, float), Range(min=0, max=3600)
+                Coerce(float), Range(min=0.0, max=3600.0)
             )
     }
 
@@ -55,7 +55,9 @@ def key():
     return { Required('key'): str }
 
 def max_num_segments():
-    return { Required('max_num_segments'): All(int, Range(min=1, max=32768)) }
+    return {
+        Required('max_num_segments'): All(Coerce(int), Range(min=1, max=32768))
+    }
 
 def name(action):
     if action in ['alias', 'create_index']:
@@ -79,11 +81,18 @@ def repository():
     return { Required('repository'): str }
 
 def retry_count():
-    return {Optional('retry_count', default=3): All(int, Range(min=0, max=100))}
+    return {
+        Optional('retry_count', default=3): All(
+                Coerce(int), Range(min=0, max=100)
+            )
+    }
 
 def retry_interval():
-    return { Optional('retry_interval', default=120): All(
-        int, Range(min=1, max=600)) }
+    return {
+        Optional('retry_interval', default=120): All(
+                Coerce(int), Range(min=1, max=600)
+            )
+    }
 
 def skip_repo_fs_check():
     return { Optional('skip_repo_fs_check', default=False): All(
@@ -91,12 +100,18 @@ def skip_repo_fs_check():
 
 def timeout_override(action):
     if action in ['forcemerge', 'restore', 'snapshot']:
-        return { Optional('timeout_override', default=21600): Any(int, None) }
+        return {
+            Optional('timeout_override', default=21600): Any(Coerce(int), None)
+        }
     if action in ['close']:
         # This is due to the synced flush operation before closing.
-        return { Optional('timeout_override', default=180): Any(int, None) }
+        return {
+            Optional('timeout_override', default=180): Any(Coerce(int), None)
+        }
     else:
-        return { Optional('timeout_override', default=None): Any(int, None) }
+        return {
+            Optional('timeout_override', default=None): Any(Coerce(int), None)
+        }
 
 def value():
     return { Required('value'): str }
