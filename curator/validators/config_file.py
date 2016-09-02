@@ -5,7 +5,8 @@ def config_client():
     return {
         Optional('hosts', default='127.0.0.1'): Any(None, str, list),
         Optional('port', default=9200): Any(
-            None, All(int, Range(min=1, max=65535))),
+            None, All(Coerce(int), Range(min=1, max=65535))
+        ),
         Optional('url_prefix', default=''): Any(None, str),
         Optional('use_ssl', default=False): All(Any(int, bool), Coerce(bool)),
         Optional('certificate', default=None): Any(None, str),
@@ -17,7 +18,8 @@ def config_client():
         Optional('ssl_no_validate', default=False): All(
             Any(int, bool), Coerce(bool)),
         Optional('http_auth', default=None): Any(None, str),
-        Optional('timeout', default=30): All(int, Range(min=1, max=86400)),
+        Optional('timeout', default=30): All(
+            Coerce(int), Range(min=1, max=86400)),
         Optional('master_only', default=False): All(
             Any(int, bool), Coerce(bool)),
     }
@@ -28,7 +30,7 @@ def config_logging():
         Optional(
             'loglevel', default='INFO'): Any(None,
             'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL',
-            All(int, Any(0, 10, 20, 30, 40, 50))
+            All(Coerce(int), Any(0, 10, 20, 30, 40, 50))
         ),
         Optional('logfile', default=None): Any(None, str),
         Optional(

@@ -57,6 +57,9 @@ Options:
   --help         Show this message and exit.
 -------
 
+Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
+configuration files.
+
 &nbsp;
 
 [[exit-codes]]

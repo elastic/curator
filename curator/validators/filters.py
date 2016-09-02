@@ -21,22 +21,22 @@ def structure():
     retval = {
         Optional('aliases'): Any(str, [str]),
         Optional('allocation_type'): str,
-        Optional('count'): int,
+        Optional('count'): Coerce(int),
         Optional('direction'): str,
         Optional('disk_space'): float,
-        Optional('epoch'): Any(int, None),
+        Optional('epoch'): Any(Coerce(int), None),
         Optional('exclude'): Any(int, str, bool, None),
         Optional('field'): Any(str, None),
         Optional('key'): str,
         Optional('kind'): str,
-        Optional('max_num_segments'): int,
+        Optional('max_num_segments'): Coerce(int),
         Optional('reverse'): Any(int, str, bool, None),
         Optional('source'): str,
         Optional('state'): str,
         Optional('stats_result'): Any(str, None),
         Optional('timestring'): Any(str, None),
         Optional('unit'): str,
-        Optional('unit_count'): int,
+        Optional('unit_count'): Coerce(int),
         Optional('use_age'): Any(int, str, bool),
         Optional('value'): Any(int, float, str, bool),
     }
@@ -67,7 +67,7 @@ def Filters(action, location=None):
                 '{0}, filter #{1}: {2}'.format(location, idx, pruned)
             ).result()
             logger.debug('Filter #{0}: {1}'.format(idx, filter_dict))
-            v[idx] = pruned
+            v[idx] = filter_dict
         # If we've made it here without raising an Exception, it's valid
         return v
     return f

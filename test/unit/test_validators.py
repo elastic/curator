@@ -48,6 +48,20 @@ class TestFilterTypes(TestCase):
             }
         ]
         self.assertEqual(config, shared_result(config, action))
+    def test_age_with_string_unit_count(self):
+        action = 'delete_indices'
+        config = [
+            {
+                'filtertype' : 'age',
+                'direction' : 'older',
+                'unit' : 'days',
+                'unit_count' : "1",
+                'source' : 'field_stats',
+                'field'  : '@timestamp',
+            }
+        ]
+        result = shared_result(config, action)
+        self.assertEqual(1, result[0]['unit_count'])
     def test_allocated(self):
         action = 'delete_indices'
         config = [
@@ -121,6 +135,20 @@ class TestFilterTypes(TestCase):
             }
         ]
         self.assertEqual(config, shared_result(config, action))
+    def test_space_name_age_string_float(self):
+        action = 'delete_indices'
+        config = [
+            {
+                'filtertype' : 'space',
+                'disk_space' : "1.0",
+                'use_age' : True,
+                'exclude' : False,
+                'source' : 'name',
+                'timestring' : '%Y.%m.%d',
+            }
+        ]
+        result = shared_result(config, action)
+        self.assertEqual(1.0, result[0]['disk_space'])
     def test_space_name_age_no_ts(self):
         action = 'delete_indices'
         config = [

@@ -13,7 +13,7 @@ def allocation_type(**kwargs):
 
 def count(**kwargs):
     # This setting is only used with the count filtertype and is required
-    return { Required('count'): All(int, Range(min=1)) }
+    return { Required('count'): All(Coerce(int), Range(min=1)) }
 
 def direction(**kwargs):
     # This setting is only used with the age filtertype.
@@ -21,11 +21,11 @@ def direction(**kwargs):
 
 def disk_space(**kwargs):
     # This setting is only used with the space filtertype and is required
-    return { Required('disk_space'): Any(float, int) }
+    return { Required('disk_space'): Any(Coerce(float)) }
 
 def epoch(**kwargs):
     # This setting is only used with the age filtertype.
-    return { Optional('epoch', default=None): Any(int, None) }
+    return { Optional('epoch', default=None): Any(Coerce(int), None) }
 
 def exclude(**kwargs):
     # This setting is available in all filter types.
@@ -55,7 +55,7 @@ def kind(**kwargs):
 
 def max_num_segments(**kwargs):
     return {
-        Required('max_num_segments'): All(int, Range(min=1))
+        Required('max_num_segments'): All(Coerce(int), Range(min=1))
     }
 
 def reverse(**kwargs):
@@ -68,10 +68,10 @@ def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype when use_age is set to True.
     if 'action' in kwargs and kwargs['action'] in settings.snapshot_actions():
-        return { Optional('source', default='creation_date'): Any(
+        return { Optional('source'): Any(
             'name', 'creation_date') }
     else:
-        return { Optional('source', default='name'): Any(
+        return { Optional('source'): Any(
             'name', 'creation_date', 'field_stats') }
 
 def state(**kwargs):
@@ -106,7 +106,7 @@ def unit(**kwargs):
 def unit_count(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype if use_age is set to True.
-    return { Required('unit_count'): int }
+    return { Required('unit_count'): Coerce(int) }
 
 def use_age(**kwargs):
     # Use of this setting requires the additional setting, source.

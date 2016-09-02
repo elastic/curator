@@ -20,6 +20,19 @@ client_config = ('---\n'
 '  logformat: default\n'
 '  blacklist: []\n')
 
+client_config_envvars = ('---\n'
+'client:\n'
+'  hosts: {0}\n'
+'  port: {1}\n'
+'  timeout: {2}\n'
+'  master_only: False\n'
+'\n'
+'logging:\n'
+'  loglevel: DEBUG\n'
+'  logfile:\n'
+'  logformat: default\n'
+'  blacklist: []\n')
+
 bad_client_config = ('---\n'
 'misspelled:\n'
 '  hosts: {0}\n'

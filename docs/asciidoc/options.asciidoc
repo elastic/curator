@@ -31,6 +31,9 @@ Options are settings used by <<actions,actions>>.
 * <<option_timeout_override,timeout_override>>
 * <<option_value,value>>
 * <<option_wfc,wait_for_completion>>
+
+Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
+configuration files.
 --
 
 [[option_allocation_type]]
