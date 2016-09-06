@@ -3,6 +3,37 @@
 Changelog
 =========
 
+4.1.0 (6 September 2016)
+------------------------
+
+**New Features**
+
+  * Configuration and Action file schema validation.  Requested in #674
+    (untergeek)
+  * Alias filtertype! With this filter, you can select indices based on whether
+    they are part of an alias.  Merged in #748 (untergeek)
+  * Count filtertype! With this filter, you can now configure Curator to only
+    keep the most recent _n_ indices (or snapshots!).  Merged in #749
+    (untergeek)
+  * Experimental! Use environment variables in your YAML configuration files.
+    This was a popular request, #697. (untergeek)
+
+**General**
+
+  * New requirement! ``voluptuous`` Python schema validation module
+  * Requirement version bump:  Now requires ``elasticsearch-py`` 2.4.0
+
+**Bug Fixes**
+
+  * ``delete_aliases`` option in ``close`` action no longer results in an error
+    if not all selected indices have an alias.  Add test to confirm expected
+    behavior. Reported in #736 (untergeek)
+
+**Documentation**
+
+  * Add information to FAQ regarding indices created before Elasticsearch 1.4.
+    Merged in #747
+
 4.0.6 (15 August 2016)
 ----------------------
 

@@ -244,8 +244,14 @@ class Close(object):
                     self.loggit.info(
                         'Deleting aliases from indices before closing.')
                     self.loggit.debug('Deleting aliases from: {0}'.format(l))
-                    self.client.indices.delete_alias(
-                        index=to_csv(l), name='_all')
+                    try:
+                        self.client.indices.delete_alias(
+                            index=to_csv(l), name='_all')
+                    except Exception as e:
+                        self.loggit.warn(
+                            'Some indices may not have had aliases.  Exception:'
+                            ' {0}'.format(e)
+                        )
                 self.client.indices.flush(
                     index=to_csv(l), ignore_unavailable=True)
                 self.client.indices.close(

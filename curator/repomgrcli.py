@@ -95,24 +95,22 @@ def s3(
 
 @click.group()
 @click.option(
-    '--host', help='Elasticsearch host.', default=settings.client()['hosts'])
+    '--host', help='Elasticsearch host.', default='127.0.0.1')
 @click.option(
-    '--url_prefix', help='Elasticsearch http url prefix.',
-    default=settings.client()['url_prefix']
-)
-@click.option('--port', help='Elasticsearch port.', default=settings.client()['port'], type=int)
-@click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True, default=settings.client()['use_ssl'])
+    '--url_prefix', help='Elasticsearch http url prefix.',default='')
+@click.option('--port', help='Elasticsearch port.', default=9200, type=int)
+@click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True)
 @click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
 @click.option('--client-cert', help='Path to file containing SSL certificate for client auth. (OPTIONAL)', type=str, default=None)
 @click.option('--client-key', help='Path to file containing SSL key for client auth. (OPTIONAL)', type=str, default=None)
 @click.option('--ssl-no-validate', help='Do not validate server\'s SSL certificate', is_flag=True)
-@click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default=settings.client()['http_auth'])
-@click.option('--timeout', help='Connection timeout in seconds.', default=settings.client()['timeout'], type=int)
+@click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default='')
+@click.option('--timeout', help='Connection timeout in seconds.', default=30, type=int)
 @click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
 @click.option('--debug', is_flag=True, help='Debug mode')
-@click.option('--loglevel', help='Log level', default=settings.logs()['loglevel'])
-@click.option('--logfile', help='log file', default=settings.logs()['logfile'])
-@click.option('--logformat', help='Log output format [default|logstash].', default=settings.logs()['logformat'])
+@click.option('--loglevel', help='Log level', default='INFO')
+@click.option('--logfile', help='log file', default=None)
+@click.option('--logformat', help='Log output format [default|logstash].', default='default')
 @click.version_option(version=__version__)
 @click.pass_context
 def repo_mgr_cli(

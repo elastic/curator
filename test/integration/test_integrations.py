@@ -16,15 +16,16 @@ logger = logging.getLogger(__name__)
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
-class TestCLIReplicas(CuratorTestCase):
-    def test_increase_count(self):
-        count = 2
-        idx = 'my_index'
+class TestFilters(CuratorTestCase):
+    def test_filter_by_alias(self):
+        alias = 'testalias'
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.replicas_test.format(count))
-        self.create_index(idx)
+            testvars.filter_by_alias.format('testalias', False))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -33,17 +34,16 @@ class TestCLIReplicas(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(
-            count,
-            int(self.client.indices.get_settings(
-                index=idx)[idx]['settings']['index']['number_of_replicas'])
-        )
-    def test_no_count(self):
-        self.create_index('foo')
+        self.assertEquals(1, len(curator.get_indices(self.client)))
+    def test_filter_by_array_of_aliases(self):
+        alias = 'testalias'
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.replicas_test.format(' '))
+            testvars.filter_by_alias.format(' [ testalias, foo ]', False))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -52,13 +52,16 @@ class TestCLIReplicas(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
-    def test_extra_option(self):
-        self.create_index('foo')
+        self.assertEquals(1, len(curator.get_indices(self.client)))
+    def test_filter_by_alias_bad_aliases(self):
+        alias = 'testalias'
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.bad_option_proto_test.format('replicas'))
+            testvars.filter_by_alias.format('{"this":"isadict"}', False))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -67,4 +70,6 @@ class TestCLIReplicas(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEquals(
+            type(curator.ConfigurationError()), type(result.exception))
+        self.assertEquals(2, len(curator.get_indices(self.client)))

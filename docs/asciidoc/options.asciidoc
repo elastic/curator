@@ -7,16 +7,17 @@
 Options are settings used by <<actions,actions>>.
 
 * <<option_allocation_type,allocation_type>>
-* <<option_extra_settings,extra_settings>>
 * <<option_continue,continue_if_exception>>
 * <<option_count,count>>
 * <<option_delay,delay>>
 * <<option_delete_aliases,delete_aliases>>
 * <<option_disable,disable_action>>
+* <<option_extra_settings,extra_settings>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_ignore,ignore_unavailable>>
 * <<option_include_aliases,include_aliases>>
 * <<option_include_gs,include_global_state>>
+* <<option_indices,indices>>
 * <<option_key,key>>
 * <<option_mns,max_num_segments>>
 * <<option_name,name>>
@@ -30,27 +31,21 @@ Options are settings used by <<actions,actions>>.
 * <<option_timeout_override,timeout_override>>
 * <<option_value,value>>
 * <<option_wfc,wait_for_completion>>
+
+Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
+configuration files.
 --
 
 [[option_allocation_type]]
 == allocation_type
 
 NOTE: This setting is used only when using the <<allocation,allocation action>>
-    or the <<filtertype_allocated,allocated filtertype>>.
 
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
 Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
-
-[[option_extra_settings]]
-== extra_settings
-
-This setting should be nested YAML.  The values beneath `extra_settings` will be
-used by whichever action uses the option.
-
-There is no default value.
 
 [[option_continue]]
 == continue_if_exception
@@ -107,6 +102,14 @@ file.
 
 The default value for this setting is `False`
 
+[[option_extra_settings]]
+== extra_settings
+
+This setting should be nested YAML.  The values beneath `extra_settings` will be
+used by whichever action uses the option.
+
+There is no default value.
+
 [[option_ignore_empty]]
 == ignore_empty_list
 
@@ -157,11 +160,21 @@ global cluster state with the snapshot.
 
 The default value of this setting is `True`
 
+[[option_indices]]
+== indices
+
+NOTE: This setting is only used by the <<restore,restore>> action.
+
+This setting must be a list of indices to restore.  Any valid YAML format for
+lists are acceptable here.  If `indices` is left empty, or unset, all indices in
+the snapshot will be restored.
+
+The default value of this setting is `None`
+
 [[option_key]]
 == key
 
-NOTE: This setting is required when using the <<allocation,allocation action>>
-    or the <<filtertype_allocated,allocated filtertype>>.
+NOTE: This setting is required when using the <<allocation,allocation action>>.
 
 The value of this setting should correspond to a node setting on one or more
 nodes in your cluster.
@@ -351,15 +364,30 @@ The default value of this setting is `False`
 
 NOTE: This setting is available in all actions.
 
-This setting must be an integer number of seconds, or it will be ignored, and
-the default <<timeout,timeout>> will be used.
+Actions <<snapshot,snapshot>>, <<restore,restore>>, and
+    <<forcemerge,forcemerge>> will override this value to `21600` if
+    `timeout_override` is unset.  The <<close,close>> action will override the
+    value to 180 if unset.
+
+Some actions have a default value for `timeout_override`. The following table
+shows these default values:
+
+[cols="m,", options="header"]
+|===
+|Action Name |Default `timeout_override` Value
+|close |180
+|forcemerge |21600
+|restore |21600
+|snapshot |21600
+|===
+
+All other actions have no default value for `timeout_override`.
+
+This setting must be an integer number of seconds, or an error will result.
 
 This setting is particularly useful for the <<forcemerge,forceMerge>> action,
 the <<snapshot,snapshot>> action, and any other action where a longer timeout
 from the client-defined default would be desirable.
-
-The default value of this setting is `None`
-
 
 
 [[option_value]]
@@ -391,7 +419,8 @@ will be raised, and execution will halt.
 == wait_for_completion
 
 NOTE: This setting is used by the <<allocation,allocation>>,
-    <<replicas,replicas>>, and <<snapshot,snapshot>> actions.
+    <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>>
+    actions.
 
 This setting must be either `True` or `False`.
 
@@ -406,4 +435,4 @@ TIP: During snapshot initialization, information about all previous snapshots is
 
 The default value of this setting differs for each action.  The default for the
 <<allocation,allocation>> and <<replicas,replicas>> actions is `False`.  The
-default for the <<snapshot,snapshot>> action is `True`.
+default for the <<restore,restore>> and <<snapshot,snapshot>> actions is `True`.

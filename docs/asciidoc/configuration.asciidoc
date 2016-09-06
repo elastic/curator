@@ -7,12 +7,78 @@
 These are the higher-level configuration settings used by the configuration
 files.  <<actions,Actions>> and <<filters,filters>> are documented separately.
 
+* <<envvars,Environment Variables>>
 * <<actionfile,Action File>>
 * <<configfile,Configuration File>>
 --
 
+[[envvars]]
+== Environment Variables
+
+WARNING: This functionality is experimental and may be changed or removed +
+    completely in a future release.
+
+You can use environment variable references in the both the
+<<configfile,configuration file>> and the <<actionfile,action file>> to set
+values that need to be configurable at runtime. To do this, use:
+
+[source,sh]
+-------
+${VAR}
+-------
+
+Where `VAR` is the name of the environment variable.
+
+Each variable reference is replaced at startup by the value of the environment
+variable. The replacement is case-sensitive and occurs while the YAML file is
+parsed, but before configuration schema validation. References to undefined
+variables are replaced by `None` unless you specify a default value. To specify
+a default value, use:
+
+[source,sh]
+-------
+${VAR:default_value}
+-------
+
+Where `default_value` is the value to use if the environment variable is
+undefined.
+
+[IMPORTANT]
+.Unsupported use cases
+=================================================================
+When using environment variables, the value must _only_ be the environment
+variable.
+
+Using extra text, such as:
+
+[source,sh]
+-------
+logfile: ${LOGPATH}/extra/path/information/file.log
+-------
+
+is not supported at this time.
+=================================================================
+
+=== Examples
+
+Here are some examples of configurations that use environment variables
+and what each configuration looks like after replacement:
+
+[options="header"]
+|==================================
+|Config source	       |Environment setting   |Config after replacement
+|`unit: ${UNIT}`       |`export UNIT=days`    |`unit: days`
+|`unit: ${UNIT}`       |no setting            |`unit:`
+|`unit: ${UNIT:days}`  |no setting            |`unit: days`
+|`unit: ${UNIT:days}`  |`export UNIT=days`    |`unit: days`
+|==================================
+
+
 [[actionfile]]
 == Action File
+
+NOTE: Starting in Curator 4.1, you can use <<envvars,environment variables>> in
+    your configuration files.
 
 An action file has the following structure:
 
@@ -106,6 +172,10 @@ options:
 NOTE: The default location of the configuration file is `~/.curator/curator.yml`,
     but another location can be specified using the `--config` flag on the
     <<command-line,command-line>>.
+
+
+NOTE: Starting in Curator 4.1, you can use <<envvars,environment variables>> in
+    your configuration files.
 
 The configuration file contains client connection and settings for logging.  It
 looks like this:
@@ -389,14 +459,14 @@ This should be an integer number of seconds, or left empty.
 timeout:
 -----------
 
-You can change the client connection timeout value with this setting.
+You can change the default client connection timeout value with this setting.
 
-NOTE: Actions <<snapshot,snapshot>> and <<forcemerge,forcemerge>> will override
-    this value to `21600` if it is set at the default value of `30`.
-
-The default value is `30` (seconds).  The timeout can be overridden per action
-by setting <<option_timeout_override,timeout_override>> in the action
-<<options,options>>.
+The default value is `30` (seconds) should typically not be changed to be very
+large.  If a longer timeout is necessary for a given action, such as
+<<snapshot,snapshot>>, <<restore,restore>>, or <<forcemerge,forcemerge>>, the
+client timeout can be overridden on per action basis by setting
+<<option_timeout_override,timeout_override>> in the action <<options,options>>.
+There are default override values for some of those longer running actions.
 
 [[master_only]]
 === master_only

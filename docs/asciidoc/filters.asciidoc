@@ -8,7 +8,9 @@ Filters are the way to select only the indices (or snapshots) you want.
 
 The index filtertypes are:
 
+* <<filtertype_alias,alias>>
 * <<filtertype_age,age>>
+* <<filtertype_count,count>>
 * <<filtertype_pattern,pattern>>
 * <<filtertype_space,space>>
 * <<filtertype_kibana,kibana>>
@@ -16,13 +18,18 @@ The index filtertypes are:
 * <<filtertype_closed,closed>>
 * <<filtertype_opened,opened>>
 * <<filtertype_allocated,allocated>>
+* <<filtertype_none,none>>
 
 The snapshot filtertypes are:
 
 * <<filtertype_age,age>>
+* <<filtertype_count,count>>
 * <<filtertype_pattern,pattern>>
 * <<filtertype_state,state>>
+* <<filtertype_none,none>>
 
+Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
+configuration files.
 --
 
 [[filtertype]]
@@ -53,6 +60,8 @@ multiple can be chained together in this manner.
 The index filtertypes are:
 
 * <<filtertype_age,age>>
+* <<filtertype_alias,alias>>
+* <<filtertype_count,count>>
 * <<filtertype_pattern,pattern>>
 * <<filtertype_space,space>>
 * <<filtertype_kibana,kibana>>
@@ -60,48 +69,15 @@ The index filtertypes are:
 * <<filtertype_closed,closed>>
 * <<filtertype_opened,opened>>
 * <<filtertype_allocated,allocated>>
+* <<filtertype_none,none>>
 
 The snapshot filtertypes are:
 
 * <<filtertype_age,age>>
+* <<filtertype_count,count>>
 * <<filtertype_pattern,pattern>>
-
-
-[[filtertype_allocated]]
-== allocated
-
-[source,text]
--------------
-- filtertype: allocated
-  key:
-  value:
-  allocation_type:
-  exclude: True
--------------
-
-NOTE: Empty values and commented lines will result in the default value, if any,
-    being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it will be ignored.
-
-This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices based on their shard routing allocation settings.  They will remain in,
-or be removed from the actionable list based on the value of
-<<fe_exclude,exclude>>.
-
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
-
-* <<option_key,key>> (required)
-* <<option_value,value>> (required)
-
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
-* <<option_allocation_type,allocation_type>> (has a default value which can optionally be changed)
-* <<fe_exclude,exclude>> (default is `True`)
-
-
+* <<filtertype_state,state>>
+* <<filtertype_none,none>>
 
 [[filtertype_age]]
 == age
@@ -122,7 +98,7 @@ Optional settings
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it will be ignored.
+    <<filtertype,filtertype>>, it may generate an error.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices based on their age.  They will remain in, or be removed from the
@@ -155,6 +131,70 @@ Optional settings
 * <<fe_exclude,exclude>> (default is `False`)
 
 
+[[filtertype_alias]]
+== alias
+
+[source,text]
+-------------
+- filtertype: alias
+  aliases:
+  exclude: True
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given
+    <<filtertype,filtertype>>, it may generate an error.
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices based on whether they are associated with the given
+<<fe_aliases,aliases>>.  They will remain in, or be removed from the actionable
+list based on the value of <<fe_exclude,exclude>>.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+* <<fe_aliases,aliases>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<fe_exclude,exclude>> (default is `False`)
+
+[[filtertype_allocated]]
+== allocated
+
+[source,text]
+-------------
+- filtertype: allocated
+  key:
+  value:
+  allocation_type:
+  exclude: True
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given
+    <<filtertype,filtertype>>, it may generate an error.
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices based on their shard routing allocation settings.  They will remain in,
+or be removed from the actionable list based on the value of
+<<fe_exclude,exclude>>.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_key,key>> (required)
+* <<fe_value,value>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<fe_allocation_type,allocation_type>> (has a default value which can optionally be changed)
+* <<fe_exclude,exclude>> (default is `True`)
+
+
 [[filtertype_closed]]
 == closed
 
@@ -174,6 +214,65 @@ Optional settings
 
 * <<fe_exclude,exclude>> (default is `True`)
 
+[[filtertype_count]]
+== count
+
+[source,text]
+-------------
+- filtertype: count
+  count: 10
+  reverse: True
+  use_age: False
+  source: creation_date
+  timestring:
+  field:
+  stats_result:
+  exclude: False
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given
+    <<filtertype,filtertype>>, it may generate an error.
+
+This <<filtertype,filtertype>> will iterate over the actionable list of indices
+_or_ snapshots. They are ordered by age, or by alphabet, so as to guarantee
+that the correct items will remain in, or be removed from the actionable list
+based on the values of <<fe_count,count>>, <<fe_exclude,exclude>>, and
+<<fe_reverse,reverse>>.
+
+For use cases, where "like" items are being counted, and their name pattern
+guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
+set <<fe_use_age,use_age>> to `True`, as item names will be sorted in
+<<fe_reverse,reverse>> order by default.  This means that the item count will
+start beginning with the _newest_ indices or snapshots, and proceed through to
+the oldest.
+
+Read more about the different settings for this <<filtertype,filtertype>>:
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_count,count>> (required)
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_reverse,reverse>> (optional)
+* <<fe_use_age,use_age>> (optional)
+* <<fe_source,source>> (required if `use_age` is `True`)
+* <<fe_timestring,timestring>> (required if `source` is `name`)
+* <<fe_exclude,exclude>> (default is `False`)
+
+[float]
+Index-only settings
+~~~~~~~~~~~~~~~~~~~
+
+* <<fe_field,field>> (required if `source` is `field_stats`)
+* <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
+
+
 [[filtertype_forcemerged]]
 == forcemerged
 
@@ -186,7 +285,7 @@ Optional settings
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it will be ignored.
+    <<filtertype,filtertype>>, it may generate an error.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices which have `max_num_segments` segments per shard, or fewer.  They will
@@ -197,7 +296,7 @@ remain in, or be removed from the actionable list based on the value of
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_mns,max_num_segments>> (required)
+* <<fe_max_num_segments,max_num_segments>> (required)
 
 [float]
 Optional settings
@@ -278,7 +377,7 @@ Optional settings
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it will be ignored.
+    <<filtertype,filtertype>>, it may generate an error.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices matching a given pattern.  They will remain in, or be removed from
@@ -319,7 +418,7 @@ Optional settings
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it will be ignored.
+    <<filtertype,filtertype>>, it may generate an error.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices when their cumulative disk consumption exceeds
@@ -392,7 +491,7 @@ Optional settings
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it will be ignored.
+    <<filtertype,filtertype>>, it may generate an error.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 snapshots based on the value of <<fe_state,state>>.  They will remain in, or be

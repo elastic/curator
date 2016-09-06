@@ -21,8 +21,8 @@ pip install elasticsearch-curator
 &nbsp;
 
 [float]
-PIP installation of a specific version:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PIP installation of a specific version. For example, an older release:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ----------------------------------------
 pip install elasticsearch-curator==3.5.1
