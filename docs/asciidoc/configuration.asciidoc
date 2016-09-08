@@ -66,11 +66,11 @@ and what each configuration looks like after replacement:
 
 [options="header"]
 |==================================
-|Config source	       |Environment setting   |Config after replacement
-|`unit: ${UNIT}`       |`export UNIT=days`    |`unit: days`
-|`unit: ${UNIT}`       |no setting            |`unit:`
-|`unit: ${UNIT:days}`  |no setting            |`unit: days`
-|`unit: ${UNIT:days}`  |`export UNIT=days`    |`unit: days`
+|Config source	       |Environment setting    |Config after replacement
+|`unit: ${UNIT}`       |`export UNIT=days`     |`unit: days`
+|`unit: ${UNIT}`       |no setting             |`unit:`
+|`unit: ${UNIT:days}`  |no setting             |`unit: days`
+|`unit: ${UNIT:days}`  |`export UNIT=hours`    |`unit: hours`
 |==================================
 
 
