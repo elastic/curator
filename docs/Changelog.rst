@@ -3,6 +3,15 @@
 Changelog
 =========
 
+4.1.1 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Have the boolean schema tests report ``expected bool`` instead of ``expected
+    int``.  The result is the same, but the error message is misleading.
+    Reported in #757 (untergeek)
+
 4.1.0 (6 September 2016)
 ------------------------
 

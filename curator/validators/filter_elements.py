@@ -62,7 +62,7 @@ def reverse(**kwargs):
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
     return { Optional('reverse', default=True): All(
-        Any(int, bool), Coerce(bool)) }
+        Any(bool, int), Coerce(bool)) }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space
@@ -111,7 +111,7 @@ def unit_count(**kwargs):
 def use_age(**kwargs):
     # Use of this setting requires the additional setting, source.
     return { Optional('use_age', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+        Any(bool, int), Coerce(bool)) }
 
 def value(**kwargs):
     # This setting is only used with the pattern filtertype and is a required
