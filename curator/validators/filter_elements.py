@@ -68,11 +68,14 @@ def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype when use_age is set to True.
     if 'action' in kwargs and kwargs['action'] in settings.snapshot_actions():
-        return { Optional('source'): Any(
-            'name', 'creation_date') }
+        valuelist = Any('name', 'creation_date')
     else:
-        return { Optional('source'): Any(
-            'name', 'creation_date', 'field_stats') }
+        valuelist = Any('name', 'creation_date', 'field_stats')
+
+    if 'required' in kwargs and kwargs['required']:
+        return { Required('source'): valuelist }
+    else:
+        return { Optional('source'): valuelist }
 
 def state(**kwargs):
     # This setting is only used with the state filtertype.
