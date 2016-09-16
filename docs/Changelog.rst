@@ -12,6 +12,17 @@ Changelog
     int``.  The result is the same, but the error message is misleading.
     Reported in #757 (untergeek)
 
+**General**
+
+  * Update es_repo_mgr to use the same client/logging YAML config file.
+    Requested in #752 (untergeek)
+
+**Schema Validation**
+
+  * Cases where ``source`` was not defined in a filter (but should have been)
+    were informing users that a `timestring` field was there that shouldn't have
+    been.  This edge case has been corrected.
+
 4.1.0 (6 September 2016)
 ------------------------
 
