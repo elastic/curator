@@ -5,20 +5,11 @@ import sys
 import logging
 from .defaults import settings
 from .exceptions import *
+from .config_utils import process_config
 from .utils import *
 from ._version import __version__
-from .logtools import LogInfo
 
 logger = logging.getLogger('curator.repomgrcli')
-
-try:
-    from logging import NullHandler
-except ImportError:
-    from logging import Handler
-
-    class NullHandler(Handler):
-        def emit(self, record):
-            pass
 
 def delete_callback(ctx, param, value):
     if not value:
@@ -31,8 +22,15 @@ def show_repos(client):
 
 @click.command(short_help='Filesystem Repository')
 @click.option('--repository', required=True, type=str, help='Repository name')
-@click.option('--location', required=True, type=str,
-            help='Shared file-system location. Must match remote path, & be accessible to all master & data nodes')
+@click.option(
+    '--location',
+    required=True,
+    type=str,
+    help=(
+        'Shared file-system location. '
+        'Must match remote path, & be accessible to all master & data nodes'
+    )
+)
 @click.option('--compression', type=bool, default=True, show_default=True,
             help='Enable/Disable metadata compression.')
 @click.option('--chunk_size', type=str,
@@ -50,7 +48,8 @@ def fs(
     """
     Create a filesystem repository.
     """
-    client = get_client(**ctx.parent.parent.params)
+    logger = logging.getLogger('curator.repomgrcli.fs')
+    client = get_client(**ctx.obj['client_args'])
     try:
         create_repository(client, repo_type='fs', **ctx.params)
     except FailedExecution as e:
@@ -85,7 +84,8 @@ def s3(
     """
     Create an S3 repository.
     """
-    client = get_client(**ctx.parent.parent.params)
+    logger = logging.getLogger('curator.repomgrcli.s3')
+    client = get_client(**ctx.obj['client_args'])
     try:
         create_repository(client, repo_type='s3', **ctx.params)
     except FailedExecution as e:
@@ -95,41 +95,19 @@ def s3(
 
 @click.group()
 @click.option(
-    '--host', help='Elasticsearch host.', default='127.0.0.1')
-@click.option(
-    '--url_prefix', help='Elasticsearch http url prefix.',default='')
-@click.option('--port', help='Elasticsearch port.', default=9200, type=int)
-@click.option('--use_ssl', help='Connect to Elasticsearch through SSL.', is_flag=True)
-@click.option('--certificate', help='Path to certificate to use for SSL validation. (OPTIONAL)', type=str, default=None)
-@click.option('--client-cert', help='Path to file containing SSL certificate for client auth. (OPTIONAL)', type=str, default=None)
-@click.option('--client-key', help='Path to file containing SSL key for client auth. (OPTIONAL)', type=str, default=None)
-@click.option('--ssl-no-validate', help='Do not validate server\'s SSL certificate', is_flag=True)
-@click.option('--http_auth', help='Use Basic Authentication ex: user:pass', default='')
-@click.option('--timeout', help='Connection timeout in seconds.', default=30, type=int)
-@click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
-@click.option('--debug', is_flag=True, help='Debug mode')
-@click.option('--loglevel', help='Log level', default='INFO')
-@click.option('--logfile', help='log file', default=None)
-@click.option('--logformat', help='Log output format [default|logstash].', default='default')
-@click.version_option(version=__version__)
+    '--config',
+    help="Path to configuration file. Default: ~/.curator/curator.yml",
+    type=click.Path(exists=True), default=settings.config_file()
+)
 @click.pass_context
-def repo_mgr_cli(
-        ctx, host, url_prefix, port, use_ssl, certificate, client_cert,
-        client_key, ssl_no_validate, http_auth, timeout, master_only, debug,
-        loglevel, logfile, logformat):
+def repo_mgr_cli(ctx, config):
     """
     Repository manager for Elasticsearch Curator.
     """
-    # Set up logging
-    if debug:
-        loglevel = 'DEBUG'
-    log_opts = {'loglevel':loglevel, 'logfile':logfile, 'logformat':logformat}
-    loginfo = LogInfo(log_opts)
-    logging.root.addHandler(loginfo.handler)
-    logging.root.setLevel(loginfo.numeric_log_level)
-    # Setting up NullHandler to handle nested elasticsearch.trace Logger
-    # instance in elasticsearch python client
-    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
+    ctx.obj = {}
+    ctx.obj['client_args'] = process_config(config)
+    logger = logging.getLogger(__name__)
+    logger.debug('Client and logging options validated.')
 
 @repo_mgr_cli.group('create')
 @click.pass_context
@@ -144,7 +122,7 @@ def show(ctx):
     """
     Show all repositories
     """
-    client = get_client(**ctx.parent.params)
+    client = get_client(**ctx.obj['client_args'])
     show_repos(client)
 
 @repo_mgr_cli.command('delete')
@@ -155,11 +133,10 @@ def show(ctx):
 @click.pass_context
 def _delete(ctx, repository):
     """Delete an Elasticsearch repository"""
-    client = get_client(**ctx.parent.params)
+    client = get_client(**ctx.obj['client_args'])
     try:
         logger.info('Deleting repository {0}...'.format(repository))
         client.snapshot.delete_repository(repository=repository)
-        # sys.exit(0)
     except elasticsearch.NotFoundError:
         logger.error(
             'Unable to delete repository: {0}  Not Found.'.format(repository))

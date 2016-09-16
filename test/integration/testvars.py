@@ -20,6 +20,15 @@ client_config = ('---\n'
 '  logformat: default\n'
 '  blacklist: []\n')
 
+client_conf_logfile = ('---\n'
+'client:\n'
+'  hosts: {0}\n'
+'  port: {1}\n'
+'\n'
+'logging:\n'
+'  loglevel: DEBUG\n'
+'  logfile: {2}\n')
+
 client_config_envvars = ('---\n'
 'client:\n'
 '  hosts: {0}\n'
