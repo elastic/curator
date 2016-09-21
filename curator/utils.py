@@ -541,7 +541,7 @@ def get_client(**kwargs):
             else kwargs['aws_secret_key']
         kwargs['aws_region'] = False if not 'aws_region' in kwargs \
             else kwargs['aws_region']
-        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['region']:
+        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
             if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
                     and kwargs['aws_region']:
                 raise MissingArgument(
