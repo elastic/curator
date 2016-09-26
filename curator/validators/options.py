@@ -8,8 +8,7 @@ def allocation_type():
         str, Any('require', 'include', 'exclude')) }
 
 def continue_if_exception():
-    return { Optional('continue_if_exception', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('continue_if_exception', default=False): Boolean() }
 
 def count():
     return { Required('count'): All(Coerce(int), Range(min=0, max=10)) }
@@ -22,31 +21,25 @@ def delay():
     }
 
 def delete_aliases():
-    return { Optional('delete_aliases', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('delete_aliases', default=False): Boolean() }
 
 def disable_action():
-    return { Optional('disable_action', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('disable_action', default=False): Boolean() }
 
 def extra_settings():
     return { Optional('extra_settings', default={}): dict }
 
 def ignore_empty_list():
-    return { Optional('ignore_empty_list', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('ignore_empty_list', default=False): Boolean() }
 
 def ignore_unavailable():
-    return { Optional('ignore_unavailable', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('ignore_unavailable', default=False): Boolean() }
 
 def include_aliases():
-    return { Optional('include_aliases', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('include_aliases', default=False): Boolean() }
 
 def include_global_state():
-    return { Optional('include_global_state', default=True): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('include_global_state', default=True): Boolean() }
 
 def indices():
     return { Optional('indices', default=None): Any(None, list) }
@@ -68,8 +61,7 @@ def name(action):
         return { Optional('name'): str }
 
 def partial():
-    return { Optional('partial', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('partial', default=False): Boolean() }
 
 def rename_pattern():
     return { Optional('rename_pattern'): str }
@@ -95,8 +87,7 @@ def retry_interval():
     }
 
 def skip_repo_fs_check():
-    return { Optional('skip_repo_fs_check', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('skip_repo_fs_check', default=False): Boolean() }
 
 def timeout_override(action):
     if action in ['forcemerge', 'restore', 'snapshot']:
@@ -118,11 +109,9 @@ def value():
 
 def wait_for_completion(action):
     if action in ['allocation', 'replicas']:
-        return { Optional('wait_for_completion', default=False): All(
-            Any(int, bool), Coerce(bool)) }
+        return { Optional('wait_for_completion', default=False): Boolean() }
     elif action in ['restore', 'snapshot']:
-        return { Optional('wait_for_completion', default=True): All(
-            Any(int, bool), Coerce(bool)) }
+        return { Optional('wait_for_completion', default=True): Boolean() }
 
 ## Methods for building the schema
 def action_specific(action):

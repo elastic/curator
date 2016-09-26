@@ -4,23 +4,14 @@ import logging
 import click
 from voluptuous import Schema
 from .defaults import settings
-from .validators import SchemaCheck, config_file
+from .validators import SchemaCheck
+from .config_utils import process_config
 from .exceptions import *
 from .utils import *
 from .indexlist import IndexList
 from .snapshotlist import SnapshotList
 from .actions import *
 from ._version import __version__
-from .logtools import LogInfo, Whitelist, Blacklist
-
-try:
-    from logging import NullHandler
-except ImportError:
-    from logging import Handler
-
-    class NullHandler(Handler):
-        def emit(self, record):
-            pass
 
 CLASS_MAP = {
     'alias' :  Alias,
@@ -68,9 +59,6 @@ def process_action(client, config, **kwargs):
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(opts))
     logger.debug('Action kwargs: {0}'.format(mykwargs))
-    # This is no longer necessary with the config schema validator
-    # # Verify the args we're going to pass match the action
-    # verify_args(action, mykwargs)
 
     ### Set up the action ###
     if action == 'alias':
@@ -123,35 +111,8 @@ def cli(config, dry_run, action_file):
 
     See http://elastic.co/guide/en/elasticsearch/client/curator/current
     """
-    # Get config from yaml file
-    yaml_config  = get_yaml(config)
-    # if the file is empty, which is still valid yaml, set as an empty dict
-    yaml_config = {} if not yaml_config else prune_nones(yaml_config)
-    # Voluptuous can't verify the schema of a dict if it doesn't have keys,
-    # so make sure the keys are at least there and are dict()
-    for k in ['client', 'logging']:
-        if k not in yaml_config:
-            yaml_config[k] = {}
-        else:
-            yaml_config[k] = prune_nones(yaml_config[k])
-    config_dict = SchemaCheck(yaml_config, config_file.client(),
-        'Client Configuration', 'full configuration dictionary').result()
-    # Set up logging
-    log_opts = config_dict['logging']
-    loginfo = LogInfo(log_opts)
-    logging.root.addHandler(loginfo.handler)
-    logging.root.setLevel(loginfo.numeric_log_level)
-    logger = logging.getLogger('curator.cli')
-    # Set up NullHandler() to handle nested elasticsearch.trace Logger
-    # instance in elasticsearch python client
-    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
-    if log_opts['blacklist']:
-        for bl_entry in ensure_list(log_opts['blacklist']):
-            for handler in logging.root.handlers:
-                handler.addFilter(Blacklist(bl_entry))
-
-    client_args = config_dict['client']
-    test_client_options(client_args)
+    client_args = process_config(config)
+    logger = logging.getLogger(__name__)
     logger.debug('Client and logging options validated.')
 
     # Extract this and save it for later, in case there's no timeout_override.

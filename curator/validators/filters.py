@@ -37,7 +37,7 @@ def structure():
         Optional('timestring'): Any(str, None),
         Optional('unit'): str,
         Optional('unit_count'): Coerce(int),
-        Optional('use_age'): Any(int, str, bool),
+        Optional('use_age'): Boolean(),
         Optional('value'): Any(int, float, str, bool),
     }
     retval.update(filtertype())

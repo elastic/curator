@@ -85,6 +85,7 @@ class SnapshotList(object):
     def __map_method(self, ft):
         methods = {
             'age': self.filter_by_age,
+            'count': self.filter_by_count,
             'none': self.filter_none,
             'pattern': self.filter_by_regex,
             'state': self.filter_by_state,

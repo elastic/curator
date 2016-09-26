@@ -3,6 +3,33 @@
 Changelog
 =========
 
+4.1.1 (27 September 2016)
+-------------------------
+
+**Bug Fixes**
+
+  * String-based booleans are now properly coerced.  This fixes an issue where
+    `True`/`False` were used in environment variables, but not recognized.
+    #765 (untergeek)
+
+  * Fix missing `count` method in ``__map_method`` in SnapshotList. Reported in
+    #766 (untergeek)
+
+**General**
+
+  * Update es_repo_mgr to use the same client/logging YAML config file.
+    Requested in #752 (untergeek)
+
+**Schema Validation**
+
+  * Cases where ``source`` was not defined in a filter (but should have been)
+    were informing users that a `timestring` field was there that shouldn't have
+    been.  This edge case has been corrected.
+
+**Documentation**
+
+  * Added notifications and FAQ entry to explain that AWS ES is not supported.
+
 4.1.0 (6 September 2016)
 ------------------------
 

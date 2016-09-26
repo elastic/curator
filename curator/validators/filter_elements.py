@@ -33,8 +33,7 @@ def exclude(**kwargs):
         val = True
     else: # False by default
         val = False
-    return { Optional('exclude', default=val): All(
-        Any(bool, int), Coerce(bool)) }
+    return { Optional('exclude', default=val): Boolean() }
 
 def field(**kwargs):
     # This setting is only used with the age filtertype.
@@ -61,18 +60,20 @@ def max_num_segments(**kwargs):
 def reverse(**kwargs):
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
-    return { Optional('reverse', default=True): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('reverse', default=True): Boolean() }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype when use_age is set to True.
     if 'action' in kwargs and kwargs['action'] in settings.snapshot_actions():
-        return { Optional('source'): Any(
-            'name', 'creation_date') }
+        valuelist = Any('name', 'creation_date')
     else:
-        return { Optional('source'): Any(
-            'name', 'creation_date', 'field_stats') }
+        valuelist = Any('name', 'creation_date', 'field_stats')
+
+    if 'required' in kwargs and kwargs['required']:
+        return { Required('source'): valuelist }
+    else:
+        return { Optional('source'): valuelist }
 
 def state(**kwargs):
     # This setting is only used with the state filtertype.
@@ -110,8 +111,7 @@ def unit_count(**kwargs):
 
 def use_age(**kwargs):
     # Use of this setting requires the additional setting, source.
-    return { Optional('use_age', default=False): All(
-        Any(int, bool), Coerce(bool)) }
+    return { Optional('use_age', default=False): Boolean() }
 
 def value(**kwargs):
     # This setting is only used with the pattern filtertype and is a required

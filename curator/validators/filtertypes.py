@@ -8,11 +8,14 @@ logger = logging.getLogger(__name__)
 
 def _age_elements(action, config):
     retval = []
-    retval.append(filter_elements.source(action=action))
+    is_req = True
+    if config['filtertype'] in ['count', 'space']:
+        is_req = True if 'use_age' in config and config['use_age'] else False
+    retval.append(filter_elements.source(action=action, required=is_req))
     if action in settings.index_actions():
         retval.append(filter_elements.stats_result())
-    # This is a silly thing here, because the absence of 'source' will surely
-    # show up later in the schema check, but it keeps code from breaking...
+    # This is a silly thing here, because the absence of 'source' will
+    # show up in the actual schema check, but it keeps code from breaking here
     ts_req = False
     if 'source' in config:
         if config['source'] == 'name':
@@ -23,6 +26,11 @@ def _age_elements(action, config):
                 retval.append(filter_elements.field(required=True))
             else:
                 retval.append(filter_elements.field(required=False))
+        retval.append(filter_elements.timestring(required=ts_req))
+    else:
+        # If source isn't in the config, then the other elements are not
+        # required, but should be Optional to prevent false positives
+        retval.append(filter_elements.field(required=False))
         retval.append(filter_elements.timestring(required=ts_req))
     return retval
 
@@ -37,7 +45,6 @@ def alias(action, config):
 def age(action, config):
     # Required & Optional
     retval = [
-        filter_elements.source(action=action),
         filter_elements.direction(),
         filter_elements.unit(),
         filter_elements.unit_count(),
