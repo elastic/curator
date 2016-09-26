@@ -573,19 +573,3 @@ class TestPruneNones(TestCase):
     def test_prune_nones_without(self):
         a = {'foo':'bar'}
         self.assertEqual(a, curator.prune_nones(a))
-
-class TestValidateFilters(TestCase):
-    def test_snapshot_with_index_filter(self):
-        self.assertRaises(
-            curator.ConfigurationError,
-            curator.validate_filters,
-            'delete_snapshots',
-            [{'filtertype': 'kibana'}]
-        )
-    def test_index_with_snapshot_filter(self):
-        self.assertRaises(
-            curator.ConfigurationError,
-            curator.validate_filters,
-            'delete_indices',
-            [{'filtertype': 'state', 'state': 'SUCCESS'}]
-        )

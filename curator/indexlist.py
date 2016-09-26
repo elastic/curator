@@ -2,11 +2,10 @@ from datetime import timedelta, datetime, date
 import time
 import re
 import logging
-import elasticsearch
 from .defaults import settings
-from .validators import SchemaCheck, filters
 from .exceptions import *
 from .utils import *
+
 
 class IndexList(object):
     def __init__(self, client):
@@ -76,8 +75,7 @@ class IndexList(object):
         Ensure that `index` is a key in `index_info`. If not, create a
         sub-dictionary structure under that key.
         """
-        self.loggit.debug(
-            'Building preliminary index metadata for {0}'.format(index))
+        self.loggit.debug('Building index info dictionary')
         if not index in self.index_info:
             self.index_info[index] = {
                 "age" : {},
@@ -91,11 +89,9 @@ class IndexList(object):
 
     def __map_method(self, ft):
         methods = {
-            'alias': self.filter_by_alias,
             'age': self.filter_by_age,
             'allocated': self.filter_allocated,
             'closed': self.filter_closed,
-            'count': self.filter_by_count,
             'forcemerged': self.filter_forceMerged,
             'kibana': self.filter_kibana,
             'none': self.filter_none,
@@ -266,84 +262,6 @@ class IndexList(object):
                             '"{1}"'.format(field, index)
                         )
 
-    def _calculate_ages(self, source=None, timestring=None, field=None,
-            stats_result=None
-        ):
-        """
-        This method initiates index age calculation based on the given
-        parameters.  Exceptions are raised when they are improperly configured.
-
-        Set instance variable `age_keyfield` for use later, if needed.
-
-        :arg source: Source of index age. Can be one of 'name', 'creation_date',
-            or 'field_stats'
-        :arg timestring: An strftime string to match the datestamp in an index
-            name. Only used for index filtering by ``name``.
-        :arg field: A timestamp field name.  Only used for ``field_stats`` based
-            calculations.
-        :arg stats_result: Either `min_value` or `max_value`.  Only used in
-            conjunction with `source`=``field_stats`` to choose whether to
-            reference the minimum or maximum result value.
-        """
-        self.age_keyfield = source
-        if source == 'name':
-            if not timestring:
-                raise MissingArgument(
-                    'source "name" requires the "timestring" keyword argument'
-                )
-            self._get_name_based_ages(timestring)
-        elif source == 'creation_date':
-            # Nothing to do here as this comes from `get_metadata` in __init__
-            pass
-        elif source == 'field_stats':
-            if not field:
-                raise MissingArgument(
-                    'source "field_stats" requires the "field" keyword argument'
-                )
-            if stats_result not in ['min_value', 'max_value']:
-                raise ValueError(
-                    'Invalid value for "stats_result": {0}'.format(stats_result)
-                )
-            self.age_keyfield = stats_result
-            self._get_field_stats_dates(field=field)
-        else:
-            raise ValueError(
-                'Invalid source: {0}.  '
-                'Must be one of "name", '
-                '"creation_date", "field_stats".'.format(source)
-            )
-
-    def _sort_by_age(self, index_list, reverse=True):
-        """
-        Take a list of indices and sort them by date.
-
-        By default, the youngest are first with `reverse=True`, but the oldest
-        can be first by setting `reverse=False`
-        """
-        # Do the age-based sorting here.
-        # First, build an temporary dictionary with just index and age
-        # as the key and value, respectively
-        temp = {}
-        for index in index_list:
-            if self.age_keyfield in self.index_info[index]['age']:
-                temp[index] = self.index_info[index]['age'][self.age_keyfield]
-            else:
-                msg = (
-                    '{0} does not have age key "{1}" in IndexList '
-                    ' metadata'.format(index, self.age_keyfield)
-                )
-                self.__excludify(True, True, index, msg)
-
-        # If reverse is True, this will sort so the youngest indices are first.
-        # However, if you want oldest first, set reverse to False.
-        # Effectively, this should set us up to act on everything older than
-        # meets the other set criteria.
-        # It starts as a tuple, but then becomes a list.
-        sorted_tuple = (
-            sorted(temp.items(), key=lambda k: k[1], reverse=reverse)
-        )
-        return [x[0] for x in sorted_tuple]
-
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
         Match indices by regular expression (pattern).
@@ -420,23 +338,48 @@ class IndexList(object):
         self.loggit.debug('Filtering indices by age')
         # Get timestamp point of reference, PoR
         PoR = get_point_of_reference(unit, unit_count, epoch)
+        keyfield = source
         if not direction:
             raise MissingArgument('Must provide a value for "direction"')
         if direction not in ['older', 'younger']:
             raise ValueError(
                 'Invalid value for "direction": {0}'.format(direction)
             )
-        self._calculate_ages(
-            source=source, timestring=timestring, field=field,
-            stats_result=stats_result
-        )
+        if source == 'name':
+            if not timestring:
+                raise MissingArgument(
+                    'source "name" requires the "timestring" keyword argument'
+                )
+            self._get_name_based_ages(timestring)
+        elif source == 'creation_date':
+            # Nothing to do here as this comes from `get_metadata` in __init__
+            pass
+        elif source == 'field_stats':
+            if not field:
+                raise MissingArgument(
+                    'source "field_stats" requires the "field" keyword argument'
+                )
+            if stats_result not in ['min_value', 'max_value']:
+                raise ValueError(
+                    'Invalid value for "stats_result": {0}'.format(stats_result)
+                )
+            keyfield = stats_result
+            self._get_field_stats_dates(field=field)
+        else:
+            raise ValueError(
+                'Invalid source: {0}.  '
+                'Must be one of "name", '
+                '"creation_date", "field_stats".'.format(source)
+            )
+
         for index in self.working_list():
+
             try:
                 msg = (
                     'Index "{0}" age ({1}), direction: "{2}", point of '
                     'reference, ({3})'.format(
                         index,
-                        int(self.index_info[index]['age'][self.age_keyfield]),
+                        int(self.index_info[index]['age'][keyfield]),
                         direction,
                         PoR
                     )
@@ -444,9 +387,9 @@ class IndexList(object):
                 # Because time adds to epoch, smaller numbers are actually older
                 # timestamps.
                 if direction == 'older':
-                    agetest = self.index_info[index]['age'][self.age_keyfield] < PoR
+                    agetest = self.index_info[index]['age'][keyfield] < PoR
                 else:
-                    agetest = self.index_info[index]['age'][self.age_keyfield] > PoR
+                    agetest = self.index_info[index]['age'][keyfield] > PoR
                 self.__excludify(agetest, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(
@@ -515,12 +458,54 @@ class IndexList(object):
         working_list = self.working_list()
 
         if use_age:
-            self._calculate_ages(
-                source=source, timestring=timestring, field=field,
-                stats_result=stats_result
+            keyfield = source
+            if source not in ['creation_date', 'name', 'field_stats']:
+                raise ValueError(
+                    'Invalid value for "source": {0}'.format(source)
+                )
+            if source == 'field_stats':
+                if not field:
+                    raise MissingArgument(
+                        'No value for "field" provided. "field" is required '
+                        'with source "field_stats"'
+                    )
+                if stats_result not in ['min_value', 'max_value']:
+                    raise ConfigurationError(
+                        'Incorrect value for "stats_result" provided: {0}. '
+                        'Must be either "min_value" or '
+                        '"max_value"'.format(stats_result)
+                    )
+                keyfield = stats_result
+                self._get_field_stats_dates(field=field)
+            if source == 'name':
+                if not timestring:
+                    raise MissingArgument(
+                        'No value for "timestring" provided. "timestring" is '
+                        'required with source "name"'
+                    )
+                self._get_name_based_ages(timestring)
+
+            # Do the age-based sorting here.
+            # First, build an intermediate dictionary with just index and age
+            # as the key and value, respectively
+            intermediate = {}
+            for index in working_list:
+                if keyfield in self.index_info[index]['age']:
+                    intermediate[index] = self.index_info[index]['age'][keyfield]
+                else:
+                    msg = (
+                        '{0} does not have age key "{1}" in IndexList '
+                        ' metadata'.format(index, keyfield)
+                    )
+                    self.__excludify(True, True, index, msg)
+
+            # This will sort the indices the youngest first. Effectively, this
+            # should set us up to delete everything older than fits into
+            # `disk_space`.  It starts as a tuple, but then becomes a list.
+            sorted_tuple = (
+                sorted(intermediate.items(), key=lambda k: k[1], reverse=True)
             )
-            # Using default value of reverse=True in self._sort_by_age()
-            sorted_indices = self._sort_by_age(working_list)
+            sorted_indices = [x[0] for x in sorted_tuple]
 
         else:
             # Default to sorting by index name
@@ -677,125 +662,6 @@ class IndexList(object):
     def filter_none(self):
         self.loggit.debug('"None" filter selected.  No filtering will be done.')
 
-    def filter_by_alias(self, aliases=None, exclude=False):
-        """
-        Match indices which are associated with the alias identified by `name`
-
-        :arg aliases: A list of alias names.
-        :type aliases: list
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            indices from `indices`. If `exclude` is `False`, then only matching
-            indices will be kept in `indices`.
-            Default is `False`
-        """
-        self.loggit.debug(
-            'Filtering indices matching aliases: "{0}"'.format(aliases))
-        if not aliases:
-            raise MissingArgument('No value for "aliases" provided')
-        aliases = ensure_list(aliases)
-        self.empty_list_check()
-        index_lists = chunk_index_list(self.indices)
-        for l in index_lists:
-            try:
-                # get_alias will either return {} or a NotFoundError.
-                has_alias = list(self.client.indices.get_alias(
-                    index=to_csv(l),
-                    name=to_csv(aliases)
-                ).keys())
-                self.loggit.debug('has_alias: {0}'.format(has_alias))
-            except elasticsearch.exceptions.NotFoundError:
-                # if we see the NotFoundError, we need to set working_list to {}
-                has_alias = []
-            for index in l:
-                if index in has_alias:
-                    isOrNot = 'is'
-                    condition = True
-                else:
-                    isOrNot = 'is not'
-                    condition = False
-                msg = (
-                    '{0} {1} associated with aliases: {2}'.format(
-                        index, isOrNot, aliases
-                    )
-                )
-                self.__excludify(condition, exclude, index, msg)
-
-    def filter_by_count(
-        self, count=None, reverse=True, use_age=False,
-        source='creation_date', timestring=None, field=None,
-        stats_result='min_value', exclude=True):
-        """
-        Remove indices from the actionable list beyond the number `count`,
-        sorted reverse-alphabetically by default.  If you set `reverse` to
-        `False`, it will be sorted alphabetically.
-
-        The default is usually what you will want. If only one kind of index is
-        provided--for example, indices matching ``logstash-%Y.%m.%d``--then
-        reverse alphabetical sorting will mean the oldest will remain in the
-        list, because lower numbers in the dates mean older indices.
-
-        By setting `reverse` to `False`, then ``index3`` will be deleted before
-        ``index2``, which will be deleted before ``index1``
-
-        `use_age` allows ordering indices by age. Age is determined by the index
-        creation date by default, but you can specify an `source` of ``name``,
-        ``max_value``, or ``min_value``.  The ``name`` `source` requires the
-        timestring argument.
-
-        :arg count: Filter indices beyond `count`.
-        :arg reverse: The filtering direction. (default: `True`).
-        :arg use_age: Sort indices by age.  ``source`` is required in this
-            case.
-        :arg source: Source of index age. Can be one of ``name``,
-            ``creation_date``, or ``field_stats``. Default: ``creation_date``
-        :arg timestring: An strftime string to match the datestamp in an index
-            name. Only used if `source` ``name`` is selected.
-        :arg field: A timestamp field name.  Only used if `source`
-            ``field_stats`` is selected.
-        :arg stats_result: Either `min_value` or `max_value`.  Only used if
-            `source` ``field_stats`` is selected. It determines whether to
-            reference the minimum or maximum value of `field` in each index.
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            indices from `indices`. If `exclude` is `False`, then only matching
-            indices will be kept in `indices`.
-            Default is `True`
-        """
-        self.loggit.debug('Filtering indices by count')
-        if not count:
-            raise MissingArgument('No value for "count" provided')
-
-        # Create a copy-by-value working list
-        working_list = self.working_list()
-
-        if use_age:
-            if source is not 'name':
-                self.loggit.warn(
-                    'Cannot get age information from closed indices unless '
-                    'source="name".  Omitting any closed indices.'
-                )
-                self.filter_closed()
-            self._calculate_ages(
-                source=source, timestring=timestring, field=field,
-                stats_result=stats_result
-            )
-            # Using default value of reverse=True in self._sort_by_age()
-            sorted_indices = self._sort_by_age(working_list, reverse=reverse)
-
-        else:
-            # Default to sorting by index name
-            sorted_indices = sorted(working_list, reverse=reverse)
-
-        idx = 1
-        for index in sorted_indices:
-            msg = (
-                '{0} is {1} of specified count of {2}.'.format(
-                    index, idx, count
-                )
-            )
-            condition = True if idx <= count else False
-            self.__excludify(condition, exclude, index, msg)
-            idx += 1
-
     def iterate_filters(self, filter_dict):
         """
         Iterate over the filters defined in `config` and execute them.
@@ -825,25 +691,35 @@ class IndexList(object):
         self.loggit.debug('All filters: {0}'.format(filter_dict['filters']))
         for f in filter_dict['filters']:
             self.loggit.debug('Top of the loop: {0}'.format(self.indices))
-            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
+            logger.debug('Un-parsed filter args: {0}'.format(f))
+            f_args = None
             # Make sure we got at least this much in the configuration
-            self.loggit.debug('Parsed filter args: {0}'.format(
-                    SchemaCheck(
-                        f,
-                        filters.structure(),
-                        'filter',
-                        'IndexList.iterate_filters'
-                    ).result()
+            if not 'filtertype' in f:
+                raise ConfigurationError(
+                    'No "filtertype" in filter definition.'
                 )
-            )
-            method = self.__map_method(f['filtertype'])
+            try:
+                ft = f['filtertype'].lower()
+            except Exception as e:
+                raise ValueError(
+                    'Invalid value for "filtertype": '
+                    '{0}'.format(f['filtertype'])
+                )
+            try:
+                f_args = settings.index_filter()[ft]
+                method = self.__map_method(ft)
+            except:
+                raise ConfigurationError(
+                    'Unrecognized filtertype: {0}'.format(ft))
+            # Remove key 'filtertype' from dictionary 'f'
             del f['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            if f:
-                logger.debug('Filter args: {0}'.format(f))
+            if f_args:
+                f_args.update(prune_nones(f))
+                logger.debug('Filter args: {0}'.format(f_args))
                 logger.debug('Pre-instance: {0}'.format(self.indices))
-                method(**f)
+                method(**f_args)
                 logger.debug('Post-instance: {0}'.format(self.indices))
             else:
                 # Otherwise, it's a settingless filter.

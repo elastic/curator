@@ -17,14 +17,14 @@ host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
 class TestCLIMethods(CuratorTestCase):
-    def test_bad_client_config(self):
+    def test_no_client_config(self):
         self.create_indices(10)
         self.write_config(
             self.args['configfile'],
-            testvars.bad_client_config.format(host, port)
+            testvars.no_client_config.format(host, port)
         )
         self.write_config(self.args['actionfile'],
-            testvars.disabled_proto.format('close', 'delete_indices'))
+            testvars.disabled_proto.format('alias', 'delete_indices'))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -35,26 +35,7 @@ class TestCLIMethods(CuratorTestCase):
 
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
-    def test_no_config(self):
-        self.create_indices(10)
-        self.write_config(
-            self.args['configfile'],
-            ' \n'
-        )
-        self.write_config(self.args['actionfile'],
-            testvars.disabled_proto.format('close', 'delete_indices'))
-        test = clicktest.CliRunner()
-        result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        '--dry-run',
-                        self.args['actionfile']
-
-                    ],
-                    )
-        self.assertEqual(0, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_no_logging_config(self):
         self.create_indices(10)
         self.write_config(
@@ -62,26 +43,7 @@ class TestCLIMethods(CuratorTestCase):
             testvars.no_logging_config.format(host, port)
         )
         self.write_config(self.args['actionfile'],
-            testvars.disabled_proto.format('close', 'delete_indices'))
-        test = clicktest.CliRunner()
-        result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        '--dry-run',
-                        self.args['actionfile']
-
-                    ],
-                    )
-        self.assertEqual(0, result.exit_code)
-    def test_logging_none(self):
-        self.create_indices(10)
-        self.write_config(
-            self.args['configfile'],
-            testvars.none_logging_config.format(host, port)
-        )
-        self.write_config(self.args['actionfile'],
-            testvars.disabled_proto.format('close', 'delete_indices'))
+            testvars.disabled_proto.format('alias', 'delete_indices'))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -106,7 +68,7 @@ class TestCLIMethods(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_action_is_None(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -121,7 +83,7 @@ class TestCLIMethods(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            type(curator.ConfigurationError()), type(result.exception))
+            type(curator.MissingArgument()), type(result.exception))
     def test_no_action(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -136,7 +98,7 @@ class TestCLIMethods(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            type(curator.ConfigurationError()), type(result.exception))
+            type(curator.MissingArgument()), type(result.exception))
     def test_dry_run(self):
         self.create_indices(10)
         self.write_config(
@@ -162,7 +124,7 @@ class TestCLIMethods(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.disabled_proto.format('close', 'delete_indices'))
+            testvars.disabled_proto.format('alias', 'delete_indices'))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -173,19 +135,13 @@ class TestCLIMethods(CuratorTestCase):
                     )
         self.assertEquals(0, len(curator.get_indices(self.client)))
         self.assertEqual(0, result.exit_code)
-    # I'll have to think up another way to create an exception.
-    # The exception that using "alias" created, a missing argument,
-    # is caught too early for this to actually run the test now :/
-    #
     def test_continue_if_exception(self):
-        name = 'log1'
-        self.create_index(name)
-        self.create_index('log2')
+        self.create_indices(10)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.continue_proto.format(
-                name, True, 'delete_indices', False
+                'alias', True, 'delete_indices', False
             )
         )
         test = clicktest.CliRunner()
@@ -199,14 +155,12 @@ class TestCLIMethods(CuratorTestCase):
         self.assertEquals(0, len(curator.get_indices(self.client)))
         self.assertEqual(0, result.exit_code)
     def test_continue_if_exception_False(self):
-        name = 'log1'
-        self.create_index(name)
-        self.create_index('log2')
+        self.create_indices(10)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.continue_proto.format(
-                name, False, 'delete_indices', False
+                'alias', False, 'delete_indices', False
             )
         )
         test = clicktest.CliRunner()
@@ -217,7 +171,7 @@ class TestCLIMethods(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(2, len(curator.get_indices(self.client)))
+        self.assertEquals(10, len(curator.get_indices(self.client)))
         self.assertEqual(1, result.exit_code)
     def test_no_options_in_action(self):
         self.create_indices(10)

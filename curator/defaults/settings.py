@@ -1,5 +1,4 @@
 import os
-from voluptuous import *
 
 # Elasticsearch versions supported
 def version_max():
@@ -7,11 +6,43 @@ def version_max():
 def version_min():
     return (2, 0, 0)
 
-# Default Config file location
 def config_file():
     return os.path.join(os.path.expanduser('~'), '.curator', 'curator.yml')
 
-# Default filter patterns (regular expressions)
+def client():
+    return {
+        'hosts': '127.0.0.1',
+        'port': 9200,
+        'url_prefix': '',
+        'http_auth': None,
+        'use_ssl': False,
+        'certificate': None,
+        'client_cert': None,
+        'client_key': None,
+        'aws_key': None,
+        'aws_secret_key': None,
+        'aws_region': None,
+        'ssl_no_validate': False,
+        'timeout': 30,
+        'master_only': False,
+    }
+
+def logs():
+    return {
+        'loglevel': 'INFO',
+        'logfile': None,
+        'logformat': 'default',
+        'blacklist': ['elasticsearch', 'urllib3'],
+    }
+
+def options():
+    return {
+        'ignore_empty_list': False,
+        'timeout_override': None,
+        'continue_if_exception': False,
+        'disable_action': False,
+    }
+
 def regex_map():
     return {
         'timestring': r'^.*{0}.*$',
@@ -34,54 +65,95 @@ def date_regex():
         'j' : '3',
     }
 
-# Actions
-def index_actions():
-    return [
-        'alias',
-        'allocation',
-        'close',
-        'create_index',
-        'delete_indices',
-        'forcemerge',
-        'open',
-        'replicas',
-        'snapshot',
-    ]
-
-def snapshot_actions():
-    return [ 'delete_snapshots', 'restore' ]
-
-def all_actions():
-    return sorted(index_actions() + snapshot_actions())
-
-def index_filtertypes():
-    return [
-        'alias',
-        'allocated',
-        'age',
-        'closed',
-        'count',
-        'forcemerged',
-        'kibana',
-        'none',
-        'opened',
-        'pattern',
-        'space',
-    ]
-
-def snapshot_filtertypes():
-    return ['age', 'count', 'none', 'pattern', 'state']
-
-def all_filtertypes():
-    return sorted(list(set(index_filtertypes() + snapshot_filtertypes())))
-
-def default_options():
+def action_defaults():
     return {
-        'continue_if_exception': False,
-        'disable_action': False,
-        'ignore_empty_list': False,
-        'timeout_override': None,
+        'alias' : {
+            'name' : None,
+            'extra_settings' : {},
+        },
+        'allocation' : {
+            'key' : None,
+            'value' : None,
+            'allocation_type' : 'require',
+            'wait_for_completion' : False,
+            'timeout' : 30,
+        },
+        'close' : { 'delete_aliases' : False },
+        'create_index' : {
+            'name' : None,
+            'extra_settings' : {},
+        },
+        'delete_indices' : { 'master_timeout' : 30 },
+        'delete_snapshots' : {
+            'repository' : None,
+            'retry_interval' : 120,
+            'retry_count' : 3,
+        },
+        'forcemerge' : {
+            'delay' : 0,
+            'max_num_segments' : 2,
+        },
+        'open' : {},
+        'replicas' : {
+            'count' : None,
+            'wait_for_completion' : False,
+            'timeout' : 30,
+        },
+        'restore' : {
+            'repository' : None,
+            'name' : None,
+            'indices' : None,
+            'include_aliases' : False,
+            'ignore_unavailable' : False,
+            'include_global_state' : True,
+            'partial' : False,
+            'rename_pattern' : None,
+            'rename_replacement' : None,
+            'extra_settings' : {},
+            'wait_for_completion' : True,
+            'skip_repo_fs_check' : False,
+        },
+        'snapshot' : {
+            'repository' : None,
+            'name' : 'curator-%Y%m%d%H%M%S',
+            'ignore_unavailable' : False,
+            'include_global_state' : True,
+            'partial' : False,
+            'wait_for_completion' : True,
+            'skip_repo_fs_check' : False,
+        },
     }
 
-def default_filters():
-    return { 'filters' : [{ 'filtertype' : 'none' }] }
+def index_filter():
+    return {
+        'age': {
+            'source':'name', 'direction':None, 'timestring':None, 'unit':None,
+            'unit_count':None, 'field':None, 'stats_result':'min_value',
+            'epoch':None, 'exclude':False
+        },
+        'allocated': {
+            'key':None, 'value':None, 'allocation_type':'require', 'exclude':True
+        },
+        'closed': {'exclude':True},
+        'forcemerged': {'max_num_segments':None, 'exclude':True},
+        'kibana': {'exclude':True},
+        'none': {},
+        'opened': {'exclude':True},
+        'pattern': {'kind':None, 'value':None, 'exclude':False},
+        'space': {
+            'disk_space':None, 'reverse':True, 'use_age':False,
+            'source':'creation_date', 'timestring':None, 'field':None,
+            'stats_result':'min_value', 'exclude':False,
+        },
+    }
+
+def snapshot_filter():
+    return {
+        'age': {
+            'source':'creation_date', 'direction':None, 'timestring':None,
+            'unit':None, 'unit_count':None, 'epoch':None, 'exclude':False
+        },
+        'none': {},
+        'pattern': {'kind':None, 'value':None, 'exclude':False},
+        'state': {'state':'SUCCESS', 'exclude':False}
+    }

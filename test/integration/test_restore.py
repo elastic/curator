@@ -112,6 +112,6 @@ class TestCLIRestore(CuratorTestCase):
                     )
         restored_indices = sorted(curator.get_indices(self.client))
         self.assertEqual(
-            ['new_index1', 'new_index2', 'new_index3'],
+            ['new_index1', 'new_index2', 'new_index3'], 
             restored_indices
         )

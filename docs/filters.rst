@@ -33,15 +33,6 @@ IndexList
 .. automethod:: curator.indexlist.IndexList.filter_opened
    :noindex:
 
-.. automethod:: curator.indexlist.IndexList.filter_none
-  :noindex:
-
-.. automethod:: curator.indexlist.IndexList.filter_by_alias
-  :noindex:
-
-.. automethod:: curator.indexlist.IndexList.filter_by_count
-   :noindex:
-
 SnapshotList
 ------------
 
@@ -52,10 +43,4 @@ SnapshotList
    :noindex:
 
 .. automethod:: curator.snapshotlist.SnapshotList.filter_by_state
-  :noindex:
-
-.. automethod:: curator.snapshotlist.SnapshotList.filter_none
-  :noindex:
-
-.. automethod:: curator.snapshotlist.SnapshotList.filter_by_count
   :noindex:

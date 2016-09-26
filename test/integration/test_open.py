@@ -108,4 +108,4 @@ class TestCLIOpenClosed(CuratorTestCase):
                 metric='metadata',
             )['metadata']['indices']['dummy']['state']
         )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)

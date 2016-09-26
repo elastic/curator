@@ -33,10 +33,7 @@ following:
     "creation_date"! This implies that the index predates Elasticsearch v1.4.
     For safety, this index will be removed from the actionable list.
 
-It is also important to note that Curator 4 requires access to the
-``/_cluster/state/metadata`` endpoint.  Forks of Elasticsearch which do not
-support this endpoint (such as AWS ES, see #717) *will not* be able to use
-Curator version 4.
+
 
 Build Status
 ------------
@@ -50,8 +47,6 @@ Build Status
 +--------+----------+
 | 4.0    | |4_0|    |
 +--------+----------+
-| 4.1    | |4_1|    |
-+--------+----------+
 
 PyPI: |pypi_pkg|
 
@@ -61,15 +56,13 @@ PyPI: |pypi_pkg|
     :target: https://travis-ci.org/elastic/curator
 .. |4_0| image:: https://travis-ci.org/elastic/curator.svg?branch=4.0
     :target: https://travis-ci.org/elastic/curator
-.. |4_1| image:: https://travis-ci.org/elastic/curator.svg?branch=4.1
-    :target: https://travis-ci.org/elastic/curator
 .. |pypi_pkg| image:: https://badge.fury.io/py/elasticsearch-curator.svg
     :target: https://badge.fury.io/py/elasticsearch-curator
 
 `Curator API Documentation`_
 ----------------------------
 
-Version 4 of Curator ships with both an API and a wrapper script (which is
+Version 4.0 of Curator ships with both an API and a wrapper script (which is
 actually defined as an entry point).  The API allows you to write your own
 scripts to accomplish similar goals, or even new and different things with the
 `Curator API`_, and the `Elasticsearch Python API`_.
@@ -150,7 +143,7 @@ can use the env variable ``TEST_ES_SERVER`` to point to a different instance
 Versioning
 ----------
 
-Version 4 of Curator is the current ``master`` branch.  It supports
+Version 4.0 of Curator is the current ``master`` branch.  It supports
 Elasticsearch versions 2.0 through 5.0.  This is the first release of Curator
 that is not fully reverse compatible.
 

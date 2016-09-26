@@ -10,8 +10,6 @@ This section will be updated as more frequently asked questions arise
 * <<faq_strange_chars,Can Curator handle index names with strange characters?>>
 * <<entrypoint-fix,I'm getting `DistributionNotFound` and `entry_point` errors when I try to run Curator.  What am I doing wrong?>>
 * <<faq_lb_timeout,Snapshots seem to be working. Why am I getting `SnapshotMissingException` messages?>>
-* <<faq_old_indices,Why doesn't Curator 4 work with older indices?>>
-* <<faq_aws_iam,Why doesn't Curator 4 work with AWS Elasticsearch?>>
 --
 
 [[faq_doc_error]]
@@ -264,59 +262,5 @@ client directly, rather than through a load balancer or proxy.
 IMPORTANT: You will need to set <<blacklist,`blacklist: []`>> in your
 <<configfile,configuration file>> to catch these 504 errors, as they are
 filtered by default.
-
-'''''
-
-[[faq_old_indices]]
-== Q: Why doesn't Curator 4 work with older indices?
-
-[float]
-A: Because Curator 4 requires that all indices have a `creation_date`.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The actual error message might look something like this:
-
-[source,txt]
--------
-2016-08-30 13:18:37,702 WARNING Index: indexname has no "creation_date"! This implies that the index predates Elasticsearch v1.4. For safety, this index will be removed from the actionable list.
--------
-
-Older indices (made before Elasticsearch 1.4) do not have this metadata.
-Trying to support this in Curator 4 would result in having to catch edge cases
-for some indices, but not for others.  In order to keep the code clean, and with
-fewer exceptions, a design decision was made to not work with indices without a
-`creation_date`. Curator will not change them in any way, ever.  They are
-automatically removed from the list of actionable indices.
-
-You can use the Sense plugin for Kibana to act on these indices manually, or
-your preference of API method.
-
-'''''
-
-[[faq_aws_iam]]
-== Q: Why doesn't Curator 4 work with AWS Elasticsearch?
-
-[float]
-A: Because Curator 4 requires access to the `/_cluster/state/metadata` endpoint.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There is some confusion because Curator 3 supported AWS ES, but Curator 4 does
-not.  There are even some IAM credentials listed as options for client
-connections.  These are currently available, but not able to be used.  This may
-change at some point, so they remain at the ready until then.
-
-Curator 4 requires access to the `/_cluster/state/metadata` endpoint in order to
-pull metadata at IndexList initialization time for _all_ indices.  This metadata
-is used to determine index routing information, index sizing, index state
-(either `open` or `close`), aliases, and more.  Curator 4 switched to doing this
-in order to reduce the number of repetitive client calls that were made in the
-previous versions.
-
-After Curator 4 was released, AWS announced it's 2.3 version of Elasticsearch.
-Unfortunately, this version did not support the `/_cluster/state/metadata`
-endpoint, which means that Curator cannot be used to manage indices in AWS.
-
-https://forums.aws.amazon.com/thread.jspa?threadID=236643&tstart=0[This thread]
-(requires AWS login credentials) tracks the issue on the Amazon side.
 
 '''''
