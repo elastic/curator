@@ -12,6 +12,9 @@ Changelog
     `True`/`False` were used in environment variables, but not recognized.
     #765 (untergeek)
 
+  * Fix missing `count` method in ``__map_method`` in SnapshotList. Reported in
+    #766 (untergeek)
+
 **General**
 
   * Update es_repo_mgr to use the same client/logging YAML config file.
