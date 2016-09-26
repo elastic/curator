@@ -8,9 +8,9 @@ Changelog
 
 **Bug Fixes**
 
-  * Have the boolean schema tests report ``expected bool`` instead of ``expected
-    int``.  The result is the same, but the error message is misleading.
-    Reported in #757 (untergeek)
+  * String-based booleans are now properly coerced.  This fixes an issue where
+    `True`/`False` were used in environment variables, but not recognized.
+    #765 (untergeek)
 
 **General**
 
