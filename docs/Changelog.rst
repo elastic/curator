@@ -23,6 +23,10 @@ Changelog
     were informing users that a `timestring` field was there that shouldn't have
     been.  This edge case has been corrected.
 
+**Documentation**
+
+  * Added notifications and FAQ entry to explain that AWS ES is not supported.
+
 4.1.0 (6 September 2016)
 ------------------------
 

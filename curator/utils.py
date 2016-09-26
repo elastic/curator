@@ -451,6 +451,12 @@ def check_master(client, master_only=False):
 
 def get_client(**kwargs):
     """
+    NOTE: AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
+    provided for future compatibility, should AWS ES support the
+    ``/_cluster/state/metadata`` endpoint.  So long as this endpoint does not
+    function in AWS ES, the client will not be able to use
+    :class:`curator.indexlist.IndexList`, which is the backbone of Curator 4
+    
     Return an :class:`elasticsearch.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
     :class:`elasticsearch.Elasticsearch` client object can receive are valid,
