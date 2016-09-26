@@ -3,6 +3,7 @@ import time
 import re
 import logging
 from .defaults import settings
+from .validators import SchemaCheck, filters
 from .exceptions import *
 from .utils import *
 
@@ -84,6 +85,7 @@ class SnapshotList(object):
     def __map_method(self, ft):
         methods = {
             'age': self.filter_by_age,
+            'count': self.filter_by_count,
             'none': self.filter_none,
             'pattern': self.filter_by_regex,
             'state': self.filter_by_state,
@@ -123,6 +125,63 @@ class SnapshotList(object):
             else:
                 self.snapshot_info[snapshot]['age_by_name'] = None
 
+    def _calculate_ages(self, source='creation_date', timestring=None):
+        """
+        This method initiates snapshot age calculation based on the given
+        parameters.  Exceptions are raised when they are improperly configured.
+
+        Set instance variable `age_keyfield` for use later, if needed.
+
+        :arg source: Source of snapshot age. Can be 'name' or 'creation_date'.
+        :arg timestring: An strftime string to match the datestamp in an
+            snapshot name. Only used if ``source`` is ``name``.
+        """
+        if source == 'name':
+            self.age_keyfield = 'age_by_name'
+            if not timestring:
+                raise MissingArgument(
+                    'source "name" requires the "timestring" keyword argument'
+                )
+            self._get_name_based_ages(timestring)
+        elif source == 'creation_date':
+            self.age_keyfield = 'start_time_in_millis'
+        else:
+            raise ValueError(
+                'Invalid source: {0}.  '
+                'Must be "name", or "creation_date".'.format(source)
+            )
+
+    def _sort_by_age(self, snapshot_list, reverse=True):
+        """
+        Take a list of snapshots and sort them by date.
+
+        By default, the youngest are first with `reverse=True`, but the oldest
+        can be first by setting `reverse=False`
+        """
+        # Do the age-based sorting here.
+        # First, build an temporary dictionary with just snapshot and age
+        # as the key and value, respectively
+        temp = {}
+        for snap in snapshot_list:
+            if self.age_keyfield in self.snapshot_info[snap]:
+                temp[snap] = self.snapshot_info[snap][self.age_keyfield]
+            else:
+                msg = (
+                    '{0} does not have age key "{1}" in SnapshotList '
+                    ' metadata'.format(snap, self.age_keyfield)
+                )
+                self.__excludify(True, True, snap, msg)
+
+        # If reverse is True, this will sort so the youngest snapshots are
+        # first.  However, if you want oldest first, set reverse to False.
+        # Effectively, this should set us up to act on everything older than
+        # meets the other set criteria.
+        # It starts as a tuple, but then becomes a list.
+        sorted_tuple = (
+            sorted(temp.items(), key=lambda k: k[1], reverse=reverse)
+        )
+        return [x[0] for x in sorted_tuple]
+
     def most_recent(self):
         """
         Return the most recent snapshot based on `start_time_in_millis`.
@@ -141,8 +200,8 @@ class SnapshotList(object):
 
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
-        Filter out indices not matching the pattern, or in the case of exclude,
-        filter those matching the pattern.
+        Filter out snapshots not matching the pattern, or in the case of
+        exclude, filter those matching the pattern.
 
         :arg kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or
             ``timestring``. This option defines what kind of filter you will be
@@ -214,23 +273,9 @@ class SnapshotList(object):
             raise ValueError(
                 'Invalid value for "direction": {0}'.format(direction)
             )
-        if source == 'name':
-            keyfield = 'age_by_name'
-            if not timestring:
-                raise MissingArgument(
-                    'source "name" requires the "timestamp" keyword argument'
-                )
-            self._get_name_based_ages(timestring)
-        elif source == 'creation_date':
-            keyfield = 'start_time_in_millis'
-        else:
-            raise ValueError(
-                'Invalid source: {0}.  '
-                'Must be "name", or "creation_date".'.format(source)
-            )
-
+        self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
-            if not self.snapshot_info[snapshot][keyfield]:
+            if not self.snapshot_info[snapshot][self.age_keyfield]:
                 self.loggit.debug('Removing snapshot {0} for having no age')
                 self.snapshots.remove(snapshot)
                 continue
@@ -238,22 +283,24 @@ class SnapshotList(object):
                 'Snapshot "{0}" age ({1}), direction: "{2}", point of '
                 'reference, ({3})'.format(
                     snapshot,
-                    fix_epoch(self.snapshot_info[snapshot][keyfield]),
+                    fix_epoch(self.snapshot_info[snapshot][self.age_keyfield]),
                     direction,
                     PoR
                 )
             )
             # Because time adds to epoch, smaller numbers are actually older
             # timestamps.
+            snapshot_age = fix_epoch(
+                self.snapshot_info[snapshot][self.age_keyfield])
             if direction == 'older':
-                agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) < PoR
+                agetest = snapshot_age < PoR
             else: # 'younger'
-                agetest = fix_epoch(self.snapshot_info[snapshot][keyfield]) > PoR
+                agetest = snapshot_age > PoR
             self.__excludify(agetest, exclude, snapshot, msg)
 
     def filter_by_state(self, state=None, exclude=False):
         """
-        Filter out indices not matching ``state``, or in the case of exclude,
+        Filter out snapshots not matching ``state``, or in the case of exclude,
         filter those matching ``state``.
 
         :arg state: The snapshot state to filter for. Must be one of
@@ -276,6 +323,67 @@ class SnapshotList(object):
 
     def filter_none(self):
         self.loggit.debug('"None" filter selected.  No filtering will be done.')
+
+    def filter_by_count(
+            self, count=None, reverse=True, use_age=False,
+            source='creation_date', timestring=None, exclude=True
+        ):
+        """
+        Remove snapshots from the actionable list beyond the number `count`,
+        sorted reverse-alphabetically by default.  If you set `reverse` to
+        `False`, it will be sorted alphabetically.
+
+        The default is usually what you will want. If only one kind of snapshot
+        is provided--for example, snapshots matching ``curator-%Y%m%d%H%M%S``--
+        then reverse alphabetical sorting will mean the oldest will remain in
+        the list, because lower numbers in the dates mean older snapshots.
+
+        By setting `reverse` to `False`, then ``snapshot3`` will be acted on
+        before ``snapshot2``, which will be acted on before ``snapshot1``
+
+        `use_age` allows ordering snapshots by age. Age is determined by the
+        snapshot creation date (as identified by ``start_time_in_millis``) by
+        default, but you can also specify a `source` of ``name``.  The ``name``
+        `source` requires the timestring argument.
+
+        :arg count: Filter snapshots beyond `count`.
+        :arg reverse: The filtering direction. (default: `True`).
+        :arg use_age: Sort snapshots by age.  ``source`` is required in this
+            case.
+        :arg source: Source of snapshot age. Can be one of ``name``, or
+            ``creation_date``. Default: ``creation_date``
+        :arg timestring: An strftime string to match the datestamp in a
+            snapshot name. Only used if `source` ``name`` is selected.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            snapshots from `snapshots`. If `exclude` is `False`, then only
+            matching snapshots will be kept in `snapshots`.
+            Default is `True`
+        """
+        self.loggit.debug('Filtering snapshots by count')
+        if not count:
+            raise MissingArgument('No value for "count" provided')
+
+        # Create a copy-by-value working list
+        working_list = self.working_list()
+
+        if use_age:
+            self._calculate_ages(source=source, timestring=timestring)
+            # Using default value of reverse=True in self._sort_by_age()
+            sorted_snapshots = self._sort_by_age(working_list, reverse=reverse)
+        else:
+            # Default to sorting by snapshot name
+            sorted_snapshots = sorted(working_list, reverse=reverse)
+
+        idx = 1
+        for snap in sorted_snapshots:
+            msg = (
+                '{0} is {1} of specified count of {2}.'.format(
+                    snap, idx, count
+                )
+            )
+            condition = True if idx <= count else False
+            self.__excludify(condition, exclude, snap, msg)
+            idx += 1
 
     def iterate_filters(self, config):
         """
@@ -308,32 +416,22 @@ class SnapshotList(object):
         self.loggit.debug('All filters: {0}'.format(config['filters']))
         for f in config['filters']:
             self.loggit.debug('Top of the loop: {0}'.format(self.snapshots))
-            logger.debug('Un-parsed filter args: {0}'.format(f))
-            f_args = None
-            # Make sure we got at least this much in the configuration
-            if not 'filtertype' in f:
-                raise ConfigurationError(
-                    'No "filtertype" in filter definition.'
+            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
+            self.loggit.debug('Parsed filter args: {0}'.format(
+                    SchemaCheck(
+                        f,
+                        filters.structure(),
+                        'filter',
+                        'SnapshotList.iterate_filters'
+                    ).result()
                 )
-            try:
-                ft = f['filtertype'].lower()
-            except Exception as e:
-                raise ValueError(
-                    'Invalid value for "filtertype": '
-                    '{0}'.format(f['filtertype'])
-                )
-            try:
-                f_args = settings.snapshot_filter()[ft]
-                method = self.__map_method(ft)
-            except:
-                raise ConfigurationError(
-                    'Unrecognized filtertype: {0}'.format(ft))
+            )
+            method = self.__map_method(f['filtertype'])
             # Remove key 'filtertype' from dictionary 'f'
             del f['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            f_args.update(prune_nones(f))
-            logger.debug('Filter args: {0}'.format(f_args))
+            logger.debug('Filter args: {0}'.format(f))
             logger.debug('Pre-instance: {0}'.format(self.snapshots))
-            method(**f_args)
+            method(**f)
             logger.debug('Post-instance: {0}'.format(self.snapshots))

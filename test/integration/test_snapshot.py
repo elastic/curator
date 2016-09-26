@@ -93,7 +93,7 @@ class TestCLISnapshot(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)
     def test_extra_option(self):
         self.create_indices(5)
         self.write_config(
@@ -108,4 +108,4 @@ class TestCLISnapshot(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(1, result.exit_code)
+        self.assertEqual(-1, result.exit_code)

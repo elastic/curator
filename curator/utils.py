@@ -1,12 +1,12 @@
 from datetime import timedelta, datetime, date
 import elasticsearch
 import time
-import re
-import sys
 import logging
-import yaml
-from .defaults import settings
+import yaml, os, re, sys
+from voluptuous import Schema
 from .exceptions import *
+from .defaults import settings
+from .validators import SchemaCheck, actions, filters, options
 from ._version import __version__
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,21 @@ def get_yaml(path):
     :arg path: The path to a YAML configuration file.
     :rtype: dict
     """
+    # Set the stage here to parse single scalar value environment vars from
+    # the YAML file being read
+    single = re.compile( r'^\$\{(.*)\}$' )
+    yaml.add_implicit_resolver ( "!single", single )
+    def single_constructor(loader,node):
+        value = loader.construct_scalar(node)
+        proto = single.match(value).group(1)
+        default = None
+        if len(proto.split(':')) > 1:
+            envvar, default = proto.split(':')
+        else:
+            envvar = proto
+        return os.environ[envvar] if envvar in os.environ else default
+    yaml.add_constructor('!single', single_constructor)
+
     raw = read_file(path)
     try:
         cfg = yaml.load(raw)
@@ -436,6 +451,12 @@ def check_master(client, master_only=False):
 
 def get_client(**kwargs):
     """
+    NOTE: AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
+    provided for future compatibility, should AWS ES support the
+    ``/_cluster/state/metadata`` endpoint.  So long as this endpoint does not
+    function in AWS ES, the client will not be able to use
+    :class:`curator.indexlist.IndexList`, which is the backbone of Curator 4
+    
     Return an :class:`elasticsearch.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
     :class:`elasticsearch.Elasticsearch` client object can receive are valid,
@@ -526,7 +547,7 @@ def get_client(**kwargs):
             else kwargs['aws_secret_key']
         kwargs['aws_region'] = False if not 'aws_region' in kwargs \
             else kwargs['aws_region']
-        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['region']:
+        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
             if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
                     and kwargs['aws_region']:
                 raise MissingArgument(
@@ -1007,22 +1028,114 @@ def prune_nones(mydict):
     # Test for `None` instead of existence or zero values will be caught
     return dict([(k,v) for k, v in mydict.items() if v != None and v != 'None'])
 
-def verify_args(action, options):
+def validate_filters(action, filters):
     """
-    Verify that only acceptable argument names in `options` have been passed for
-    any given `action`
+    Validate that the filters are appropriate for the action type, e.g. no
+    index filters applied to a snapshot list.
 
-    :arg action: The name of an action to be performed
-    :arg options: A dictionary of options.
+    :arg action: An action name
+    :arg filters: A list of filters to test.
     """
-    logger.debug('Arguments for action "{0}": {1}'.format(action, options))
-    def matches_keys(mydict):
-        logger.debug(
-            'options.keys = {0} mydict.keys = '
-            '{1}'.format(options.keys(), mydict.keys())
-        )
-        return sorted(list(options.keys())) == sorted(list(mydict.keys()))
+    # Define which set of filtertypes to use for testing
+    if action in settings.snapshot_actions():
+        filtertypes = settings.snapshot_filtertypes()
+    else:
+        filtertypes = settings.index_filtertypes()
+    for f in filters:
+        if f['filtertype'] not in filtertypes:
+            raise ConfigurationError(
+                '"{0}" filtertype is not compatible with action "{1}"'.format(
+                    f['filtertype'],
+                    action
+                )
+            )
+    # If we get to this point, we're still valid.  Return the original list
+    return filters
 
-    if not matches_keys(settings.action_defaults()[action]):
-        raise ConfigurationError(
-            'Invalid option in configuration: {0}'.format(options))
+def validate_actions(data):
+    """
+    Validate an Action configuration dictionary, as imported from actions.yml,
+    for example.
+
+    The method returns a validated and sanitized configuration dictionary.
+
+    :arg data: The configuration dictionary
+    :rtype: dict
+    """
+    # data is the ENTIRE schema...
+    clean_config = { }
+    # Let's break it down into smaller chunks...
+    # First, let's make sure it has "actions" as a key, with a subdictionary
+    root = SchemaCheck(data, actions.root(), 'Actions File', 'root').result()
+    # We've passed the first step.  Now let's iterate over the actions...
+    for action_id in root['actions']:
+        # Now, let's ensure that the basic action structure is correct, with
+        # the proper possibilities for 'action'
+        action_dict = root['actions'][action_id]
+        loc = 'Action ID "{0}"'.format(action_id)
+        valid_structure = SchemaCheck(
+            action_dict,
+            actions.structure(action_dict, loc),
+            'structure',
+            loc
+        ).result()
+        # With the basic structure validated, now we extract the action name
+        current_action = valid_structure['action']
+        # And let's update the location with the action.
+        loc = 'Action ID "{0}", action "{1}"'.format(
+            action_id, current_action)
+        clean_options = SchemaCheck(
+            prune_nones(valid_structure['options']),
+            options.get_schema(current_action),
+            'options',
+            loc
+        ).result()
+        clean_config[action_id] = {
+            'action' : current_action,
+            'description' : valid_structure['description'],
+            'options' : clean_options,
+        }
+        if current_action == 'alias':
+            add_remove = {}
+            for k in ['add', 'remove']:
+                if k in valid_structure:
+                    current_filters = SchemaCheck(
+                        valid_structure[k]['filters'],
+                        Schema(filters.Filters(current_action, location=loc)),
+                        '"{0}" filters',
+                        '{1}, "filters"'.format(k, loc)
+                    ).result()
+                    add_remove.update(
+                        {
+                            k: {
+                                'filters' : SchemaCheck(
+                                        current_filters,
+                                        Schema(
+                                            filters.Filters(
+                                                current_action,
+                                                location=loc
+                                            )
+                                        ),
+                                        'filters',
+                                        '{0}, "{1}", "filters"'.format(loc, k)
+                                    ).result()
+                                }
+                        }
+                    )
+            # Add/Remove here
+            clean_config[action_id].update(add_remove)
+        elif current_action == 'create_index':
+            # create_index should not have a filters
+            pass
+        else: # Filters key only appears in non-alias actions
+            valid_filters = SchemaCheck(
+                valid_structure['filters'],
+                Schema(filters.Filters(current_action, location=loc)),
+                'filters',
+                '{0}, "filters"'.format(loc)
+            ).result()
+            clean_filters = validate_filters(current_action, valid_filters)
+            clean_config[action_id].update({'filters' : clean_filters})
+
+    # if we've gotten this far without any Exceptions raised, it's valid!
+    return { 'actions' : clean_config }
