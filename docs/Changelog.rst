@@ -3,6 +3,28 @@
 Changelog
 =========
 
+4.1.2 (? ? ?)
+-------------
+
+**General**
+
+  * New Curator binary packages for common Linux systems!
+    These will be found in the same repositories that the python-based packages
+    are in, but have no dependencies.  All necessary libraries/modules are
+    bundled with the binary, so everything should work out of the box.
+    This feature doesn't change any other behavior, so it's not a major release.
+
+    These binaries have been tested in:
+      * CentOS 6 & 7
+      * Ubuntu 12.04, 14.04, 16.04
+      * Debian 8
+
+    They do not work in Debian 7 (library mismatch).  They may work in other
+    systems, but that is untested.
+
+    The script used is in the unix_packages directory.  The Vagrantfiles for
+    the various build systems are in the Vagrant directory.
+
 4.1.1 (27 September 2016)
 -------------------------
 
