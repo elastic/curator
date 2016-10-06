@@ -159,6 +159,7 @@ for ((i=0;i<loop;i++)); do
     MY_PY=${PY_BIN3}
     MY_EASY=${PY_EASY_INSTALL3}
     PY_PREFIX=python3
+    echo cd ${PACKAGEDIR} >> ${EXECUTOR}
   fi
   cd ${PACKAGEDIR}
 
