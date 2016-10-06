@@ -126,7 +126,7 @@ class CuratorTestCase(TestCase):
     def add_docs(self, idx):
         for i in ["1", "2", "3"]:
             self.client.create(
-                index=idx, doc_type='log',
+                index=idx, doc_type='log', id=i,
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # This should force each doc to be in its own segment.
@@ -144,7 +144,7 @@ class CuratorTestCase(TestCase):
             repository=self.args['repository'], snapshot=name, body=body,
             wait_for_completion=True
         )
-        
+
     def create_repository(self):
         body = {'type':'fs', 'settings':{'location':self.args['location']}}
         self.client.snapshot.create_repository(repository=self.args['repository'], body=body)

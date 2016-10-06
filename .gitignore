@@ -17,3 +17,6 @@ index.html
 docs/asciidoc/html_docs
 wheelhouse
 Elastic.ico
+Vagrant/centos/6/.vagrant
+Vagrant/centos/7/.vagrant
+Vagrant/ubuntu/14.04/.vagrant

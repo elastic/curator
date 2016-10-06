@@ -21,7 +21,11 @@ start_es() {
   curl http://localhost:9200 && echo "ES is up!" || cat /tmp/elasticsearch.log
 }
 
-setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
+if [[ "$ES_VERSION" == 5.* ]]; then
+  setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
+else
+  setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
+fi
 
 java_home='/usr/lib/jvm/java-8-oracle'
 if [[ "$ES_VERSION" == 5.* ]]; then

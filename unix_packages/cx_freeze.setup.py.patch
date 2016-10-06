@@ -1,0 +1,34 @@
+--- setup.py	2014-12-26 22:56:49.000000000 +0000
++++ fixed_setup.py	2016-10-04 17:28:03.182647980 +0000
+@@ -81,19 +81,18 @@
+                 extraArgs.append("-mwindows")
+         else:
+             vars = distutils.sysconfig.get_config_vars()
+-            if not vars.get("Py_ENABLE_SHARED", 0):
+-                libraryDirs.append(vars["LIBPL"])
+-                libraries.append("python%s.%s" % sys.version_info[:2])
+-                if vars["LINKFORSHARED"] and sys.platform != "darwin":
+-                    extraArgs.extend(vars["LINKFORSHARED"].split())
+-                if vars["LIBS"]:
+-                    extraArgs.extend(vars["LIBS"].split())
+-                if vars["LIBM"]:
+-                    extraArgs.append(vars["LIBM"])
+-                if vars["BASEMODLIBS"]:
+-                    extraArgs.extend(vars["BASEMODLIBS"].split())
+-                if vars["LOCALMODLIBS"]:
+-                    extraArgs.extend(vars["LOCALMODLIBS"].split())
++            libraryDirs.append(vars["LIBPL"])
++            libraries.append("python%s.%s" % sys.version_info[:2])
++            if vars["LINKFORSHARED"] and sys.platform != "darwin":
++                extraArgs.extend(vars["LINKFORSHARED"].split())
++            if vars["LIBS"]:
++                extraArgs.extend(vars["LIBS"].split())
++            if vars["LIBM"]:
++                extraArgs.append(vars["LIBM"])
++            if vars["BASEMODLIBS"]:
++                extraArgs.extend(vars["BASEMODLIBS"].split())
++            if vars["LOCALMODLIBS"]:
++                extraArgs.extend(vars["LOCALMODLIBS"].split())
+             extraArgs.append("-s")
+         self.compiler.link_executable(objects, fullName,
+                 libraries = libraries,
