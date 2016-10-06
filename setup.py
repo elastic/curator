@@ -50,7 +50,7 @@ try:
     repomgr_exe = Executable(
         "run_es_repo_mgr.py",
         base=base,
-        targetName = "es_repo_mgr.exe",
+        targetName = "es_repo_mgr",
         compress = True
     )
 
