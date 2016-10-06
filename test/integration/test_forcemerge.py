@@ -21,13 +21,7 @@ class TestCLIforceMerge(CuratorTestCase):
         count = 1
         idx = 'my_index'
         self.create_index(idx)
-        for i in ["1", "2", "3"]:
-            self.client.create(
-                index=idx, doc_type='log',
-                body={"doc" + i :'TEST DOCUMENT'},
-            )
-            # This should force each doc to be in its own segment.
-            self.client.indices.flush(index=idx, force=True)
+        self.add_docs(idx)
         ilo1 = curator.IndexList(self.client)
         ilo1._get_segmentcounts()
         self.assertEqual(3, ilo1.index_info[idx]['segments'])

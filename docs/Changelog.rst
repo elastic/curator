@@ -33,6 +33,9 @@ documentation and includes new linux binary packages.
   * The only bug that can be called a bug is actually a stray ``.exe`` suffix
     in the binary package creation section (cx_freeze) of ``setup.py``.  The
     Windows binaries should have ``.exe`` extensions, but not unix variants.
+  * Elasticsearch 5.0.0-beta1 testing revealed that a document ID is required
+    during document creation in tests.  This has been fixed, and a redundant bit
+    of code in the forcemerge integration test was removed.
 
 **Documentation**
 
