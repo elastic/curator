@@ -33,7 +33,9 @@ for file in ${VAF} ${C_POST_INSTALL} ${C_PRE_REMOVE} ${C_POST_REMOVE} ${EXECUTOR
 done
 
 echo "ln -s /opt/elasticsearch-curator/curator /usr/bin/curator" >> ${C_POST_INSTALL}
+echo "ln -s /opt/elasticsearch-curator/es_repo_mgr /usr/bin/es_repo_mgr" >> ${C_POST_INSTALL}
 echo "rm /usr/bin/curator" >> ${C_PRE_REMOVE}
+echo "rm /usr/bin/es_repo_mgr" >> ${C_PRE_REMOVE}
 echo 'if [ -d "/opt/elasticsearch-curator" ]; then' >> ${C_POST_REMOVE}
 echo '  rmdir /opt/elasticsearch-curator' >> ${C_POST_REMOVE}
 echo 'fi' >> ${C_POST_REMOVE}

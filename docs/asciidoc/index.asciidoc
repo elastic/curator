@@ -1,4 +1,4 @@
-:curator_version: 4.1.1
+:curator_version: 4.1.2
 :curator_major: 4
 :es_py_version: 2.4.0
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/current
@@ -7,11 +7,12 @@
 = Curator Reference
 
 include::about.asciidoc[]
-include::getting_started.asciidoc[]
+include::installation.asciidoc[]
 include::command-line.asciidoc[]
 include::configuration.asciidoc[]
 include::actions.asciidoc[]
 include::options.asciidoc[]
 include::filters.asciidoc[]
 include::filter_elements.asciidoc[]
+include::examples.asciidoc[]
 include::faq.asciidoc[]

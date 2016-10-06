@@ -3,8 +3,11 @@
 Changelog
 =========
 
-4.1.2 (? ? ?)
--------------
+4.1.2 (6 October 2016)
+----------------------
+
+This release does not actually add any new code to Curator, but instead improves
+documentation and includes new linux binary packages.
 
 **General**
 
@@ -24,6 +27,24 @@ Changelog
 
     The script used is in the unix_packages directory.  The Vagrantfiles for
     the various build systems are in the Vagrant directory.
+
+**Bug Fixes**
+
+  * The only bug that can be called a bug is actually a stray ``.exe`` suffix
+    in the binary package creation section (cx_freeze) of ``setup.py``.  The
+    Windows binaries should have ``.exe`` extensions, but not unix variants.
+  * Elasticsearch 5.0.0-beta1 testing revealed that a document ID is required
+    during document creation in tests.  This has been fixed, and a redundant bit
+    of code in the forcemerge integration test was removed.
+
+**Documentation**
+
+  * The documentation has been updated and improved.  Examples and installation
+    are now top-level events, with the sub-sections each having their own link.
+    They also now show how to install and use the binary packages, and the
+    section on installation from source has been improved.  The missing
+    section on installing the voluptuous schema verification module has been
+    written and included. #776 (untergeek)
 
 4.1.1 (27 September 2016)
 -------------------------
