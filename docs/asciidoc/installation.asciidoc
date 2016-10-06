@@ -1,82 +1,81 @@
 [[installation]]
-== Installation
+= Installation
 
+[partintro]
+--
+Curator can be installed in a variety of ways, depending on what meets your
+needs.  It is important to note that Curator only requires access to a client
+node in the Elasticsearch cluster to work.  It need not be installed on one of
+the nodes in the cluster if you do not want it that way.
 
-[float]
-Summary
-~~~~~~~
-
-There are a few ways to install curator. This document covers a few of them. If
-you are trying to upgrade curator, please see <<upgrading>>.
+* <<pip,pip>>, the easiest way to use and upgrade.
+* <<apt-repository,APT Repository>>, including a single, binary package!
+* <<yum-repository,YUM Repository>>, including a single, binary package!
+* <<windows-zip,Windows Zip Package>>
+* <<windows-msi,Windows MSI Installer>>
+* <<python-source,Source Code>>
+--
 
 [[pip]]
-=== pip (recommended)
-The recommended installation procedure utilizes
-https://pip.pypa.io/en/latest/installing.html[python pip]:
+== pip
+This installation procedure utilizes
+https://pip.pypa.io/en/latest/installing.html[python pip], and requires that the
+target machine has internet connectivity.
 
 ---------------------------------
 pip install elasticsearch-curator
 ---------------------------------
 
-&nbsp;
+=== Upgrading with pip
 
-[float]
-PIP installation of a specific version. For example, an older release:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you already have Elasticsearch Curator installed, and want to upgrade to the
+latest version, use the `-U` flag:
+
+------------------------------------
+pip install -U elasticsearch-curator
+------------------------------------
+
+=== Installing a specific version with pip
+
+The `-U` flag uninstalls the current version (if any), then installs the latest
+version, or a specified one.  Specify a specific version by adding `==` followed
+by the version you'd like to install, like this:
+
+-------------------------------------------
+pip install -U elasticsearch-curator==3.5.1
+-------------------------------------------
+
+=== System-wide vs. User-only installation
+
+The above commands each imply a system-wide installation.  This usually
+requires super-user access, or the `sudo` command.  There is a way to install
+Curator into a path for just the current user, using the `--user` flag.
 
 ----------------------------------------
-pip install elasticsearch-curator==3.5.1
+pip install --user elasticsearch-curator
+----------------------------------------
+
+This will result in the `curator` end-point being installed in the current
+user's home directory, in the `.local` directory, in the `bin` subdirectory. The
+full path might look something like this:
+
+-----------------------------
+/home/user/.local/bin/curator
+-----------------------------
+
+You can make an alias or a symlink to this so you can call it more easily.
+
+The `--user` flag can also be used in conjunction with the `-U` flag:
+
+----------------------------------------
+pip install -U --user elasticsearch-curator==3.5.1
 ----------------------------------------
 
 &nbsp;
 
-Any other version-sepecific installation will follow this basic pattern.
-
-[float]
-Installation: PIP installation from source
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Download and install the https://github.com/shazow/urllib3[urllib3] dependency
-(1.8.3 or greater):
-
-. `wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.12.tar.gz`
-. `pip install urllib3-1.12.tar.gz`
-
-&nbsp;
-
-Download and install the http://click.pocoo.org/[click] dependency (3.3 or
-greater):
-
-. `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.3.tar.gz`
-. `pip install click-6.3.tar.gz`
-
-&nbsp;
-
-Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10 or
-greater):
-
-. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
-. `pip install PyYAML-3.11.tar.gz`
-
-&nbsp;
-
-Download and install the https://github.com/elastic/elasticsearch-py[elasticsearch-py] dependency:
-
-. `wget https://github.com/elastic/elasticsearch-py/archive/`+pass:attributes[{es_py_version}].tar.gz -O elasticsearch-py.tar.gz+
-. `pip install elasticsearch-py.tar.gz`
-
-&nbsp;
-
-Download and install Curator:
-
-. `wget https://github.com/elastic/curator/archive/v`+pass:attributes[{curator_version}].tar.gz -O elasticsearch-curator.tar.gz+
-. `pip install elasticsearch-curator.tar.gz`
 
 [[apt-repository]]
-=== APT repository
-Starting with Elasticsearch Curator 3.2.0, repositories are available for APT
-and YUM based distributions. Note that we only provide binary packages, but no
-source packages, as the packages are created as part of the build process.
+== APT repository
 
 We use the PGP key
 http://pgp.mit.edu/pks/lookup?op=vindex&search=0xD27D666CD88E42B4[D88E42B4],
@@ -84,10 +83,9 @@ Elastic's Signing Key, with fingerprint
 
     4609 5ACC 8548 582C 1A26 99A9 D27D 666C D88E 42B4
 
-to sign all our packages. It is available from http://pgp.mit.edu.
+to sign all our packages. PGP is available from http://pgp.mit.edu.
 
-[float]
-==== Signing Key
+=== Signing Key
 
 Download and install the Public Signing Key:
 
@@ -96,8 +94,7 @@ Download and install the Public Signing Key:
 wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 --------------------------------------------------
 
-[float]
-==== Repository Configuration
+=== Repository Configuration
 
 Add the following in your `/etc/apt/sources.list.d/` directory in a file with a
 `.list` suffix, for example `curator.list`
@@ -106,6 +103,8 @@ Add the following in your `/etc/apt/sources.list.d/` directory in a file with a
 --------------------------------------------------
 deb http://packages.elastic.co/curator/{curator_major}/debian stable main
 --------------------------------------------------
+
+After running `sudo apt-get update`, the repository is ready for use.
 
 [WARNING]
 ==================================================
@@ -120,22 +119,63 @@ Just delete the `deb-src` entry from the `/etc/apt/sources.list.d/curator.list`
 file and the installation should work as expected.
 ==================================================
 
-[float]
-==== Installation
+[[apt-binary]]
+=== Binary Package Installation (recommended)
 
-Run `sudo apt-get update` and the repository is ready for use. You can install
-it with:
+Starting with version 4.1.2, Curator comes with a binary version.  What this
+really means is that the source is compiled, and all required libraries are
+bundled with the `curator` binary, so there are no conflicts.
+
+The binary packages resulting from the creation process have been tested on
+Debian 8, and Ubuntu 12.04, 14.04, & 16.04.  It was also tested on Debian 7, but
+that failed due to a libc library mismatch. This binary package may work on
+other similar or derivative variants, but they have not been tested.
+
+[source,sh]
+--------------------------------------------------
+sudo apt-get update && sudo apt-get install elasticsearch-curator
+--------------------------------------------------
+
+This will install the necessary files into `/opt/elasticsearch-curator` and
+make a symlink at `/usr/bin/curator` that points to the `curator` binary in the
+aforementioned directory.
+
+[WARNING]
+====================================================
+The `elasticsearch-curator` binary package cannot coexist with the
+`python-elasticsearch-curator` package.  This collision is explicitly defined
+in packages since 4.1.2, but not in previous packages.  If it is installed, you
+_must_ uninstall the `python-elasticsearch-curator` package before installing
+the `elasticsearch-curator` binary package.
+====================================================
+
+=== Python Package Installation
+
+This method will install all of the python modules (or libraries) that Curator
+requires, as well as an entry-point to launch Curator.  The shared library
+approach introduces the possibility of library collision, which will prevent
+installation, with error messages explaining why.  If this happens, it is
+recommended that you use the <<apt-binary,binary installation>> method, as this
+precludes the possibility of library collision.
+
+To install Curator, run the following:
 
 [source,sh]
 --------------------------------------------------
 sudo apt-get update && sudo apt-get install python-elasticsearch-curator
 --------------------------------------------------
 
+[WARNING]
+====================================================
+The `python-elasticsearch-curator` binary package cannot coexist with the
+`elasticsearch-curator` package.  This collision is explicitly defined
+in packages since 4.1.2, but not in previous packages.  If it is installed, you
+_must_ uninstall the `elasticsearch-curator` binary package before installing
+the `python-elasticsearch-curator` package and its dependencies.
+====================================================
+
 [[yum-repository]]
-=== YUM repository
-Starting with Elasticsearch Curator 3.2.0, repositories are available for APT
-and YUM based distributions. Note that we only provide binary packages, but no
-source packages, as the packages are created as part of the build process.
+== YUM repository
 
 We use the PGP key
 http://pgp.mit.edu/pks/lookup?op=vindex&search=0xD27D666CD88E42B4[D88E42B4],
@@ -145,8 +185,7 @@ Elastic's Signing Key, with fingerprint
 
 to sign all our packages. It is available from http://pgp.mit.edu.
 
-[float]
-==== Signing Key
+=== Signing Key
 
 Download and install the public signing key:
 
@@ -155,16 +194,15 @@ Download and install the public signing key:
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 --------------------------------------------------
 
-[float]
-==== Repository Configuration
+=== Repository Configuration
 
-Add the following in your `/etc/yum.repos.d/` directory
-in a file with a `.repo` suffix, for example `curator.repo`
+Add the following in your `/etc/yum.repos.d/` directory in a file with a `.repo`
+suffix, for example `curator.repo`
 
 [WARNING]
 ========================================
-The repositories are different for CentOS/RHEL 6 and 7 due to python
-library path differences.  Be sure to use the correct version!
+The repositories are different for CentOS/RHEL 6 and 7 due to library and path
+differences.  Be sure to use the correct version for your system!
 
 RHEL/CentOS 6:
 ["source","sh",subs="attributes,callouts"]
@@ -189,14 +227,60 @@ enabled=1
 --------------------------------------------------
 =========================================
 
-[float]
-==== Installation
-And your repository is ready for use. You can install it with:
+[[yum-binary]]
+=== Binary Package Installation (recommended)
+
+Starting with version 4.1.2, Curator comes with a binary version.  What this
+really means is that the source is compiled, and all required libraries are
+bundled with the `curator` binary, so there are no conflicts.
+
+There are separate binary packages for RedHat variants. The binary packages
+resulting from the creation process have been tested on CentOS 6 & 7, with a
+different binary for each. They may work on similar variants and/or derivatives,
+but they have not been tested.
+
+[source,sh]
+----------------------------------------
+yum install elasticsearch-curator
+----------------------------------------
+
+This will install the necessary files into `/opt/elasticsearch-curator` and
+make a symlink at `/usr/bin/curator` that points to the `curator` binary in the
+aforementioned directory.
+
+[WARNING]
+====================================================
+The `elasticsearch-curator` binary package cannot coexist with the
+`python-elasticsearch-curator` package.  This collision is explicitly defined
+in packages since 4.1.2, but not in previous packages.  If it is installed, you
+_must_ uninstall the `python-elasticsearch-curator` package before installing
+the `elasticsearch-curator` binary package.
+====================================================
+
+=== Python Package Installation
+
+This method will install all of the python modules (or libraries) that Curator
+requires, as well as an entry-point to launch Curator.  The shared library
+approach introduces the possibility of library collision, which will prevent
+installation, with error messages explaining why.  If this happens, it is
+recommended that you use the <<yum-binary,binary installation>> method, as this
+precludes the possibility of library collision.
+
+To install Curator, run the following:
 
 [source,sh]
 ----------------------------------------
 yum install python-elasticsearch-curator
 ----------------------------------------
+
+[WARNING]
+====================================================
+The `python-elasticsearch-curator` binary package cannot coexist with the
+`elasticsearch-curator` package.  This collision is explicitly defined
+in packages since 4.1.2, but not in previous packages.  If it is installed, you
+_must_ uninstall the `elasticsearch-curator` binary package before installing
+the `python-elasticsearch-curator` package and its dependencies.
+====================================================
 
 [float]
 ==== Troubleshooting
@@ -214,25 +298,28 @@ Traceback (most recent call last):
 ImportError: No module named pkg_resources
 ------------------------------
 +
-Then you will need to install python-setuptools (provided in the Curator
+Then you will need to install `python-setuptools` (provided in the Curator
 repository):
 +
 [source,sh]
 -----------------------------
 yum install python-setuptools
 -----------------------------
++
+See more detail in this <<entrypoint-fix,FAQ>>.
+
 * `Requires: python-unittest2` (RHEL/CentOS 6 only)
 +
 If you see an error like this:
 +
 [source,sh]
 ---------------------
-Error: Package: python-elasticsearch-1.6.0-1.noarch (curator-3)
+Error: Package: python-elasticsearch-2.4.0-1.noarch (curator-4)
            Requires: python-unittest2
 ---------------------
 +
-Then you will need to install python-unittest2, which is available in the `epel-release`
-repository:
+Then you will need to install python-unittest2, which is provided in the Curator
+repository, and also in the `epel-release` repository:
 +
 [source,sh]
 ------------------
@@ -242,8 +329,8 @@ yum install epel-release
 After this is installed, run the `yum install python-elasticsearch-curator`
 command again.
 
-[[windows-binary]]
-=== Windows Binary Package
+[[windows-zip]]
+== Windows Binary Zip Package
 If you do not wish to install and maintain Python on Windows, there is a
 compiled binary version available.  It is in a directory with EXE
 files and all necessary libraries that Python requires.  You can navigate to the
@@ -257,10 +344,13 @@ Curator from properly functioning.
 ** https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip.md5.txt[MD5]
 ** https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip.sha1.txt[SHA1]
 
-=== Experimental: Windows MSI Installer
-There is now a rudimentary MSI installer available for you to try.  One known issue
-is that upgrades are not possible.  Subsequent installs will be side-by-side.  The
-recommended course of action is to uninstall the old version, then install the new one.
+
+[[windows-msi]]
+== Windows MSI Installer
+There is now a rudimentary MSI installer available for you to try.  One known
+issue is that in-place upgrades are not possible.  Subsequent installs will be
+side-by-side.  The recommended course of action is to uninstall the old version,
+then install the new one.
 
 The installation will default to `"C:\Program Files (x86)\elasticsearch-curator"`.
 The same binaries and libraries found in the Windows Binary Package will be installed
@@ -269,3 +359,126 @@ into this directory.
 * https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.msi[Download Curator Installer]
 ** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.msi.md5.txt[MD5]
 ** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.msi.sha1.txt[SHA1]
+
+
+[[python-source]]
+== Installation from source
+
+Installing or Curator from source is also possible.  In order to do so requires
+that all dependent libraries are installed first.
+
+If you have `pip` installed, then you can install from a gzipped file.  If not,
+you have to uncompress the gzipped file and run `python setup.py install`.
+
+That might look like this:
+
+[source,sh]
+--------------------------------------
+wget https://pypi.python.org/packages/source/p/package/package-#.#.#.tar.gz
+tar zxf package-#.#.#.tar.gz
+cd package-#.#.#
+python setup.py install
+--------------------------------------
+
+The dependencies are as follows
+
+=== setuptools
+
+Download https://bootstrap.pypa.io/ez_setup.py[ez_setup.py] and run it using the
+target Python version. The script will download the appropriate version and
+install it for you:
+
+[source,sh]
+-----------
+wget https://bootstrap.pypa.io/ez_setup.py -O - | python
+-----------
+
+Note that you will need to invoke the command with superuser privileges to
+install to the system Python:
+
+[source,sh]
+-----------
+wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
+-----------
+
+Alternatively, setuptools may be installed to a user-local path:
+
+[source,sh]
+-----------
+wget https://bootstrap.pypa.io/ez_setup.py -O - | python - --user
+-----------
+
+&nbsp;
+
+=== Urllib3
+Download and install the https://github.com/shazow/urllib3[urllib3] dependency
+(1.8.3 or greater):
+
+. `wget https://pypi.python.org/packages/source/u/urllib3/urllib3-1.12.tar.gz`
+. `pip install urllib3-1.12.tar.gz`
+
+or uncompress and run `python setup.py install`
+
+&nbsp;
+
+=== click
+Download and install the http://click.pocoo.org/[click] dependency (3.3 or
+greater):
+
+. `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.3.tar.gz`
+. `pip install click-6.3.tar.gz`
+
+or uncompress and run `python setup.py install`
+
+&nbsp;
+
+=== PyYAML
+Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10
+or greater):
+
+. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
+. `pip install PyYAML-3.11.tar.gz`
+
+or uncompress and run `python setup.py install`
+
+&nbsp;
+
+=== voluptuous
+Download and install the https://github.com/alecthomas/voluptuous[voluptuous]
+dependency (0.9.3 or greater):
+
+. `wget https://github.com/alecthomas/voluptuous/archive/0.9.3.tar.gz`
+. `pip install 0.9.3.tar.gz`
+
+or uncompress and run `python setup.py install`
+
+&nbsp;
+
+=== elasticsearch (python module)
+Download and install the https://github.com/elastic/elasticsearch-py[elasticsearch-py] dependency:
+
+. `wget https://github.com/elastic/elasticsearch-py/archive/`+pass:attributes[{es_py_version}].tar.gz -O elasticsearch-py.tar.gz+
+. `pip install elasticsearch-py.tar.gz`
+
+or uncompress and run `python setup.py install`
+
+&nbsp;
+
+=== elasticsearch-curator (python module)
+Download and install Curator:
+
+. `wget https://github.com/elastic/curator/archive/v`+pass:attributes[{curator_version}].tar.gz -O elasticsearch-curator.tar.gz+
+. `pip install elasticsearch-curator.tar.gz`
+
+or uncompress and run `python setup.py install`.  At this point you could also
+run `run_curator.py` from the source directory as well.
+
+=== Optional additional module(s)
+
+The following module(s) provide some additional features, but are not required
+for basic functionality.
+
+For each of these, installation follows the same pattern as above:
+
+* https://github.com/certifi/python-certifi/archive/2016.09.26.tar.gz[certifi]
+  provides SSL certificate validation for most major signing organizations.

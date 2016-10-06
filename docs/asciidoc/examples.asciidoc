@@ -1,13 +1,29 @@
 [[examples]]
-== Examples
+= Examples
 
+[partintro]
+--
 These examples should help illustrate how to build your own <<actions,actions>>.
 
 Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
 configuration files.
 
+* <<ex_alias,alias>>
+* <<ex_allocation,allocation>>
+* <<ex_close,close>>
+* <<ex_create_index,create_index>>
+* <<ex_delete_indices,delete_indices>>
+* <<ex_delete_snapshots,delete_snapshots>>
+* <<ex_forcemerge,forcemerge>>
+* <<ex_open,open>>
+* <<ex_replicas,replicas>>
+* <<ex_restore,restore>>
+* <<ex_snapshot,snapshot>>
+
+--
+
 [[ex_alias]]
-=== alias
+== alias
 
 [source,text]
 -------------
@@ -64,7 +80,7 @@ actions:
 -------------
 
 [[ex_allocation]]
-=== allocation
+== allocation
 
 [source,text]
 -------------
@@ -104,7 +120,7 @@ actions:
 -------------
 
 [[ex_close]]
-=== close
+== close
 
 [source,text]
 -------------
@@ -141,7 +157,7 @@ actions:
 -------------
 
 [[ex_create_index]]
-=== create_index
+== create_index
 
 [source,text]
 -------------
@@ -169,7 +185,7 @@ actions:
 
 
 [[ex_delete_indices]]
-=== delete_indices
+== delete_indices
 
 [source,text]
 -------------
@@ -207,7 +223,7 @@ actions:
 -------------
 
 [[ex_delete_snapshots]]
-=== delete_snapshots
+== delete_snapshots
 
 [source,text]
 -------------
@@ -244,7 +260,7 @@ actions:
 
 
 [[ex_forcemerge]]
-=== forcemerge
+== forcemerge
 
 [source,text]
 -------------
@@ -284,7 +300,7 @@ actions:
 -------------
 
 [[ex_open]]
-=== open
+== open
 
 [source,text]
 -------------
@@ -327,7 +343,7 @@ actions:
 -------------
 
 [[ex_replicas]]
-=== replicas
+== replicas
 
 [source,text]
 -------------
@@ -364,7 +380,7 @@ actions:
 -------------
 
 [[ex_restore]]
-=== restore
+== restore
 
 [source,text]
 -------------
@@ -412,7 +428,7 @@ actions:
 -------------
 
 [[ex_snapshot]]
-=== snapshot
+== snapshot
 
 [source,text]
 -------------
