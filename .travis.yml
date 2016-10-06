@@ -11,7 +11,7 @@ env:
   - ES_VERSION=2.2.2
   - ES_VERSION=2.3.5
   - ES_VERSION=2.4.0
-  - ES_VERSION=5.0.0-alpha5
+  - ES_VERSION=5.0.0-beta1
 
 os: linux
 
