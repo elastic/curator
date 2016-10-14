@@ -6,7 +6,7 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "shell", inline: <<-SHELL
     sudo yum -y groupinstall "Development Tools"
-    sudo yum -y install python-devel
+    sudo yum -y install python-devel zlib-devel bzip2-devel sqlite sqlite-devel openssl-devel
   SHELL
 
   config.vm.synced_folder "/curator_packages", "/curator_packages", create: true, owner: "vagrant", group: "vagrant"
