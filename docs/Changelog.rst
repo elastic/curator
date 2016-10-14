@@ -3,6 +3,17 @@
 Changelog
 =========
 
+4.2.0 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Guarantee that binary packages are built from the latest Python + libraries.
+    This ensures that SSL/TLS will work without warning messages about insecure
+    connections, unless they actually are insecure. Reported in #780, though
+    the reported problem isn't what was fixed. The fix is needed based on what
+    was discovered while troubleshooting the problem. (untergeek)
+
 4.1.2 (6 October 2016)
 ----------------------
 
