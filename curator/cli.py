@@ -17,6 +17,7 @@ CLASS_MAP = {
     'alias' :  Alias,
     'allocation' : Allocation,
     'close' : Close,
+    'cluster_routing' : ClusterRouting,
     'create_index' : CreateIndex,
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
