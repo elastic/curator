@@ -6,6 +6,12 @@ Changelog
 4.2.0 (? ? ?)
 -------------
 
+**General**
+
+  * Update testing to the most recent versions.
+  * Lock elasticsearch-py module version at >= 2.4.0 and <= 3.0.0.  There are
+    API changes in the 5.0 release that cause tests to fail.
+    
 **Bug Fixes**
 
   * Guarantee that binary packages are built from the latest Python + libraries.
