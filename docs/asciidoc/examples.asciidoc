@@ -60,6 +60,7 @@ actions:
         unit_count: 7
         exclude:
       - filtertype: age
+        source: name
         direction: younger
         timestring: '%Y.%m.%d'
         unit: days
