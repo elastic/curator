@@ -200,7 +200,7 @@ description: "Apply routing rules to the entire cluster"
 options:
   routing_type:
   value:
-  setting: enabled
+  setting: enable
   wait_for_completion: False
   timeout_override:
   continue_if_exception: False
@@ -228,7 +228,7 @@ Required settings
 
 * <<option_routing_type,routing_type>> (required)
 * <<option_value,value>> (required)
-* <<option_setting,setting>> Currently must be set to `enabled`.  This setting
+* <<option_setting,setting>> Currently must be set to `enable`.  This setting
   is a placeholder for potential future expansion.
 
 [float]
