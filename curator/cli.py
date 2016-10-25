@@ -77,7 +77,7 @@ def process_action(client, config, **kwargs):
             removes = IndexList(client)
             removes.iterate_filters(config['remove'])
             action_obj.remove(removes)
-    elif action == 'create_index':
+    elif action in [ 'cluster_routing', 'create_index' ]:
         action_obj = action_class(client, **mykwargs)
     elif action == 'delete_snapshots' or action == 'restore':
         logger.debug('Running "{0}"'.format(action))
@@ -123,7 +123,9 @@ def cli(config, dry_run, action_file):
     ### Start working on the actions here ###
     #########################################
     action_config = get_yaml(action_file)
+    logger.debug('PRE-YAY')
     action_dict = validate_actions(action_config)
+    logger.debug('YAY')
     actions = action_dict['actions']
     logger.debug('Full list of actions: {0}'.format(actions))
     action_keys = sorted(list(actions.keys()))

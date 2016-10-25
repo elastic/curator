@@ -10,6 +10,7 @@ Action Classes
 * `Alias`_
 * `Allocation`_
 * `Close`_
+* `ClusterRouting`_
 * `DeleteIndices`_
 * `DeleteSnapshots`_
 * `ForceMerge`_
@@ -31,6 +32,11 @@ Allocation
 Close
 -----
 .. autoclass:: curator.actions.Close
+  :members:
+
+ClusterRouting
+--------------
+.. autoclass:: curator.actions.ClusterRouting
   :members:
 
 DeleteIndices

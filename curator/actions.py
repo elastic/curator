@@ -295,7 +295,7 @@ class ClusterRouting(object):
         #: exception
         self.timeout = '{0}s'.format(timeout)
 
-        if setting is not 'enable':
+        if setting != 'enable':
             raise ValueError(
                 'Invalid value for "setting": {0}.'.format(setting)
             )

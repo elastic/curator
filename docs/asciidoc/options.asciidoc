@@ -27,6 +27,8 @@ Options are settings used by <<actions,actions>>.
 * <<option_repository,repository>>
 * <<option_retry_count,retry_count>>
 * <<option_retry_interval,retry_interval>>
+* <<option_routing_type,routing_type>>
+* <<option_setting,setting>>
 * <<option_skip_fsck,skip_repo_fs_check>>
 * <<option_timeout_override,timeout_override>>
 * <<option_value,value>>
@@ -342,6 +344,27 @@ The value of this setting is the number of seconds to delay between retries.
 
 The default for this setting is `120`.
 
+[[option_routing_type]]
+== routing_type
+
+NOTE: This setting is only used by the <<cluster_routing, cluster_routing action>>.
+
+The value of this setting must be either `allocation` or `rebalance`
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
+[[option_setting]]
+== setting
+
+NOTE: This setting is only used by the <<cluster_routing, cluster_routing action>>.
+
+The value of this must be `enabled` at present.  It is a placeholder for future
+expansion.
+
+There is no default value. This setting must be set by the user or an exception
+will be raised, and execution will halt.
+
 
 [[option_skip_fsck]]
 == skip_repo_fs_check
@@ -394,10 +417,10 @@ from the client-defined default would be desirable.
 == value
 
 NOTE: This setting is required when using the <<allocation,allocation action>>
-    or the <<filtertype_allocated,allocated filtertype>>.
+    or the <<cluster_routing,cluster_routing action>>.
 
-The value of this setting should correspond to a node setting on one or more
-nodes in your cluster.
+For the <<allocation,allocation action>>, the value of this setting should
+correspond to a node setting on one or more nodes in your cluster.
 
 For example, you might have set
 
@@ -411,6 +434,16 @@ allocation in this case, set value to `myvalue`. Additonally, if you used one of
 the special attribute names `_ip`, `_name`, `_id`, or `_host` for
 <<option_key,key>>, value can match the one of the node ip addresses, names,
 ids, or host names, respectively.
+
+For the <<cluster_routing,cluster_routing action>>, the acceptable values for
+this setting depend on the value of <<option_routing_type,routing_type>>.
+
+Acceptable values when <<option_routing_type,routing_type>> is either
+`allocation` or `rebalance` are `all`, `primaries`, and  `none` (string, not
+`NoneType`).
+
+If `routing_type` is `allocation`, this can also be ``new_primaries``. If
+`routing_type is `rebalance`, then the value can also be `replicas`.
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.

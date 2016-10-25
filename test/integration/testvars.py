@@ -195,6 +195,16 @@ allocation_test = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
+cluster_routing_test = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Alter cluster routing by routing_type/value"\n'
+'    action: cluster_routing\n'
+'    options:\n'
+'      routing_type: {0}\n'
+'      value: {1}\n'
+'      setting: enable\n')
+
 optionless_proto = ('---\n'
 'actions:\n'
 '  1:\n'
@@ -540,3 +550,8 @@ test_682 = ('---\n'
 '      kind: prefix\n'
 '      value: logstash-\n'
 '      exclude:\n')
+
+CRA_all = {
+    u'persistent':{},
+    u'transient':{u'cluster':{u'routing':{u'allocation':{u'enable':u'all'}}}}
+}

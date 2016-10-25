@@ -35,6 +35,10 @@ def date_regex():
     }
 
 # Actions
+
+def cluster_actions():
+    return [ 'cluster_routing' ]
+
 def index_actions():
     return [
         'alias',
@@ -52,7 +56,7 @@ def snapshot_actions():
     return [ 'delete_snapshots', 'restore' ]
 
 def all_actions():
-    return sorted(index_actions() + snapshot_actions())
+    return sorted(cluster_actions() + index_actions() + snapshot_actions())
 
 def index_filtertypes():
     return [
