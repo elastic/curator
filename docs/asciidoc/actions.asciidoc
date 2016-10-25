@@ -10,6 +10,7 @@ once created, can only be deleted.
 * <<alias,Alias>>
 * <<allocation,Allocation>>
 * <<close,Close>>
+* <<cluster_routing,Cluster Routing>>
 * <<create_index,Create Index>>
 * <<delete_indices,Delete Indices>>
 * <<delete_snapshots,Delete Snapshots>>
@@ -189,6 +190,62 @@ Optional settings
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_close,here>>.
 
+[[cluster_routing]]
+== Cluster Routing
+
+[source,text]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type:
+  value:
+  setting: enabled
+  wait_for_completion: False
+  timeout_override:
+  continue_if_exception: False
+  disable_action: False
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action changes the shard routing allocation for the selected indices.
+
+See https://www.elastic.co/guide/en/elasticsearch/reference/current/shards-allocation.html
+for more information.
+
+You can optionally set `wait_for_completion` to `True`
+to have Curator wait for the shard routing to complete before continuing.  If
+this option is chosen, it is advisable to use the
+<<option_timeout_override,timeout_override>> option in order to avoid client
+timeouts.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_routing_type,routing_type>> (required)
+* <<option_value,value>> (required)
+* <<option_setting,setting>> Currently must be set to `enabled`.  This setting
+  is a placeholder for potential future expansion.
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_wfc,wait_for_completion>> (has a default value which can optionally
+    be changed)
+* <<option_timeout_override,timeout_override>> (can override the default
+    <<timeout,timeout>>)
+* <<option_continue,continue_if_exception>> (has a default value which can
+    optionally be changed)
+* <<option_disable,disable_action>> (has a default value which can optionally
+    be changed)
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_cluster_routing,here>>.
 
 [[create_index]]
 == Create Index

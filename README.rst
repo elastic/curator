@@ -12,13 +12,13 @@ Elasticsearch Curator helps you curate, or manage your indices.
 Compatibility Matrix
 ====================
 
-+--------+----------+----------+----------+
-|Version | ES 1.x   | ES 2.x   | ES 5.x   |
-+========+==========+==========+==========+
-|    3   |    yes   |     yes  |     no   |
-+--------+----------+----------+----------+
-|    4   |    no    |     yes  |     yes  |
-+--------+----------+----------+----------+
++--------+----------+------------+----------+------------+----------+
+|Version | ES 1.x   | AWS ES 1.x | ES 2.x   | AWS ES 2.x | ES 5.x   |
++========+==========+============+==========+============+==========+
+|    3   |    yes   |     yes    |   yes    |     yes    |   no     |
++--------+----------+------------+----------+------------+----------+
+|    4   |    no    |     no     |   yes    |     no     |   yes    |
++--------+----------+------------+----------+------------+----------+
 
 It is important to note that Curator 4 will not work with indices created in
 versions of Elasticsearch older than 1.4 (if they have been subsequently

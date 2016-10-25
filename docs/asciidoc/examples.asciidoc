@@ -11,6 +11,7 @@ configuration files.
 * <<ex_alias,alias>>
 * <<ex_allocation,allocation>>
 * <<ex_close,close>>
+* <<ex_cluster_routing,cluster_routing>>
 * <<ex_create_index,create_index>>
 * <<ex_delete_indices,delete_indices>>
 * <<ex_delete_snapshots,delete_snapshots>>
@@ -156,6 +157,54 @@ actions:
       unit_count: 30
       exclude:
 -------------
+
+
+[[ex_cluster_routing]]
+== cluster_routing
+
+[source,text]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+#
+# This action example has a blank spot at action ID 2.  This is to show that
+# Curator can disable allocation before one or more actions, and then re-enable
+# it afterward.
+actions:
+  1:
+    action: cluster_routing
+    description: >-
+      Disable shard routing for the entire cluster.
+    options:
+      routing_type: allocation
+      value: none
+      setting: enable
+      wait_for_completion: False
+      timeout_override:
+      continue_if_exception: False
+      disable_action: True
+  2:
+    action: (any other action details go here)
+    ...
+  3:
+    action: cluster_routing
+    description: >-
+      Re-enable shard routing for the entire cluster.
+    options:
+      routing_type: allocation
+      value: all
+      setting: enable
+      wait_for_completion: False
+      timeout_override:
+      continue_if_exception: False
+      disable_action: True
+-------------
+
 
 [[ex_create_index]]
 == create_index

@@ -86,6 +86,19 @@ def retry_interval():
             )
     }
 
+def routing_type():
+    return { Required('routing_type'): Any('allocation', 'rebalance') }
+
+def cluster_routing_setting():
+    return { Required('setting'): Any('enable') }
+
+def cluster_routing_value():
+    return {
+        Required('value'): Any(
+                'all', 'primaries', 'none', 'new_primaries', 'replicas'
+            )
+    }
+
 def skip_repo_fs_check():
     return { Optional('skip_repo_fs_check', default=False): Boolean() }
 
@@ -107,8 +120,10 @@ def timeout_override(action):
 def value():
     return { Required('value'): str }
 
+
+
 def wait_for_completion(action):
-    if action in ['allocation', 'replicas']:
+    if action in ['allocation', 'cluster_routing', 'replicas']:
         return { Optional('wait_for_completion', default=False): Boolean() }
     elif action in ['restore', 'snapshot']:
         return { Optional('wait_for_completion', default=True): Boolean() }
@@ -127,6 +142,12 @@ def action_specific(action):
             wait_for_completion(action),
         ],
         'close' : [ delete_aliases() ],
+        'cluster_routing' : [
+            routing_type(),
+            cluster_routing_setting(),
+            cluster_routing_value(),
+            wait_for_completion(action),
+        ],
         'create_index' : [
             name(action),
             extra_settings(),
