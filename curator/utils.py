@@ -456,7 +456,7 @@ def get_client(**kwargs):
     ``/_cluster/state/metadata`` endpoint.  So long as this endpoint does not
     function in AWS ES, the client will not be able to use
     :class:`curator.indexlist.IndexList`, which is the backbone of Curator 4
-    
+
     Return an :class:`elasticsearch.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
     :class:`elasticsearch.Elasticsearch` client object can receive are valid,
@@ -1124,8 +1124,8 @@ def validate_actions(data):
                     )
             # Add/Remove here
             clean_config[action_id].update(add_remove)
-        elif current_action == 'create_index':
-            # create_index should not have a filters
+        elif current_action in [ 'cluster_routing', 'create_index' ]:
+            # neither cluster_routing nor create_index should have filters
             pass
         else: # Filters key only appears in non-alias actions
             valid_filters = SchemaCheck(
