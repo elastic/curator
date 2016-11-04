@@ -8,9 +8,14 @@ needs.  It is important to note that Curator only requires access to a client
 node in the Elasticsearch cluster to work.  It need not be installed on one of
 the nodes in the cluster if you do not want it that way.
 
+IMPORTANT: If you plan on using SSL/TLS to connect to Elasticsearch, you may
+  encounter issues with older versions of Python and outdated libraries.  The
+  binary packages have been compiled with up-to-date versions for your
+  convenience. See the <<security,security>> page for more information.
+
 * <<pip,pip>>, the easiest way to use and upgrade.
-* <<apt-repository,APT Repository>>, including a single, binary package!
-* <<yum-repository,YUM Repository>>, including a single, binary package!
+* <<apt-repository,APT Repository>>, installs a single, binary package!
+* <<yum-repository,YUM Repository>>, installs a single, binary package!
 * <<windows-zip,Windows Zip Package>>
 * <<windows-msi,Windows MSI Installer>>
 * <<python-source,Source Code>>
@@ -120,7 +125,7 @@ file and the installation should work as expected.
 ==================================================
 
 [[apt-binary]]
-=== Binary Package Installation (recommended)
+=== Binary Package Installation
 
 Starting with version 4.1.2, Curator comes with a binary version.  What this
 really means is that the source is compiled, and all required libraries are
@@ -142,36 +147,11 @@ aforementioned directory.
 
 [WARNING]
 ====================================================
-The `elasticsearch-curator` binary package cannot coexist with the
-`python-elasticsearch-curator` package.  This collision is explicitly defined
+The `elasticsearch-curator` binary package cannot coexist with the older
+`python-elasticsearch-curator` packages.  This collision is explicitly defined
 in packages since 4.1.2, but not in previous packages.  If it is installed, you
 _must_ uninstall the `python-elasticsearch-curator` package before installing
 the `elasticsearch-curator` binary package.
-====================================================
-
-=== Python Package Installation
-
-This method will install all of the python modules (or libraries) that Curator
-requires, as well as an entry-point to launch Curator.  The shared library
-approach introduces the possibility of library collision, which will prevent
-installation, with error messages explaining why.  If this happens, it is
-recommended that you use the <<apt-binary,binary installation>> method, as this
-precludes the possibility of library collision.
-
-To install Curator, run the following:
-
-[source,sh]
---------------------------------------------------
-sudo apt-get update && sudo apt-get install python-elasticsearch-curator
---------------------------------------------------
-
-[WARNING]
-====================================================
-The `python-elasticsearch-curator` binary package cannot coexist with the
-`elasticsearch-curator` package.  This collision is explicitly defined
-in packages since 4.1.2, but not in previous packages.  If it is installed, you
-_must_ uninstall the `elasticsearch-curator` binary package before installing
-the `python-elasticsearch-curator` package and its dependencies.
 ====================================================
 
 [[yum-repository]]
@@ -228,7 +208,7 @@ enabled=1
 =========================================
 
 [[yum-binary]]
-=== Binary Package Installation (recommended)
+=== Binary Package Installation
 
 Starting with version 4.1.2, Curator comes with a binary version.  What this
 really means is that the source is compiled, and all required libraries are
@@ -250,84 +230,12 @@ aforementioned directory.
 
 [WARNING]
 ====================================================
-The `elasticsearch-curator` binary package cannot coexist with the
-`python-elasticsearch-curator` package.  This collision is explicitly defined
+The `elasticsearch-curator` binary package cannot coexist with the older
+`python-elasticsearch-curator` packages.  This collision is explicitly defined
 in packages since 4.1.2, but not in previous packages.  If it is installed, you
 _must_ uninstall the `python-elasticsearch-curator` package before installing
 the `elasticsearch-curator` binary package.
 ====================================================
-
-=== Python Package Installation
-
-This method will install all of the python modules (or libraries) that Curator
-requires, as well as an entry-point to launch Curator.  The shared library
-approach introduces the possibility of library collision, which will prevent
-installation, with error messages explaining why.  If this happens, it is
-recommended that you use the <<yum-binary,binary installation>> method, as this
-precludes the possibility of library collision.
-
-To install Curator, run the following:
-
-[source,sh]
-----------------------------------------
-yum install python-elasticsearch-curator
-----------------------------------------
-
-[WARNING]
-====================================================
-The `python-elasticsearch-curator` binary package cannot coexist with the
-`elasticsearch-curator` package.  This collision is explicitly defined
-in packages since 4.1.2, but not in previous packages.  If it is installed, you
-_must_ uninstall the `elasticsearch-curator` binary package before installing
-the `python-elasticsearch-curator` package and its dependencies.
-====================================================
-
-[float]
-==== Troubleshooting
-There are some pitfalls you may encounter:
-
-* `ImportError: No module named pkg_resources`
-+
-If you see this error:
-+
-[source,sh]
-------------------------------
-Traceback (most recent call last):
-  File "/usr/bin/curator", line 5, in <module>
-    from pkg_resources import load_entry_point
-ImportError: No module named pkg_resources
-------------------------------
-+
-Then you will need to install `python-setuptools` (provided in the Curator
-repository):
-+
-[source,sh]
------------------------------
-yum install python-setuptools
------------------------------
-+
-See more detail in this <<entrypoint-fix,FAQ>>.
-
-* `Requires: python-unittest2` (RHEL/CentOS 6 only)
-+
-If you see an error like this:
-+
-[source,sh]
----------------------
-Error: Package: python-elasticsearch-2.4.0-1.noarch (curator-4)
-           Requires: python-unittest2
----------------------
-+
-Then you will need to install python-unittest2, which is provided in the Curator
-repository, and also in the `epel-release` repository:
-+
-[source,sh]
-------------------
-yum install epel-release
-------------------
-+
-After this is installed, run the `yum install python-elasticsearch-curator`
-command again.
 
 [[windows-zip]]
 == Windows Binary Zip Package
@@ -422,7 +330,7 @@ or uncompress and run `python setup.py install`
 &nbsp;
 
 === click
-Download and install the http://click.pocoo.org/[click] dependency (3.3 or
+Download and install the http://click.pocoo.org/[click] dependency (6.0 or
 greater):
 
 . `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.3.tar.gz`

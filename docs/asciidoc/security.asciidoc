@@ -1,0 +1,104 @@
+[[security]]
+= Security
+
+[partintro]
+--
+Please read the following sections for help with securing the connection between
+Curator and Elasticsearch.
+
+* <<python-security,Python and Secure Connectivity>>
+* <<security-errors,Common security error messages>>
+--
+
+[[python-security]]
+== Python and Secure Connectivity
+
+Curator was written in Python, which allows it to be distributed as code which
+can run across a wide variety of systems, including Linux, Windows, Mac OS, and
+any other system or architecture for which a Python interpreter has been
+written. Curator was also written to be usable by the 4 most recent major
+release branches of Python: 2.6, 2.7, 3.4, and 3.5.  It may even run on other
+versions, but those versions are not tested.
+
+Unfortunately, this broad support comes at a cost.  While Curator happily runs
+on Python version 2.6, this version had its last update more than 3 years ago.
+There have been many improvements to security, SSL/TLS and the libraries that
+support them since then.  Not all of these have been back-ported, which results
+in Curator not being able to communicate securely via SSL/TLS, or in some cases
+even connect securely.
+
+Because it is impossible to know if a given system has the correct Python
+version, leave alone the most recent libraries and modules, it becomes nearly
+impossible to guarantee that Curator will be able to make a secure and
+error-free connection to a secured Elasticsearch instance for any `pip` or
+RPM/DEB installed modules.  This has lead to an increased amount of
+troubleshooting and support work for Curator.  The precompiled binary packages
+were created to address this.
+
+The precompiled binary packages (APT/YUM, Windows) have been compiled with
+Python 3.5.2, which has all of the up-to-date libraries needed for secure
+transactions.  These packages have been tested connecting to Shield (2.x) and
+Security (5.x X-Pack) with self-signed PKI certificates.  Connectivity via SSL
+or TLS to other open-source plugins may work, but is not guaranteed.
+
+If you are encountering SSL/TLS errors in Curator, please see the list of
+<<security-errors,common security error messages>>.
+
+[[security-errors]]
+== Common Security Error Messages
+
+=== Elasticsearch ConnectionError
+
+[source,sh]
+-----------
+Unable to create client connection to Elasticsearch.  Error:ConnectionError(error return without exception set) caused by: SystemError(error return without exception set)
+-----------
+
+This error can happen on non-secured connections as well.  If it happens with a
+secured instance, it will usually be accompanied by one or more of the following
+messages
+
+=== SNIMissingWarning
+
+[source,sh]
+-----------
+SNIMissingWarning: An HTTPS request has been made, but the SNI (Subject Name Indication) extension to TLS is not available on this platform. This may cause the server to present an incorrect TLS certificate, which can cause validation failures. You can upgrade to a newer version of Python to solve this. For more information, see https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+-----------
+
+This happens on Python 2 versions older than 2.7.9. These older versions lack
+https://en.wikipedia.org/wiki/Server_Name_Indication[SNI] support. This can
+cause servers to present a certificate that the client thinks is invalid. Follow
+the https://urllib3.readthedocs.io/en/latest/user-guide.html#ssl-py2[pyOpenSSL]
+guide to resolve this warning.
+
+=== InsecurePlatformWarning
+
+[source,sh]
+-----------
+InsecurePlatformWarning: A true SSLContext object is not available. This prevents urllib3 from configuring SSL appropriately and may cause certain SSL connections to fail. You can upgrade to a newer version of Python to solve this. For more information, see https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
+-----------
+
+This happens on Python 2 platforms that have an outdated **ssl** module. These
+older **ssl** modules can cause some insecure requests to succeed where they
+should fail and secure requests to fail where they should succeed. Follow the
+https://urllib3.readthedocs.io/en/latest/user-guide.html#ssl-py2[pyOpenSSL]
+guide to resolve this warning.
+
+=== InsecureRequestWarning
+
+[source,sh]
+-----------
+InsecureRequestWarning: Unverified HTTPS request is being made. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.org/en/latest/security.html
+-----------
+
+This happens when an request is made to an HTTPS URL without certificate
+verification enabled. Follow the
+https://urllib3.readthedocs.io/en/latest/user-guide.html#ssl[certificate verification]
+guide to resolve this warning.
+
+Related:
+
+[source,sh]
+-----------
+SSLError: [Errno 1] _ssl.c:510: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
+-----------
