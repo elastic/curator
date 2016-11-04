@@ -260,8 +260,6 @@ options:
   timeout_override:
   continue_if_exception: False
   disable_action: False
-filters:
-- filtertype: ...
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,

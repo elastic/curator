@@ -29,7 +29,11 @@ def structure(data, location):
     # Build a valid schema knowing that the action has already been validated
     retval = valid_action()
     retval.update(
-        { Optional('description', default='No description given'): str }
+        {
+            Optional('description', default='No description given'): Any(
+                    str, unicode
+                )
+        }
     )
     retval.update(
         { Optional('options', default=settings.default_options()): dict } )

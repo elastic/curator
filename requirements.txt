@@ -1,5 +1,5 @@
 urllib3>=1.8.3
 elasticsearch>=2.4.0,<3.0.0
-click>=3.3
+click>=6.0
 pyyaml>=3.10
 voluptuous>=0.9.3

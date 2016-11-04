@@ -11,7 +11,12 @@ Changelog
   * Shard routing allocation enable/disable. This will allow you to disable
     shard allocation routing before performing one or more actions, and then
     re-enable after it is complete. Requested in #446 (untergeek)
-    
+  * Curator 3.x-style command-line.  This is now ``curator_cli``, to
+    differentiate between the current binary.  Not all actions are available,
+    but the most commonly used ones are.  With the addition in 4.1.0 of schema
+    and configuration validation, there's even a way to still do filter chaining
+    on the command-line! Requested in #767, and by many other users (untergeek)
+
 **General**
 
   * Update testing to the most recent versions.

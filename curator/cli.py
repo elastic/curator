@@ -123,9 +123,7 @@ def cli(config, dry_run, action_file):
     ### Start working on the actions here ###
     #########################################
     action_config = get_yaml(action_file)
-    logger.debug('PRE-YAY')
     action_dict = validate_actions(action_config)
-    logger.debug('YAY')
     actions = action_dict['actions']
     logger.debug('Full list of actions: {0}'.format(actions))
     action_keys = sorted(list(actions.keys()))
