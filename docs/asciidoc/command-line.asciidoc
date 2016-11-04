@@ -4,6 +4,7 @@
 [partintro]
 --
 * <<command-line,Command Line Interface>>
+* <<singleton-cli,Singleton Command Line Interface>>
 * <<exit-codes,Exit Codes>>
 --
 
@@ -59,6 +60,179 @@ Options:
 
 Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
 configuration files.
+
+&nbsp;
+
+[[singleton-cli]]
+== Singleton Command Line Interface
+
+Starting in Curator 4.2, a partial restoration of the command-line from the 3.x
+version is back as the `curator_cli` command.  This allows users to run a
+single, supported action from the command-line, without needing either the
+client or action YAML configuration file, though it does support using the
+client configuration file if you want.  As an important bonus, the command-line
+options allow you to override the settings in the `curator.yml` file!
+
+[source,sh]
+---------
+$ curator_cli --help
+Usage: curator_cli [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --config PATH       Path to configuration file. Default:
+                      ~/.curator/curator.yml
+  --host TEXT         Elasticsearch host.
+  --url_prefix TEXT   Elasticsearch http url prefix.
+  --port TEXT         Elasticsearch port.
+  --use_ssl           Connect to Elasticsearch through SSL.
+  --certificate TEXT  Path to certificate to use for SSL validation.
+  --client-cert TEXT  Path to file containing SSL certificate for client auth.
+  --client-key TEXT   Path to file containing SSL key for client auth.
+  --ssl-no-validate   Do not validate SSL certificate
+  --http_auth TEXT    Use Basic Authentication ex: user:pass
+  --timeout INTEGER   Connection timeout in seconds.
+  --master-only       Only operate on elected master node.
+  --dry-run           Do not perform any changes.
+  --loglevel TEXT     Log level
+  --logfile TEXT      log file
+  --logformat TEXT    Log output format [default|logstash|json].
+  --version           Show the version and exit.
+  --help              Show this message and exit.
+
+Commands:
+  allocation        Shard Routing Allocation
+  close             Close indices
+  delete_indices    Delete indices
+  delete_snapshots  Delete snapshots
+  forcemerge        forceMerge index/shard segments
+  open              Open indices
+  replicas          Change replica count
+  show_indices      Show indices
+  show_snapshots    Show snapshots
+  snapshot          Snapshot indices
+---------
+
+The option flags for the given commands match those used for the same
+<<actions,actions>>.  The only difference is how filtering is handled.
+
+=== Command-line filtering
+
+Recent improvements in Curator include schema and setting validation.  With
+these improvements, it is possible to validate filters and their many
+permutations if passed in a way that Curator can easily digest.
+
+[source,sh]
+-----------
+--filter_list TEXT  JSON string representing an array of filters.
+-----------
+
+This means that filters need to be passed as a single object, or an array of
+objects in JSON format.
+
+Single:
+[source,sh]
+-----------
+--filter_list '{"filtertype":"none"}'
+-----------
+
+Multiple:
+[source,sh]
+-----------
+--filter_list '[{"filtertype":"age","source":"creation_date","direction":"older","unit":"days","unit_count":13},{"filtertype":"pattern","kind":"prefix","value":"logstash"}]'
+-----------
+
+This preserves the power of chained filters, making them available on the
+command line.
+
+NOTE: You may need to escape all of the double quotes on some platforms, or
+  shells like PowerShell, for instance.
+
+Caveats to this approach:
+
+1. Only one action can be taken at a time.
+2. You must still specify a <<filtertype_none,none>> filter if you want to act +
+  on all indices or snapshots.
+3. Not all actions have singleton analogs.  <<alias,Alias>> and +
+  <<restore,Restore>> do not have singleton actions.
+
+=== Show Indices/Snapshots
+
+One feature that the singleton command offers that the other cannot is to show
+which indices and snapshots are in the system.  It's a great way to visually
+test your filters without causing any harm to the system.
+
+[source,sh]
+-----------
+$ curator_cli show_indices --help
+Usage: curator_cli show_indices [OPTIONS]
+
+  Show indices
+
+Options:
+  --verbose           Show verbose output.
+  --header            Print header if --verbose
+  --epoch             Print time as epoch if --verbose
+  --filter_list TEXT  JSON string representing an array of filters.
+                      [required]
+  --help              Show this message and exit.
+-----------
+
+[source,sh]
+-----------
+$ curator_cli show_snapshots --help
+Usage: curator_cli show_snapshots [OPTIONS]
+
+  Show snapshots
+
+Options:
+  --repository TEXT   Snapshot repository name  [required]
+  --filter_list TEXT  JSON string representing an array of filters.
+                      [required]
+  --help              Show this message and exit.
+-----------
+
+The `show_snapshots` command will only show snapshots matching the provided
+filters.  The `show_indices` command will also do this, but also offers a few
+extra features.
+
+* `--verbose` adds state, total size of primary and all replicas, the document
+  count, the number of primary and replica shards, and the creation date in
+  ISO8601 format.
+* `--header` adds a header that shows the column names.  This only occurs if
+  `--verbose` is also selected.
+* `--epoch` changes the date format from ISO8601 to epoch time.  If `--header`
+  is also selected, the column header title will change to `creation_date`
+
+There are no extra columns or `--verbose` output for the `show_snapshots`
+command.
+
+Without `--epoch`
+[source,sh]
+-----------
+Index               State     Size     Docs Pri Rep   Creation Timestamp
+logstash-2016.10.20 close     0.0B        0   5   1 2016-10-20T00:00:03Z
+logstash-2016.10.21  open  763.3MB  5860016   5   1 2016-10-21T00:00:03Z
+logstash-2016.10.22  open  759.1MB  5858450   5   1 2016-10-22T00:00:04Z
+logstash-2016.10.23  open  757.8MB  5857456   5   1 2016-10-23T00:00:04Z
+logstash-2016.10.24  open  771.5MB  5859720   5   1 2016-10-24T00:00:00Z
+logstash-2016.10.25  open  771.0MB  5860112   5   1 2016-10-25T00:00:01Z
+logstash-2016.10.27  open  658.3MB  4872830   5   1 2016-10-27T00:00:03Z
+logstash-2016.10.28  open  655.1MB  5237250   5   1 2016-10-28T00:00:00Z
+-----------
+
+With `--epoch`
+[source,sh]
+-----------
+Index               State     Size     Docs Pri Rep creation_date
+logstash-2016.10.20 close     0.0B        0   5   1    1476921603
+logstash-2016.10.21  open  763.3MB  5860016   5   1    1477008003
+logstash-2016.10.22  open  759.1MB  5858450   5   1    1477094404
+logstash-2016.10.23  open  757.8MB  5857456   5   1    1477180804
+logstash-2016.10.24  open  771.5MB  5859720   5   1    1477267200
+logstash-2016.10.25  open  771.0MB  5860112   5   1    1477353601
+logstash-2016.10.27  open  658.3MB  4872830   5   1    1477526403
+logstash-2016.10.28  open  655.1MB  5237250   5   1    1477612800
+-----------
 
 &nbsp;
 
