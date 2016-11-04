@@ -2,7 +2,7 @@
 
 """Wrapper for running curator from source."""
 
-from curator.curator import main
+from curator.cli import cli
 
 if __name__ == '__main__':
-    main()
+    cli()

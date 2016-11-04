@@ -5,7 +5,7 @@ from ..defaults import settings
 
 def allocation_type():
     return { Optional('allocation_type', default='require'): All(
-        str, Any('require', 'include', 'exclude')) }
+        Any(str, unicode), Any('require', 'include', 'exclude')) }
 
 def continue_if_exception():
     return { Optional('continue_if_exception', default=False): Boolean() }
@@ -45,7 +45,7 @@ def indices():
     return { Optional('indices', default=None): Any(None, list) }
 
 def key():
-    return { Required('key'): str }
+    return { Required('key'): Any(str, unicode) }
 
 def max_num_segments():
     return {
@@ -54,23 +54,25 @@ def max_num_segments():
 
 def name(action):
     if action in ['alias', 'create_index']:
-        return { Required('name'): str }
+        return { Required('name'): Any(str, unicode) }
     elif action == 'snapshot':
-        return { Optional('name', default='curator-%Y%m%d%H%M%S'): str }
+        return {
+            Optional('name', default='curator-%Y%m%d%H%M%S'): Any(str, unicode)
+        }
     elif action == 'restore':
-        return { Optional('name'): str }
+        return { Optional('name'): Any(str, unicode) }
 
 def partial():
     return { Optional('partial', default=False): Boolean() }
 
 def rename_pattern():
-    return { Optional('rename_pattern'): str }
+    return { Optional('rename_pattern'): Any(str, unicode) }
 
 def rename_replacement():
-    return { Optional('rename_replacement'): str }
+    return { Optional('rename_replacement'): Any(str, unicode) }
 
 def repository():
-    return { Required('repository'): str }
+    return { Required('repository'): Any(str, unicode) }
 
 def retry_count():
     return {
@@ -118,7 +120,7 @@ def timeout_override(action):
         }
 
 def value():
-    return { Required('value'): str }
+    return { Required('value'): Any(str, unicode) }
 
 
 

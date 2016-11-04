@@ -5,11 +5,11 @@ from ..defaults import settings
 
 def aliases(**kwargs):
     # This setting is used by the alias filtertype and is required
-    return { Required('aliases'): Any(str, [str]) }
+    return { Required('aliases'): Any(str, [str], unicode, [unicode]) }
 
 def allocation_type(**kwargs):
     return { Optional('allocation_type', default='require'): All(
-        str, Any('require', 'include', 'exclude')) }
+        Any(str, unicode), Any('require', 'include', 'exclude')) }
 
 def count(**kwargs):
     # This setting is only used with the count filtertype and is required
@@ -38,13 +38,13 @@ def exclude(**kwargs):
 def field(**kwargs):
     # This setting is only used with the age filtertype.
     if 'required' in kwargs and kwargs['required']:
-        return { Required('field'): str }
+        return { Required('field'): Any(str, unicode) }
     else:
-        return { Optional('field'): str }
+        return { Optional('field'): Any(str, unicode) }
 
 def key(**kwargs):
     # This setting is only used with the allocated filtertype.
-    return { Required('key'): str }
+    return { Required('key'): Any(str, unicode) }
 
 def kind(**kwargs):
     # This setting is only used with the pattern filtertype and is required
@@ -91,9 +91,9 @@ def timestring(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype if use_age is set to True.
     if 'required' in kwargs and kwargs['required']:
-        return { Required('timestring'): str }
+        return { Required('timestring'): Any(str, unicode) }
     else:
-        return { Optional('timestring', default=None): Any(str, None) }
+        return { Optional('timestring', default=None): Any(str, unicode, None) }
 
 def unit(**kwargs):
     # This setting is only used with the age filtertype, or with the space
@@ -117,4 +117,4 @@ def value(**kwargs):
     # This setting is only used with the pattern filtertype and is a required
     # setting. There is a separate value option associated with the allocation
     # action, and the allocated filtertype.
-    return { Required('value'): str }
+    return { Required('value'): Any(str, unicode) }
