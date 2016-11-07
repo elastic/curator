@@ -64,7 +64,7 @@ class IndexList(object):
         """
         self.loggit.debug('Getting all indices')
         self.all_indices = get_indices(self.client)
-        self.indices = self.all_indices
+        self.indices = self.all_indices[:]
         self.empty_list_check()
         for index in self.indices:
             self.__build_index_info(index)
