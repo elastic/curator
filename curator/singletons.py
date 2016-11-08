@@ -40,6 +40,15 @@ def validate_filter_json(ctx, param, value):
     except ValueError:
         raise click.BadParameter('Invalid JSON: {0}'.format(value))
 
+def false_to_none(ctx, param, value):
+    try:
+        if value:
+            return True
+        else:
+            return None
+    except ValueError:
+        raise click.BadParameter('Invalid value: {0}'.format(value))
+
 def filter_schema_check(action, filter_dict):
     valid_filters = SchemaCheck(
         filter_dict,
@@ -555,14 +564,30 @@ def show_snapshots_singleton(
 @click.option('--host', help='Elasticsearch host.')
 @click.option('--url_prefix', help='Elasticsearch http url prefix.')
 @click.option('--port', help='Elasticsearch port.')
-@click.option('--use_ssl', is_flag=True, help='Connect to Elasticsearch through SSL.')
-@click.option('--certificate', help='Path to certificate to use for SSL validation.')
-@click.option('--client-cert', help='Path to file containing SSL certificate for client auth.', type=str)
-@click.option('--client-key', help='Path to file containing SSL key for client auth.', type=str)
-@click.option('--ssl-no-validate', help='Do not validate SSL certificate', is_flag=True)
+@click.option(
+    '--use_ssl', is_flag=True, callback=false_to_none,
+    help='Connect to Elasticsearch through SSL.'
+)
+@click.option(
+    '--certificate', help='Path to certificate to use for SSL validation.')
+@click.option(
+    '--client-cert',
+    help='Path to file containing SSL certificate for client auth.', type=str
+)
+@click.option(
+    '--client-key',
+    help='Path to file containing SSL key for client auth.', type=str
+)
+@click.option(
+    '--ssl-no-validate', is_flag=True, callback=false_to_none,
+    help='Do not validate SSL certificate'
+)
 @click.option('--http_auth', help='Use Basic Authentication ex: user:pass')
 @click.option('--timeout', help='Connection timeout in seconds.', type=int)
-@click.option('--master-only', is_flag=True, help='Only operate on elected master node.')
+@click.option(
+    '--master-only', is_flag=True, callback=false_to_none,
+    help='Only operate on elected master node.'
+)
 @click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
 @click.option('--loglevel', help='Log level')
 @click.option('--logfile', help='log file')
