@@ -99,6 +99,10 @@ Download and install the Public Signing Key:
 wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
 --------------------------------------------------
 
+=== Direct Package Download Link
+
+* https://packages.elastic.co/curator/{curator_major}/debian/pool/main/p/python/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
+
 === Repository Configuration
 
 Add the following in your `/etc/apt/sources.list.d/` directory in a file with a
@@ -173,6 +177,11 @@ Download and install the public signing key:
 --------------------------------------------------
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 --------------------------------------------------
+
+=== Direct Package Download Link
+
+* https://packages.elastic.co/curator/{curator_major}/centos/6/Packages/elasticsearch-curator-{curator_version}-1.x86_64.rpm[Elasticsearch Curator {curator_version} RHEL/CentOS 6 Binary Package (RPM)]
+* https://packages.elastic.co/curator/{curator_major}/centos/7/Packages/elasticsearch-curator-{curator_version}-1.x86_64.rpm[Elasticsearch Curator {curator_version} RHEL/CentOS 7 Binary Package (RPM)]
 
 === Repository Configuration
 
