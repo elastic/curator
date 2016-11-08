@@ -3,8 +3,21 @@
 Changelog
 =========
 
-4.2.0 (? ? ?)
--------------
+4.2.1 (8 November 2016)
+-----------------------
+
+**Bug Fixes**
+
+  * In the course of package release testing, an undesirable scenario was
+    caught where boolean flags default values for ``curator_cli`` were
+    improperly overriding values from a yaml config file.
+
+**General**
+
+  * Adding in direct download URLs for the RPM, DEB, tarball and zip packages.
+
+4.2.0 (4 November 2016)
+-----------------------
 
 **New Features**
 
