@@ -13,6 +13,8 @@ MAINTAINER="'Elastic Developers <info@elastic.co>'"
 C_POST_INSTALL=${WORKDIR}/es_curator_after_install.sh
 C_PRE_REMOVE=${WORKDIR}/es_curator_before_removal.sh
 C_POST_REMOVE=${WORKDIR}/es_curator_after_removal.sh
+C_PRE_UPGRADE=${WORKDIR}/es_curator_before_upgrade.sh
+C_POST_UPGRADE=${WORKDIR}/es_curator_after_upgrade.sh
 
 # Build our own package pre/post scripts
 sudo rm -rf ${WORKDIR} /opt/elasticsearch-curator
@@ -25,9 +27,17 @@ for file in ${C_POST_INSTALL} ${C_PRE_REMOVE} ${C_POST_REMOVE}; do
 done
 
 echo "ln -s /opt/elasticsearch-curator/curator /usr/bin/curator" >> ${C_POST_INSTALL}
+echo "ln -s /opt/elasticsearch-curator/curator_cli /usr/bin/curator_cli" >> ${C_POST_INSTALL}
 echo "ln -s /opt/elasticsearch-curator/es_repo_mgr /usr/bin/es_repo_mgr" >> ${C_POST_INSTALL}
-echo "rm /usr/bin/curator" >> ${C_PRE_REMOVE}
-echo "rm /usr/bin/es_repo_mgr" >> ${C_PRE_REMOVE}
+echo "ln -s /opt/elasticsearch-curator/curator /usr/bin/curator" >> ${C_POST_UPGRADE}
+echo "ln -s /opt/elasticsearch-curator/curator_cli /usr/bin/curator_cli" >> ${C_POST_UPGRADE}
+echo "ln -s /opt/elasticsearch-curator/es_repo_mgr /usr/bin/es_repo_mgr" >> ${C_POST_UPGRADE}
+echo "rm -f /usr/bin/curator" >> ${C_PRE_REMOVE}
+echo "rm -f /usr/bin/curator_cli" >> ${C_PRE_REMOVE}
+echo "rm -f /usr/bin/es_repo_mgr" >> ${C_PRE_REMOVE}
+echo "rm -f /usr/bin/curator" >> ${C_PRE_UPGRADE}
+echo "rm -f /usr/bin/curator_cli" >> ${C_PRE_UPGRADE}
+echo "rm -f /usr/bin/es_repo_mgr" >> ${C_PRE_UPGRADE}
 echo 'if [ -d "/opt/elasticsearch-curator" ]; then' >> ${C_POST_REMOVE}
 echo '  rm -rf /opt/elasticsearch-curator' >> ${C_POST_REMOVE}
 echo 'fi' >> ${C_POST_REMOVE}
@@ -112,9 +122,6 @@ tar zxf ${FILE}
 
 mkdir -p ${PACKAGEDIR}
 cd curator-${1}
-cp setup.py setup.py.orig
-grep -v 'compress' setup.py.orig > setup.py
-rm setup.py.orig
 ${PIPBIN} install -U --user setuptools
 ${PIPBIN} install -U --user requests_aws4auth
 ${PIPBIN} install -U --user certifi
@@ -136,6 +143,8 @@ fpm \
  --after-install ${C_POST_INSTALL} \
  --before-remove ${C_PRE_REMOVE} \
  --after-remove ${C_POST_REMOVE} \
+ --before-upgrade ${C_PRE_UPGRADE} \
+ --after-upgrade ${C_POST_UPGRADE} \
  --provides elasticsearch-curator \
  --conflicts python-elasticsearch-curator \
  --conflicts python3-elasticsearch-curator \
@@ -143,6 +152,6 @@ fpm \
 
 mv ${WORKDIR}/*.${PKGTYPE} ${PACKAGEDIR}
 
-rm ${C_POST_INSTALL} ${C_PRE_REMOVE} ${C_POST_REMOVE}
+rm ${C_POST_INSTALL} ${C_PRE_REMOVE} ${C_POST_REMOVE} ${C_PRE_UPGRADE} ${C_POST_UPGRADE}
 # go back to where we started
 cd ${BASEPATH}
