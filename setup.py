@@ -94,7 +94,7 @@ try:
             "console_scripts" : [
                 "curator = curator.cli:cli",
                 "curator_cli = curator.curator_cli:main",
-                "es_repo_mgr = curator.es_repo_mgr:repo_mgr_cli",
+                "es_repo_mgr = curator.repomgrcli:repo_mgr_cli",
             ]
         },
         classifiers=[
@@ -133,7 +133,7 @@ except ImportError:
             "console_scripts" : [
                 "curator = curator.cli:cli",
                 "curator_cli = curator.curator_cli:main",
-                "es_repo_mgr = curator.es_repo_mgr:repo_mgr_cli",
+                "es_repo_mgr = curator.repomgrcli:repo_mgr_cli",
             ]
         },
         classifiers=[
