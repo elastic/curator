@@ -3,6 +3,27 @@
 Changelog
 =========
 
+4.2.2 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * The certifi-provided certificates were not propagating to the compiled
+    RPM/DEB packages.  This has been corrected.  Reported in #810 (untergeek)
+
+**General**
+
+  * Added missing ``--ignore_empty_list`` option to singleton actions. Requested
+    in #812 (untergeek)
+
+**Documentation**
+
+  * Add a FAQ entry regarding the click module's need for Unicode when using
+    Python 3.  Kind of a bug fix too, as the entry_points were altered to catch
+    this omission and report a potential solution on the command-line. Reported
+    in #814 (untergeek)
+  * Change the "Command-Line" documentation header to be "Running Curator"
+
 4.2.1 (8 November 2016)
 -----------------------
 

@@ -15,7 +15,7 @@ Compatibility Matrix
 +--------+----------+------------+----------+------------+----------+
 |Version | ES 1.x   | AWS ES 1.x | ES 2.x   | AWS ES 2.x | ES 5.x   |
 +========+==========+============+==========+============+==========+
-|    3   |    yes   |     yes    |   yes    |     yes*   |   no     |
+|    3   |    yes   |     yes*   |   yes    |     yes*   |   no     |
 +--------+----------+------------+----------+------------+----------+
 |    4   |    no    |     no     |   yes    |     no     |   yes    |
 +--------+----------+------------+----------+------------+----------+
@@ -38,7 +38,9 @@ It is also important to note that Curator 4 requires access to the
 support this endpoint (such as AWS ES, see #717) *will not* be able to use
 Curator version 4.
 
-\* It appears that AWS ES 2.x (not confirmed for 1.x) `does not allow access to the snapshot status endpoint`_.  This prevents Curator 3 from being used to make snapshots.
+\* It appears that AWS ES `does not allow access to the snapshot status endpoint`_ 
+for either 1.x or 2.x versions.  This prevents Curator 3 from being used to 
+make snapshots.
 
 .. _does not allow access to the snapshot status endpoint: https://github.com/elastic/curator/issues/796
 

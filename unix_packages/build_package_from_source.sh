@@ -51,12 +51,11 @@ fi
 
 # build
 if [ "${1}x" == "x" ]; then
-  echo "Must provide version number"
+  echo "Must provide version number (can be arbitrary)"
   exit 1
 else
-  FILE="v${1}.tar.gz"
-  cd ${WORKDIR}
-  wget https://github.com/elastic/curator/archive/${FILE}
+  cd ..
+  SOURCE_DIR=$(pwd)
 fi
 
 case "$ID" in
@@ -118,18 +117,23 @@ if [ "${HAS_FPM}x" == "x" ]; then
   gem install fpm
 fi
 
-tar zxf ${FILE}
+cd $SOURCE_DIR
 
 mkdir -p ${PACKAGEDIR}
-cd curator-${1}
 ${PIPBIN} install -U --user setuptools
 ${PIPBIN} install -U --user requests_aws4auth
 ${PIPBIN} install -U --user certifi
 ${PIPBIN} install -U --user -r requirements.txt
 ${PYBIN} setup.py build_exe
 sudo mv build/exe.linux-x86_64-${PYVER} /opt/elasticsearch-curator
+
+# Put a copy of the up-to-date certifi cacert.pem into a reachable place for the binary
+PEMTARGET='/opt/elasticsearch-curator/lib/certifi'
+sudo mkdir -p ${PEMTARGET}
+sudo cp /home/vagrant/.local/lib/python3.5/site-packages/certifi/cacert.pem ${PEMTARGET}
+
 sudo chown -R root:root /opt/elasticsearch-curator
-cd ..
+cd $WORKDIR
 fpm \
  -s dir \
  -t ${PKGTYPE} \
