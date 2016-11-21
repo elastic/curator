@@ -6,10 +6,15 @@ Changelog
 4.2.2 (? ? ?)
 -------------
 
+**Bug Fixes**
+
+  * The certifi-provided certificates were not propagating to the compiled
+    RPM/DEB packages.  This has been corrected.  Reported in #810 (untergeek)
+
 **General**
 
-  * Added ``--ignore_empty_list`` option to singleton actions. Requested in
-    #812 (untergeek)
+  * Added missing ``--ignore_empty_list`` option to singleton actions. Requested
+    in #812 (untergeek)
 
 **Documentation**
 

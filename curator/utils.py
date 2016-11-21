@@ -174,13 +174,6 @@ def get_datetime(index_timestamp, timestring):
         if not '%d' in timestring:
             timestring += '%d'
             index_timestamp += '1'
-    # logger.debug(
-    #     'index_timestamp: {0}, timestring: {1}, return value: '
-    #     '{2}'.format(
-    #         index_timestamp, timestring,
-    #         datetime.strptime(index_timestamp, timestring)
-    #     )
-    # )
     return datetime.strptime(index_timestamp, timestring)
 
 def fix_epoch(epoch):
@@ -532,13 +525,20 @@ def get_client(**kwargs):
             if kwargs['certificate']:
                 kwargs['verify_certs'] = True
                 kwargs['ca_certs'] = kwargs['certificate']
-            else: # Try to use certifi certificates:
-                try:
-                    import certifi
+            else: # Try to use bundled certifi certificates
+                bundled_path = (
+                    '/opt/elasticsearch-curator/lib/certifi/cacert.pem'
+                )
+                if os.path.isfile(bundled_path):
                     kwargs['verify_certs'] = True
-                    kwargs['ca_certs'] = certifi.where()
-                except ImportError:
-                    logger.warn('Unable to verify SSL certificate.')
+                    kwargs['ca_certs'] = bundled_path
+                else:
+                    try: # Try to use certifi certificates via certifi.where():
+                        import certifi
+                        kwargs['verify_certs'] = True
+                        kwargs['ca_certs'] = certifi.where()
+                    except ImportError:
+                        logger.warn('Unable to verify SSL certificate.')
     try:
         from requests_aws4auth import AWS4Auth
         kwargs['aws_key'] = False if not 'aws_key' in kwargs \
