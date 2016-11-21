@@ -3,6 +3,17 @@
 Changelog
 =========
 
+4.2.2 (? ? ?)
+-------------
+
+**Documentation**
+
+  * Add a FAQ entry regarding the click module's need for Unicode when using
+    Python 3.  Kind of a bug fix too, as the entry_points were altered to catch
+    this omission and report a potential solution on the command-line. Reported
+    in #814 (untergeek)
+  * Change the "Command-Line" documentation header to be "Running Curator"
+
 4.2.1 (8 November 2016)
 -----------------------
 

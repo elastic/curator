@@ -1,5 +1,5 @@
 [[cli]]
-= Command Line
+= Running Curator
 
 [partintro]
 --
@@ -61,6 +61,8 @@ Options:
 Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
 configuration files.
 
+TIP: See <<faq_unicode,this FAQ about Python 3 requiring a Unicode locale>>
+
 &nbsp;
 
 [[singleton-cli]]
@@ -114,6 +116,8 @@ Commands:
 
 The option flags for the given commands match those used for the same
 <<actions,actions>>.  The only difference is how filtering is handled.
+
+TIP: See <<faq_unicode,this FAQ about Python 3 requiring a Unicode locale>>
 
 === Command-line filtering
 
