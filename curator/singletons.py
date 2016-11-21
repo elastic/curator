@@ -59,6 +59,7 @@ def filter_schema_check(action, filter_dict):
     return validate_filters(action, valid_filters)
 
 def _actionator(action, action_obj, dry_run=True):
+    logger = logging.getLogger(__name__)
     logger.debug('Doing the singleton "{0}" action here.'.format(action))
     try:
         if dry_run:
@@ -79,6 +80,28 @@ def _actionator(action, action_obj, dry_run=True):
             )
         sys.exit(1)
     logger.info('Singleton "{0}" action completed.'.format(action))
+
+def _check_empty_list(list_object, ignore=False):
+    logger = logging.getLogger(__name__)
+    logger.debug('Testing for empty list object')
+    try:
+        list_object.empty_list_check()
+    except (NoIndices, NoSnapshots) as e:
+        if str(type(e)) == "<class 'curator.exceptions.NoIndices'>":
+            otype = 'index'
+        else:
+            otype = 'snapshot'
+        if ignore:
+            logger.info(
+                'Singleton action not performed: empty {0} list'.format(otype)
+            )
+            sys.exit(0)
+        else:
+            logger.error(
+                'Singleton action failed due to empty {0} list'.format(otype)
+            )
+            sys.exit(1)
+
 
 def _prune_excluded(option_dict):
     for k in list(option_dict.keys()):
@@ -134,12 +157,17 @@ def config_override(ctx, config_dict):
     '--wait_for_completion', is_flag=True, help='Wait for operation to complete'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def allocation_singleton(
-    ctx, key, value, allocation_type, wait_for_completion, filter_list):
+    ctx, key, value, allocation_type, wait_for_completion, ignore_empty_list,
+    filter_list):
     """
     Shard Routing Allocation
     """
@@ -165,6 +193,7 @@ def allocation_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -176,12 +205,16 @@ def allocation_singleton(
     help='Delete all aliases from indices to be closed'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def close_singleton(
-    ctx, delete_aliases, filter_list):
+    ctx, delete_aliases, ignore_empty_list, filter_list):
     """
     Close indices
     """
@@ -199,6 +232,7 @@ def close_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -206,11 +240,15 @@ def close_singleton(
 
 @click.command(name='delete_indices')
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
-def delete_indices_singleton(ctx, filter_list):
+def delete_indices_singleton(ctx, ignore_empty_list, filter_list):
     """
     Delete indices
     """
@@ -228,6 +266,7 @@ def delete_indices_singleton(ctx, filter_list):
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -244,12 +283,17 @@ def delete_indices_singleton(ctx, filter_list):
     '--retry_interval', type=int, help='Time in seconds between retries'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable snapshots'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def delete_snapshots_singleton(
-    ctx, repository, retry_count, retry_interval, filter_list):
+    ctx, repository, retry_count, retry_interval, ignore_empty_list,
+    filter_list):
     """
     Delete snapshots
     """
@@ -272,6 +316,7 @@ def delete_snapshots_singleton(
     }
     slo = SnapshotList(client, repository=repository)
     slo.iterate_filters(clean_filters)
+    _check_empty_list(slo, ignore_empty_list)
     action_obj = action_class(slo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -279,12 +324,16 @@ def delete_snapshots_singleton(
 
 @click.command(name='open')
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def open_singleton(
-    ctx, filter_list):
+    ctx, ignore_empty_list, filter_list):
     """
     Open indices
     """
@@ -299,6 +348,7 @@ def open_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -314,12 +364,16 @@ def open_singleton(
     help='Time in seconds to delay between operations. Default 0, maximum 3600'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def forcemerge_singleton(
-    ctx, max_num_segments, delay, filter_list):
+    ctx, max_num_segments, delay, ignore_empty_list, filter_list):
     """
     forceMerge index/shard segments
     """
@@ -340,6 +394,7 @@ def forcemerge_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -353,12 +408,16 @@ def forcemerge_singleton(
     '--wait_for_completion', is_flag=True, help='Wait for operation to complete'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def replicas_singleton(
-    ctx, count, wait_for_completion, filter_list):
+    ctx, count, wait_for_completion, ignore_empty_list, filter_list):
     """
     Change replica count
     """
@@ -379,6 +438,7 @@ def replicas_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -412,13 +472,17 @@ def replicas_singleton(
     help='Skip repository filesystem access validation.'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def snapshot_singleton(
     ctx, repository, name, ignore_unavailable, include_global_state, partial,
-    skip_repo_fs_check, wait_for_completion, filter_list):
+    skip_repo_fs_check, wait_for_completion, ignore_empty_list, filter_list):
     """
     Snapshot indices
     """
@@ -444,6 +508,7 @@ def snapshot_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
+    _check_empty_list(ilo, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -454,12 +519,16 @@ def snapshot_singleton(
 @click.option('--header', help='Print header if --verbose', is_flag=True)
 @click.option('--epoch', help='Print time as epoch if --verbose', is_flag=True)
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def show_indices_singleton(
-    ctx, epoch, header, verbose, filter_list):
+    ctx, epoch, header, verbose, ignore_empty_list, filter_list):
     """
     Show indices
     """
@@ -477,7 +546,7 @@ def show_indices_singleton(
     }
     ilo = IndexList(client)
     ilo.iterate_filters(clean_filters)
-    ilo.empty_list_check()
+    _check_empty_list(ilo, ignore_empty_list)
     indices = sorted(ilo.indices)
     # Do some calculations to figure out the proper column sizes
     allbytes = []
@@ -531,12 +600,16 @@ def show_indices_singleton(
     '--repository', type=str, required=True, help='Snapshot repository name'
 )
 @click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable snapshots'
+)
+@click.option(
     '--filter_list', callback=validate_filter_json,
     help='JSON string representing an array of filters.', required=True
 )
 @click.pass_context
 def show_snapshots_singleton(
-    ctx, repository, filter_list):
+    ctx, repository, ignore_empty_list, filter_list):
     """
     Show snapshots
     """
@@ -550,6 +623,7 @@ def show_snapshots_singleton(
     }
     slo = SnapshotList(client, repository=repository)
     slo.iterate_filters(clean_filters)
+    _check_empty_list(slo, ignore_empty_list)
     snapshots = sorted(slo.snapshots)
     for idx in snapshots:
         click.secho('{0}'.format(idx))
