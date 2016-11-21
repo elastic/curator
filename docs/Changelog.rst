@@ -6,6 +6,11 @@ Changelog
 4.2.2 (? ? ?)
 -------------
 
+**General**
+
+  * Added ``--ignore_empty_list`` option to singleton actions. Requested in
+    #812 (untergeek)
+
 **Documentation**
 
   * Add a FAQ entry regarding the click module's need for Unicode when using
