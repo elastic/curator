@@ -360,7 +360,8 @@ or uncompress and run `python setup.py install`
 &nbsp;
 
 === certifi
-Download and install the certifi dependency.  Always use the most recent version.
+Download and install the `certifi` dependency.  Always use the most recent
+version:
 
 . `wget https://github.com/certifi/python-certifi/archive/2016.09.26.tar.gz -O certifi.tar.gz`
 . `pip install certifi.tar.gz`
