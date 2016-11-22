@@ -122,15 +122,9 @@ cd $SOURCE_DIR
 mkdir -p ${PACKAGEDIR}
 ${PIPBIN} install -U --user setuptools
 ${PIPBIN} install -U --user requests_aws4auth
-${PIPBIN} install -U --user certifi
 ${PIPBIN} install -U --user -r requirements.txt
 ${PYBIN} setup.py build_exe
 sudo mv build/exe.linux-x86_64-${PYVER} /opt/elasticsearch-curator
-
-# Put a copy of the up-to-date certifi cacert.pem into a reachable place for the binary
-PEMTARGET='/opt/elasticsearch-curator/lib/certifi'
-sudo mkdir -p ${PEMTARGET}
-sudo cp /home/vagrant/.local/lib/python3.5/site-packages/certifi/cacert.pem ${PEMTARGET}
 
 sudo chown -R root:root /opt/elasticsearch-curator
 cd $WORKDIR
