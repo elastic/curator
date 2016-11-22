@@ -526,19 +526,17 @@ def get_client(**kwargs):
                 kwargs['verify_certs'] = True
                 kwargs['ca_certs'] = kwargs['certificate']
             else: # Try to use bundled certifi certificates
-                bundled_path = (
-                    '/opt/elasticsearch-curator/lib/certifi/cacert.pem'
-                )
-                if os.path.isfile(bundled_path):
+                if getattr(sys, 'frozen', False):
+                    # The application is frozen (compiled)
+                    datadir = os.path.dirname(sys.executable)
                     kwargs['verify_certs'] = True
-                    kwargs['ca_certs'] = bundled_path
+                    kwargs['ca_certs'] = os.path.join(datadir, 'cacert.pem')
                 else:
-                    try: # Try to use certifi certificates via certifi.where():
-                        import certifi
-                        kwargs['verify_certs'] = True
-                        kwargs['ca_certs'] = certifi.where()
-                    except ImportError:
-                        logger.warn('Unable to verify SSL certificate.')
+                    # Use certifi certificates via certifi.where():
+                    import certifi
+                    kwargs['verify_certs'] = True
+                    kwargs['ca_certs'] = certifi.where()
+
     try:
         from requests_aws4auth import AWS4Auth
         kwargs['aws_key'] = False if not 'aws_key' in kwargs \
