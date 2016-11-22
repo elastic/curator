@@ -64,19 +64,9 @@ This will result in the `curator` end-point being installed in the current
 user's home directory, in the `.local` directory, in the `bin` subdirectory. The
 full path might look something like this:
 
-<<<<<<< 04350ebafbdd151c1467bf0da7a00acd765aac80
 -----------------------------
 /home/user/.local/bin/curator
 -----------------------------
-=======
-&nbsp;
-
-Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10 or
-greater):
-
-. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
-. `pip install PyYAML-3.11.tar.gz`
->>>>>>> add pyyaml dependency
 
 You can make an alias or a symlink to this so you can call it more easily.
 
