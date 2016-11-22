@@ -2,9 +2,6 @@ import os
 import re
 import sys
 from setuptools import setup
-import certifi
-
-cert_file = certifi.where()
 
 # Utility function to read from file.
 def fread(fname):
@@ -35,6 +32,11 @@ def get_install_requires():
 try:
     ### cx_Freeze ###
     from cx_Freeze import setup, Executable
+    try:
+        import certifi
+        cert_file = certifi.where()
+    except ImportError:
+        cert_file = ''
     # Dependencies are automatically detected, but it might need
     # fine tuning.
     buildOptions = dict(
