@@ -3,6 +3,22 @@
 Changelog
 =========
 
+4.2.3 (21 November 2016)
+------------------------
+
+4.2.2 was pulled immediately after release after it was discovered that the
+Windows binary distributions were still not including the certifi-provided
+certificates.  This has now been remedied.
+
+**General**
+
+  * ``certifi`` is now officially a requirement.
+  * ``setup.py`` now forcibly includes the ``certifi`` certificate PEM file in
+    the "frozen" distributions (i.e., the compiled versions).  The
+    ``get_client`` method was updated to reflect this and catch it for both the
+    Linux and Windows binary distributions.  This should `finally` put to rest
+    #810
+
 4.2.2 (21 November 2016)
 ------------------------
 

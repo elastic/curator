@@ -2,6 +2,9 @@ import os
 import re
 import sys
 from setuptools import setup
+import certifi
+
+cert_file = certifi.where()
 
 # Utility function to read from file.
 def fread(fname):
@@ -26,6 +29,7 @@ def get_install_requires():
     res.append('click>=6.0')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
+    res.append('certifi>=2016.09.26')
     return res
 
 try:
@@ -33,7 +37,11 @@ try:
     from cx_Freeze import setup, Executable
     # Dependencies are automatically detected, but it might need
     # fine tuning.
-    buildOptions = dict(packages = [], excludes = [])
+    buildOptions = dict(
+        packages = [],
+        excludes = [],
+        include_files = [cert_file],
+    )
 
     base = 'Console'
 
