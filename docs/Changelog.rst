@@ -3,6 +3,19 @@
 Changelog
 =========
 
+4.2.3.post1 (22 November 2016)
+------------------------------
+
+This fix is `only` going in for ``pip``-based installs.  There are no other code
+changes.
+
+**Bug Fixes**
+
+  * Fixed incorrect assumption of PyPI picking up dependency for certifi.  It
+    is still a dependency, but should not affect ``pip`` installs with an error
+    any more.  Reported in #821 (untergeek)
+
+
 4.2.3 (21 November 2016)
 ------------------------
 
