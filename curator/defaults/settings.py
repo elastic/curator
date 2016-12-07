@@ -3,7 +3,7 @@ from voluptuous import *
 
 # Elasticsearch versions supported
 def version_max():
-    return (5, 1, 0)
+    return (5, 1, 99)
 def version_min():
     return (2, 0, 0)
 
