@@ -465,7 +465,9 @@ def replicas_singleton(
     help='Do not fail if primary shard is unavailable.'
 )
 @click.option(
-    '--wait_for_completion', is_flag=True, help='Wait for operation to complete'
+    '--wait_for_completion',
+    type=bool, show_default=True, default=True,
+    help='Wait for operation to complete'
 )
 @click.option(
     '--skip_repo_fs_check', is_flag=True, expose_value=True,

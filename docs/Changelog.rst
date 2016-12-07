@@ -3,6 +3,14 @@
 Changelog
 =========
 
+4.2.4 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * ``--wait_for_completion`` should be `True` by default for Snapshot singleton
+    action.  Reported in #829 (untergeek)
+
 4.2.3.post1 (22 November 2016)
 ------------------------------
 
