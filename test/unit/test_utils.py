@@ -319,6 +319,7 @@ class TestShowDryRun(TestCase):
     # simple code coverage run
     def test_index_list(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.4.1'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
