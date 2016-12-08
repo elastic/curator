@@ -374,6 +374,24 @@ def get_indices(client):
             client.indices.get_settings(
             index='_all', params={'expand_wildcards': 'open,closed'})
         )
+        version_number = get_version(client)
+        logger.debug(
+            'Detected Elasticsearch version '
+            '{0}'.format(".".join(map(str,version_number)))
+        )
+        # This hack ONLY works if you're using 2.4.2 or higher, but is unneeded
+        # if you are using 5.0 or higher.  See issue #826
+        if version_number >= (2, 4, 2) \
+            and version_number < (5, 0, 0):
+            logger.debug('Using Elasticsearch >= 2.4.2 < 5.0.0')
+            if client.indices.exists(index='.security'):
+                logger.debug(
+                    'Found the ".security" index.  '
+                    'Adding to list of all indices'
+                )
+                # Double check to see if it's there before appending
+                if not '.security' in indices:
+                    indices.append('.security')
         logger.debug("All indices: {0}".format(indices))
         return indices
     except Exception as e:

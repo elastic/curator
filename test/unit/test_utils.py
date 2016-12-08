@@ -174,6 +174,7 @@ class TestChunkIndexList(TestCase):
 class TestGetIndices(TestCase):
     def test_client_exception(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.4.1'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.indices.get_settings.side_effect = testvars.fake_fail
         self.assertRaises(
@@ -181,14 +182,25 @@ class TestGetIndices(TestCase):
     def test_positive(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_two
+        client.info.return_value = {'version': {'number': '2.4.1'} }
         self.assertEqual(
             ['index-2016.03.03', 'index-2016.03.04'],
             sorted(curator.get_indices(client))
         )
     def test_empty(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.4.1'} }
         client.indices.get_settings.return_value = {}
         self.assertEqual([], curator.get_indices(client))
+    def test_issue_826(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '2.4.2'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.indices.exists.return_value = True
+        self.assertEqual(
+            ['.security', 'index-2016.03.03', 'index-2016.03.04'],
+            sorted(curator.get_indices(client))
+        )
 
 class TestCheckVersion(TestCase):
     def test_check_version_(self):
@@ -307,6 +319,7 @@ class TestShowDryRun(TestCase):
     # simple code coverage run
     def test_index_list(self):
         client = Mock()
+        client.info.return_value = {'version': {'number': '2.4.1'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
