@@ -3,6 +3,13 @@
 Changelog
 =========
 
+4.3.0 (? ? ?)
+-------------
+
+**General**
+
+  * Add and increment test versions for Travis CI. #839 (untergeek)
+  
 4.2.4 (7 December 2016)
 -----------------------
 
