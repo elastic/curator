@@ -9,7 +9,12 @@ Changelog
 **General**
 
   * Add and increment test versions for Travis CI. #839 (untergeek)
-  
+
+**Bug Fixes**
+
+  * Fix cli integration test when different host/port are specified.  Reported
+    in #843 (untergeek)
+
 4.2.4 (7 December 2016)
 -----------------------
 
