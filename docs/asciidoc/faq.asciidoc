@@ -162,7 +162,7 @@ The last index can be deleted with a regular expression of `'.*e$'`.
 
 The resulting <<actionfile,actionfile>> might look like this:
 
-[source,text]
+[source,yaml]
 --------
 actions:
   1:

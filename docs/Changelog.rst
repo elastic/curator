@@ -21,7 +21,11 @@ Changelog
 
 **Documentation**
 
+  * Add docs regarding how filters are ANDed together, and how to do an OR with
+    the regex pattern filter type. Requested in #842 (untergeek)
   * Fix typo in Click version in docs. #850 (breml)
+  * Where applicable, replace `[source,text]` with `[source,yaml]` for better
+    formatting in the resulting docs.
 
 4.2.4 (7 December 2016)
 -----------------------
