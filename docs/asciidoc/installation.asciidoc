@@ -342,7 +342,7 @@ or uncompress and run `python setup.py install`
 Download and install the http://click.pocoo.org/[click] dependency (6.0 or
 greater):
 
-. `wget https://pypi.python.org/packages/source/c/click/click-6.2.tar.gz -O click-6.3.tar.gz`
+. `wget https://pypi.python.org/packages/source/c/click/click-6.3.tar.gz -O click-6.3.tar.gz`
 . `pip install click-6.3.tar.gz`
 
 or uncompress and run `python setup.py install`
