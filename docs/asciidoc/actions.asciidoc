@@ -24,7 +24,7 @@ once created, can only be deleted.
 [[alias]]
 == Alias
 
-[source,text]
+[source,yaml]
 -------------
 action: alias
 description: "Add/Remove selected indices to or from the specified alias"
@@ -57,7 +57,7 @@ The <<option_extra_settings,extra_settings>> option allows the addition of extra
 settings with the `add` directive.  These settings are ignored for `remove`.  An
 example of how these settings can be used to create a filtered alias might be:
 
-[source,text]
+[source,yaml]
 -------------
 extra_settings:
   filter:
@@ -95,7 +95,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[allocation]]
 == Allocation
 
-[source,text]
+[source,yaml]
 -------------
 action: allocation
 description: "Apply shard allocation filtering rules to the specified indices"
@@ -154,7 +154,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[close]]
 == Close
 
-[source,text]
+[source,yaml]
 -------------
 action: close
 description: "Close selected indices"
@@ -193,7 +193,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[cluster_routing]]
 == Cluster Routing
 
-[source,text]
+[source,yaml]
 -------------
 action: cluster_routing
 description: "Apply routing rules to the entire cluster"
@@ -250,7 +250,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[create_index]]
 == Create Index
 
-[source,text]
+[source,yaml]
 -------------
 action: create_index
 description: "Create index as named"
@@ -272,7 +272,7 @@ The <<option_extra_settings,extra_settings>> option allows the addition of extra
 settings, such as index settings and mappings.  An example of how these settings
 can be used to create an index might be:
 
-[source,text]
+[source,yaml]
 -------------
 extra_settings:
   settings:
@@ -311,7 +311,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[delete_indices]]
 == Delete Indices
 
-[source,text]
+[source,yaml]
 -------------
 action: delete_indices
 description: "Delete selected indices"
@@ -347,7 +347,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[delete_snapshots]]
 == Delete Snapshots
 
-[source,text]
+[source,yaml]
 -------------
 action: delete_snapshots
 description: "Delete selected snapshots from 'repository'"
@@ -399,7 +399,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[open]]
 == Open
 
-[source,text]
+[source,yaml]
 -------------
 action: open
 description: "open selected indices"
@@ -435,7 +435,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[forcemerge]]
 == Forcemerge
 
-[source,text]
+[source,yaml]
 -------------
 action: forcemerge
 description: "Perform a forceMerge on selected indices to 'max_num_segments' per shard"
@@ -483,7 +483,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[replicas]]
 == Replicas
 
-[source,text]
+[source,yaml]
 -------------
 action: replicas
 description: >- Set the number of replicas per shard for selected
@@ -534,7 +534,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[restore]]
 == Restore
 
-[source,text]
+[source,yaml]
 -------------
 actions:
   1:
@@ -584,7 +584,7 @@ The <<option_extra_settings,extra_settings>> option allows the addition of extra
 settings, such as index settings and mappings.  An example of how these settings
 can be used to change settings for an index being restored might be:
 
-[source,text]
+[source,yaml]
 -------------
 extra_settings:
   settings:
@@ -639,7 +639,7 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 [[snapshot]]
 == Snapshot
 
-[source,text]
+[source,yaml]
 -------------
 action: snapshot
 description: >-
