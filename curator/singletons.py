@@ -472,8 +472,8 @@ def replicas_singleton(
     help='Do not raise exception if there are no actionable indices'
 )
 @click.option(
-    '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def snapshot_singleton(
@@ -518,8 +518,8 @@ def snapshot_singleton(
     help='Do not raise exception if there are no actionable indices'
 )
 @click.option(
-    '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def show_indices_singleton(
@@ -598,8 +598,8 @@ def show_indices_singleton(
     help='Do not raise exception if there are no actionable snapshots'
 )
 @click.option(
-    '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def show_snapshots_singleton(
