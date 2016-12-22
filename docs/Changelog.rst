@@ -9,6 +9,8 @@ Changelog
 **General**
 
   * Add and increment test versions for Travis CI. #839 (untergeek)
+  * Make `filter_list` optional in snapshot, show_snapshot and show_indices
+    singleton actions. #853 (alexef)
 
 **Bug Fixes**
 
