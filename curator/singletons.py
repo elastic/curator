@@ -473,7 +473,7 @@ def replicas_singleton(
 )
 @click.option(
     '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def snapshot_singleton(
@@ -487,6 +487,7 @@ def snapshot_singleton(
     c_args = ctx.obj['config']['client']
     client = get_client(**c_args)
     logger = logging.getLogger(__name__)
+    filter_list = filter_list or '[]'
     raw_options = {
         'repository': repository,
         'name': name,
@@ -599,7 +600,7 @@ def show_indices_singleton(
 )
 @click.option(
     '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def show_snapshots_singleton(
@@ -611,6 +612,7 @@ def show_snapshots_singleton(
     c_args = ctx.obj['config']['client']
     client = get_client(**c_args)
     logger = logging.getLogger(__name__)
+    filter_list = filter_list or '[]'
     logger.debug('Validating provided filters: {0}'.format(filter_list))
     clean_filters = {
         'filters': filter_schema_check(action, filter_list)
