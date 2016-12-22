@@ -234,6 +234,8 @@ This setting tells the <<filtertype_pattern,pattern>> what pattern type to
 match. Acceptable values for this setting are `prefix`, `suffix`, `timestring`,
 and `regex`.
 
+include::inc_filter_chaining.asciidoc[]
+
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 

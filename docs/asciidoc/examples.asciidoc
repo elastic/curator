@@ -26,7 +26,7 @@ configuration files.
 [[ex_alias]]
 == alias
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -84,7 +84,7 @@ actions:
 [[ex_allocation]]
 == allocation
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -124,7 +124,7 @@ actions:
 [[ex_close]]
 == close
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -162,7 +162,7 @@ actions:
 [[ex_cluster_routing]]
 == cluster_routing
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -209,7 +209,7 @@ actions:
 [[ex_create_index]]
 == create_index
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -237,7 +237,7 @@ actions:
 [[ex_delete_indices]]
 == delete_indices
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -275,7 +275,7 @@ actions:
 [[ex_delete_snapshots]]
 == delete_snapshots
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -312,7 +312,7 @@ actions:
 [[ex_forcemerge]]
 == forcemerge
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -352,7 +352,7 @@ actions:
 [[ex_open]]
 == open
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -395,7 +395,7 @@ actions:
 [[ex_replicas]]
 == replicas
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -432,7 +432,7 @@ actions:
 [[ex_restore]]
 == restore
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
@@ -480,7 +480,7 @@ actions:
 [[ex_snapshot]]
 == snapshot
 
-[source,text]
+[source,yaml]
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,

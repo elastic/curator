@@ -157,7 +157,7 @@ documentation.
 This is an optional description which can help describe what the action and its
 filters are supposed to do.
 
-[source,text]
+[source,yaml]
 -------------
 description: >- I can make the description span multiple
     lines by putting ">-" at the beginning of the line,

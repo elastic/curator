@@ -81,10 +81,11 @@ def _actionator(action, action_obj, dry_run=True):
         sys.exit(1)
     logger.info('Singleton "{0}" action completed.'.format(action))
 
-def _check_empty_list(list_object, ignore=False):
+def _do_filters(list_object, filters, ignore=False):
     logger = logging.getLogger(__name__)
-    logger.debug('Testing for empty list object')
+    logger.debug('Running filters and testing for empty list object')
     try:
+        list_object.iterate_filters(filters)
         list_object.empty_list_check()
     except (NoIndices, NoSnapshots) as e:
         if str(type(e)) == "<class 'curator.exceptions.NoIndices'>":
@@ -192,8 +193,7 @@ def allocation_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -231,8 +231,7 @@ def close_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -265,8 +264,7 @@ def delete_indices_singleton(ctx, ignore_empty_list, filter_list):
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -315,8 +313,7 @@ def delete_snapshots_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     slo = SnapshotList(client, repository=repository)
-    slo.iterate_filters(clean_filters)
-    _check_empty_list(slo, ignore_empty_list)
+    _do_filters(slo, clean_filters, ignore_empty_list)
     action_obj = action_class(slo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -347,8 +344,7 @@ def open_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -393,8 +389,7 @@ def forcemerge_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -437,8 +432,7 @@ def replicas_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -478,8 +472,8 @@ def replicas_singleton(
     help='Do not raise exception if there are no actionable indices'
 )
 @click.option(
-    '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def snapshot_singleton(
@@ -509,8 +503,7 @@ def snapshot_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
@@ -525,8 +518,8 @@ def snapshot_singleton(
     help='Do not raise exception if there are no actionable indices'
 )
 @click.option(
-    '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def show_indices_singleton(
@@ -547,8 +540,7 @@ def show_indices_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     ilo = IndexList(client)
-    ilo.iterate_filters(clean_filters)
-    _check_empty_list(ilo, ignore_empty_list)
+    _do_filters(ilo, clean_filters, ignore_empty_list)
     indices = sorted(ilo.indices)
     # Do some calculations to figure out the proper column sizes
     allbytes = []
@@ -606,8 +598,8 @@ def show_indices_singleton(
     help='Do not raise exception if there are no actionable snapshots'
 )
 @click.option(
-    '--filter_list', callback=validate_filter_json,
-    help='JSON string representing an array of filters.', required=True
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
 )
 @click.pass_context
 def show_snapshots_singleton(
@@ -624,8 +616,7 @@ def show_snapshots_singleton(
         'filters': filter_schema_check(action, filter_list)
     }
     slo = SnapshotList(client, repository=repository)
-    slo.iterate_filters(clean_filters)
-    _check_empty_list(slo, ignore_empty_list)
+    _do_filters(slo, clean_filters, ignore_empty_list)
     snapshots = sorted(slo.snapshots)
     for idx in snapshots:
         click.secho('{0}'.format(idx))

@@ -6,6 +6,8 @@
 
 Filters are the way to select only the indices (or snapshots) you want.
 
+include::inc_filter_chaining.asciidoc[]
+
 The index filtertypes are:
 
 * <<filtertype_alias,alias>>
@@ -39,7 +41,7 @@ Each filter is defined first by a `filtertype`.  Each filtertype has its own
 settings, or no settings at all.  In a configuration file, filters are defined
 as follows:
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: *first*
   setting1: ...
@@ -82,7 +84,7 @@ The snapshot filtertypes are:
 [[filtertype_age]]
 == age
 
-[source,text]
+[source,yaml]
 -------------
  - filtertype: age
    source: name
@@ -134,7 +136,7 @@ Optional settings
 [[filtertype_alias]]
 == alias
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: alias
   aliases:
@@ -163,7 +165,7 @@ Optional settings
 [[filtertype_allocated]]
 == allocated
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: allocated
   key:
@@ -198,7 +200,7 @@ Optional settings
 [[filtertype_closed]]
 == closed
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: closed
   exclude: True
@@ -217,7 +219,7 @@ Optional settings
 [[filtertype_count]]
 == count
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: count
   count: 10
@@ -276,7 +278,7 @@ Index-only settings
 [[filtertype_forcemerged]]
 == forcemerged
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: forcemerged
   max_num_segments: 2
@@ -307,7 +309,7 @@ Optional settings
 [[filtertype_kibana]]
 == kibana
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: kibana
   exclude: True
@@ -331,7 +333,7 @@ Optional settings
 [[filtertype_none]]
 == none
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: none
 -------------
@@ -345,7 +347,7 @@ There are no settings for this <<filtertype,filtertype>>.
 [[filtertype_opened]]
 == opened
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: opened
   exclude: True
@@ -367,7 +369,7 @@ Optional settings
 [[filtertype_pattern]]
 == pattern
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: pattern
  kind: prefix
@@ -382,6 +384,8 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices matching a given pattern.  They will remain in, or be removed from
 the actionable list based on the value of <<fe_exclude,exclude>>.
+
+include::inc_filter_chaining.asciidoc[]
 
 Read more about the different settings for this <<filtertype,filtertype>>:
 
@@ -403,7 +407,7 @@ Optional settings
 [[filtertype_space]]
 == space
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: space
   disk_space: 100
@@ -482,7 +486,7 @@ Optional settings
 [[filtertype_state]]
 == state
 
-[source,text]
+[source,yaml]
 -------------
 - filtertype: state
   state: SUCCESS
