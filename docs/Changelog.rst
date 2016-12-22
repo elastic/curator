@@ -14,6 +14,12 @@ Changelog
 
   * Fix cli integration test when different host/port are specified.  Reported
     in #843 (untergeek)
+  * Catch empty list condition during filter iteration in singleton actions.
+    Reported in #848 (untergeek)
+
+**Documentation**
+
+  * Fix typo in Click version in docs. #850 (breml)
 
 4.2.4 (7 December 2016)
 -----------------------
