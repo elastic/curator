@@ -602,3 +602,20 @@ class TestValidateFilters(TestCase):
             'delete_indices',
             [{'filtertype': 'state', 'state': 'SUCCESS'}]
         )
+
+
+class TestVerifyClientObject(TestCase):
+
+    def test_is_client_object(self):
+        test = elasticsearch.Elasticsearch()
+        self.assertIsNone(curator.verify_client_object(test))
+
+    def test_is_not_client_object(self):
+        test = 'not a client object'
+        self.assertRaises(TypeError, curator.verify_client_object, test)
+
+    def test_is_a_subclass_client_object(self):
+        class ElasticsearchSubClass(elasticsearch.Elasticsearch):
+            pass
+        test = ElasticsearchSubClass()
+        self.assertIsNone(curator.verify_client_object(test))
