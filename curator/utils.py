@@ -87,7 +87,7 @@ def verify_client_object(test):
     if str(type(test)) == "<class 'mock.Mock'>" or \
         str(type(test)) == "<class 'mock.mock.Mock'>":
         pass
-    elif not type(test) == type(elasticsearch.Elasticsearch()):
+    elif not isinstance(test, elasticsearch.Elasticsearch):
         raise TypeError(
             'Not a client object. Type: {0}'.format(type(test))
         )
