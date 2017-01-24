@@ -47,7 +47,7 @@ version, or a specified one.  Specify a specific version by adding `==` followed
 by the version you'd like to install, like this:
 
 -------------------------------------------
-pip install -U elasticsearch-curator==3.5.1
+pip install -U elasticsearch-curator==X.Y.Z
 -------------------------------------------
 
 === System-wide vs. User-only installation
@@ -73,7 +73,7 @@ You can make an alias or a symlink to this so you can call it more easily.
 The `--user` flag can also be used in conjunction with the `-U` flag:
 
 ----------------------------------------
-pip install -U --user elasticsearch-curator==3.5.1
+pip install -U --user elasticsearch-curator==X.Y.Z
 ----------------------------------------
 
 &nbsp;
@@ -131,14 +131,14 @@ file and the installation should work as expected.
 [[apt-binary]]
 === Binary Package Installation
 
-Starting with version 4.1.2, Curator comes with a binary version.  What this
-really means is that the source is compiled, and all required libraries are
-bundled with the `curator` binary, so there are no conflicts.
+The APT version of Curator is a binary version.  What this really means is that
+the source is frozen, and all required libraries are bundled with the
+`curator` binary, so there are no conflicts.
 
-The binary packages resulting from the creation process have been tested on
-Debian 8, and Ubuntu 12.04, 14.04, & 16.04.  It was also tested on Debian 7, but
-that failed due to a libc library mismatch. This binary package may work on
-other similar or derivative variants, but they have not been tested.
+The packages resulting from the creation process have been tested on Debian 8,
+and Ubuntu 12.04, 14.04, & 16.04.  It was also tested on Debian 7, but that
+failed due to a libc library mismatch. This binary package may work on other
+similar or derivative variants, but they have not been tested.
 
 [source,sh]
 --------------------------------------------------
@@ -148,15 +148,6 @@ sudo apt-get update && sudo apt-get install elasticsearch-curator
 This will install the necessary files into `/opt/elasticsearch-curator` and
 make a symlink at `/usr/bin/curator` that points to the `curator` binary in the
 aforementioned directory.
-
-[WARNING]
-====================================================
-The `elasticsearch-curator` binary package cannot coexist with the older
-`python-elasticsearch-curator` packages.  This collision is explicitly defined
-in packages since 4.1.2, but not in previous packages.  If it is installed, you
-_must_ uninstall the `python-elasticsearch-curator` package before installing
-the `elasticsearch-curator` binary package.
-====================================================
 
 [[yum-repository]]
 == YUM repository
@@ -219,9 +210,9 @@ enabled=1
 [[yum-binary]]
 === Binary Package Installation
 
-Starting with version 4.1.2, Curator comes with a binary version.  What this
-really means is that the source is compiled, and all required libraries are
-bundled with the `curator` binary, so there are no conflicts.
+The RPM version of Curator is a binary version.  What this really means is that
+the source is frozen, and all required libraries are bundled with the
+`curator` binary, so there are no conflicts.
 
 There are separate binary packages for RedHat variants. The binary packages
 resulting from the creation process have been tested on CentOS 6 & 7, with a
@@ -236,15 +227,6 @@ yum install elasticsearch-curator
 This will install the necessary files into `/opt/elasticsearch-curator` and
 make a symlink at `/usr/bin/curator` that points to the `curator` binary in the
 aforementioned directory.
-
-[WARNING]
-====================================================
-The `elasticsearch-curator` binary package cannot coexist with the older
-`python-elasticsearch-curator` packages.  This collision is explicitly defined
-in packages since 4.1.2, but not in previous packages.  If it is installed, you
-_must_ uninstall the `python-elasticsearch-curator` package before installing
-the `elasticsearch-curator` binary package.
-====================================================
 
 [[windows-zip]]
 == Windows Binary Zip Package
@@ -353,7 +335,7 @@ or uncompress and run `python setup.py install`
 Download and install the `certifi` dependency.  Always use the most recent
 version:
 
-. `wget https://github.com/certifi/python-certifi/archive/2016.09.26.tar.gz -O certifi.tar.gz`
+. `wget https://github.com/certifi/python-certifi/archive/2017.1.23.tar.gz -O certifi.tar.gz`
 . `pip install certifi.tar.gz`
 
 &nbsp;

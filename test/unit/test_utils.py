@@ -205,11 +205,11 @@ class TestGetIndices(TestCase):
 class TestCheckVersion(TestCase):
     def test_check_version_(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.2.0'} }
+        client.info.return_value = {'version': {'number': '5.0.2'} }
         self.assertIsNone(curator.check_version(client))
     def test_check_version_less_than(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '0.90.3'} }
+        client.info.return_value = {'version': {'number': '2.4.2'} }
         self.assertRaises(curator.CuratorException, curator.check_version, client)
     def test_check_version_greater_than(self):
         client = Mock()

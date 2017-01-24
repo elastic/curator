@@ -42,7 +42,7 @@ else:
     # Unsupported platform?
     print('Your platform ({0}) is not yet supported for binary build/distribution.'.format(platform))
     sys.exit(1)
-    
+
 #sys_string = sys_type + '-' + sys_arch
 #build_name = 'exe.' + sys_string + '-' + pyver
 #print('Expected build directory: {0}'.format(build_name))
@@ -50,7 +50,7 @@ build_path = os.path.join('build', build_name)
 
 if os.path.exists(build_path):
     #print("I found the path: {0}".format(build_path))
-    
+
     target_path = os.path.join('.', target_name)
 
     # Check to see if an older directory exists...

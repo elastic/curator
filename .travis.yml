@@ -6,13 +6,8 @@ python:
   - "3.5"
 
 env:
-  - ES_VERSION=2.0.0
-  - ES_VERSION=2.1.1
-  - ES_VERSION=2.2.2
-  - ES_VERSION=2.3.5
-  - ES_VERSION=2.4.2
   - ES_VERSION=5.0.2
-  - ES_VERSION=5.1.1
+  - ES_VERSION=5.1.2
 
 os: linux
 

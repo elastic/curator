@@ -3,6 +3,28 @@
 Changelog
 =========
 
+5.0.0 (25 January 2017)
+
+**General**
+
+  * Update Curator to use version 5.1 of the ``elasticsearch-py`` python module.
+    With this change, there will be no reverse compatibility with Elasticsearch
+    2.x.  For 2.x versions, continue to use the 4.x branches of Curator.
+  * Tests were updated to reflect the changes in API calls, which were minimal.
+  * Remove "official" support for Python 2.6. If you must use Curator on a
+    system that uses Python 2.6 (RHEL/CentOS 6 users), it is recommended that
+    you use the official RPM package as it is a frozen binary built on Python
+    3.5.x which will not conflict with your system Python.
+  * Use ``isinstance()`` to verify client object. #862 (cp2587)
+  * Prune older versions from Travis CI tests.
+  * Update ``certifi`` dependency to latest version
+
+**Documentation**
+
+  * Add version compatibility section to official documentation.
+  * Update docs to reflect changes.  Remove cruft and references to older
+    versions.
+
 4.2.5 (22 December 2016)
 ------------------------
 
