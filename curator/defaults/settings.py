@@ -3,9 +3,9 @@ from voluptuous import *
 
 # Elasticsearch versions supported
 def version_max():
-    return (5, 1, 99)
+    return (5, 99, 99)
 def version_min():
-    return (2, 0, 0)
+    return (5, 0, 0)
 
 # Default Config file location
 def config_file():

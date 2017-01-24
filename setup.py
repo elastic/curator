@@ -22,11 +22,11 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=2.4.0,<3.0.0' ]
+    res = ['elasticsearch>=5.0.0,<6.0.0' ]
     res.append('click>=6.0')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
-    res.append('certifi>=2016.09.26')
+    res.append('certifi>=2017.1.23')
     return res
 
 try:
@@ -113,7 +113,6 @@ try:
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 2.6",
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",
@@ -152,7 +151,6 @@ except ImportError:
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 2.6",
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",

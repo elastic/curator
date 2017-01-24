@@ -85,7 +85,7 @@ class TestCLIAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'dummy': {'aliases': {}}, 'my_index': {'aliases': {}}},
-            self.client.indices.get_aliases()
+            self.client.indices.get_alias(index='dummy,my_index')
         )
     def test_add_only_skip_closed(self):
         alias = 'testalias'
@@ -128,25 +128,9 @@ class TestCLIAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            {'dummy': {'aliases': {}}, 'my_index': {'aliases': {alias: {}}}},
-            self.client.indices.get_aliases()
+            {u'my_index': {u'aliases': {alias: {}}}},
+            self.client.indices.get_alias(name=alias)
         )
-    # def test_add_only_huge_list(self):
-    #     alias = 'testalias'
-    #     self.write_config(
-    #         self.args['configfile'], testvars.client_config.format(host, port))
-    #     self.write_config(self.args['actionfile'],
-    #         testvars.alias_add_only.format(alias))
-    #     self.create_indices(365)
-    #     test = clicktest.CliRunner()
-    #     result = test.invoke(
-    #                 curator.cli,
-    #                 [
-    #                     '--config', self.args['configfile'],
-    #                     self.args['actionfile']
-    #                 ],
-    #                 )
-    #     self.assertEquals(365, len(self.client.indices.get_alias(name=alias)))
     def test_no_add_remove(self):
         alias = 'testalias'
         self.write_config(
