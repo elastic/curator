@@ -101,7 +101,7 @@ http://elastic.co/guide at http://www.elastic.co/guide/en/elasticsearch/client/c
 `Getting Started`_
 ------------------
 
-.. _Getting Started: https://www.elastic.co/guide/en/elasticsearch/client/curator/4.0/getting-started.html
+.. _Getting Started: https://www.elastic.co/guide/en/elasticsearch/client/curator/current/about.html
 
 See the `Installation guide <https://www.elastic.co/guide/en/elasticsearch/client/curator/current/installation.html>`_
 and the `command-line usage guide <https://www.elastic.co/guide/en/elasticsearch/client/curator/current/command-line.html>`_
