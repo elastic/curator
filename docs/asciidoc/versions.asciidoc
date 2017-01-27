@@ -1,0 +1,51 @@
+[[versions]]
+= Versions
+
+[partintro]
+--
+Elasticsearch Curator has been around for many different versions of
+Elasticsearch.  The following document helps clarify which versions of Curator
+work with which versions of Elasticsearch.
+
+The current version of Curator is {curator_version}
+
+* <<version-compatibility,Version Compatibility>>
+--
+
+[[version-compatibility]]
+== Version Compatibility
+&emsp14;
+
+IMPORTANT: Each listed version of Elasticsearch Curator has been fully tested
+against unmodified release versions of Elasticsearch. **Modified versions of Elasticsearch may not be fully supported.**
+
+The current version of Curator is {curator_version}
+
+[cols="<,<,<,<",options="header",grid="cols"]
+|===
+|Curator Version
+|ES 1.x
+|ES 2.x
+|ES 5.x
+
+|&emsp14; &emsp14; &emsp14; &emsp14; &emsp14; 3
+|&emsp14; &#9989; footnoteref:[aws_ss,Curator is unable to make snapshots for modified versions of ES which do not allow access to the snapshot status API endpoint.  As a result&comma; Curator is unable to make snapshots in AWS ES.]
+|&emsp14; &#9989; footnoteref:[aws_ss]
+|&emsp14; &#10060;
+
+|&emsp14; &emsp14; &emsp14; &emsp14; &emsp14; 4
+|&emsp14; &#10060;
+|&emsp14; &#9989; footnote:[If using AWS ES (which is different from installing Elasticsearch on your own EC2 instances)&comma; please see the FAQ question, <<faq_aws_iam,Why doesn't Curator 4 work with AWS Elasticsearch?>>]
+|&emsp14; &#9989; footnote:[Not all of the APIs available in Elasticsearch 5 are available in Curator 4.]
+
+|&emsp14; &emsp14; &emsp14; &emsp14; &emsp14; 5
+|&emsp14; &#10060;
+|&emsp14; &#10060;
+|&emsp14; &#9989;
+|===
+
+Learn more about the different versions at:
+
+* https://www.elastic.co/guide/en/elasticsearch/client/curator/3.5/index.html[Curator 3 Documentation]
+* https://www.elastic.co/guide/en/elasticsearch/client/curator/4.2/index.html[Curator 4 Documentation]
+* https://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html[Curator 5 Documentation]

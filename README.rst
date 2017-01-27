@@ -38,8 +38,8 @@ It is also important to note that Curator 4 requires access to the
 support this endpoint (such as AWS ES, see #717) *will not* be able to use
 Curator version 4.
 
-\* It appears that AWS ES `does not allow access to the snapshot status endpoint`_ 
-for either 1.x or 2.x versions.  This prevents Curator 3 from being used to 
+\* It appears that AWS ES `does not allow access to the snapshot status endpoint`_
+for either 1.x or 2.x versions.  This prevents Curator 3 from being used to
 make snapshots.
 
 .. _does not allow access to the snapshot status endpoint: https://github.com/elastic/curator/issues/796
@@ -101,7 +101,7 @@ http://elastic.co/guide at http://www.elastic.co/guide/en/elasticsearch/client/c
 `Getting Started`_
 ------------------
 
-.. _Getting Started: https://www.elastic.co/guide/en/elasticsearch/client/curator/current/getting-started.html
++.. _Getting Started: https://www.elastic.co/guide/en/elasticsearch/client/curator/current/about.html
 
 See the `Installation guide <https://www.elastic.co/guide/en/elasticsearch/client/curator/current/installation.html>`_
 and the `command-line usage guide <https://www.elastic.co/guide/en/elasticsearch/client/curator/current/command-line.html>`_
