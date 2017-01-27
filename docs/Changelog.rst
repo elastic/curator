@@ -3,6 +3,19 @@
 Changelog
 =========
 
+4.2.6 (27 January 2016)
+
+**General**
+
+  * Change max supported version of Elasticsearch so Curator will work with
+    elasticsearch 5.2
+  * Use ``isinstance()`` to verify client object. #862 (cp2587)
+  * Update ``certifi`` dependency to latest version
+
+**Documentation**
+
+  * Add version compatibility section to official documentation.
+
 4.2.5 (22 December 2016)
 ------------------------
 
