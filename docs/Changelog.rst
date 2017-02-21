@@ -3,7 +3,16 @@
 Changelog
 =========
 
-5.0.0 (25 January 2017)
+5.0.0 (? ? ?)
+-------------
+
+**Documentation**
+
+  * Add missing repository arg to auto-gen API docs. Reported in #888
+    (untergeek)
+
+4.2.6 (27 January 2016)
+-----------------------
 
 **General**
 
