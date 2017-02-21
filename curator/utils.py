@@ -863,6 +863,7 @@ def create_repository(client, **kwargs):
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
 
+    :arg repository: The Elasticsearch snapshot repository to use
     :arg repo_type: The type of repository (presently only `fs` and `s3`)
     :arg compress: Turn on compression of the snapshot files. Compression is
         applied only to metadata files (index mapping and settings). Data files
@@ -891,7 +892,7 @@ def create_repository(client, **kwargs):
     :rtype: bool
     """
     if not 'repository' in kwargs:
-        raise MissingArgument('Missing required parameter --repository')
+        raise MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
 
