@@ -234,7 +234,7 @@ class TestCLIAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'my_index1': {'aliases': {}}, 'my_index2': {'aliases': {}}},
-            self.client.indices.get_aliases()
+            self.client.indices.get_alias()
         )
         self.assertEqual(0, result.exit_code)
     def test_no_add_remove(self):
