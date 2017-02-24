@@ -43,6 +43,7 @@ actions:
       logstash- to 'last_week', remove indices older than 14 days.
     options:
       name: last_week
+      warn_if_no_indices: False
       extra_settings:
       timeout_override:
       continue_if_exception: False
