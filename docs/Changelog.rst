@@ -13,6 +13,11 @@ Changelog
     with a logged warning, even if the filters result in a NoIndices condition.
     Use with care.
 
+**Bug Fixes**
+
+  * Check if an index is in an alias before attempting to delete it from the
+    alias.  Issue raised in #887. (untergeek)
+    
 **Documentation**
 
   * Add missing repository arg to auto-gen API docs. Reported in #888

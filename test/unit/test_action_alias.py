@@ -55,8 +55,9 @@ class TestActionAlias(TestCase):
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
+        client.indices.get_aliases.return_value = testvars.settings_1_get_aliases
         ilo = curator.IndexList(client)
-        ao = curator.Alias(name='alias')
+        ao = curator.Alias(name='my_alias')
         ao.remove(ilo)
         self.assertEqual(testvars.alias_one_rm, ao.actions)
     def test_add_multiple(self):
@@ -76,26 +77,12 @@ class TestActionAlias(TestCase):
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
+        client.indices.get_aliases.return_value = testvars.settings_2_get_aliases
         ilo = curator.IndexList(client)
-        ao = curator.Alias(name='alias')
+        ao = curator.Alias(name='my_alias')
         ao.remove(ilo)
         cmp = sorted(ao.actions, key=lambda k: k['remove']['index'])
         self.assertEqual(testvars.alias_two_rm, cmp)
-    def test_show_body(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = curator.IndexList(client)
-        ao = curator.Alias(name='alias')
-        ao.remove(ilo)
-        ao.add(ilo)
-        body = ao.body()
-        self.assertEqual(
-            testvars.alias_one_body['actions'][0], body['actions'][0])
-        self.assertEqual(
-            testvars.alias_one_body['actions'][1], body['actions'][1])
     def test_raise_on_empty_body(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '2.4.1'} }

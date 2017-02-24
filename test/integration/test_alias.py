@@ -215,6 +215,28 @@ class TestCLIAlias(CuratorTestCase):
             {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
             self.client.indices.get_aliases()
         )
+    def test_remove_index_not_in_alias(self):
+        alias = 'testalias'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_remove_index_not_there.format(alias,'my'))
+        self.create_index('my_index1')
+        self.create_index('my_index2')
+        self.client.indices.put_alias(index='my_index1', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'my_index1': {'aliases': {}}, 'my_index2': {'aliases': {}}},
+            self.client.indices.get_aliases()
+        )
+        self.assertEqual(0, result.exit_code)
     def test_no_add_remove(self):
         alias = 'testalias'
         self.write_config(

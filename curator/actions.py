@@ -88,11 +88,24 @@ class Alias(object):
             else:
                 # Re-raise the NoIndices so it will behave as before
                 raise NoIndices
+        aliases = self.client.indices.get_aliases()
         for index in ilo.working_list():
-            self.loggit.debug(
-                'Removing index {0} from alias {1}'.format(index, self.name))
-            self.actions.append(
-                { 'remove' : { 'index' : index, 'alias': self.name } })
+            if index in aliases:
+                self.loggit.debug(
+                    'Index {0} in get_aliases output'.format(index))
+                # Only remove if the index is associated with the alias
+                if self.name in aliases[index]['aliases']:
+                    self.loggit.debug(
+                        'Removing index {0} from alias '
+                        '{1}'.format(index, self.name)
+                    )
+                    self.actions.append(
+                        { 'remove' : { 'index' : index, 'alias': self.name } })
+                else:
+                    self.loggit.debug(
+                        'Can not remove: Index {0} is not associated with alias'
+                        ' {1}'.format(index, self.name)
+                    )
 
     def body(self):
         """
