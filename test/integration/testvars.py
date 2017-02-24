@@ -150,6 +150,21 @@ alias_add_remove = ('---\n'
 '          kind: prefix\n'
 '          value: my\n')
 
+alias_remove_index_not_there = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Add/remove specified indices from designated alias"\n'
+'    action: alias\n'
+'    options:\n'
+'      name: {0}\n'
+'      continue_if_exception: False\n'
+'      disable_action: False\n'
+'    remove:\n'
+'      filters:\n'
+'        - filtertype: pattern\n'
+'          kind: prefix\n'
+'          value: {1}\n')
+
 alias_add_with_empty_remove = ('---\n'
 'actions:\n'
 '  1:\n'
