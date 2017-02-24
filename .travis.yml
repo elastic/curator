@@ -8,6 +8,7 @@ python:
 env:
   - ES_VERSION=5.0.2
   - ES_VERSION=5.1.2
+  - ES_VERSION=5.2.1
 
 os: linux
 
