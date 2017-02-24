@@ -55,7 +55,7 @@ class TestActionAlias(TestCase):
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
-        client.indices.get_aliases.return_value = testvars.settings_1_get_aliases
+        client.indices.get_alias.return_value = testvars.settings_1_get_aliases
         ilo = curator.IndexList(client)
         ao = curator.Alias(name='my_alias')
         ao.remove(ilo)
@@ -77,7 +77,7 @@ class TestActionAlias(TestCase):
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
-        client.indices.get_aliases.return_value = testvars.settings_2_get_aliases
+        client.indices.get_alias.return_value = testvars.settings_2_get_aliases
         ilo = curator.IndexList(client)
         ao = curator.Alias(name='my_alias')
         ao.remove(ilo)

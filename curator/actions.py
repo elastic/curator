@@ -88,7 +88,7 @@ class Alias(object):
             else:
                 # Re-raise the NoIndices so it will behave as before
                 raise NoIndices
-        aliases = self.client.indices.get_aliases()
+        aliases = self.client.indices.get_alias()
         for index in ilo.working_list():
             if index in aliases:
                 self.loggit.debug(
