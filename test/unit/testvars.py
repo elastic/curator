@@ -28,7 +28,7 @@ alias_one_add_with_extras  = [
             'filter' : { 'term' : { 'user' : 'kimchy' }}
             }
     }]
-alias_one_rm   = [{'remove': {'alias': 'alias', 'index': 'index_name'}}]
+alias_one_rm   = [{'remove': {'alias': 'my_alias', 'index': named_index}}]
 alias_one_body = { "actions" : [
                         {'remove': {'alias': 'alias', 'index': 'index_name'}},
                         {'add': {'alias': 'alias', 'index': 'index_name'}}
@@ -38,8 +38,8 @@ alias_two_add  = [
                     {'add': {'alias': 'alias', 'index': 'index-2016.03.04'}},
                  ]
 alias_two_rm   = [
-                    {'remove': {'alias': 'alias', 'index': 'index-2016.03.03'}},
-                    {'remove': {'alias': 'alias', 'index': 'index-2016.03.04'}},
+                    {'remove': {'alias': 'my_alias', 'index': 'index-2016.03.03'}},
+                    {'remove': {'alias': 'my_alias', 'index': 'index-2016.03.04'}},
                  ]
 alias_success  = { "acknowledged": True }
 allocation_in  = {named_index: {'settings': {'index': {'routing': {'allocation': {'require': {'foo': 'bar'}}}}}}}
@@ -182,6 +182,8 @@ settings_one   = {
         }
     }
 }
+
+settings_1_get_aliases = { named_index: { "aliases" : { 'my_alias' : { } } } }
 
 settings_two  = {
     u'index-2016.03.03': {
