@@ -6,6 +6,13 @@ Changelog
 5.0.0 (? ? ?)
 -------------
 
+**New Features**
+
+  * Added ``warn_if_no_indices`` option for ``alias`` action in response to
+    #883.  Using this option will permit the ``alias`` add or remove to continue
+    with a logged warning, even if the filters result in a NoIndices condition.
+    Use with care.
+
 **Documentation**
 
   * Add missing repository arg to auto-gen API docs. Reported in #888

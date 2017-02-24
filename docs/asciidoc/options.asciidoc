@@ -33,6 +33,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_timeout_override,timeout_override>>
 * <<option_value,value>>
 * <<option_wfc,wait_for_completion>>
+* <<option_warn_if_no_indices,warn_if_no_indices>>
 
 Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
 configuration files.
@@ -473,3 +474,23 @@ TIP: During snapshot initialization, information about all previous snapshots is
 The default value of this setting differs for each action.  The default for the
 <<allocation,allocation>> and <<replicas,replicas>> actions is `False`.  The
 default for the <<restore,restore>> and <<snapshot,snapshot>> actions is `True`.
+
+[[option_warn_if_no_indices]]
+== warn_if_no_indices
+
+NOTE: This setting is only used by the <<alias,alias>> action.
+
+This setting must be either `True` or `False`.
+
+This setting specifies whether or not the alias action should continue with a
+warning or return immediately in the event that the filters in the add or remove
+section result in an empty index list.
+
+**Use with caution.**  This option is particularly beneficial when trying to alias
+a new set of time-series indices.  For example, you want to add the most recent
+seven days into a _lastweek_ alias, and remove indices older than seven days
+from this same alias.  If you do not have any indices older than seven days,
+this will result in an empty index list condition which will prevent the entire
+alias action from completing successfully.  A non-beneficial case would be where
+a typo results in indices not being removed, and suddenly an alias that should
+only query one week has three weeks of data.

@@ -70,13 +70,14 @@ def process_action(client, config, **kwargs):
             logger.debug('Adding indices to alias "{0}"'.format(opts['name']))
             adds = IndexList(client)
             adds.iterate_filters(config['add'])
-            action_obj.add(adds)
+            action_obj.add(adds, warn_if_no_indices=opts['warn_if_no_indices'])
         if 'remove' in config:
             logger.debug(
                 'Removing indices from alias "{0}"'.format(opts['name']))
             removes = IndexList(client)
             removes.iterate_filters(config['remove'])
-            action_obj.remove(removes)
+            action_obj.remove(
+                removes, warn_if_no_indices= opts['warn_if_no_indices'])
     elif action in [ 'cluster_routing', 'create_index' ]:
         action_obj = action_class(client, **mykwargs)
     elif action == 'delete_snapshots' or action == 'restore':

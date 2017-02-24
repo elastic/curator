@@ -131,6 +131,90 @@ class TestCLIAlias(CuratorTestCase):
             {u'my_index': {u'aliases': {alias: {}}}},
             self.client.indices.get_alias(name=alias)
         )
+    def test_add_with_empty_remove(self):
+        alias = 'testalias'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_add_with_empty_remove.format(alias))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'dummy': {'aliases': {alias: {}}},'my_index': {'aliases': {alias: {}}}},
+            self.client.indices.get_aliases()
+        )
+    def test_remove_with_empty_add(self):
+        alias = 'testalias'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_remove_with_empty_add.format(alias))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy,my_index', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'dummy': {'aliases': {}},'my_index': {'aliases': {alias: {}}}},
+            self.client.indices.get_aliases()
+        )
+    def test_add_with_empty_list(self):
+        alias = 'testalias'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_add_remove_empty.format(alias, 'du', 'rickroll'))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
+            self.client.indices.get_aliases()
+        )
+    def test_remove_with_empty_list(self):
+        alias = 'testalias'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_add_remove_empty.format(alias, 'rickroll', 'my'))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
+            self.client.indices.get_aliases()
+        )
     def test_no_add_remove(self):
         alias = 'testalias'
         self.write_config(

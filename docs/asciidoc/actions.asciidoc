@@ -30,6 +30,7 @@ action: alias
 description: "Add/Remove selected indices to or from the specified alias"
 options:
   name: alias_name
+  warn_if_no_indices: False
   extra_settings:
   timeout_override:
   continue_if_exception: False
@@ -80,6 +81,7 @@ Required settings
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
+* <<option_warn_if_no_indices,warn_if_no_indices>> (can override the default)
 * <<option_extra_settings,extra_settings>> (No default value.)
 * <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default

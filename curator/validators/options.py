@@ -122,19 +122,21 @@ def timeout_override(action):
 def value():
     return { Required('value'): Any(str, unicode) }
 
-
-
 def wait_for_completion(action):
     if action in ['allocation', 'cluster_routing', 'replicas']:
         return { Optional('wait_for_completion', default=False): Boolean() }
     elif action in ['restore', 'snapshot']:
         return { Optional('wait_for_completion', default=True): Boolean() }
 
+def warn_if_no_indices():
+    return { Optional('warn_if_no_indices', default=False): Boolean() }
+
 ## Methods for building the schema
 def action_specific(action):
     options = {
         'alias' : [
             name(action),
+            warn_if_no_indices(),
             extra_settings(),
         ],
         'allocation' : [
