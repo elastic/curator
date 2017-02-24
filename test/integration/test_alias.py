@@ -150,7 +150,7 @@ class TestCLIAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'dummy': {'aliases': {alias: {}}},'my_index': {'aliases': {alias: {}}}},
-            self.client.indices.get_aliases()
+            self.client.indices.get_alias()
         )
     def test_remove_with_empty_add(self):
         alias = 'testalias'
@@ -171,7 +171,7 @@ class TestCLIAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'dummy': {'aliases': {}},'my_index': {'aliases': {alias: {}}}},
-            self.client.indices.get_aliases()
+            self.client.indices.get_alias()
         )
     def test_add_with_empty_list(self):
         alias = 'testalias'
@@ -192,7 +192,7 @@ class TestCLIAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
-            self.client.indices.get_aliases()
+            self.client.indices.get_alias()
         )
     def test_remove_with_empty_list(self):
         alias = 'testalias'
@@ -213,7 +213,7 @@ class TestCLIAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
-            self.client.indices.get_aliases()
+            self.client.indices.get_alias()
         )
     def test_no_add_remove(self):
         alias = 'testalias'
