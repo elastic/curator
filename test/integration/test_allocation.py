@@ -25,7 +25,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.allocation_test.format(key, value, at))
+            testvars.allocation_test.format(key, value, at, False))
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
@@ -47,7 +47,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.allocation_test.format(key, value, at))
+            testvars.allocation_test.format(key, value, at, False))
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
@@ -69,7 +69,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.allocation_test.format(key, value, at))
+            testvars.allocation_test.format(key, value, at, False))
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
@@ -91,7 +91,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.allocation_test.format(key, value, at))
+            testvars.allocation_test.format(key, value, at, False))
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
@@ -129,7 +129,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.allocation_test.format(key, value, at))
+            testvars.allocation_test.format(key, value, at, False))
         self.create_index('my_index')
         self.client.indices.close(index='my_index')
         self.create_index('not_my_index')
@@ -143,5 +143,27 @@ class TestCLIAllocation(CuratorTestCase):
                     )
         self.assertNotIn('routing',
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index'])
+        self.assertNotIn('routing',
+            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+    def test_wait_for_completion(self):
+        key = 'tag'
+        value = 'value'
+        at = 'require'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.allocation_test.format(key, value, at, True))
+        self.create_index('my_index')
+        self.create_index('not_my_index')
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEquals(value,
+            self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         self.assertNotIn('routing',
             self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
