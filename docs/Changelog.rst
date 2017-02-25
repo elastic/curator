@@ -17,7 +17,9 @@ Changelog
 
   * Check if an index is in an alias before attempting to delete it from the
     alias.  Issue raised in #887. (untergeek)
-    
+  * Fix allocation issues when using Elasticsearch 5.1+. Issue raised in #871
+    (untergeek)
+
 **Documentation**
 
   * Add missing repository arg to auto-gen API docs. Reported in #888
