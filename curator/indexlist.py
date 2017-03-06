@@ -189,7 +189,14 @@ class IndexList(object):
                 for index in list(working_list.keys()):
                     s = self.index_info[index]
                     wl = working_list[index]
-                    if not 'creation_date' in wl['settings']['index']:
+
+                    if 'settings' not in wl:
+                        # We can try to get the same info from index/_settings.
+                        # To work around https://github.com/elastic/curator/issues/880
+                        alt_wl = self.client.indices.get(index, feature='_settings')[index]
+                        wl['settings'] = alt_wl['settings']
+
+                    if 'creation_date' not in wl['settings']['index']:
                         self.loggit.warn(
                             'Index: {0} has no "creation_date"! This implies '
                             'that the index predates Elasticsearch v1.4. For '
