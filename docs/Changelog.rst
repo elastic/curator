@@ -8,6 +8,8 @@ Changelog
 
 **New Features**
 
+  * Added support for the Rollover API. Requested in #898, and by countless
+    others.
   * Added ``warn_if_no_indices`` option for ``alias`` action in response to
     #883.  Using this option will permit the ``alias`` add or remove to continue
     with a logged warning, even if the filters result in a NoIndices condition.

@@ -25,6 +25,7 @@ CLASS_MAP = {
     'open' : Open,
     'replicas' : Replicas,
     'restore' : Restore,
+    'rollover' : Rollover,
     'snapshot' : Snapshot,
 }
 
@@ -78,7 +79,7 @@ def process_action(client, config, **kwargs):
             removes.iterate_filters(config['remove'])
             action_obj.remove(
                 removes, warn_if_no_indices= opts['warn_if_no_indices'])
-    elif action in [ 'cluster_routing', 'create_index' ]:
+    elif action in [ 'cluster_routing', 'create_index', 'rollover']:
         action_obj = action_class(client, **mykwargs)
     elif action == 'delete_snapshots' or action == 'restore':
         logger.debug('Running "{0}"'.format(action))

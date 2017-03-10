@@ -619,3 +619,26 @@ class TestVerifyClientObject(TestCase):
             pass
         test = ElasticsearchSubClass()
         self.assertIsNone(curator.verify_client_object(test))
+
+class TestRollableAlias(TestCase):
+    def test_return_false_if_no_alias(self):
+        client = Mock()
+        client.indices.get_alias.return_value = {}
+        client.indices.get_alias.side_effect = elasticsearch.NotFoundError
+        self.assertFalse(curator.rollable_alias(client, 'foo'))
+    def test_return_false_too_many_indices(self):
+        client = Mock()
+        client.indices.get_alias.return_value = testvars.not_rollable_multiple
+        self.assertFalse(curator.rollable_alias(client, 'foo'))
+    def test_return_false_non_numeric(self):
+        client = Mock()
+        client.indices.get_alias.return_value = testvars.not_rollable_non_numeric
+        self.assertFalse(curator.rollable_alias(client, 'foo'))
+    def test_return_true_two_digits(self):
+        client = Mock()
+        client.indices.get_alias.return_value = testvars.is_rollable_2digits
+        self.assertTrue(curator.rollable_alias(client, 'foo'))
+    def test_return_true_hypenated(self):
+        client = Mock()
+        client.indices.get_alias.return_value = testvars.is_rollable_hypenated
+        self.assertTrue(curator.rollable_alias(client, 'foo'))

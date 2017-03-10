@@ -759,3 +759,9 @@ actions:
     filters:
       - filtertype: none
 '''
+
+not_rollable_name = {'index': {u'aliases': {'foo': {}}}}
+not_rollable_multiple = {u'index-a': {u'aliases': {u'foo': {}}}, u'index-b': {u'aliases': {u'foo': {}}}}
+not_rollable_non_numeric = {u'index-a': {u'aliases': {u'foo': {}}}}
+is_rollable_2digits = {u'index-00001': {u'aliases': {u'foo': {}}}}
+is_rollable_hypenated = {u'index-2017.03.07-1': {u'aliases': {u'foo': {}}}}
