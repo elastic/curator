@@ -7,6 +7,14 @@ def allocation_type():
     return { Optional('allocation_type', default='require'): All(
         Any(str, unicode), Any('require', 'include', 'exclude')) }
 
+def conditions():
+    return {
+        Optional('conditions'): {
+            Optional('max_age'): Any(str, unicode),
+            Optional('max_docs'): Coerce(int)
+        }
+    }
+
 def continue_if_exception():
     return { Optional('continue_if_exception', default=False): Boolean() }
 
@@ -53,7 +61,7 @@ def max_num_segments():
     }
 
 def name(action):
-    if action in ['alias', 'create_index']:
+    if action in ['alias', 'create_index', 'rollover']:
         return { Required('name'): Any(str, unicode) }
     elif action == 'snapshot':
         return {
@@ -122,6 +130,11 @@ def timeout_override(action):
 def value():
     return { Required('value'): Any(str, unicode) }
 
+def wait_for_active_shards():
+    return {
+        Optional('wait_for_active_shards', default=0): Any(Coerce(int), None)
+    }
+
 def wait_for_completion(action):
     if action in ['allocation', 'cluster_routing', 'replicas']:
         return { Optional('wait_for_completion', default=False): Boolean() }
@@ -170,6 +183,12 @@ def action_specific(action):
         'replicas' : [
             count(),
             wait_for_completion(action),
+        ],
+        'rollover' : [
+            name(action),
+            conditions(),
+            extra_settings(),
+            wait_for_active_shards(),
         ],
         'restore' : [
             repository(),

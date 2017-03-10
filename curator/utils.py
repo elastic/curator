@@ -75,6 +75,44 @@ def test_client_options(config):
         if 'client_key' in config and  config['client_key']:
             read_file(config['client_key'])
 
+def rollable_alias(client, alias):
+    """
+    Ensure that `alias` is an alias, and points to an index that can use the
+    _rollover API.
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg alias: An Elasticsearch alias
+    """
+    try:
+        response = client.indices.get_alias(name=alias)
+    except elasticsearch.NotFoundError as e:
+        logger.error('alias "{0}" not found.'.format(alias))
+        return False
+    # Response should be like:
+    # {'there_should_be_only_one': {u'aliases': {'value of "alias" here': {}}}}
+    # Where 'there_should_be_only_one' is a single index name that ends in a
+    # number, and 'value of "alias" here' reflects the value of the passed
+    # parameter.
+    if len(response) > 1:
+        logger.error(
+            '"alias" must only reference one index: {0}'.format(response))
+    # elif len(response) < 1:
+    #     logger.error(
+    #         '"alias" must reference at least one index: {0}'.format(response))
+    else:
+        index = list(response.keys())[0]
+        rollable = False
+        # In order for `rollable` to be True, the last 2 digits of the index
+        # must be digits, or a hyphen followed by a digit.
+        # NOTE: This is not a guarantee that the rest of the index name is
+        # necessarily correctly formatted.
+        if index[-2:][1].isdigit():
+            if index[-2:][0].isdigit():
+                rollable = True
+            elif index[-2:][0] == '-':
+                rollable = True
+        return rollable
+
 def verify_client_object(test):
     """
     Test if `test` is a proper :class:`elasticsearch.Elasticsearch` client
@@ -1141,7 +1179,7 @@ def validate_actions(data):
                     )
             # Add/Remove here
             clean_config[action_id].update(add_remove)
-        elif current_action in [ 'cluster_routing', 'create_index' ]:
+        elif current_action in [ 'cluster_routing', 'create_index', 'rollover' ]:
             # neither cluster_routing nor create_index should have filters
             pass
         else: # Filters key only appears in non-alias actions

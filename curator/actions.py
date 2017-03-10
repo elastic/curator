@@ -694,6 +694,96 @@ class Replicas(object):
         except Exception as e:
             report_failure(e)
 
+class Rollover(object):
+    def __init__(
+            self, client, name, conditions, extra_settings=None,
+            wait_for_active_shards=1
+        ):
+        """
+        :arg client: An :class:`elasticsearch.Elasticsearch` client object
+        :arg name: The name of the single-index-mapped alias to test for
+            rollover conditions.
+        :arg conditions: A dictionary of conditions to test
+        :arg extra_settings: Must be either `None`, or a dictionary of settings
+            to apply to the new index on rollover. This is used in place of
+            `settings` in the Rollover API, mostly because it's already existent
+            in other places here in Curator
+        :arg wait_for_active_shards: The number of shards expected to be active
+            before returning.
+        """
+        verify_client_object(client)
+        self.loggit     = logging.getLogger('curator.actions.rollover')
+        if not isinstance(conditions, dict):
+            raise ConfigurationError('"conditions" must be a dictionary')
+        else:
+            self.loggit.debug('"conditions" is {0}'.format(conditions))
+        if not isinstance(extra_settings, dict) and extra_settings is not None:
+            raise ConfigurationError(
+                '"extra_settings" must be a dictionary or None')
+        #: Instance variable.
+        #: The Elasticsearch Client object
+        self.client     = client
+        #: Instance variable.
+        #: Internal reference to `conditions`
+        self.conditions = conditions
+        #: Instance variable.
+        #: Internal reference to `extra_settings`
+        self.settings   = extra_settings
+        #: Instance variable.
+        #: Internal reference to `wait_for_active_shards`
+        self.wait_for_active_shards = wait_for_active_shards
+
+        # Verify that `conditions` and `settings` are good?
+        # Verify that `name` is an alias, and is only mapped to one index.
+        if rollable_alias(client, name):
+            self.name = name
+        else:
+            raise ValueError(
+                    'Unable to perform index rollover with alias '
+                    '"{0}". See previous logs for more details.'.format(name)
+                )
+
+    def body(self):
+        """
+        Create a body from conditions and settings
+        """
+        retval = {}
+        retval['conditions'] = self.conditions
+        if self.settings:
+            retval['settings'] = self.settings
+        return retval
+
+    def doit(self, dry_run=False):
+        """
+        This exists solely to prevent having to have duplicate code in both
+        `do_dry_run` and `do_action`
+        """
+        return self.client.indices.rollover(
+            alias=self.name,
+            body=self.body(),
+            dry_run=dry_run,
+            wait_for_active_shards=self.wait_for_active_shards,
+        )
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        logger.info('DRY-RUN MODE.  No changes will be made.')
+        result = self.doit(dry_run=True)
+        logger.info('DRY-RUN: rollover: {0} result: '
+            '{1}'.format(self.name, result))
+
+    def do_action(self):
+        """
+        Rollover the index referenced by alias `name`
+        """
+        self.loggit.info('Performing index rollover')
+        try:
+            self.doit()
+        except Exception as e:
+            report_failure(e)
+
 class DeleteSnapshots(object):
     def __init__(self, slo, retry_interval=120, retry_count=3):
         """
