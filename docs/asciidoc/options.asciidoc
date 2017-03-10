@@ -19,6 +19,8 @@ Options are settings used by <<actions,actions>>.
 * <<option_include_gs,include_global_state>>
 * <<option_indices,indices>>
 * <<option_key,key>>
+* <<option_max_age,max_age>>
+* <<option_max_docs,max_docs>>
 * <<option_mns,max_num_segments>>
 * <<option_name,name>>
 * <<option_partial,partial>>
@@ -35,8 +37,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_wfc,wait_for_completion>>
 * <<option_warn_if_no_indices,warn_if_no_indices>>
 
-Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
-configuration files.
+You can use <<envvars,environment variables>> in your configuration files.
 --
 
 [[option_allocation_type]]
@@ -217,6 +218,43 @@ These special attributes are also supported:
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+[[option_max_age]]
+== max_age
+
+[source,yaml]
+-------------
+options:
+  conditions:
+    max_age: 1d
+-------------
+
+NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
+are required as `conditions:` for the <<rollover,Rollover>> action.
+
+The maximum age that is allowed before triggering a rollover. _Must be nested
+under `conditions:`_ There is no default value. If this condition is specified,
+it must have a value, or Curator will generate an error.
+
+Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
+
+[[option_max_docs]]
+== max_docs
+
+[source,yaml]
+-------------
+options:
+  conditions:
+    max_docs: 10000000
+-------------
+
+NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
+are required as `conditions:` for the <<rollover,Rollover>> action.
+
+The maximum number of documents allowed in an index before triggering a
+rollover.  _Must be nested under `conditions:`_ There is no default value.  If
+this condition is specified, it must have a value, or Curator will generate an
+error.
 
 [[option_mns]]
 == max_num_segments

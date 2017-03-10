@@ -49,6 +49,7 @@ def index_actions():
         'forcemerge',
         'open',
         'replicas',
+        'rollover',
         'snapshot',
     ]
 

@@ -633,3 +633,44 @@ CRA_all = {
     u'persistent':{},
     u'transient':{u'cluster':{u'routing':{u'allocation':{u'enable':u'all'}}}}
 }
+
+rollover_one = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Rollover selected alias/index"\n'
+'    action: rollover\n'
+'    options:\n'
+'      name: {0}\n'
+'      conditions: \n'
+'        {1}: {2}\n'
+'      extra_settings:\n'
+'        index.number_of_shards: 1\n'
+'        index.number_of_replicas: 0\n')
+
+rollover_both = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Rollover selected alias/index"\n'
+'    action: rollover\n'
+'    options:\n'
+'      name: {0}\n'
+'      conditions: \n'
+'        max_age: {1}\n'
+'        max_docs: {2}\n'
+'      extra_settings:\n'
+'        index.number_of_shards: 1\n'
+'        index.number_of_replicas: 0\n')
+
+rollover_bad_settings = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Rollover selected alias/index"\n'
+'    action: rollover\n'
+'    options:\n'
+'      name: {0}\n'
+'      conditions: \n'
+'        max_age: {1}\n'
+'        max_docs: {2}\n'
+'      extra_settings:\n'
+'        foo: 1\n'
+'        bar: 0\n')

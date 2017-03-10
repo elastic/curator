@@ -19,6 +19,7 @@ configuration files.
 * <<ex_open,open>>
 * <<ex_replicas,replicas>>
 * <<ex_restore,restore>>
+* <<ex_rollover,rollover>>
 * <<ex_snapshot,snapshot>>
 
 --
@@ -476,6 +477,35 @@ actions:
     - filtertype: state
       state: SUCCESS
       exclude:
+-------------
+
+[[ex_rollover]]
+== rollover
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType". However, max_age and max_docs must have a value, if
+# they are used as conditions.
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: rollover
+    description: >-
+      Rollover the index associated with index 'name', which should be in the
+      form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+    options:
+      name: aliasname
+      conditions:
+        max_age: 1d
+        max_docs: 1000000
+      timeout_override:
+      continue_if_exception: False
+      disable_action: True
 -------------
 
 [[ex_snapshot]]

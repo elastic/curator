@@ -38,9 +38,9 @@ def structure(data, location):
     retval.update(
         { Optional('options', default=settings.default_options()): dict } )
     action = data['action']
-    if action in [ 'cluster_routing', 'create_index' ]:
-        # Neither the cluster_routing nor create_index actions should have a
-        # 'filters' block
+    if action in [ 'cluster_routing', 'create_index', 'rollover']:
+        # The cluster_routing, create_index, and rollover actions should not
+        # have a 'filters' block
         pass
     elif action == 'alias':
         # The alias action should not have a filters block, but should have
