@@ -8,6 +8,8 @@ Changelog
 
 **New Features**
 
+  * Allow allocation action to unset a key/value pair by using an empty value.
+    Requested in #906. (untergeek)
   * Added support for the Rollover API. Requested in #898, and by countless
     others.
   * Added ``warn_if_no_indices`` option for ``alias`` action in response to
@@ -17,8 +19,6 @@ Changelog
 
 **Bug Fixes**
 
-  * Allow allocation action to unset a key/value pair by using an empty value.
-    Issue raised in #906. (untergeek)
   * Check if an index is in an alias before attempting to delete it from the
     alias.  Issue raised in #887. (untergeek)
   * Fix allocation issues when using Elasticsearch 5.1+. Issue raised in #871
