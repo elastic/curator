@@ -26,15 +26,6 @@ class TestActionAllocation(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         ilo = curator.IndexList(client)
         self.assertRaises(curator.MissingArgument, curator.Allocation, ilo)
-    def test_create_body_no_value(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = curator.IndexList(client)
-        self.assertRaises(curator.MissingArgument,
-            curator.Allocation, ilo, key='key')
     def test_create_body_invalid_allocation_type(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '2.4.1'} }

@@ -128,7 +128,7 @@ def timeout_override(action):
         }
 
 def value():
-    return { Required('value'): Any(str, unicode) }
+    return { Required('value', default=None): Any(str, unicode, None) }
 
 def wait_for_active_shards():
     return {

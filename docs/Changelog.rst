@@ -8,6 +8,8 @@ Changelog
 
 **New Features**
 
+  * Allow allocation action to unset a key/value pair by using an empty value.
+    Requested in #906. (untergeek)
   * Added support for the Rollover API. Requested in #898, and by countless
     others.
   * Added ``warn_if_no_indices`` option for ``alias`` action in response to

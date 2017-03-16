@@ -455,13 +455,13 @@ from the client-defined default would be desirable.
 [[option_value]]
 == value
 
-NOTE: This setting is required when using the <<allocation,allocation action>>
-    or the <<cluster_routing,cluster_routing action>>.
+NOTE: This setting is optional when using the <<allocation,allocation action>>
+    and required when using the <<cluster_routing,cluster_routing action>>.
 
 === <<allocation,allocation>> value
 
 For the <<allocation,allocation action>>, the value of this setting should
-correspond to a node setting on one or more nodes in your cluster.
+correspond to a node setting on one or more nodes in your cluster
 
 For example, you might have set
 
@@ -475,6 +475,42 @@ allocation in this case, set value to `myvalue`. Additonally, if you used one of
 the special attribute names `_ip`, `_name`, `_id`, or `_host` for
 <<option_key,key>>, value can match the one of the node ip addresses, names,
 ids, or host names, respectively.
+
+NOTE: To remove a routing allocation, the value of this setting should be left
+empty, or the `value` setting not even included as an option.
+
+For example, you might have set
+
+[source,sh]
+-----------
+PUT test/_settings
+{
+  "index.routing.allocation.exclude.size": "small"
+}
+-----------
+
+to keep index `test` from allocating shards on nodes that have `node.tag: small`.
+To remove this shard routing allocation setting, you might use an action file
+similar to this:
+
+[source,yaml]
+-----------
+---
+  actions:
+    1:
+      action: allocation
+      description: ->
+        Unset 'index.routing.allocation.exclude.size' for index 'test' by
+        passing an empty value.
+      options:
+        key: size
+        value:
+        allocation_type: exclude
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^test$'
+-----------
 
 === <<cluster_routing,cluster_routing>> value
 
