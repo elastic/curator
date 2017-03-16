@@ -120,7 +120,7 @@ def timeout_override(action):
         }
 
 def value():
-    return { Required('value'): Any(str, unicode) }
+    return { Required('value', default=None): Any(str, unicode, None) }
 
 def wait_for_completion(action):
     if action in ['allocation', 'cluster_routing', 'replicas']:

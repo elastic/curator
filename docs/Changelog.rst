@@ -15,6 +15,8 @@ Changelog
 
 **Bug Fixes**
 
+  * Allow allocation action to unset a key/value pair by using an empty value.
+    Issue raised in #906. (untergeek)
   * Check if an index is in an alias before attempting to delete it from the
     alias.  Issue raised in #887. (untergeek)
   * Fix allocation issues when using Elasticsearch 5.1+. Issue raised in #871
