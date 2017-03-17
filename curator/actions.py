@@ -382,10 +382,17 @@ class ClusterRouting(object):
                 logger.debug(
                     'Waiting for shards to complete routing and/or rebalancing'
                 )
-                self.client.cluster.health(
-                    level='indices', wait_for_relocating_shards=0,
-                    timeout=self.timeout,
-                )
+                version = get_version(self.client)
+                if version >= (5,1,0):
+                    self.client.cluster.health(index=to_csv(l),
+                        level='indices', wait_for_no_relocating_shards=True,
+                        timeout=self.timeout,
+                    )
+                else:
+                    self.client.cluster.health(index=to_csv(l),
+                        level='indices', wait_for_relocating_shards=0,
+                        timeout=self.timeout,
+                    )
         except Exception as e:
             report_failure(e)
 
