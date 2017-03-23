@@ -3,8 +3,11 @@
 Changelog
 =========
 
-5.0.0 (? ? ?)
+5.0.0a1 (23 March 2017)
 -------------
+
+This is the first alpha release of Curator 5.  This should not be used for 
+production! There `will` be many more changes before 5.0.0 is released.
 
 **New Features**
 
