@@ -1204,6 +1204,8 @@ def health_check(client, **kwargs):
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     """
+    logger.debug('KWARGS= "{0}"'.format(kwargs))
+    logger.debug('keys = "{0}"'.format(list(kwargs.keys())))
     klist = list(kwargs.keys())
     if len(klist) < 1:
         raise MissingArgument('Must provide at least one keyword argument')
@@ -1230,7 +1232,7 @@ def health_check(client, **kwargs):
     return response
 
 
-def task_check(client, task_id):
+def task_check(client, task_id=None):
     """
     This function calls client.tasks.get with the provided `task_id`.  If the
     task data contains ``'completed': True``, then it will return `True` 
@@ -1317,21 +1319,32 @@ def wait_for_it(
                 'Unable to find task_id {0}. Exception: {1}'.format(task_id, e)
             )
 
-    wait_map = {
-        'allocation':health_check(client, relocating_shards=0),
-        'replicas':health_check(client, status='green'),
-        'cluster_routing':health_check(client, relocating_shards=0),
-        'snapshot':task_check(client, task_id),
-        'restore':task_check(client, task_id),
-        'reindex':task_check(client, task_id),
+    function_map = {
+        'allocation':health_check,
+        'replicas':health_check,
+        'cluster_routing':health_check,
+        'snapshot':task_check,
+        'restore':task_check,
+        'reindex':task_check,
+    }
+    arg_map = {
+        'allocation':{'relocating_shards':0},
+        'replicas':{'status':'green'},
+        'cluster_routing':{'relocating_shards':0},
+        'snapshot':{'task_id':task_id},
+        'restore':{'task_id':task_id},
+        'reindex':{'task_id':task_id},
     }
 
     # Now with this mapped, we can perform the wait as indicated.
     result = False
-    response = wait_map[action]
+    # logger.debug('wait_map = {0}'.format(wait_map))
+    # logger.debug('action = {0}'.format(action))
+    # logger.debug('wait_map[action] = {0}'.format(wait_map[action]))
+    response = function_map[action](client, **arg_map[action])
     logger.debug('Response: {0}'.format(response))
     if retry_duration == -1:
-        until response:
+        while response == False:
             time.sleep(retry_interval)
             response = wait_map[action]
             logger.debug('Response: {0}'.format(response))
@@ -1339,7 +1352,7 @@ def wait_for_it(
     else:
         timeout = retry_duration
         logger.debug('Timeout: {0}'.format(timeout))
-        until response or timeout <= 0:
+        while ((response == False) or (timeout <= 0)):
             time.sleep(retry_interval)
             timeout -= retry_interval
             logger.debug('Timeout: {0}'.format(timeout))

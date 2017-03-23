@@ -230,17 +230,21 @@ class Allocation(object):
                         'Waiting for shards to complete relocation for indices:'
                         ' {0}'.format(to_csv(l))
                     )
-                    version = get_version(self.client)
-                    if version >= (5,1,0):
-                        self.client.cluster.health(index=to_csv(l),
-                            level='indices', wait_for_no_relocating_shards=True,
-                            timeout=self.timeout,
-                        )
-                    else:
-                        self.client.cluster.health(index=to_csv(l),
-                            level='indices', wait_for_relocating_shards=0,
-                            timeout=self.timeout,
-                        )
+                    # version = get_version(self.client)
+                    # if version >= (5,1,0):
+                    #     self.client.cluster.health(index=to_csv(l),
+                    #         level='indices', wait_for_no_relocating_shards=True,
+                    #         timeout=self.timeout,
+                    #     )
+                    # else:
+                    #     self.client.cluster.health(index=to_csv(l),
+                    #         level='indices', wait_for_relocating_shards=0,
+                    #         timeout=self.timeout,
+                    #     )
+                    wait_for_it(
+                        self.client, 'allocation', retry_interval=3, 
+                        retry_duration=self.timeout
+                    )
         except Exception as e:
             report_failure(e)
 
