@@ -1194,3 +1194,158 @@ def validate_actions(data):
 
     # if we've gotten this far without any Exceptions raised, it's valid!
     return { 'actions' : clean_config }
+
+def health_check(client, **kwargs):
+    """
+    This function calls client.cluster.health and, based on the args provided,
+    will return `True` or `False` depending on whether that particular keyword 
+    appears in the output, and has the expected value.
+    If multiple keys are provided, all must match for a `True` response. 
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    """
+    klist = list(kwargs.keys())
+    if len(klist) < 1:
+        raise MissingArgument('Must provide at least one keyword argument')
+    hc_data = client.cluster.health()
+    response = True
+    
+    for k in klist:
+        # First, verify that all kwargs are in the list
+        if not k in list(hc_data.keys()):
+            raise ConfigurationError('Key "{0}" not in cluster health output')
+        if not hc_data[k] == kwargs[k]:
+            logger.debug(
+                'NO MATCH: Value for key "{0}", health check data: '
+                '{1}'.format(kwargs[k], hc_data[k])
+            )
+            response = False
+        else:
+            logger.debug(
+                'MATCH: Value for key "{0}", health check data: '
+                '{1}'.format(kwargs[k], hc_data[k])
+            )
+    if response:
+        logger.info('Health Check for all provided keys passed.')   
+    return response
+
+
+def task_check(client, task_id):
+    """
+    This function calls client.tasks.get with the provided `task_id`.  If the
+    task data contains ``'completed': True``, then it will return `True` 
+    If the task is not completed, it will log some information about the task
+    and return `False`
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object    
+    :arg task_id: A task_id which ostensibly matches a task searchable in the
+        tasks API.
+    """
+    try:
+        task_data = client.tasks.get(task_id=task_id)
+    except Exception as e:
+        raise CuratorException(
+            'Unable to obtain task information for task_id "{0}". Exception '
+            '{1}'.format(task_id, e)
+        )
+    completed = task_data['completed']
+    task = task_data['task']
+    ts = task['status']
+    running_time = 0.000000001 * ts['running_time_in_nanos']
+    descr = ts['description']
+
+    if completed:
+        completion_time = ((running_time * 1000) + ts['start_time_in_millis'])
+        time_string = time.strftime(
+            '%Y-%m-%dT%H:%M:%SZ', time.localtime(completion_time/1000)
+        )
+        logger.info('Task "{0}" completed at {1}.'.format(descr, time_string))
+        return True
+    else:
+        # Log the task status here.
+        logger.debug('Full Task Status: {0}'.format(ts))
+        logger.info(
+            'Task "{0}" with task_id "{1}" has been running for '
+            '{2} seconds'.format(descr, task_id, running_time))
+        return False
+
+
+def wait_for_it(
+        client, action, task_id=None, retry_interval=9, retry_duration=-1):
+    """
+    This function becomes one place to do all wait_for_completion type behaviors
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg action: The action name that will identify how to wait
+    :arg task_id: If the action provided a task_id, this is where it must be
+        declared.
+    :arg retry_interval: How frequently the specified "wait" behavior will be
+        polled to check for completion.
+    :arg retry_duration: Number of seconds will the "wait" behavior persist 
+        before giving up and raising an Exception.  The default is -1, meaning
+        it will try forever.
+    """
+    health_actions = [
+        'allocation',
+        'replicas',
+        'cluster_routing',
+    ]
+    task_actions = [
+        'snapshot',
+        'restore',
+        'reindex',
+    ]
+    wait_actions = health_actions + task_actions
+
+    if not action:
+        raise MissingArgument('"action" must be provided')
+    if action not in wait_actions:
+        raise ConfigurationError(
+            '"action" must be one of {0}'.format(wait_actions)
+        )
+    if action in task_actions and task_id == None:
+        raise MissingArgument(
+            'A task_id must accompany "action" {0}'.format(action)
+        )
+    elif action in task_actions:
+        try:
+            task_dict = client.tasks.get(task_id=task_id)
+        except Exception as e:
+            # This exception should only exist in API usage. It should never
+            # occur in regular Curator usage.
+            raise CuratorException(
+                'Unable to find task_id {0}. Exception: {1}'.format(task_id, e)
+            )
+
+    wait_map = {
+        'allocation':health_check(client, relocating_shards=0),
+        'replicas':health_check(client, status='green'),
+        'cluster_routing':health_check(client, relocating_shards=0),
+        'snapshot':task_check(client, task_id),
+        'restore':task_check(client, task_id),
+        'reindex':task_check(client, task_id),
+    }
+
+    # Now with this mapped, we can perform the wait as indicated.
+    result = False
+    response = wait_map[action]
+    logger.debug('Response: {0}'.format(response))
+    if retry_duration == -1:
+        until response:
+            time.sleep(retry_interval)
+            response = wait_map[action]
+            logger.debug('Response: {0}'.format(response))
+        result = True
+    else:
+        timeout = retry_duration
+        logger.debug('Timeout: {0}'.format(timeout))
+        until response or timeout <= 0:
+            time.sleep(retry_interval)
+            timeout -= retry_interval
+            logger.debug('Timeout: {0}'.format(timeout))
+            response = wait_map[action]
+            logger.debug('Response: {0}'.format(response))
+        if response:
+            result = True
+    logger.debug('Result: {0}'.format(result))
+    return result
