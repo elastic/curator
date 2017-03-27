@@ -94,7 +94,7 @@ class TestActionRestore(TestCase):
         self.assertIsNone(ro.do_dry_run())
     def test_report_state_all(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.snapshot.get.return_value = testvars.snapshot
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.indices.get_settings.return_value = testvars.settings_named
@@ -103,7 +103,7 @@ class TestActionRestore(TestCase):
         self.assertIsNone(ro.report_state())
     def test_report_state_not_all(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.indices.get_settings.return_value = testvars.settings_one
@@ -113,14 +113,15 @@ class TestActionRestore(TestCase):
         self.assertIsNone(ro.report_state())
     def test_do_action_success(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.status.return_value = testvars.nosnap_running
         client.snapshot.verify_repository.return_value = testvars.verified_nodes
         client.indices.get_settings.return_value = testvars.settings_named
+        client.indices.recovery.return_value = testvars.recovery_output
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
-        ro = curator.Restore(slo)
+        ro = curator.Restore(slo, wait_interval=0.5, max_wait=1)
         self.assertIsNone(ro.do_action())
     def test_do_action_snap_in_progress(self):
         client = Mock()

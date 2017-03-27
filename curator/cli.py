@@ -53,11 +53,7 @@ def process_action(client, config, **kwargs):
     if action == 'delete_indices':
         mykwargs['master_timeout'] = (
             kwargs['master_timeout'] if 'master_timeout' in kwargs else 30)
-    if action == 'allocation' or action == 'replicas':
-        # Setting the operation timeout to the client timeout
-        mykwargs['timeout'] = (
-            kwargs['timeout'] if 'timeout' in kwargs else 30)
-
+ 
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(opts))
     logger.debug('Action kwargs: {0}'.format(mykwargs))
@@ -162,7 +158,7 @@ def cli(config, dry_run, action_file):
         kwargs['master_timeout'] = (
             client_args['timeout'] if client_args['timeout'] <= 300 else 300)
         kwargs['dry_run'] = dry_run
-        kwargs['timeout'] = client_args['timeout']
+#        kwargs['timeout'] = client_args['timeout']
 
         # Create a client object for each action...
         client = get_client(**client_args)

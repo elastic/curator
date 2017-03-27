@@ -5,6 +5,22 @@ Changelog
 
 5.0.0a2 (? ? ?)
 
+This will be the second alpha release of Curator 5. This should not be used for 
+production! There `will` be many more changes before 5.0.0 is released.
+
+**New Features**
+
+  * Add dedicated "wait for completion" functionality. This supports health
+    checks, recovery (restore) checks, snapshot checks, and operations which
+    support the new tasks API.  All actions which can use this have been 
+    refactored to take advantage of this.  The benefit of this new feature is
+    that client timeouts will be less likely to happen when performing long
+    operations, like snapshot and restore.
+
+    NOTE: There is one caveat: forceMerge does not support this, per the 
+    Elasticsearch API. A forceMerge call will hold the client until complete, or
+    the client times out.  There is no clean way around this that I can discern.
+
 5.0.0a1 (23 March 2017)
 -------------
 

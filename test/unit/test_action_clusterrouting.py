@@ -65,7 +65,7 @@ class TestActionAllocation(TestCase):
     def test_do_action_wait(self):
         client = Mock()
         client.cluster.put_settings.return_value = None
-        client.cluster.health.return_value = None
+        client.cluster.health.return_value = {'relocating_shards':0}
         cro = curator.ClusterRouting(
             client,
             routing_type='allocation',

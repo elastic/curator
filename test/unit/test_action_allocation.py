@@ -85,7 +85,7 @@ class TestActionAllocation(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         client.indices.put_settings.return_value = None
-        client.cluster.health.return_value = {'relocating_shards':0, 'status':'green'}
+        client.cluster.health.return_value = {'relocating_shards':0}
         ilo = curator.IndexList(client)
         ao = curator.Allocation(
             ilo, key='key', value='value', wait_for_completion=True)
@@ -97,7 +97,7 @@ class TestActionAllocation(TestCase):
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         client.indices.put_settings.return_value = None
-        client.cluster.health.return_value = {'relocating_shards':0, 'status':'green'}
+        client.cluster.health.return_value = {'relocating_shards':0}
         ilo = curator.IndexList(client)
         ao = curator.Allocation(
             ilo, key='key', value='value', wait_for_completion=True)

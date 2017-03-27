@@ -23,7 +23,7 @@ class TestCLISnapshot(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.snapshot_test.format(self.args['repository'], snap_name))
+            testvars.snapshot_test.format(self.args['repository'], snap_name, 1, 30))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -44,7 +44,7 @@ class TestCLISnapshot(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.test_682.format(self.args['repository'], snap_name, True))
+            testvars.test_682.format(self.args['repository'], snap_name, True, 1, 30))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -65,7 +65,7 @@ class TestCLISnapshot(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.test_682.format(self.args['repository'], snap_name, False))
+            testvars.test_682.format(self.args['repository'], snap_name, False, 1, 30))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,
@@ -84,7 +84,7 @@ class TestCLISnapshot(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.snapshot_test.format(' ', 'snap_name'))
+            testvars.snapshot_test.format(' ', 'snap_name', 1, 30))
         test = clicktest.CliRunner()
         result = test.invoke(
                     curator.cli,

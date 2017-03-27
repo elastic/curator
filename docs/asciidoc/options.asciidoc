@@ -21,6 +21,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_key,key>>
 * <<option_max_age,max_age>>
 * <<option_max_docs,max_docs>>
+* <<option_max_wait,max_wait>>
 * <<option_mns,max_num_segments>>
 * <<option_name,name>>
 * <<option_partial,partial>>
@@ -35,6 +36,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_timeout_override,timeout_override>>
 * <<option_value,value>>
 * <<option_wfc,wait_for_completion>>
+* <<option_wait_interval,wait_interval>>
 * <<option_warn_if_no_indices,warn_if_no_indices>>
 
 You can use <<envvars,environment variables>> in your configuration files.
@@ -255,6 +257,33 @@ The maximum number of documents allowed in an index before triggering a
 rollover.  _Must be nested under `conditions:`_ There is no default value.  If
 this condition is specified, it must have a value, or Curator will generate an
 error.
+
+[[option_max_wait]]
+== max_wait
+
+[source,yaml]
+-------------
+    options:
+      # ...
+      wait_interval: 10
+      max_wait: 900
+      # ...
+-------------
+
+NOTE: This setting is used by the <<allocation,allocation>>,
+    <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>>
+    actions.
+
+This setting must be a positive integer, or `-1`.
+
+This setting specifies how long in seconds to wait to see if the action has
+completed before giving up.  This option is used in conjunction with
+<<option_wait_interval,wait_interval>>,
+which is the number of seconds to wait between checking to see if the given
+action is complete.
+
+The default value for this setting is `-1`, meaning that Curator will wait
+indefinitely for the action to complete.
 
 [[option_mns]]
 == max_num_segments
@@ -548,6 +577,35 @@ TIP: During snapshot initialization, information about all previous snapshots is
 The default value of this setting differs for each action.  The default for the
 <<allocation,allocation>> and <<replicas,replicas>> actions is `False`.  The
 default for the <<restore,restore>> and <<snapshot,snapshot>> actions is `True`.
+
+[[option_wait_interval]]
+== wait_interval
+
+[source,yaml]
+-------------
+    options:
+      # ...
+      wait_interval: 10
+      max_wait: 900
+      # ...
+-------------
+
+NOTE: This setting is used by the <<allocation,allocation>>,
+    <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>>
+    actions.
+
+This setting must be a positive integer between 1 and 30.
+
+This setting specifies how long to wait between checks to see if the action has
+completed or not.  This number should not be larger than the client timeout or
+the timeout override.  As the default client timeout value for is 30, this
+should be uncommon.
+
+The default value for this setting is `9`, meaning 9 seconds between checks.
+
+This option is generally used in conjunction with <<option_max_wait,max_wait>>,
+which is the maximum amount of time in seconds to wait for the given action to
+complete.
 
 [[option_warn_if_no_indices]]
 == warn_if_no_indices

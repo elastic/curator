@@ -17,6 +17,19 @@ closed_indices = { 'metadata': { 'indices' : { 'index1' : { 'state' : 'close' },
                                                'index2' : { 'state' : 'close' }}}}
 named_alias    = 'alias_name'
 alias_retval   = { "pre_aliased_index": { "aliases" : { named_alias : { }}}}
+rollable_alias = { "index-000001": { "aliases" : { named_alias : { }}}}
+rollover_conditions = { 'conditions': { 'max_age': '1s' } }
+dry_run_rollover = {
+  "acknowledged": True,
+  "shards_acknowledged": True,
+  "old_index": "index-000001",
+  "new_index": "index-000002",
+  "rolled_over": False, 
+  "dry_run": True, 
+  "conditions": {
+    "max_age" : "1s"
+  }
+}
 aliases_retval = {
     "index1": { "aliases" : { named_alias : { } } },
     "index2": { "aliases" : { named_alias : { } } },
@@ -63,6 +76,15 @@ snapshot       = { 'snapshots': [
                         'indices': named_indices,
                         'failures': [], 'start_time_in_millis': 1422748800
                     }]}
+oneinprogress  = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-03-01T00:00:02.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'IN_PROGRESS',
+                        'snapshot': snap_name, 'end_time': '2015-03-01T00:00:03.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 1425168002
+                    }]}                    
 partial        = { 'snapshots': [
                     {
                         'duration_in_millis': 60000, 'start_time': '2015-02-01T00:00:00.000Z',
@@ -72,6 +94,24 @@ partial        = { 'snapshots': [
                         'indices': named_indices,
                         'failures': [], 'start_time_in_millis': 1422748800
                     }]}
+failed         = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-02-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'FAILED',
+                        'snapshot': snap_name, 'end_time': '2015-02-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 1422748800
+                    }]}
+othersnap      = { 'snapshots': [
+                    {
+                        'duration_in_millis': 60000, 'start_time': '2015-02-01T00:00:00.000Z',
+                        'shards': {'successful': 4, 'failed': 0, 'total': 4},
+                        'end_time_in_millis': 0, 'state': 'SOMETHINGELSE',
+                        'snapshot': snap_name, 'end_time': '2015-02-01T00:00:01.000Z',
+                        'indices': named_indices,
+                        'failures': [], 'start_time_in_millis': 1422748800
+                    }]}                    
 snapshots         = { 'snapshots': [
                     {
                         'duration_in_millis': 60000, 'start_time': '2015-02-01T00:00:00.000Z',
@@ -765,3 +805,9 @@ not_rollable_multiple = {u'index-a': {u'aliases': {u'foo': {}}}, u'index-b': {u'
 not_rollable_non_numeric = {u'index-a': {u'aliases': {u'foo': {}}}}
 is_rollable_2digits = {u'index-00001': {u'aliases': {u'foo': {}}}}
 is_rollable_hypenated = {u'index-2017.03.07-1': {u'aliases': {u'foo': {}}}}
+generic_task = {u'task': u'I0ekFjMhSPCQz7FUs1zJOg:54510686'}
+incomplete_task = {u'completed': False, u'task': {u'node': u'I0ekFjMhSPCQz7FUs1zJOg', u'status': {u'retries': {u'bulk': 0, u'search': 0}, u'updated': 0, u'batches': 3647, u'throttled_until_millis': 0, u'throttled_millis': 0, u'noops': 0, u'created': 3646581, u'deleted': 0, u'requests_per_second': -1.0, u'version_conflicts': 0, u'total': 3646581}, u'description': u'UNIT TEST', u'running_time_in_nanos': 1637039537721, u'cancellable': True, u'action': u'indices:data/write/reindex', u'type': u'transport', u'id': 54510686, u'start_time_in_millis': 1489695981997}, u'response': {u'retries': {u'bulk': 0, u'search': 0}, u'updated': 0, u'batches': 3647, u'throttled_until_millis': 0, u'throttled_millis': 0, u'noops': 0, u'created': 3646581, u'deleted': 0, u'took': 1636917, u'requests_per_second': -1.0, u'timed_out': False, u'failures': [], u'version_conflicts': 0, u'total': 3646581}}
+completed_task = {u'completed': True, u'task': {u'node': u'I0ekFjMhSPCQz7FUs1zJOg', u'status': {u'retries': {u'bulk': 0, u'search': 0}, u'updated': 0, u'batches': 3647, u'throttled_until_millis': 0, u'throttled_millis': 0, u'noops': 0, u'created': 3646581, u'deleted': 0, u'requests_per_second': -1.0, u'version_conflicts': 0, u'total': 3646581}, u'description': u'UNIT TEST', u'running_time_in_nanos': 1637039537721, u'cancellable': True, u'action': u'indices:data/write/reindex', u'type': u'transport', u'id': 54510686, u'start_time_in_millis': 1489695981997}, u'response': {u'retries': {u'bulk': 0, u'search': 0}, u'updated': 0, u'batches': 3647, u'throttled_until_millis': 0, u'throttled_millis': 0, u'noops': 0, u'created': 3646581, u'deleted': 0, u'took': 1636917, u'requests_per_second': -1.0, u'timed_out': False, u'failures': [], u'version_conflicts': 0, u'total': 3646581}}
+recovery_output = {'index-2015.01.01': {'shards' : [{'stage':'DONE'}]}, 'index-2015.02.01': {'shards' : [{'stage':'DONE'}]}}
+unrecovered_output = {'index-2015.01.01': {'shards' : [{'stage':'INDEX'}]}, 'index-2015.02.01': {'shards' : [{'stage':'INDEX'}]}}
+cluster_health = { "cluster_name": "unit_test", "status": "green", "timed_out": False, "number_of_nodes": 7, "number_of_data_nodes": 3, "active_primary_shards": 235, "active_shards": 471, "relocating_shards": 0, "initializing_shards": 0, "unassigned_shards": 0, "delayed_unassigned_shards": 0, "number_of_pending_tasks": 0,  "task_max_waiting_in_queue_millis": 0, "active_shards_percent_as_number": 100}

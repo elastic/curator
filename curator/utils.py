@@ -1205,7 +1205,6 @@ def health_check(client, **kwargs):
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     """
     logger.debug('KWARGS= "{0}"'.format(kwargs))
-    logger.debug('keys = "{0}"'.format(list(kwargs.keys())))
     klist = list(kwargs.keys())
     if len(klist) < 1:
         raise MissingArgument('Must provide at least one keyword argument')
@@ -1231,6 +1230,77 @@ def health_check(client, **kwargs):
         logger.info('Health Check for all provided keys passed.')   
     return response
 
+def snapshot_check(client, snapshot=None, repository=None):
+    """
+    This function calls `client.snapshot.get` and tests to see whether the 
+    snapshot is complete, and if so, with what status.  It will log errors
+    according to the result. If the snapshot is still `IN_PROGRESS`, it will 
+    return `False`.  `SUCCESS` will be an `INFO` level message, `PARTIAL` nets
+    a `WARNING` message, `FAILED` is an `ERROR`, message, and all others will be
+    a `WARNING` level message.
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg snapshot: The name of the snapshot.
+    :arg repository: The Elasticsearch snapshot repository to use
+    """
+    try:
+        state = client.snapshot.get(
+            repository=repository, snapshot=snapshot)['snapshots'][0]['state']
+    except Exception as e:
+        raise CuratorException(
+            'Unable to obtain information for snapshot "{0}" in repository '
+            '"{1}". Error: {2}'.format(snapshot, repository, e)
+        )
+    logger.debug('Snapshot state = {0}'.format(state))
+    if state == 'IN_PROGRESS':
+        logger.info('Snapshot {0} still in progress.'.format(snapshot))
+        return False
+    elif state == 'SUCCESS':
+        logger.info(
+            'Snapshot {0} successfully completed.'.format(snapshot))
+    elif state == 'PARTIAL':
+        logger.warn(
+            'Snapshot {0} completed with state PARTIAL.'.format(snapshot))
+    elif state == 'FAILED':
+        logger.error(
+            'Snapshot {0} completed with state FAILED.'.format(snapshot))
+    else:
+        logger.warn(
+            'Snapshot {0} completed with state: {0}'.format(snapshot))
+    return True
+
+
+def restore_check(client, index_list):
+    """
+    This function calls client.indices.recovery with the list of indices to 
+    check for complete recovery.  It will return `True` if recovery of those 
+    indices is complete, and `False` otherwise.  It is designed to fail fast:
+    if a single shard is encountered that is still recovering (not in `DONE`
+    stage), it will immediately return `False`, rather than complete iterating
+    over the rest of the response.
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object 
+    :arg index_list: The list of indices to verify having been restored.
+    """
+    try:
+        response = client.indices.recovery(index=to_csv(index_list), human=True)
+    except Exception as e:
+        raise CuratorException(
+            'Unable to obtain recovery information for specified indices. '
+            'Error: {0}'.format(e)
+        )
+    for index in index_list:
+        for shard in range(0, len(response[index]['shards'])):
+            if response[index]['shards'][shard]['stage'] is not 'DONE':
+                logger.info(
+                    'Index "{0}" is still in stage "{1}"'.format(
+                        index, response[index]['shards'][shard]['stage']
+                    )
+                )
+                return False
+    # If we've gotten here, all of the indices have recovered
+    return True
+
 
 def task_check(client, task_id=None):
     """
@@ -1250,14 +1320,14 @@ def task_check(client, task_id=None):
             'Unable to obtain task information for task_id "{0}". Exception '
             '{1}'.format(task_id, e)
         )
-    completed = task_data['completed']
     task = task_data['task']
-    ts = task['status']
-    running_time = 0.000000001 * ts['running_time_in_nanos']
-    descr = ts['description']
+    completed = task_data['completed']
+    running_time = 0.000000001 * task['running_time_in_nanos']
+    logger.debug('running_time_in_nanos = {0}'.format(running_time))
+    descr = task['description']
 
     if completed:
-        completion_time = ((running_time * 1000) + ts['start_time_in_millis'])
+        completion_time = ((running_time * 1000) + task['start_time_in_millis'])
         time_string = time.strftime(
             '%Y-%m-%dT%H:%M:%SZ', time.localtime(completion_time/1000)
         )
@@ -1265,7 +1335,7 @@ def task_check(client, task_id=None):
         return True
     else:
         # Log the task status here.
-        logger.debug('Full Task Status: {0}'.format(ts))
+        logger.debug('Full Task Data: {0}'.format(task_data))
         logger.info(
             'Task "{0}" with task_id "{1}" has been running for '
             '{2} seconds'.format(descr, task_id, running_time))
@@ -1273,7 +1343,9 @@ def task_check(client, task_id=None):
 
 
 def wait_for_it(
-        client, action, task_id=None, retry_interval=9, retry_duration=-1):
+        client, action, task_id=None, snapshot=None, repository=None,
+        index_list=None, wait_interval=9, max_wait=-1
+    ):
     """
     This function becomes one place to do all wait_for_completion type behaviors
 
@@ -1281,35 +1353,60 @@ def wait_for_it(
     :arg action: The action name that will identify how to wait
     :arg task_id: If the action provided a task_id, this is where it must be
         declared.
-    :arg retry_interval: How frequently the specified "wait" behavior will be
+    :arg snapshot: The name of the snapshot.
+    :arg repository: The Elasticsearch snapshot repository to use
+    :arg wait_interval: How frequently the specified "wait" behavior will be
         polled to check for completion.
-    :arg retry_duration: Number of seconds will the "wait" behavior persist 
+    :arg max_wait: Number of seconds will the "wait" behavior persist 
         before giving up and raising an Exception.  The default is -1, meaning
         it will try forever.
     """
-    health_actions = [
-        'allocation',
-        'replicas',
-        'cluster_routing',
-    ]
-    task_actions = [
-        'snapshot',
-        'restore',
-        'reindex',
-    ]
-    wait_actions = health_actions + task_actions
+    action_map = {
+        'allocation':{
+            'function': health_check,
+            'args': {'relocating_shards':0},
+        },
+        'replicas':{
+            'function': health_check,
+            'args': {'status':'green'},
+        },
+        'cluster_routing':{
+            'function': health_check,
+            'args': {'relocating_shards':0},
+        },
+        'snapshot':{
+            'function':snapshot_check,
+            'args':{'snapshot':snapshot, 'repository':repository},
+        },
+        'restore':{
+            'function':restore_check,
+            'args':{'index_list':index_list},
+        },
+        'reindex':{
+            'function':task_check,
+            'args':{'task_id':task_id},
+        },
+    }
+    wait_actions = list(action_map.keys())
 
-    if not action:
-        raise MissingArgument('"action" must be provided')
     if action not in wait_actions:
         raise ConfigurationError(
             '"action" must be one of {0}'.format(wait_actions)
         )
-    if action in task_actions and task_id == None:
+    if action == 'reindex' and task_id == None:
         raise MissingArgument(
             'A task_id must accompany "action" {0}'.format(action)
         )
-    elif action in task_actions:
+    if action == 'snapshot' and ((snapshot == None) or (repository == None)):
+        raise MissingArgument(
+            'A snapshot and repository must accompany "action" {0}. snapshot: '
+            '{1}, repository: {2}'.format(action, snapshot, repository)
+        )
+    if action == 'restore' and index_list == None:
+        raise MissingArgument(
+            'An index_list must accompany "action" {0}'.format(action)
+        )
+    elif action == 'reindex':
         try:
             task_dict = client.tasks.get(task_id=task_id)
         except Exception as e:
@@ -1319,46 +1416,35 @@ def wait_for_it(
                 'Unable to find task_id {0}. Exception: {1}'.format(task_id, e)
             )
 
-    function_map = {
-        'allocation':health_check,
-        'replicas':health_check,
-        'cluster_routing':health_check,
-        'snapshot':task_check,
-        'restore':task_check,
-        'reindex':task_check,
-    }
-    arg_map = {
-        'allocation':{'relocating_shards':0},
-        'replicas':{'status':'green'},
-        'cluster_routing':{'relocating_shards':0},
-        'snapshot':{'task_id':task_id},
-        'restore':{'task_id':task_id},
-        'reindex':{'task_id':task_id},
-    }
-
     # Now with this mapped, we can perform the wait as indicated.
+    start_time = datetime.now()
     result = False
-    # logger.debug('wait_map = {0}'.format(wait_map))
-    # logger.debug('action = {0}'.format(action))
-    # logger.debug('wait_map[action] = {0}'.format(wait_map[action]))
-    response = function_map[action](client, **arg_map[action])
-    logger.debug('Response: {0}'.format(response))
-    if retry_duration == -1:
-        while response == False:
-            time.sleep(retry_interval)
-            response = wait_map[action]
-            logger.debug('Response: {0}'.format(response))
-        result = True
-    else:
-        timeout = retry_duration
-        logger.debug('Timeout: {0}'.format(timeout))
-        while ((response == False) or (timeout <= 0)):
-            time.sleep(retry_interval)
-            timeout -= retry_interval
-            logger.debug('Timeout: {0}'.format(timeout))
-            response = wait_map[action]
-            logger.debug('Response: {0}'.format(response))
+    while True:
+        elapsed = int((datetime.now() - start_time).total_seconds())
+        logger.debug('Elapsed time: {0} seconds'.format(elapsed))
+        response = action_map[action]['function'](
+            client, **action_map[action]['args'])
+        logger.debug('Response: {0}'.format(response))
+        # Success
         if response:
+            logger.debug(
+                'Action "{0}" has completed successfully'.format(action))
             result = True
+            break
+        # Not success, and reached maximum wait (if defined)
+        elif (max_wait != -1) and (elapsed >= max_wait):
+            logger.error(
+                'Unable to complete action "{0}" within max_wait ({1}) '
+                'seconds.'.format(action, max_wait)
+            )
+            break
+        # Not success, so we wait.
+        else:
+            logger.debug(
+                'Action "{0}" not yet complete, {1} total seconds elapsed. '
+                'Waiting {1} seconds before checking '
+                'again.'.format(action, wait_interval))
+            time.sleep(wait_interval)
+
     logger.debug('Result: {0}'.format(result))
     return result
