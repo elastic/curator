@@ -1041,7 +1041,9 @@ def parse_date_pattern(name):
     """
     Scan and parse `name` for :py:func:`time.strftime` strings, replacing them
     with the associated value when found, but otherwise returning lowercase
-    values, as uppercase snapshot names are not allowed.
+    values, as uppercase snapshot names are not allowed. It will detect if the
+    first character is a `<`, which would indicate `name` is going to be using
+    Elasticsearch date math syntax, and skip accordingly.
 
     The :py:func:`time.strftime` identifiers that Curator currently recognizes
     as acceptable include:
@@ -1062,6 +1064,10 @@ def parse_date_pattern(name):
     prev = ''; curr = ''; rendered = ''
     for s in range(0, len(name)):
         curr = name[s]
+        if curr == '<':
+            logger.info('"{0}" is using Elasticsearch date math.'.format(name))
+            rendered = name
+            break
         if curr == '%':
             pass
         elif curr in settings.date_regex() and prev == '%':

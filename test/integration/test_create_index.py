@@ -50,11 +50,27 @@ class TestCLICreateIndex(CuratorTestCase):
         self.assertEqual(['testing'], ilo.indices)
         self.assertEqual(ilo.index_info['testing']['number_of_shards'], '1')
         self.assertEqual(ilo.index_info['testing']['number_of_replicas'], '0')
-    def test_with_date(self):
+    def test_with_strftime(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.create_index.format('testing-%Y.%m.%d'))
+        self.assertEqual([], curator.get_indices(self.client))
+        name = curator.parse_date_pattern('testing-%Y.%m.%d')
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual([name], curator.get_indices(self.client))
+    def test_with_date_math(self):
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.create_index.format('<testing-{now/d}>'))
         self.assertEqual([], curator.get_indices(self.client))
         name = curator.parse_date_pattern('testing-%Y.%m.%d')
         test = clicktest.CliRunner()
