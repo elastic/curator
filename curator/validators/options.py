@@ -60,6 +60,13 @@ def max_num_segments():
         Required('max_num_segments'): All(Coerce(int), Range(min=1, max=32768))
     }
 
+def max_wait(action):
+    # The separation is here in case I want to change defaults later...
+    if action in ['allocation', 'cluster_routing', 'replicas']:
+        return { Optional('max_wait', default=-1): Any(-1, Coerce(int), None) }
+    elif action in ['restore', 'snapshot', 'reindex']:
+        return { Optional('max_wait', default=-1): Any(-1, Coerce(int), None) }
+
 def name(action):
     if action in ['alias', 'create_index', 'rollover']:
         return { Required('name'): Any(str, unicode) }
@@ -141,6 +148,14 @@ def wait_for_completion(action):
     elif action in ['restore', 'snapshot']:
         return { Optional('wait_for_completion', default=True): Boolean() }
 
+def wait_interval(action):
+    if action in ['allocation', 'cluster_routing', 'replicas']:
+        return { Optional('wait_interval', default=3): Any(All(
+                Coerce(int), Range(min=1, max=30)), None) }
+    elif action in ['restore', 'snapshot', 'reindex']:
+        return { Optional('wait_interval', default=9): Any(All(
+                Coerce(int), Range(min=1, max=30)), None) }
+
 def warn_if_no_indices():
     return { Optional('warn_if_no_indices', default=False): Boolean() }
 
@@ -157,6 +172,8 @@ def action_specific(action):
             value(),
             allocation_type(),
             wait_for_completion(action),
+            wait_interval(action),
+            max_wait(action),            
         ],
         'close' : [ delete_aliases() ],
         'cluster_routing' : [
@@ -164,6 +181,8 @@ def action_specific(action):
             cluster_routing_setting(),
             cluster_routing_value(),
             wait_for_completion(action),
+            wait_interval(action),
+            max_wait(action),        
         ],
         'create_index' : [
             name(action),
@@ -183,6 +202,8 @@ def action_specific(action):
         'replicas' : [
             count(),
             wait_for_completion(action),
+            wait_interval(action),
+            max_wait(action),            
         ],
         'rollover' : [
             name(action),
@@ -202,6 +223,8 @@ def action_specific(action):
             rename_replacement(),
             extra_settings(),
             wait_for_completion(action),
+            wait_interval(action),
+            max_wait(action),            
             skip_repo_fs_check(),
         ],
         'snapshot' : [
@@ -211,6 +234,8 @@ def action_specific(action):
             include_global_state(),
             partial(),
             wait_for_completion(action),
+            wait_interval(action),
+            max_wait(action),
             skip_repo_fs_check(),
         ],
     }

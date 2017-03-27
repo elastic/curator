@@ -10,7 +10,7 @@ class TestActionAllocation(TestCase):
         self.assertRaises(TypeError, curator.Allocation, 'invalid')
     def test_init(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -20,7 +20,7 @@ class TestActionAllocation(TestCase):
         self.assertEqual(client, ao.client)
     def test_create_body_no_key(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -28,7 +28,7 @@ class TestActionAllocation(TestCase):
         self.assertRaises(curator.MissingArgument, curator.Allocation, ilo)
     def test_create_body_invalid_allocation_type(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -40,7 +40,7 @@ class TestActionAllocation(TestCase):
         )
     def test_create_body_valid(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -49,7 +49,7 @@ class TestActionAllocation(TestCase):
         self.assertEqual({'index.routing.allocation.require.key': 'value'}, ao.body)
     def test_do_action_raise_on_put_settings(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -60,7 +60,7 @@ class TestActionAllocation(TestCase):
         self.assertRaises(Exception, ao.do_action)
     def test_do_dry_run(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -70,7 +70,7 @@ class TestActionAllocation(TestCase):
         self.assertIsNone(ao.do_dry_run())
     def test_do_action(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -78,26 +78,26 @@ class TestActionAllocation(TestCase):
         ilo = curator.IndexList(client)
         ao = curator.Allocation(ilo, key='key', value='value')
         self.assertIsNone(ao.do_action())
-    def test_do_action_wait_v2(self):
+    def test_do_action_wait_v50(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         client.indices.put_settings.return_value = None
-        client.cluster.health.return_value = None
+        client.cluster.health.return_value = {'relocating_shards':0}
         ilo = curator.IndexList(client)
         ao = curator.Allocation(
             ilo, key='key', value='value', wait_for_completion=True)
         self.assertIsNone(ao.do_action())
-    def test_do_action_wait_v5(self):
+    def test_do_action_wait_v51(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.1.1'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         client.indices.put_settings.return_value = None
-        client.cluster.health.return_value = None
+        client.cluster.health.return_value = {'relocating_shards':0}
         ilo = curator.IndexList(client)
         ao = curator.Allocation(
             ilo, key='key', value='value', wait_for_completion=True)

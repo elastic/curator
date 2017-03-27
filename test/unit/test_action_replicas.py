@@ -11,7 +11,7 @@ class TestActionReplicas(TestCase):
             TypeError, curator.Replicas, 'invalid', count=2)
     def test_init_raise_no_count(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -20,7 +20,7 @@ class TestActionReplicas(TestCase):
             curator.MissingArgument, curator.Replicas, ilo)
     def test_init(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -31,7 +31,7 @@ class TestActionReplicas(TestCase):
         self.assertEqual(client, ro.client)
     def test_do_dry_run(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -41,7 +41,7 @@ class TestActionReplicas(TestCase):
         self.assertIsNone(ro.do_dry_run())
     def test_do_action(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -51,18 +51,18 @@ class TestActionReplicas(TestCase):
         self.assertIsNone(ro.do_action())
     def test_do_action_wait(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
         client.indices.put_settings.return_value = None
-        client.cluster.health.return_value = None
+        client.cluster.health.return_value = {'status':'green'}
         ilo = curator.IndexList(client)
         ro = curator.Replicas(ilo, count=1, wait_for_completion=True)
         self.assertIsNone(ro.do_action())
     def test_do_action_raises_exception(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one

@@ -642,3 +642,152 @@ class TestRollableAlias(TestCase):
         client = Mock()
         client.indices.get_alias.return_value = testvars.is_rollable_hypenated
         self.assertTrue(curator.rollable_alias(client, 'foo'))
+
+class TestHealthCheck(TestCase):
+    def test_no_kwargs(self):
+        client = Mock()
+        self.assertRaises(
+            curator.MissingArgument, curator.health_check, client
+        )
+    def test_key_value_match(self):
+        client = Mock()
+        client.cluster.health.return_value = testvars.cluster_health
+        self.assertTrue(
+            curator.health_check(client, status='green')
+        )
+    def test_key_value_no_match(self):
+        client = Mock()
+        client.cluster.health.return_value = testvars.cluster_health
+        self.assertFalse(
+            curator.health_check(client, status='red')
+        )
+    def test_key_not_found(self):
+        client = Mock()
+        client.cluster.health.return_value = testvars.cluster_health
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.health_check, client, foo='bar'
+        )
+
+class TestSnapshotCheck(TestCase):
+    def test_fail_to_get_snapshot(self):
+        client = Mock()
+        client.snapshot.get.side_effect = testvars.fake_fail
+        self.assertRaises(
+            curator.CuratorException, curator.snapshot_check, client
+        )
+    def test_in_progress(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.oneinprogress
+        self.assertFalse(
+            curator.snapshot_check(client, 
+                repository='foo', snapshot=testvars.snap_name)
+        )
+    def test_success(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshot
+        self.assertTrue(
+            curator.snapshot_check(client, 
+                repository='foo', snapshot=testvars.snap_name)
+        )
+    def test_partial(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.partial
+        self.assertTrue(
+            curator.snapshot_check(client, 
+                repository='foo', snapshot=testvars.snap_name)
+        )
+    def test_failed(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.failed
+        self.assertTrue(
+            curator.snapshot_check(client, 
+                repository='foo', snapshot=testvars.snap_name)
+        )
+    def test_other(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.othersnap
+        self.assertTrue(
+            curator.snapshot_check(client, 
+                repository='foo', snapshot=testvars.snap_name)
+        )
+
+class TestRestoreCheck(TestCase):
+    def test_fail_to_get_recovery(self):
+        client = Mock()
+        client.indices.recovery.side_effect = testvars.fake_fail
+        self.assertRaises(
+            curator.CuratorException, curator.restore_check, client, []
+        )
+    def test_incomplete_recovery(self):
+        client = Mock()
+        client.indices.recovery.return_value = testvars.unrecovered_output
+        self.assertFalse(
+            curator.restore_check(client, testvars.named_indices)
+        )
+    def test_completed_recovery(self):
+        client = Mock()
+        client.indices.recovery.return_value = testvars.recovery_output
+        self.assertTrue(
+            curator.restore_check(client, testvars.named_indices)
+        )
+
+class TestTaskCheck(TestCase):
+    def test_bad_task_id(self):
+        client = Mock()
+        client.tasks.get.side_effect = testvars.fake_fail
+        self.assertRaises(
+            curator.CuratorException, curator.task_check, client, 'foo'
+        )
+    def test_incomplete_task(self):
+        client = Mock()
+        client.tasks.get.return_value = testvars.incomplete_task
+        self.assertFalse(
+            curator.task_check(client, task_id=testvars.generic_task['task'])
+        )
+    def test_complete_task(self):
+        client = Mock()
+        client.tasks.get.return_value = testvars.completed_task
+        self.assertTrue(
+            curator.task_check(client, task_id=testvars.generic_task['task'])
+        )
+
+class TestWaitForIt(TestCase):
+    def test_bad_action(self):
+        client = Mock()
+        self.assertRaises(
+            curator.ConfigurationError, curator.wait_for_it, client, 'foo')
+    def test_reindex_action_no_task_id(self):
+        client = Mock()
+        self.assertRaises(
+            curator.MissingArgument, curator.wait_for_it, 
+            client, 'reindex')
+    def test_snapshot_action_no_snapshot(self):
+        client = Mock()
+        self.assertRaises(
+            curator.MissingArgument, curator.wait_for_it, 
+            client, 'snapshot', repository='foo')
+    def test_snapshot_action_no_repository(self):
+        client = Mock()
+        self.assertRaises(
+            curator.MissingArgument, curator.wait_for_it, 
+            client, 'snapshot', snapshot='foo')
+    def test_restore_action_no_indexlist(self):
+        client = Mock()
+        self.assertRaises(
+            curator.MissingArgument, curator.wait_for_it, 
+            client, 'restore')
+    def test_reindex_action_bad_task_id(self):
+        client = Mock()
+        client.tasks.get.return_value = {'a':'b'}
+        client.tasks.get.side_effect = testvars.fake_fail
+        self.assertRaises(
+            curator.CuratorException, curator.wait_for_it, 
+            client, 'reindex', task_id='foo')
+    def test_reached_max_wait(self):
+        client = Mock()
+        client.cluster.health.return_value = {'status':'red'}
+        self.assertFalse(
+            curator.wait_for_it(client, 'replicas', 
+                wait_interval=1, max_wait=1)
+        )

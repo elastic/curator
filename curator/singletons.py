@@ -148,7 +148,7 @@ def config_override(ctx, config_dict):
     '--key', type=str, required=True, help='Node identification tag'
 )
 @click.option(
-    '--value', type=str, required=True, help='Value associated with --key'
+    '--value', type=str, default=None, help='Value associated with --key'
 )
 @click.option(
     '--allocation_type', type=str,
