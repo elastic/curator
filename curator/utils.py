@@ -477,6 +477,11 @@ def check_version(client):
     )
     if version_number >= settings.version_max() \
         or version_number < settings.version_min():
+        logger.error(
+            'Elasticsearch version {0} incompatible '
+            'with this version of Curator '
+            '({0})'.format(".".join(map(str,version_number)), __version__)
+        )
         raise CuratorException(
             'Elasticsearch version {0} incompatible '
             'with this version of Curator '

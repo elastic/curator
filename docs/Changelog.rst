@@ -30,6 +30,11 @@ production! There `will` be many more changes before 5.0.0 is released.
   * Bumped ``urllib3`` (python module) version dependency to 1.20
   * Bumped ``elasticsearch`` (python module) version dependency to 5.2
 
+**Bug Fixes**
+
+  * Curator now logs version incompatibilities as an error, rather than just
+    raising an Exception. #874 (untergeek)
+
 
 5.0.0a1 (23 March 2017)
 -------------
