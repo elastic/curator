@@ -112,7 +112,7 @@ class TestCLIDeleteRepository(CuratorTestCase):
                     ]
         )
         self.assertFalse(
-            curator.get_repository(self.client, self.args['repository'])
+            curator.repository_exists(self.client, self.args['repository'])
         )
     def test_delete_repository_notfound(self):
         self.write_config(

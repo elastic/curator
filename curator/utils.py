@@ -701,9 +701,13 @@ def get_repository(client, repository=''):
     """
     try:
         return client.snapshot.get_repository(repository=repository)
-    except (elasticsearch.TransportError, elasticsearch.NotFoundError):
-        logger.error("Repository {0} not found.".format(repository))
-        return False
+    except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
+        raise CuratorException(
+            'Unable to get repository {0}.  Response Code: {1}.  Error: {2}.'
+            'Check Elasticsearch logs for more information.'.format(
+                repository, e.status_code, e.error
+            )
+        )        
 
 def get_snapshot(client, repository=None, snapshot=''):
     """
@@ -944,16 +948,9 @@ def create_repository(client, **kwargs):
         logger.debug(
             'Checking if repository {0} already exists...'.format(repository)
         )
-        result = get_repository(client, repository=repository)
+        result = repository_exists(client, repository=repository)
         logger.debug("Result = {0}".format(result))
         if not result:
-            logger.debug(
-                'Repository {0} not in Elasticsearch. Continuing...'.format(
-                    repository
-                )
-            )
-            client.snapshot.create_repository(repository=repository, body=body)
-        elif result is not None and repository not in result:
             logger.debug(
                 'Repository {0} not in Elasticsearch. Continuing...'.format(
                     repository
@@ -987,12 +984,19 @@ def repository_exists(client, repository=None):
     """
     if not repository:
         raise MissingArgument('No value for "repository" provided')
-    test_result = get_repository(client, repository)
-    if repository in test_result:
-        logger.debug("Repository {0} exists.".format(repository))
-        return True
-    else:
-        logger.debug("Repository {0} not found...".format(repository))
+    try:
+        test_result = get_repository(client, repository)
+        if repository in test_result:
+            logger.debug("Repository {0} exists.".format(repository))
+            return True
+        else:
+            logger.debug("Repository {0} not found...".format(repository))
+            return False
+    except Exception as e:
+        logger.debug(
+            'Unable to find repository "{0}": Error: '
+            '{1}'.format(repository, e)
+        )
         return False
 
 def test_repo_fs(client, repository=None):
