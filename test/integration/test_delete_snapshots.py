@@ -33,7 +33,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
             self.add_docs('my_index{0}'.format(i))
             ilo = curator.IndexList(self.client)
             snap = curator.Snapshot(ilo, repository=self.args['repository'],
-                name='curator-%Y%m%d%H%M%S'
+                name='curator-%Y%m%d%H%M%S', wait_interval=0.5
             )
             snap.do_action()
             snapshot = curator.get_snapshot(

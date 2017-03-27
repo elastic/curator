@@ -144,6 +144,9 @@ Optional settings
     optionally be changed)
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
+* <<option_wait_interval,wait_interval>> (has a default which can optionally be
+*   changed)
 * <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
@@ -241,6 +244,9 @@ Optional settings
 
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
+* <<option_wait_interval,wait_interval>> (has a default which can optionally be
+*   changed)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
 * <<option_continue,continue_if_exception>> (has a default value which can
@@ -524,6 +530,9 @@ Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
+* <<option_wait_interval,wait_interval>> (has a default which can optionally be
+*   changed)
 * <<option_ignore_empty,ignore_empty_list>> (can override the default)
 * <<option_timeout_override,timeout_override>> (can override the default
     <<timeout,timeout>>)
@@ -562,6 +571,8 @@ actions:
       rename_replacement:
       extra_settings:
       wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
       skip_repo_fs_check: False
       timeout_override:
       continue_if_exception: False
@@ -627,6 +638,9 @@ Optional settings
 * <<option_extra_settings,extra_settings>> (has no default value.)
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
+* <<option_wait_interval,wait_interval>> (has a default which can optionally be
+*   changed)
 * <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
     optionally be changed)
 * <<option_ignore_empty,ignore_empty_list>> (can override the default)
@@ -735,6 +749,8 @@ options:
   include_global_state: True
   partial: False
   wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
   skip_repo_fs_check: False
   timeout_override:
   continue_if_exception: False
@@ -772,6 +788,9 @@ Optional settings
     changed)
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)
+* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
+* <<option_wait_interval,wait_interval>> (has a default which can optionally be
+*   changed)
 * <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
     optionally be changed)
 * <<option_ignore_empty,ignore_empty_list>> (can override the default)

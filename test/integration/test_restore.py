@@ -1,6 +1,7 @@
 import elasticsearch
 import curator
 import os
+import time
 import json
 import string, random, tempfile
 from click import testing as clicktest
@@ -27,6 +28,8 @@ port = int(port) if port else 9200
 # '      wait_for_completion: {10}\n'
 # '      skip_repo_fs_check: {11}\n'
 # '      timeout_override: {12}\n'
+# '      wait_interval: {13}\n'
+# '      max_wait: {14}\n'
 class TestCLIRestore(CuratorTestCase):
     def test_restore(self):
         indices = []
@@ -57,7 +60,9 @@ class TestCLIRestore(CuratorTestCase):
                 ' ',
                 True,
                 False,
-                301
+                301,
+                1,
+                3
             )
         )
         test = clicktest.CliRunner()
@@ -70,6 +75,9 @@ class TestCLIRestore(CuratorTestCase):
                     )
         restored_indices = sorted(curator.get_indices(self.client))
         self.assertEqual(indices, restored_indices)
+        # The test runs so fast that it tries to execute the cleanup step
+        # and delete the repository before Elasticsearch is actually ready
+        time.sleep(0.5)
     def test_restore_with_rename(self):
         indices = []
         for i in range(1,4):
@@ -80,6 +88,7 @@ class TestCLIRestore(CuratorTestCase):
         snapshot = curator.get_snapshot(
                     self.client, self.args['repository'], '_all'
                    )
+        time.sleep(1)
         self.assertEqual(1, len(snapshot['snapshots']))
         self.client.indices.delete(','.join(indices))
         self.assertEqual([], curator.get_indices(self.client))
@@ -99,7 +108,9 @@ class TestCLIRestore(CuratorTestCase):
                 ' ',
                 True,
                 False,
-                301
+                301,
+                1,
+                -1,
             )
         )
         test = clicktest.CliRunner()
@@ -110,8 +121,12 @@ class TestCLIRestore(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
+        time.sleep(1)
         restored_indices = sorted(curator.get_indices(self.client))
         self.assertEqual(
             ['new_index1', 'new_index2', 'new_index3'],
             restored_indices
         )
+        # The test runs so fast that it tries to execute the cleanup step
+        # and delete the repository before Elasticsearch is actually ready
+        time.sleep(0.5)

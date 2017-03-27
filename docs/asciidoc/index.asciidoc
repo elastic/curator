@@ -1,4 +1,4 @@
-:curator_version: 5.0.0a1
+:curator_version: 5.0.0a2
 :curator_major: 5
 :es_py_version: 5.1.0
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/current
