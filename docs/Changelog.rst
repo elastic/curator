@@ -34,6 +34,8 @@ production! There `will` be many more changes before 5.0.0 is released.
 
   * Curator now logs version incompatibilities as an error, rather than just
     raising an Exception. #874 (untergeek)
+  * The ``get_repository()`` function now properly raises an exception instead
+    of returning `False` if nothing is found. #761 (untergeek)
 
 
 5.0.0a1 (23 March 2017)
