@@ -326,7 +326,11 @@ The Python strftime identifiers that Curator currently recognizes include:
 This option is required by the <<alias,alias>> action, and has no default
 setting in that context.
 
-For the <<create_index,create_index>> action, there is no default setting.
+For the <<create_index,create_index>> action, there is no default setting, but
+you can use Elasticsearch
+https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html[date math]
+to name your indices.  See more in the <<create_index,create_index>> documenation.
+
 
 For the <<snapshot,snapshot>> action, the default value of this setting is
 `curator-%Y%m%d%H%M%S`

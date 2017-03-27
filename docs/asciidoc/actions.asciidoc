@@ -124,10 +124,7 @@ See https://www.elastic.co/guide/en/elasticsearch/reference/current/shard-alloca
 for more information.
 
 You can optionally set `wait_for_completion` to `True`
-to have Curator wait for the shard routing to complete before continuing.  If
-this option is chosen, it is advisable to use the
-<<option_timeout_override,timeout_override>> option in order to avoid client
-timeouts.
+to have Curator wait for the shard routing to complete before continuing.
 
 [float]
 Required settings
@@ -224,10 +221,7 @@ See https://www.elastic.co/guide/en/elasticsearch/reference/current/shards-alloc
 for more information.
 
 You can optionally set `wait_for_completion` to `True`
-to have Curator wait for the shard routing to complete before continuing.  If
-this option is chosen, it is advisable to use the
-<<option_timeout_override,timeout_override>> option in order to avoid client
-timeouts.
+to have Curator wait for the shard routing to complete before continuing.
 
 [float]
 Required settings
@@ -276,7 +270,51 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given action, it
     will be ignored.
 
-This action creates the named index.
+This action creates the named index.  There are ways to configure how the name
+is represented.
+
+=== Python strftime
+
+[source,yaml]
+-------------
+action: create_index
+description: "Create index as named"
+options:
+  name: 'myindex-%Y.%m'
+  # ...
+-------------
+
+For the `create_index` action, the <<option_name,name>> option can contain
+Python strftime strings.  The method for doing so is described in detail,
+including which strftime strings are acceptable, in the documentation for the
+<<option_name,name>> option.
+
+=== Date Math
+
+[source,yaml]
+-------------
+action: create_index
+description: "Create index as named"
+options:
+  name: '<logstash-{now/d+1d}>'
+  # ...
+-------------
+
+For the `create_index` action, the <<option_name,name>> option can be in
+Elasticsearch
+https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html[date math]
+format.  This allows index names containing dates to use deterministic math to
+set a date name in the past or the future.
+
+For example, if today's date were 2017-03-27, the name `<logstash-{now/d}>` will
+create an index named `logstash-2017.03.27`. If you wanted to create
+_tomorrow's_ index, you would use the name `<logstash-{now/d+1d}>`, which adds 1
+day.  This pattern creates an index named `logstash-2017.03.28`.  For many more
+configuration options, read the Elasticsearch
+https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html[date math]
+documentation.
+
+=== Extra Settings
 
 The <<option_extra_settings,extra_settings>> option allows the addition of extra
 settings, such as index settings and mappings.  An example of how these settings
@@ -295,6 +333,8 @@ extra_settings:
           type: string
           index: not_analyzed
 -------------
+
+=== Settings
 
 [float]
 Required settings
