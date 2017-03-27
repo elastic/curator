@@ -335,15 +335,22 @@ class TestGetRepository(TestCase):
     def test_get_repository_positive(self):
         client = Mock()
         client.snapshot.get_repository.return_value = testvars.test_repo
-        self.assertEqual(testvars.test_repo, curator.get_repository(client, repository=testvars.repo_name))
+        self.assertEqual(testvars.test_repo, 
+            curator.get_repository(client, repository=testvars.repo_name))
     def test_get_repository_transporterror_negative(self):
         client = Mock()
-        client.snapshot.get_repository.side_effect = elasticsearch.TransportError
-        self.assertFalse(curator.get_repository(client, repository=testvars.repo_name))
+        client.snapshot.get_repository.side_effect = elasticsearch.TransportError(503,'foo','bar')
+        self.assertRaises(
+            curator.CuratorException,
+            curator.get_repository, client, repository=testvars.repo_name
+        )
     def test_get_repository_notfounderror_negative(self):
         client = Mock()
-        client.snapshot.get_repository.side_effect = elasticsearch.NotFoundError
-        self.assertFalse(curator.get_repository(client, repository=testvars.repo_name))
+        client.snapshot.get_repository.side_effect = elasticsearch.NotFoundError(404,'foo','bar')
+        self.assertRaises(
+            curator.CuratorException,
+            curator.get_repository, client, repository=testvars.repo_name
+        )
     def test_get_repository__all_positive(self):
         client = Mock()
         client.snapshot.get_repository.return_value = testvars.test_repos
