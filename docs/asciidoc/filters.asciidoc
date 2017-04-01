@@ -30,8 +30,7 @@ The snapshot filtertypes are:
 * <<filtertype_state,state>>
 * <<filtertype_none,none>>
 
-Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
-configuration files.
+You can use <<envvars,environment variables>> in your configuration files.
 --
 
 [[filtertype]]

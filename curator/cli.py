@@ -23,6 +23,7 @@ CLASS_MAP = {
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,
     'open' : Open,
+    'reindex' : Reindex,
     'replicas' : Replicas,
     'restore' : Restore,
     'rollover' : Rollover,

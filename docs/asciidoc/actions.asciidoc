@@ -16,6 +16,7 @@ once created, can only be deleted.
 * <<delete_snapshots,Delete Snapshots>>
 * <<open,Open>>
 * <<forcemerge,forceMerge>>
+* <<reindex,Reindex>>
 * <<replicas,Replicas>>
 * <<restore,Restore>>
 * <<rollover,Rollover>>
@@ -77,23 +78,22 @@ Learn more about adding filtering and routing to aliases in the
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_name,name>> (required)
+* <<option_name,name>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_warn_if_no_indices,warn_if_no_indices>> (can override the default)
-* <<option_extra_settings,extra_settings>> (No default value.)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_warn_if_no_indices,warn_if_no_indices>>
+* <<option_extra_settings,extra_settings>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_alias,here>>.
+
+
 
 [[allocation]]
 == Allocation
@@ -130,30 +130,25 @@ to have Curator wait for the shard routing to complete before continuing.
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_key,key>> (required)
+* <<option_key,key>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_allocation_type,allocation_type>> (has a default value which can
-    optionally be changed)
-* <<option_value,value>> (has a default value which can
-    optionally be changed)
-* <<option_wfc,wait_for_completion>> (has a default value which can optionally
-    be changed)
-* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
-* <<option_wait_interval,wait_interval>> (has a default which can optionally be
-*   changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_allocation_type,allocation_type>>
+* <<option_value,value>>
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_allocation,here>>.
+
+
 
 [[close]]
 == Close
@@ -181,18 +176,16 @@ aliases beforehand.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_delete_aliases,delete_aliases>> (has a default value which can
-    optionally be changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_delete_aliases,delete_aliases>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_close,here>>.
+
+
 
 [[cluster_routing]]
 == Cluster Routing
@@ -227,8 +220,8 @@ to have Curator wait for the shard routing to complete before continuing.
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_routing_type,routing_type>> (required)
-* <<option_value,value>> (required)
+* <<option_routing_type,routing_type>>
+* <<option_value,value>>
 * <<option_setting,setting>> Currently must be set to `enable`.  This setting
   is a placeholder for potential future expansion.
 
@@ -236,20 +229,17 @@ Required settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_wfc,wait_for_completion>> (has a default value which can optionally
-    be changed)
-* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
-* <<option_wait_interval,wait_interval>> (has a default which can optionally be
-*   changed)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_cluster_routing,here>>.
+
+
 
 [[create_index]]
 == Create Index
@@ -348,15 +338,14 @@ Optional settings
     acceptable index settings and mappings as nested YAML.  See the
     {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_create_index,here>>.
+
+
 
 [[delete_indices]]
 == Delete Indices
@@ -382,16 +371,14 @@ This action deletes the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_delete_indices,here>>.
+
 
 
 [[delete_snapshots]]
@@ -425,25 +412,21 @@ up to <<option_retry_count,retry_count>> times, with a delay of
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_repository,repository>> (required)
+* <<option_repository,repository>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_retry_interval,retry_interval>> (has a default value which can
-    optionally be changed)
-* <<option_retry_count,retry_count>> (has a default value which can optionally
-    be changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_retry_interval,retry_interval>>
+* <<option_retry_count,retry_count>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_delete_snapshots,here>>.
+
 
 
 [[open]]
@@ -470,16 +453,14 @@ This action opens the selected indices.
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_open,here>>.
+
 
 
 [[forcemerge]]
@@ -511,22 +492,81 @@ merge of <<option_delay,delay>> seconds to allow the cluster to quiesce.
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_mns,max_num_segments>> (required)
+* <<option_mns,max_num_segments>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_delay,delay>> (has a default value which can optionally be changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_delay,delay>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_forcemerge,here>>.
+
+
+
+[[reindex]]
+== Reindex
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+There are many options for the reindex option.  The best place to start is in
+the <<option_request_body,request_body documentation>> to see how to configure
+this action.  All other options are as follows.
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<option_request_body,request_body>>
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+* <<option_refresh,refresh>>
+* <<option_remote_aws_key,remote_aws_key>>
+* <<option_remote_aws_region,remote_remote_aws_region>>
+* <<option_remote_aws_secret_key,remote_aws_secret_key>>
+* <<option_remote_certificate,remote_certificate>>
+* <<option_remote_client_cert,remote_client_cert>>
+* <<option_remote_client_key,remote_client_key>>
+* <<option_remote_filters,remote_filters>>
+* <<option_remote_ssl_no_validate,remote_ssl_no_validate>>
+* <<option_remote_url_prefix,remote_url_prefix>>
+* <<option_request_body,request_body>>
+* <<option_requests_per_second,requests_per_second>>
+* <<option_slices,slices>>
+* <<option_timeout,timeout>>
+* <<option_wait_for_active_shards,wait_for_active_shards>>
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_reindex,here>>.
 
 
 
@@ -563,26 +603,23 @@ timeouts.
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_count,count>> (required)
+* <<option_count,count>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_wfc,wait_for_completion>> (has a default value which can optionally
-    be changed)
-* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
-* <<option_wait_interval,wait_interval>> (has a default which can optionally be
-*   changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_replicas,here>>.
+
+
 
 [[restore]]
 == Restore
@@ -657,42 +694,33 @@ extra_settings:
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_repository,repository>> (required)
+* <<option_repository,repository>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_name,name>> (has no default value)
-* <<option_include_aliases,include_aliases>> (has a default value which can
-    optionally be changed)
-* <<option_indices,indices>> (has a default value which can optionally be
-    changed)
-* <<option_ignore,ignore_unavailable>> (has a default value which can optionally
-    be changed)
-* <<option_include_gs,include_global_state>> (has a default value which can
-    optionally be changed)
-* <<option_partial,partial>> (has a default value which can optionally be
-    changed)
-* <<option_rename_pattern,rename_pattern>> (has no default value)
-* <<option_rename_replacement,rename_replacement>> (has no default value)
-* <<option_extra_settings,extra_settings>> (has no default value.)
-* <<option_wfc,wait_for_completion>> (has a default value which can optionally
-    be changed)
-* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
-* <<option_wait_interval,wait_interval>> (has a default which can optionally be
-*   changed)
-* <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
-    optionally be changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_name,name>>
+* <<option_include_aliases,include_aliases>>
+* <<option_indices,indices>>
+* <<option_ignore,ignore_unavailable>>
+* <<option_include_gs,include_global_state>>
+* <<option_partial,partial>>
+* <<option_rename_pattern,rename_pattern>>
+* <<option_rename_replacement,rename_replacement>>
+* <<option_extra_settings,extra_settings>>
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+* <<option_skip_fsck,skip_repo_fs_check>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_restore,here>>.
+
+
 
 [[rollover]]
 == Rollover
@@ -762,15 +790,14 @@ Optional settings
     acceptable index settings (not mappings) as nested YAML.  See the
     {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_rollover,here>>.
+
+
 
 [[snapshot]]
 == Snapshot
@@ -814,32 +841,23 @@ read about them and change them accordingly.
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<option_repository,repository>> (required)
+* <<option_repository,repository>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<option_name,name>> (has a default value which can optionally be changed)
-* <<option_ignore,ignore_unavailable>> (has a default value which can optionally
-    be changed)
-* <<option_include_gs,include_global_state>> (has a default value which can
-    optionally be changed)
-* <<option_partial,partial>> (has a default value which can optionally be
-    changed)
-* <<option_wfc,wait_for_completion>> (has a default value which can optionally
-    be changed)
-* <<option_max_wait,max_wait>> (has a default which can optionally be changed)
-* <<option_wait_interval,wait_interval>> (has a default which can optionally be
-*   changed)
-* <<option_skip_fsck,skip_repo_fs_check>> (has a default value which can
-    optionally be changed)
-* <<option_ignore_empty,ignore_empty_list>> (can override the default)
-* <<option_timeout_override,timeout_override>> (can override the default
-    <<timeout,timeout>>)
-* <<option_continue,continue_if_exception>> (has a default value which can
-    optionally be changed)
-* <<option_disable,disable_action>> (has a default value which can optionally
-    be changed)
+* <<option_name,name>>
+* <<option_ignore,ignore_unavailable>>
+* <<option_include_gs,include_global_state>>
+* <<option_partial,partial>>
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+* <<option_skip_fsck,skip_repo_fs_check>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.

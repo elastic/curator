@@ -1,5 +1,5 @@
 from voluptuous import *
-from ..defaults import settings
+from . import settings
 
 ### Schema information ###
 

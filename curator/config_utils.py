@@ -1,5 +1,4 @@
 from voluptuous import Schema
-# from .defaults import settings
 from .validators import SchemaCheck, config_file
 from .utils import *
 from .logtools import LogInfo, Whitelist, Blacklist

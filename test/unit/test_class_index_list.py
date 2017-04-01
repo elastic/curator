@@ -12,13 +12,13 @@ class TestIndexListClientAndInit(TestCase):
         self.assertRaises(TypeError, curator.IndexList, client)
     def test_init_get_indices_exception(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.indices.get_settings.side_effect = testvars.fake_fail
         self.assertRaises(curator.FailedExecution, curator.IndexList, client)
     def test_init(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -34,7 +34,7 @@ class TestIndexListClientAndInit(TestCase):
         self.assertEqual(['index-2016.03.03','index-2016.03.04'], sorted(il.indices))
     def test_for_closed_index(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_2_closed
         client.cluster.state.return_value = testvars.cs_two_closed
         client.indices.stats.return_value = testvars.stats_two
@@ -42,7 +42,7 @@ class TestIndexListClientAndInit(TestCase):
         self.assertEqual('close', il.index_info['index-2016.03.03']['state'])
     def test_skip_index_without_creation_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two_no_cd
         client.cluster.state.return_value = testvars.clu_state_two_no_cd
         client.indices.stats.return_value = testvars.stats_two
@@ -51,7 +51,7 @@ class TestIndexListClientAndInit(TestCase):
 class TestIndexListOtherMethods(TestCase):
     def test_empty_list(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -61,7 +61,7 @@ class TestIndexListOtherMethods(TestCase):
         self.assertRaises(curator.NoIndices, il.empty_list_check)
     def test_get_segmentcount(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -73,7 +73,7 @@ class TestIndexListOtherMethods(TestCase):
 class TestIndexListAgeFilterName(TestCase):
     def test_get_name_based_ages_match(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -82,7 +82,7 @@ class TestIndexListAgeFilterName(TestCase):
         self.assertEqual(1456963200,il.index_info['index-2016.03.03']['age']['name'])
     def test_get_name_based_ages_no_match(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -98,7 +98,7 @@ class TestIndexListAgeFilterName(TestCase):
 class TestIndexListAgeFilterStatsAPI(TestCase):
     def test_get_field_stats_dates_success(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -113,7 +113,7 @@ class TestIndexListAgeFilterStatsAPI(TestCase):
         )
     def test_get_field_stats_dates_negative(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -123,7 +123,7 @@ class TestIndexListAgeFilterStatsAPI(TestCase):
         self.assertNotIn('not_an_index_name', list(il.index_info.keys()))
     def test_get_field_stats_dates_field_not_found(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -135,7 +135,7 @@ class TestIndexListAgeFilterStatsAPI(TestCase):
 class TestIndexListRegexFilters(TestCase):
     def test_filter_by_regex_prefix(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -153,7 +153,7 @@ class TestIndexListRegexFilters(TestCase):
         self.assertEqual([], il.indices)
     def test_filter_by_regex_timestring(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -171,7 +171,7 @@ class TestIndexListRegexFilters(TestCase):
         self.assertEqual([], il.indices)
     def test_filter_by_regex_no_match_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -188,7 +188,7 @@ class TestIndexListRegexFilters(TestCase):
         )
     def test_filter_by_regex_no_value(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -206,7 +206,7 @@ class TestIndexListRegexFilters(TestCase):
         self.assertEqual([], il.indices)
     def test_filter_by_regex_bad_kind(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -220,7 +220,7 @@ class TestIndexListRegexFilters(TestCase):
 class TestIndexListFilterByAge(TestCase):
     def test_missing_direction(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -230,7 +230,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_bad_direction(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -240,7 +240,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_name_no_timestring(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -251,7 +251,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_name_older_than_now(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -264,7 +264,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_name_older_than_now_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -277,7 +277,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_name_younger_than_now(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -288,7 +288,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], sorted(il.indices))
     def test_name_younger_than_now_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -300,7 +300,7 @@ class TestIndexListFilterByAge(TestCase):
             ['index-2016.03.03','index-2016.03.04'], sorted(il.indices))
     def test_name_younger_than_past_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -312,7 +312,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.04'], sorted(il.indices))
     def test_name_older_than_past_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -324,7 +324,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.03'], sorted(il.indices))
     def test_creation_date_older_than_now(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -337,7 +337,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_creation_date_older_than_now_raises(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -350,7 +350,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], il.indices)
     def test_creation_date_younger_than_now(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -361,7 +361,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], sorted(il.indices))
     def test_creation_date_younger_than_now_raises(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -375,7 +375,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], il.indices)
     def test_creation_date_younger_than_past_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -386,7 +386,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.04'], sorted(il.indices))
     def test_creation_date_older_than_past_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -397,7 +397,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.03'], sorted(il.indices))
     def test_field_stats_missing_field(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -407,7 +407,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_field_stats_invalid_stats_result(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -418,7 +418,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_field_stats_invalid_source(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -428,7 +428,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_field_stats_older_than_now(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -442,7 +442,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_field_stats_younger_than_now(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -454,7 +454,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], sorted(il.indices))
     def test_field_stats_younger_than_past_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -466,7 +466,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.04'], sorted(il.indices))
     def test_field_stats_older_than_past_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -478,7 +478,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.03'], sorted(il.indices))
     def test_field_stats_older_than_now_max(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -492,7 +492,7 @@ class TestIndexListFilterByAge(TestCase):
         )
     def test_field_stats_younger_than_now_max(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -504,7 +504,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], sorted(il.indices))
     def test_field_stats_younger_than_past_date_max(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -517,7 +517,7 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.04'], sorted(il.indices))
     def test_field_stats_older_than_past_date_max(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -532,7 +532,7 @@ class TestIndexListFilterByAge(TestCase):
 class TestIndexListFilterBySpace(TestCase):
     def test_missing_disk_space_value(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -541,7 +541,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertRaises(curator.MissingArgument, il.filter_by_space)
     def test_filter_result_by_name(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -551,7 +551,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertEqual(['index-2016.03.03'], il.indices)
     def test_filter_result_by_name_reverse_order(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -561,7 +561,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertEqual(['index-2016.03.04'], il.indices)
     def test_filter_result_by_name_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -571,7 +571,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertEqual(['index-2016.03.04'], il.indices)
     def test_filter_result_by_date_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -582,7 +582,7 @@ class TestIndexListFilterBySpace(TestCase):
         )
     def test_filter_result_by_date_timestring_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -593,7 +593,7 @@ class TestIndexListFilterBySpace(TestCase):
         )
     def test_filter_result_by_date_timestring(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -606,7 +606,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertEqual(['a-2016.03.03'], sorted(il.indices))
     def test_filter_result_by_date_non_matching_timestring(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -619,7 +619,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertEqual([], sorted(il.indices))
     def test_filter_result_by_date_field_stats_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -631,7 +631,7 @@ class TestIndexListFilterBySpace(TestCase):
         )
     def test_filter_result_by_date_no_field_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -643,7 +643,7 @@ class TestIndexListFilterBySpace(TestCase):
         )
     def test_filter_result_by_date_invalid_stats_result_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -655,7 +655,7 @@ class TestIndexListFilterBySpace(TestCase):
         )
     def test_filter_result_by_date_field_stats(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -668,7 +668,7 @@ class TestIndexListFilterBySpace(TestCase):
         self.assertEqual(['a-2016.03.03'], il.indices)
     def test_filter_result_by_creation_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -680,7 +680,7 @@ class TestIndexListFilterBySpace(TestCase):
 class TestIndexListFilterKibana(TestCase):
     def test_filter_kibana_positive(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -692,7 +692,7 @@ class TestIndexListFilterKibana(TestCase):
         self.assertEqual(['dummy'], il.indices)
     def test_filter_kibana_positive_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -707,7 +707,7 @@ class TestIndexListFilterKibana(TestCase):
         self.assertEqual(kibana_indices, il.indices)
     def test_filter_kibana_negative(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -724,7 +724,7 @@ class TestIndexListFilterKibana(TestCase):
 class TestIndexListFilterForceMerged(TestCase):
     def test_filter_forcemerge_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -733,7 +733,7 @@ class TestIndexListFilterForceMerged(TestCase):
         self.assertRaises(curator.MissingArgument, il.filter_forceMerged)
     def test_filter_forcemerge_positive(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -743,7 +743,7 @@ class TestIndexListFilterForceMerged(TestCase):
         self.assertEqual([testvars.named_index], il.indices)
     def test_filter_forcemerge_negative(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -755,7 +755,7 @@ class TestIndexListFilterForceMerged(TestCase):
 class TestIndexListFilterOpened(TestCase):
     def test_filter_opened(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -767,7 +767,7 @@ class TestIndexListFilterOpened(TestCase):
 class TestIndexListFilterAllocated(TestCase):
     def test_missing_key(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -778,7 +778,7 @@ class TestIndexListFilterAllocated(TestCase):
         )
     def test_missing_value(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -789,7 +789,7 @@ class TestIndexListFilterAllocated(TestCase):
         )
     def test_invalid_allocation_type(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -800,7 +800,7 @@ class TestIndexListFilterAllocated(TestCase):
         )
     def test_success(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -809,7 +809,7 @@ class TestIndexListFilterAllocated(TestCase):
         self.assertEqual(['index-2016.03.04'], il.indices)
     def test_invalid_tag(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -822,7 +822,7 @@ class TestIndexListFilterAllocated(TestCase):
 class TestIterateFiltersIndex(TestCase):
     def test_no_filters(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -834,7 +834,7 @@ class TestIterateFiltersIndex(TestCase):
         )
     def test_no_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -844,7 +844,7 @@ class TestIterateFiltersIndex(TestCase):
             curator.ConfigurationError, ilo.iterate_filters, config)
     def test_invalid_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -854,7 +854,7 @@ class TestIterateFiltersIndex(TestCase):
             curator.ConfigurationError, ilo.iterate_filters, config)
     def test_pattern_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -864,7 +864,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['a-2016.03.03'], ilo.indices)
     def test_age_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -874,7 +874,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['index-2016.03.03'], ilo.indices)
     def test_space_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -885,7 +885,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['a-2016.03.03'], ilo.indices)
     def test_forcemerge_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -896,7 +896,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual([testvars.named_index], ilo.indices)
     def test_allocated_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -906,7 +906,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['index-2016.03.04'], ilo.indices)
     def test_kibana_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -922,7 +922,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['dummy'], ilo.indices)
     def test_opened_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -933,7 +933,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['c-2016.03.05'], ilo.indices)
     def test_closed_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
@@ -945,7 +945,7 @@ class TestIterateFiltersIndex(TestCase):
             ['a-2016.03.03','b-2016.03.04','d-2016.03.06'], sorted(ilo.indices))
     def test_none_filtertype(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -956,7 +956,7 @@ class TestIterateFiltersIndex(TestCase):
             ['index-2016.03.03', 'index-2016.03.04'], sorted(ilo.indices))
     def test_unknown_filtertype_raises(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -969,7 +969,7 @@ class TestIterateFiltersIndex(TestCase):
 class TestIndexListFilterAlias(TestCase):
     def test_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -977,7 +977,7 @@ class TestIndexListFilterAlias(TestCase):
         self.assertRaises(curator.MissingArgument, il.filter_by_alias)
     def test_positive(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -988,7 +988,7 @@ class TestIndexListFilterAlias(TestCase):
             sorted(list(testvars.settings_two.keys())), sorted(il.indices))
     def test_negative(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -999,7 +999,7 @@ class TestIndexListFilterAlias(TestCase):
             sorted([]), sorted(il.indices))
     def test_get_alias_raises(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -1013,7 +1013,7 @@ class TestIndexListFilterAlias(TestCase):
 class TestIndexListFilterCount(TestCase):
     def test_raise(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -1021,7 +1021,7 @@ class TestIndexListFilterCount(TestCase):
         self.assertRaises(curator.MissingArgument, il.filter_by_count)
     def test_without_age(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -1031,7 +1031,7 @@ class TestIndexListFilterCount(TestCase):
         self.assertEqual([u'index-2016.03.03'], il.indices)
     def test_without_age_reversed(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -1041,7 +1041,7 @@ class TestIndexListFilterCount(TestCase):
         self.assertEqual([u'index-2016.03.04'], il.indices)
     def test_with_age(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -1053,7 +1053,7 @@ class TestIndexListFilterCount(TestCase):
         self.assertEqual([u'index-2016.03.03'], il.indices)
     def test_with_age_creation_date(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -1063,7 +1063,7 @@ class TestIndexListFilterCount(TestCase):
         self.assertEqual([u'index-2016.03.03'], il.indices)
     def test_with_age_reversed(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
