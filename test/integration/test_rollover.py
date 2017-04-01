@@ -1,0 +1,287 @@
+import elasticsearch
+import curator
+import os
+import json
+import string, random, tempfile
+import click
+from click import testing as clicktest
+import time
+
+from . import CuratorTestCase
+from . import testvars as testvars
+
+import logging
+logger = logging.getLogger(__name__)
+
+host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
+port = int(port) if port else 9200
+
+class TestCLIRollover(CuratorTestCase):
+    def test_max_age_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        condition = 'max_age'
+        value     = '1s'
+        expected  = {newindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        time.sleep(1)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_one.format(alias, condition, value))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_max_age_false(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        condition = 'max_age'
+        value     = '10s'
+        expected  = {oldindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        time.sleep(1)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_one.format(alias, condition, value))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_max_docs_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        condition = 'max_docs'
+        value     = '2'
+        expected  = {newindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_one.format(alias, condition, value))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_max_docs_false(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        condition = 'max_docs'
+        value     = '5'
+        expected  = {oldindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_one.format(alias, condition, value))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_max_docs_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        condition = 'max_docs'
+        value     = '2'
+        expected  = {newindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_one.format(alias, condition, value))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_conditions_both_false(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        max_age   = '10s'
+        max_docs  = '5'
+        expected  = {oldindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_both.format(alias, max_age, max_docs))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_conditions_both_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        max_age   = '1s'
+        max_docs  = '2'
+        expected  = {newindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        time.sleep(1)
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_both.format(alias, max_age, max_docs))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_conditions_one_false_one_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        max_age   = '10s'
+        max_docs  = '2'
+        expected  = {newindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_both.format(alias, max_age, max_docs))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+    def test_conditions_one_empty_one_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        max_age   = ' '
+        max_docs  = '2'
+        expected  = {oldindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_both.format(alias, max_age, max_docs))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+        self.assertEqual(-1, result.exit_code)
+    def test_bad_settings(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        max_age   = '10s'
+        max_docs  = '2'
+        expected  = {oldindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(
+            index=oldindex,
+            body={ 'aliases': { alias: {} } }
+        )
+        self.add_docs(oldindex)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.rollover_bad_settings.format(alias, max_age, max_docs))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+        self.assertEqual(1, result.exit_code)
+    def test_extra_option(self):
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.bad_option_proto_test.format('rollover'))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual([], curator.get_indices(self.client))
+        self.assertEqual(-1, result.exit_code)

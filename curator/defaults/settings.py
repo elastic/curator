@@ -48,6 +48,7 @@ def index_actions():
         'delete_indices',
         'forcemerge',
         'open',
+        'reindex',
         'replicas',
         'rollover',
         'snapshot',
@@ -90,3 +91,27 @@ def default_options():
 
 def default_filters():
     return { 'filters' : [{ 'filtertype' : 'none' }] }
+
+def structural_filter_elements():
+    return {
+        Optional('aliases'): Any(str, [str], unicode, [unicode]),
+        Optional('allocation_type'): Any(str, unicode),
+        Optional('count'): Coerce(int),
+        Optional('direction'): Any(str, unicode),
+        Optional('disk_space'): float,
+        Optional('epoch'): Any(Coerce(int), None),
+        Optional('exclude'): Any(int, str, unicode, bool, None),
+        Optional('field'): Any(str, unicode, None),
+        Optional('key'): Any(str, unicode),
+        Optional('kind'): Any(str, unicode),
+        Optional('max_num_segments'): Coerce(int),
+        Optional('reverse'): Any(int, str, unicode, bool, None),
+        Optional('source'): Any(str, unicode),
+        Optional('state'): Any(str, unicode),
+        Optional('stats_result'): Any(str, unicode, None),
+        Optional('timestring'): Any(str, unicode, None),
+        Optional('unit'): Any(str, unicode),
+        Optional('unit_count'): Coerce(int),
+        Optional('use_age'): Boolean(),
+        Optional('value'): Any(int, float, str, unicode, bool),
+    }

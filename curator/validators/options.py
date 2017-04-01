@@ -1,242 +1,104 @@
 from voluptuous import *
-from ..defaults import settings
-
-### Schema information ###
-
-def allocation_type():
-    return { Optional('allocation_type', default='require'): All(
-        Any(str, unicode), Any('require', 'include', 'exclude')) }
-
-def conditions():
-    return {
-        Optional('conditions'): {
-            Optional('max_age'): Any(str, unicode),
-            Optional('max_docs'): Coerce(int)
-        }
-    }
-
-def continue_if_exception():
-    return { Optional('continue_if_exception', default=False): Boolean() }
-
-def count():
-    return { Required('count'): All(Coerce(int), Range(min=0, max=10)) }
-
-def delay():
-    return {
-        Optional('delay', default=0): All(
-                Coerce(float), Range(min=0.0, max=3600.0)
-            )
-    }
-
-def delete_aliases():
-    return { Optional('delete_aliases', default=False): Boolean() }
-
-def disable_action():
-    return { Optional('disable_action', default=False): Boolean() }
-
-def extra_settings():
-    return { Optional('extra_settings', default={}): dict }
-
-def ignore_empty_list():
-    return { Optional('ignore_empty_list', default=False): Boolean() }
-
-def ignore_unavailable():
-    return { Optional('ignore_unavailable', default=False): Boolean() }
-
-def include_aliases():
-    return { Optional('include_aliases', default=False): Boolean() }
-
-def include_global_state():
-    return { Optional('include_global_state', default=True): Boolean() }
-
-def indices():
-    return { Optional('indices', default=None): Any(None, list) }
-
-def key():
-    return { Required('key'): Any(str, unicode) }
-
-def max_num_segments():
-    return {
-        Required('max_num_segments'): All(Coerce(int), Range(min=1, max=32768))
-    }
-
-def max_wait(action):
-    # The separation is here in case I want to change defaults later...
-    if action in ['allocation', 'cluster_routing', 'replicas']:
-        return { Optional('max_wait', default=-1): Any(-1, Coerce(int), None) }
-    elif action in ['restore', 'snapshot', 'reindex']:
-        return { Optional('max_wait', default=-1): Any(-1, Coerce(int), None) }
-
-def name(action):
-    if action in ['alias', 'create_index', 'rollover']:
-        return { Required('name'): Any(str, unicode) }
-    elif action == 'snapshot':
-        return {
-            Optional('name', default='curator-%Y%m%d%H%M%S'): Any(str, unicode)
-        }
-    elif action == 'restore':
-        return { Optional('name'): Any(str, unicode) }
-
-def partial():
-    return { Optional('partial', default=False): Boolean() }
-
-def rename_pattern():
-    return { Optional('rename_pattern'): Any(str, unicode) }
-
-def rename_replacement():
-    return { Optional('rename_replacement'): Any(str, unicode) }
-
-def repository():
-    return { Required('repository'): Any(str, unicode) }
-
-def retry_count():
-    return {
-        Optional('retry_count', default=3): All(
-                Coerce(int), Range(min=0, max=100)
-            )
-    }
-
-def retry_interval():
-    return {
-        Optional('retry_interval', default=120): All(
-                Coerce(int), Range(min=1, max=600)
-            )
-    }
-
-def routing_type():
-    return { Required('routing_type'): Any('allocation', 'rebalance') }
-
-def cluster_routing_setting():
-    return { Required('setting'): Any('enable') }
-
-def cluster_routing_value():
-    return {
-        Required('value'): Any(
-                'all', 'primaries', 'none', 'new_primaries', 'replicas'
-            )
-    }
-
-def skip_repo_fs_check():
-    return { Optional('skip_repo_fs_check', default=False): Boolean() }
-
-def timeout_override(action):
-    if action in ['forcemerge', 'restore', 'snapshot']:
-        return {
-            Optional('timeout_override', default=21600): Any(Coerce(int), None)
-        }
-    if action in ['close']:
-        # This is due to the synced flush operation before closing.
-        return {
-            Optional('timeout_override', default=180): Any(Coerce(int), None)
-        }
-    else:
-        return {
-            Optional('timeout_override', default=None): Any(Coerce(int), None)
-        }
-
-def value():
-    return { Required('value', default=None): Any(str, unicode, None) }
-
-def wait_for_active_shards():
-    return {
-        Optional('wait_for_active_shards', default=0): Any(Coerce(int), None)
-    }
-
-def wait_for_completion(action):
-    if action in ['allocation', 'cluster_routing', 'replicas']:
-        return { Optional('wait_for_completion', default=False): Boolean() }
-    elif action in ['restore', 'snapshot']:
-        return { Optional('wait_for_completion', default=True): Boolean() }
-
-def wait_interval(action):
-    if action in ['allocation', 'cluster_routing', 'replicas']:
-        return { Optional('wait_interval', default=3): Any(All(
-                Coerce(int), Range(min=1, max=30)), None) }
-    elif action in ['restore', 'snapshot', 'reindex']:
-        return { Optional('wait_interval', default=9): Any(All(
-                Coerce(int), Range(min=1, max=30)), None) }
-
-def warn_if_no_indices():
-    return { Optional('warn_if_no_indices', default=False): Boolean() }
+from ..defaults import option_defaults
 
 ## Methods for building the schema
 def action_specific(action):
     options = {
         'alias' : [
-            name(action),
-            warn_if_no_indices(),
-            extra_settings(),
+            option_defaults.name(action),
+            option_defaults.warn_if_no_indices(),
+            option_defaults.extra_settings(),
         ],
         'allocation' : [
-            key(),
-            value(),
-            allocation_type(),
-            wait_for_completion(action),
-            wait_interval(action),
-            max_wait(action),            
+            option_defaults.key(),
+            option_defaults.value(),
+            option_defaults.allocation_type(),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),            
         ],
-        'close' : [ delete_aliases() ],
+        'close' : [ option_defaults.delete_aliases() ],
         'cluster_routing' : [
-            routing_type(),
-            cluster_routing_setting(),
-            cluster_routing_value(),
-            wait_for_completion(action),
-            wait_interval(action),
-            max_wait(action),        
+            option_defaults.routing_type(),
+            option_defaults.cluster_routing_setting(),
+            option_defaults.cluster_routing_value(),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),        
         ],
         'create_index' : [
-            name(action),
-            extra_settings(),
+            option_defaults.name(action),
+            option_defaults.extra_settings(),
         ],
         'delete_indices' : [],
         'delete_snapshots' : [
-            repository(),
-            retry_interval(),
-            retry_count(),
+            option_defaults.repository(),
+            option_defaults.retry_interval(),
+            option_defaults.retry_count(),
         ],
         'forcemerge' : [
-            delay(),
-            max_num_segments(),
+            option_defaults.delay(),
+            option_defaults.max_num_segments(),
         ],
         'open' : [],
+        'reindex' : [
+            option_defaults.request_body(),
+            option_defaults.refresh(),
+            option_defaults.requests_per_second(),
+            option_defaults.slices(),
+            option_defaults.timeout(action),
+            option_defaults.wait_for_active_shards(action),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),    
+            option_defaults.remote_certificate(),
+            option_defaults.remote_client_cert(),
+            option_defaults.remote_client_key(),
+            option_defaults.remote_aws_key(),
+            option_defaults.remote_aws_secret_key(),
+            option_defaults.remote_aws_region(),
+            option_defaults.remote_filters(),
+            option_defaults.remote_url_prefix(),
+            option_defaults.remote_ssl_no_validate(),
+        ],
         'replicas' : [
-            count(),
-            wait_for_completion(action),
-            wait_interval(action),
-            max_wait(action),            
+            option_defaults.count(),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),            
         ],
         'rollover' : [
-            name(action),
-            conditions(),
-            extra_settings(),
-            wait_for_active_shards(),
+            option_defaults.name(action),
+            option_defaults.conditions(),
+            option_defaults.extra_settings(),
+            option_defaults.wait_for_active_shards(action),
         ],
         'restore' : [
-            repository(),
-            name(action),
-            indices(),
-            ignore_unavailable(),
-            include_aliases(),
-            include_global_state(),
-            partial(),
-            rename_pattern(),
-            rename_replacement(),
-            extra_settings(),
-            wait_for_completion(action),
-            wait_interval(action),
-            max_wait(action),            
-            skip_repo_fs_check(),
+            option_defaults.repository(),
+            option_defaults.name(action),
+            option_defaults.indices(),
+            option_defaults.ignore_unavailable(),
+            option_defaults.include_aliases(),
+            option_defaults.include_global_state(),
+            option_defaults.partial(),
+            option_defaults.rename_pattern(),
+            option_defaults.rename_replacement(),
+            option_defaults.extra_settings(),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),            
+            option_defaults.skip_repo_fs_check(),
         ],
         'snapshot' : [
-            repository(),
-            name(action),
-            ignore_unavailable(),
-            include_global_state(),
-            partial(),
-            wait_for_completion(action),
-            wait_interval(action),
-            max_wait(action),
-            skip_repo_fs_check(),
+            option_defaults.repository(),
+            option_defaults.name(action),
+            option_defaults.ignore_unavailable(),
+            option_defaults.include_global_state(),
+            option_defaults.partial(),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),
+            option_defaults.skip_repo_fs_check(),
         ],
     }
     return options[action]
@@ -246,10 +108,10 @@ def get_schema(action):
     # "Required" and "Optional" elements are hashes themselves.
     options = {}
     defaults = [
-        continue_if_exception(),
-        disable_action(),
-        ignore_empty_list(),
-        timeout_override(action),
+        option_defaults.continue_if_exception(),
+        option_defaults.disable_action(),
+        option_defaults.ignore_empty_list(),
+        option_defaults.timeout_override(action),
     ]
     for each in defaults:
         options.update(each)

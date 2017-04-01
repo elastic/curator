@@ -1,5 +1,5 @@
 from voluptuous import *
-from ..defaults import settings
+from . import settings
 from . import filter_elements
 import logging
 logger = logging.getLogger(__name__)

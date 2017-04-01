@@ -110,7 +110,7 @@ class TestCLIRestore(CuratorTestCase):
                 False,
                 301,
                 1,
-                -1,
+                3,
             )
         )
         test = clicktest.CliRunner()
@@ -129,4 +129,4 @@ class TestCLIRestore(CuratorTestCase):
         )
         # The test runs so fast that it tries to execute the cleanup step
         # and delete the repository before Elasticsearch is actually ready
-        time.sleep(0.5)
+        time.sleep(1)

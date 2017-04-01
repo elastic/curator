@@ -174,7 +174,7 @@ class TestChunkIndexList(TestCase):
 class TestGetIndices(TestCase):
     def test_client_exception(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.indices.get_settings.side_effect = testvars.fake_fail
         self.assertRaises(
@@ -182,25 +182,16 @@ class TestGetIndices(TestCase):
     def test_positive(self):
         client = Mock()
         client.indices.get_settings.return_value = testvars.settings_two
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         self.assertEqual(
             ['index-2016.03.03', 'index-2016.03.04'],
             sorted(curator.get_indices(client))
         )
     def test_empty(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = {}
         self.assertEqual([], curator.get_indices(client))
-    def test_issue_826(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.2'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.indices.exists.return_value = True
-        self.assertEqual(
-            ['.security', 'index-2016.03.03', 'index-2016.03.04'],
-            sorted(curator.get_indices(client))
-        )
 
 class TestCheckVersion(TestCase):
     def test_check_version_(self):
@@ -209,7 +200,7 @@ class TestCheckVersion(TestCase):
         self.assertIsNone(curator.check_version(client))
     def test_check_version_less_than(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.2'} }
+        client.info.return_value = {'version': {'number': '2.4.3'} }
         self.assertRaises(curator.CuratorException, curator.check_version, client)
     def test_check_version_greater_than(self):
         client = Mock()
@@ -301,25 +292,12 @@ class TestGetClient(TestCase):
             curator.get_client, **kwargs
         )
 
-class TestOverrideTimeout(TestCase):
-    def test_no_change(self):
-        self.assertEqual(30, curator.override_timeout(30, 'delete'))
-    def test_forcemerge_snapshot(self):
-        self.assertEqual(21600, curator.override_timeout(30, 'forcemerge'))
-        self.assertEqual(21600, curator.override_timeout(30, 'snapshot'))
-    def test_sync_flush(self):
-        self.assertEqual(180, curator.override_timeout(30, 'sync_flush'))
-    def test_invalid_action(self):
-        self.assertEqual(30, curator.override_timeout(30, 'invalid'))
-    def test_invalid_timeout(self):
-        self.assertRaises(TypeError, curator.override_timeout('invalid', 'delete'))
-
 class TestShowDryRun(TestCase):
     # For now, since it's a pain to capture logging output, this is just a
     # simple code coverage run
     def test_index_list(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -794,7 +772,7 @@ class TestWaitForIt(TestCase):
     def test_reached_max_wait(self):
         client = Mock()
         client.cluster.health.return_value = {'status':'red'}
-        self.assertFalse(
-            curator.wait_for_it(client, 'replicas', 
-                wait_interval=1, max_wait=1)
+        self.assertRaises(curator.ActionTimeout,
+            curator.wait_for_it, client, 'replicas', 
+                wait_interval=1, max_wait=1
         )

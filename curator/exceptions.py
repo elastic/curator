@@ -38,3 +38,8 @@ class SnapshotInProgress(ActionError):
     """
     Exception raised when a snapshot is already in progress
     """
+
+class ActionTimeout(CuratorException):
+    """
+    Exception raised when an action fails to complete in the allotted time
+    """

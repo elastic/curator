@@ -5,8 +5,7 @@
 --
 These examples should help illustrate how to build your own <<actions,actions>>.
 
-Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
-configuration files.
+You can use <<envvars,environment variables>> in your configuration files.
 
 * <<ex_alias,alias>>
 * <<ex_allocation,allocation>>
@@ -83,6 +82,8 @@ actions:
         exclude:
 -------------
 
+
+
 [[ex_allocation]]
 == allocation
 
@@ -123,6 +124,8 @@ actions:
       exclude:
 -------------
 
+
+
 [[ex_close]]
 == close
 
@@ -159,6 +162,7 @@ actions:
       unit_count: 30
       exclude:
 -------------
+
 
 
 [[ex_cluster_routing]]
@@ -208,6 +212,7 @@ actions:
 -------------
 
 
+
 [[ex_create_index]]
 == create_index
 
@@ -234,6 +239,7 @@ actions:
       continue_if_exception: False
       disable_action: True
 -------------
+
 
 
 [[ex_delete_indices]]
@@ -274,6 +280,8 @@ actions:
       exclude:
 -------------
 
+
+
 [[ex_delete_snapshots]]
 == delete_snapshots
 
@@ -309,6 +317,7 @@ actions:
       unit_count: 45
       exclude:
 -------------
+
 
 
 [[ex_forcemerge]]
@@ -350,6 +359,8 @@ actions:
       unit_count: 2
       exclude:
 -------------
+
+
 
 [[ex_open]]
 == open
@@ -394,6 +405,175 @@ actions:
       exclude:
 -------------
 
+
+
+[[ex_reindex]]
+== reindex
+
+
+=== Manually selected reindex of a single index
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+=== Manually selected reindex of a multiple indices
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: "Reindex index1,index2,index3 into new_index"
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: ['index1', 'index2', 'index3']
+        dest:
+          index: new_index
+    filters:
+    - filtertype: none
+-------------
+
+
+=== Filter-Selected Indices
+
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: >-
+      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: REINDEX_SELECTION
+        dest:
+          index: logstash-2017.03
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-2017.03.
+-------------
+
+=== Reindex From Remote
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: >-
+      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: http://otherhost:9200
+            username: myuser
+            password: mypass
+          index: index1
+        dest:
+          index: index1
+    filters:
+    - filtertype: none
+-------------
+
+
+=== Reindex From Remote With Filter-Selected Indices
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: >-
+      Reindex all remote daily logstash indices from March 2017 into local index
+      logstash-2017.03
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: http://otherhost:9200
+            username: myuser
+            password: mypass
+          index: REINDEX_SELECTION
+        dest:
+          index: logstash-2017.03
+      remote_filters:
+      - filtertype: pattern
+      kind: prefix
+      value: logstash-2017.03.
+    filters:
+    - filtertype: none
+-------------
+
+
+
 [[ex_replicas]]
 == replicas
 
@@ -430,6 +610,8 @@ actions:
       unit_count: 10
       exclude:
 -------------
+
+
 
 [[ex_restore]]
 == restore
@@ -479,6 +661,8 @@ actions:
       exclude:
 -------------
 
+
+
 [[ex_rollover]]
 == rollover
 
@@ -486,8 +670,7 @@ actions:
 -------------
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
-# not a Python "NoneType". However, max_age and max_docs must have a value, if
-# they are used as conditions.
+# not a Python "NoneType"
 #
 # Also remember that all examples have 'disable_action' set to True.  If you
 # want to use this action as a template, be sure to set this to False after
@@ -499,14 +682,20 @@ actions:
       Rollover the index associated with index 'name', which should be in the
       form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
     options:
+      disable_action: True
       name: aliasname
       conditions:
         max_age: 1d
         max_docs: 1000000
+      extra_settings:
+        index.number_of_shards: 3
+        index.number_of_replicas: 1
       timeout_override:
       continue_if_exception: False
-      disable_action: True
+      disable_action: False
 -------------
+
+
 
 [[ex_snapshot]]
 == snapshot
