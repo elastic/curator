@@ -25,8 +25,7 @@
 * <<fe_use_age,use_age>>
 * <<fe_value,value>>
 
-Starting in Curator 4.1, you can use <<envvars,environment variables>> in your
-configuration files.
+You can use <<envvars,environment variables>> in your configuration files.
 --
 
 [[fe_aliases]]

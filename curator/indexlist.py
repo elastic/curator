@@ -65,11 +65,11 @@ class IndexList(object):
         self.loggit.debug('Getting all indices')
         self.all_indices = get_indices(self.client)
         self.indices = self.all_indices[:]
-        self.empty_list_check()
-        for index in self.indices:
-            self.__build_index_info(index)
-        self._get_metadata()
-        self._get_index_stats()
+        if self.indices:
+            for index in self.indices:
+                self.__build_index_info(index)
+            self._get_metadata()
+            self._get_index_stats()
 
     def __build_index_info(self, index):
         """

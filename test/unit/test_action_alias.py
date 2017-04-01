@@ -10,7 +10,7 @@ class TestActionAlias(TestCase):
         self.assertRaises(curator.MissingArgument, curator.Alias)
     def test_add_raises_on_missing_parameter(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -19,7 +19,7 @@ class TestActionAlias(TestCase):
         self.assertRaises(TypeError, ao.add)
     def test_add_raises_on_invalid_parameter(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -28,7 +28,7 @@ class TestActionAlias(TestCase):
         self.assertRaises(TypeError, ao.add, [])
     def test_add_single(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -38,7 +38,7 @@ class TestActionAlias(TestCase):
         self.assertEqual(testvars.alias_one_add, ao.actions)
     def test_add_single_with_extra_settings(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -51,7 +51,7 @@ class TestActionAlias(TestCase):
         self.assertEqual(testvars.alias_one_add_with_extras, ao.actions)
     def test_remove_single(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -62,7 +62,7 @@ class TestActionAlias(TestCase):
         self.assertEqual(testvars.alias_one_rm, ao.actions)
     def test_add_multiple(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -73,7 +73,7 @@ class TestActionAlias(TestCase):
         self.assertEqual(testvars.alias_two_add, cmp)
     def test_remove_multiple(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -85,7 +85,7 @@ class TestActionAlias(TestCase):
         self.assertEqual(testvars.alias_two_rm, cmp)
     def test_raise_on_empty_body(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -94,7 +94,7 @@ class TestActionAlias(TestCase):
         self.assertRaises(curator.ActionError, ao.body)
     def test_do_dry_run(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -105,7 +105,7 @@ class TestActionAlias(TestCase):
         self.assertIsNone(ao.do_dry_run())
     def test_do_action(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one
@@ -116,7 +116,7 @@ class TestActionAlias(TestCase):
         self.assertIsNone(ao.do_action())
     def test_do_action_raises_exception(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '2.4.1'} }
+        client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_one
         client.cluster.state.return_value = testvars.clu_state_one
         client.indices.stats.return_value = testvars.stats_one

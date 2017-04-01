@@ -77,8 +77,8 @@ and what each configuration looks like after replacement:
 [[actionfile]]
 == Action File
 
-NOTE: Starting in Curator 4.1, you can use <<envvars,environment variables>> in
-    your configuration files.
+NOTE: You can use <<envvars,environment variables>> in your configuration
+  files.
 
 An action file has the following structure:
 
@@ -174,8 +174,8 @@ NOTE: The default location of the configuration file is `~/.curator/curator.yml`
     <<command-line,command-line>>.
 
 
-NOTE: Starting in Curator 4.1, you can use <<envvars,environment variables>> in
-    your configuration files.
+NOTE: You can use <<envvars,environment variables>> in your configuration
+  files.
 
 The configuration file contains client connection and settings for logging.  It
 looks like this:
@@ -357,7 +357,7 @@ SSL key. The key file must be an unencrypted key in PEM format.
 === aws_key
 
 WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 4 does not currently work with AWS>>.
+    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -377,7 +377,7 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 === aws_secret_key
 
 WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 4 does not currently work with AWS>>.
+    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -397,7 +397,7 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 === aws_region
 
 WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 4 does not currently work with AWS>>.
+    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.

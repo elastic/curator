@@ -10,6 +10,9 @@ production! There `will` be many more changes before 5.0.0 is released.
 
 **New Features**
 
+  * Reindex is here! The new reindex action has a ton of flexibility. You 
+    can even reindex from remote locations!
+
   * Add dedicated "wait for completion" functionality. This supports health
     checks, recovery (restore) checks, snapshot checks, and operations which
     support the new tasks API.  All actions which can use this have been 
@@ -29,6 +32,7 @@ production! There `will` be many more changes before 5.0.0 is released.
   * Bumped ``click`` (python module) version dependency to 6.7
   * Bumped ``urllib3`` (python module) version dependency to 1.20
   * Bumped ``elasticsearch`` (python module) version dependency to 5.2
+  * Refactored a ton of code to be cleaner and hopefully more consistent.
 
 **Bug Fixes**
 
@@ -36,6 +40,10 @@ production! There `will` be many more changes before 5.0.0 is released.
     raising an Exception. #874 (untergeek)
   * The ``get_repository()`` function now properly raises an exception instead
     of returning `False` if nothing is found. #761 (untergeek)
+
+**Breaking Changes**
+
+  * IndexList no longer checks to see if there are indices on initialization.
 
 
 5.0.0a1 (23 March 2017)

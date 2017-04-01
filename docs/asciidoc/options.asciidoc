@@ -25,16 +25,31 @@ Options are settings used by <<actions,actions>>.
 * <<option_mns,max_num_segments>>
 * <<option_name,name>>
 * <<option_partial,partial>>
+* <<option_refresh,refresh>>
+* <<option_remote_aws_key,remote_aws_key>>
+* <<option_remote_aws_region,remote_remote_aws_region>>
+* <<option_remote_aws_secret_key,remote_aws_secret_key>>
+* <<option_remote_certificate,remote_certificate>>
+* <<option_remote_client_cert,remote_client_cert>>
+* <<option_remote_client_key,remote_client_key>>
+* <<option_remote_filters,remote_filters>>
+* <<option_remote_ssl_no_validate,remote_ssl_no_validate>>
+* <<option_remote_url_prefix,remote_url_prefix>>
 * <<option_rename_pattern,rename_pattern>>
 * <<option_rename_replacement,rename_replacement>>
 * <<option_repository,repository>>
+* <<option_request_body,request_body>>
+* <<option_requests_per_second,requests_per_second>>
 * <<option_retry_count,retry_count>>
 * <<option_retry_interval,retry_interval>>
 * <<option_routing_type,routing_type>>
 * <<option_setting,setting>>
+* <<option_slices,slices>>
 * <<option_skip_fsck,skip_repo_fs_check>>
+* <<option_timeout,timeout>>
 * <<option_timeout_override,timeout_override>>
 * <<option_value,value>>
+* <<option_wait_for_active_shards,wait_for_active_shards>>
 * <<option_wfc,wait_for_completion>>
 * <<option_wait_interval,wait_interval>>
 * <<option_warn_if_no_indices,warn_if_no_indices>>
@@ -350,10 +365,395 @@ by setting partial to `True`.
 
 The default value of this setting is `False`
 
+[[option_refresh]]
+== refresh
+
+NOTE: This setting is only used by the <<reindex,reindex>> action.
+
+Setting `refresh` to `True` will cause all re-indexed indexes to be refreshed.
+This differs from the Index API’s refresh parameter which causes just the
+_shard_ that received the new data to be refreshed.
+
+Read more about this setting at {ref}/docs-reindex.html
+
+The default value is `True`.
+
+[[option_remote_aws_key]]
+== remote_aws_key
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+WARNING: This feature allows connection to AWS using IAM credentials, but
+    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
+
+WARNING: This setting will not work unless the `requests-aws4auth` Python module
+    has been manually installed first.
+
+This should be an AWS IAM access key, or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_aws_key: AWS_KEY
+      remote_aws_secret_key: AWS_SECRET_KEY
+      remote_aws_region: us-east-1
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+
+
+[[option_remote_aws_region]]
+== remote_aws_region
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+WARNING: This feature allows connection to AWS using IAM credentials, but
+    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
+
+WARNING: This setting will not work unless the `requests-aws4auth` Python module
+    has been manually installed first.
+
+This should be an AWS region, or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_aws_key: AWS_KEY
+      remote_aws_secret_key: AWS_SECRET_KEY
+      remote_aws_region: us-east-1
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+
+
+[[option_remote_aws_secret_key]]
+== remote_aws_secret_key
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+WARNING: This feature allows connection to AWS using IAM credentials, but
+    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
+
+WARNING: This setting will not work unless the `requests-aws4auth` Python module
+    has been manually installed first.
+
+This should be an AWS IAM secret access key, or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_aws_key: AWS_KEY
+      remote_aws_secret_key: AWS_SECRET_KEY
+      remote_aws_region: us-east-1
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+
+
+[[option_remote_certificate]]
+== remote_certificate
+
+This should be a file path to a CA certificate, or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_certificate: /path/to/my/ca.cert
+      remote_client_cert: /path/to/my/client.cert
+      remote_client_key: /path/to/my/client.key
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+This setting allows the use of a specified CA certificate file to validate the
+SSL certificate used by Elasticsearch.
+
+There is no default.
+
+
+
+[[option_remote_client_cert]]
+== remote_client_cert
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+This should be a file path to a client certificate (public key), or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_certificate: /path/to/my/ca.cert
+      remote_client_cert: /path/to/my/client.cert
+      remote_client_key: /path/to/my/client.key
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+Allows the use of a specified SSL client cert file to authenticate to
+Elasticsearch. The file may contain both an SSL client certificate and an SSL
+key, in which case <<client_key,client_key>> is not used. If specifying
+`client_cert`, and the file specified does not also contain the key, use
+<<client_key,client_key>> to specify the file containing the SSL key. The file
+must be in PEM format, and the key part, if used, must be an unencrypted key in
+PEM format as well.
+
+
+
+[[option_remote_client_key]]
+== remote_client_key
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+This should be a file path to a client key (private key), or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_certificate: /path/to/my/ca.cert
+      remote_client_cert: /path/to/my/client.cert
+      remote_client_key: /path/to/my/client.key
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+Allows the use of a specified SSL client key file to authenticate to
+Elasticsearch. If using <<client_cert,client_cert>> and the file specified does
+not also contain the key, use `client_key` to specify the file containing the
+SSL key. The key file must be an unencrypted key in PEM format.
+
+
+
+[[option_remote_filters]]
+== remote_filters
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+This is an array of <<filters,filters>>, exactly as with regular index
+selection:
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex matching indices into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: REINDEX_SELECTION
+        dest:
+          index: index2
+      remote_filters:
+      - filtertype: *first*
+        setting1: ...
+        ...
+        settingN: ...
+      - filtertype: *second*
+        setting1: ...
+        ...
+        settingN: ...
+      - filtertype: *third*
+    filters:
+    - filtertype: none
+-------------
+
+This feature will only work when the `source` `index` is set to
+`REINDEX_SELECTION`.  It will select _remote_ indices matching the filters
+provided, and reindex them to the _local_ cluster as the name provided in the
+`dest` `index`.  In this example, that is `index2`.
+
+
+
+[[option_remote_ssl_no_validate]]
+== remote_ssl_no_validate
+
+This should be `True`, `False` or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_ssl_no_validate: True
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+
+If access to your Elasticsearch instance is protected by SSL encryption, you may
+set `ssl_no_validate` to `True` to disable SSL certificate verification.
+
+Valid use cases for doing so include the use of self-signed certificates that
+cannot be otherwise verified and would generate error messages.
+
+WARNING: Setting `ssl_no_validate` to `True` will likely result in a warning
+    message that your SSL certificates are not trusted. This is expected
+    behavior.
+
+The default value is `False`.
+
+
+
+[[option_remote_url_prefix]]
+== remote_url_prefix
+
+NOTE: This option is only used by the <<reindex,Reindex action>> when performing
+a remote reindex operation.
+
+This should be a single value or left empty.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      remote_url_prefix: my_prefix
+      request_body:
+        source:
+          remote:
+            host: https://otherhost:9200
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+In some cases you may be obliged to connect to a remote Elasticsearch cluster
+through a proxy of some kind. There may be a URL prefix before the API URI
+items, e.g. http://example.com/elasticsearch/ as opposed to
+http://localhost:9200. In such a case, set the `remote_url_prefix` to the
+appropriate value, 'elasticsearch' in this example.
+
+The default is an empty string.
+
+
+
 [[option_rename_pattern]]
 == rename_pattern
 
-NOTE: This setting is only used by the <<restore, restore>> action.
+NOTE: This setting is only used by the <<restore,restore>> action.
 
 [TIP]
 .from the Elasticsearch documentation
@@ -397,6 +797,276 @@ NOTE: This setting is only used by the <<snapshot, snapshot>>, and
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+[[option_requests_per_second]]
+== requests_per_second
+
+NOTE: This option is only used by the <<reindex,Reindex action>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      requests_per_second: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+`requests_per_second` can be set to any positive decimal number (1.4, 6, 1000,
+etc) and throttles the number of requests per second that the reindex issues or
+it can be set to `-1` to disable throttling.
+
+The default value for this is option is `-1`.
+
+
+[[option_request_body]]
+== request_body
+
+NOTE: This setting is only used by the <<reindex,reindex>> action.
+
+=== Manual index selection
+
+The `request_body` option is the heart of the reindex action. In here, using
+YAML syntax, you recreate the body sent to Elasticsearch as described in
+{ref}/docs-reindex.html[the official documentation.]  You can manually select
+indices as with this example:
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+You can also select multiple indices to reindex by making a list in acceptable
+YAML syntax:
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1,index2,index3 into new_index"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: ['index1', 'index2', 'index3']
+        dest:
+          index: new_index
+    filters:
+    - filtertype: none
+-------------
+
+IMPORTANT: You _must_ set at least a <<filtertype_none,none>> filter, or the
+  action will fail.  Don't worry.  If you've manually specified your indices,
+  those are the only ones which will be reindexed.
+
+=== Filter-Selected Indices
+
+Curator allows you to use all indices found by the `filters` section by setting
+the `source` index to `REINDEX_SELECTION`, like this:
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: >-
+      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: REINDEX_SELECTION
+        dest:
+          index: logstash-2017.03
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-2017.03.
+-------------
+
+=== Reindex From Remote
+
+You can also reindex from remote:
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: >-
+      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: http://otherhost:9200
+            username: myuser
+            password: mypass
+          index: index1
+        dest:
+          index: index1
+    filters:
+    - filtertype: none
+-------------
+
+IMPORTANT: You _must_ set at least a <<filtertype_none,none>> filter, or the
+  action will fail.  Don't worry.  Only the indices you specified in `source`
+  will be reindexed.
+
+Curator will create a connection to the host specified as the `host` key in the
+above example.  It will determine which port to connect to, and whether to use
+SSL by parsing the URL entered there.  Because this `host` is specifically used
+by Elasticsearch, and Curator is making a separate connection, it is important
+to ensure that both Curator _and_ your Elasticsearch cluster have access to the
+remote host.
+
+If you do not whitelist the remote cluster, you will not be able to reindex.
+This can be done by adding the following line to your `elasticsearch.yml` file:
+
+[source,yaml]
+-------------
+reindex.remote.whitelist: remote_host_or_IP1:9200, remote_host_or_IP2:9200
+-------------
+
+or by adding this flag to the command-line when starting Elasticsearch:
+
+[source,sh]
+-------------
+bin/elasticsearch -Edefault.reindex.remote.whitelist="remote_host_or_IP:9200"
+-------------
+
+Of course, be sure to substitute the correct host, IP, or port.
+
+Other client connection arguments can also be supplied in the form of action
+options:
+
+* <<option_remote_url_prefix,remote_url_prefix>>
+* <<option_remote_certificate,remote_certificate>>
+* <<option_remote_client_cert,remote_client_cert>>
+* <<option_remote_client_key,remote_client_key>>
+* <<option_remote_aws_key,remote_aws_key>>.footnoteref[disclaimer,AWS functionality will not work until AWS ES resolves API differences with their implementation.]
+* <<option_remote_aws_secret_key,remote_aws_secret_key>>.footnoteref[disclaimer]
+* <<option_remote_aws_region,remote_remote_aws_region>>.footnoteref[disclaimer]
+
+=== Reindex From Remote With Filter-Selected Indices
+
+You can even reindex from remote with filter-selected indices on the remote
+side:
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: >-
+      Reindex all remote daily logstash indices from March 2017 into local index
+      logstash-2017.03
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: http://otherhost:9200
+            username: myuser
+            password: mypass
+          index: REINDEX_SELECTION
+        dest:
+          index: logstash-2017.03
+      remote_filters:
+      - filtertype: pattern
+      kind: prefix
+      value: logstash-2017.03.
+    filters:
+    - filtertype: none
+-------------
+
+IMPORTANT: Even though you are reindexing from remote, you _must_ set at least a
+  <<filtertype_none,none>> filter, or the action will fail.  Don't worry.  Only
+  the indices specified in `source` will be reindexed.
+
+Curator will create a connection to the host specified as the `host` key in the
+above example.  It will determine which port to connect to, and whether to use
+SSL by parsing the URL entered there.  Because this `host` is specifically used
+by Elasticsearch, and Curator is making a separate connection, it is important
+to ensure that both Curator _and_ your Elasticsearch cluster have access to the
+remote host.
+
+If you do not whitelist the remote cluster, you will not be able to reindex.
+This can be done by adding the following line to your `elasticsearch.yml` file:
+
+[source,yaml]
+-------------
+reindex.remote.whitelist: remote_host_or_IP1:9200, remote_host_or_IP2:9200
+-------------
+
+or by adding this flag to the command-line when starting Elasticsearch:
+
+[source,sh]
+-------------
+bin/elasticsearch -Edefault.reindex.remote.whitelist="remote_host_or_IP:9200"
+-------------
+
+Of course, be sure to substitute the correct host, IP, or port.
+
+Other client connection arguments can also be supplied in the form of action
+options:
+
+* <<option_remote_url_prefix,remote_url_prefix>>
+* <<option_remote_certificate,remote_certificate>>
+* <<option_remote_client_cert,remote_client_cert>>
+* <<option_remote_client_key,remote_client_key>>
+* <<option_remote_aws_key,remote_aws_key>>.footnoteref[disclaimer,AWS functionality will not work until AWS ES resolves API differences with their implementation.]
+* <<option_remote_aws_secret_key,remote_aws_secret_key>>.footnoteref[disclaimer]
+* <<option_remote_aws_region,remote_remote_aws_region>>.footnoteref[disclaimer]
+
+=== Other scenarios and options
+
+Nearly all scenarios supported by the reindex API are supported in the
+request_body, including (but not limited to):
+
+* Pipelines
+* Scripting
+* Queries
+* Conflict resolution
+* Limiting by count
+* Versioning
+* Reindexing operation type (for example, create-only)
+
+Read more about these, and more, at {ref}/docs-reindex.html
+
+Notable exceptions include:
+
+* You cannot manually specify slices.  Instead, use the <<option_slices,slices>>
+  option for automated sliced reindexing.
+
 
 [[option_retry_count]]
 == retry_count
@@ -407,6 +1077,8 @@ The value of this setting is the number of times to retry deleting a snapshot.
 
 The default for this setting is `3`.
 
+
+
 [[option_retry_interval]]
 == retry_interval
 
@@ -415,6 +1087,8 @@ NOTE: This setting is only used by the <<delete_snapshots, delete snapshots acti
 The value of this setting is the number of seconds to delay between retries.
 
 The default for this setting is `120`.
+
+
 
 [[option_routing_type]]
 == routing_type
@@ -438,6 +1112,45 @@ There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
 
+
+[[option_slices]]
+== slices
+
+NOTE: This setting is only used by the <<reindex,reindex>> action.
+
+This setting can speed up reindexing operations by using https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html#sliced-scroll[Sliced Scroll]
+to slice on the \_uid.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1,index2,index3 into new_index"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      slices: 3
+      request_body:
+        source:
+          index: ['index1', 'index2', 'index3']
+        dest:
+          index: new_index
+    filters:
+    - filtertype: none
+-------------
+
+=== Picking the number of slices
+Here are a few recommendations around the number of `slices` to use:
+
+* Don’t use large numbers. `500` creates fairly massive CPU thrash, so Curator will not allow a number larger than this.
+* It is more efficient from a query performance standpoint to use some multiple of the number of shards in the source index.
+* Using exactly as many shards as are in the source index is the most efficient from a query performance standpoint.
+* Indexing performance should scale linearly across available resources with the number of slices.
+* Whether indexing or query performance dominates that process depends on lots of factors like the documents being reindexed and the cluster doing the reindexing.
+
+
+
 [[option_skip_fsck]]
 == skip_repo_fs_check
 
@@ -452,6 +1165,36 @@ For these cases, it is desirable to bypass this verification step, by setting
 this to `True.`
 
 The default value of this setting is `False`
+
+
+
+[[option_timeout]]
+== timeout
+
+NOTE: This setting is only used by the <<reindex,reindex>> action.
+
+The `timeout` is the length in seconds each individual bulk request should wait
+for shards that are unavailable. The default value is `60`, meaning 60 seconds.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1,index2,index3 into new_index"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      timeout: 90
+      request_body:
+        source:
+          index: ['index1', 'index2', 'index3']
+        dest:
+          index: new_index
+    filters:
+    - filtertype: none
+-------------
+
 
 
 [[option_timeout_override]]
@@ -559,6 +1302,73 @@ If `routing_type` is `allocation`, this can also be `new_primaries`. If
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+
+
+[[option_wait_for_active_shards]]
+== wait_for_active_shards
+
+NOTE: This setting is used by the <<reindex,Reindex>> and
+<<rollover,Rollover>> actions.  Each use it differently.
+
+
+=== Reindex context
+
+For the reindex action, this setting determines the number of shard copies that
+must be active before proceeding with the reindex operation. The default value
+is 1, which implies only the primary shard.
+
+Set to `all` for all shard copies, otherwise set to any non-negative value less
+than or equal to the total number of copies for the shard (number of
+replicas + 1)
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1,index2,index3 into new_index"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      wait_for_active_shards: 2
+      request_body:
+        source:
+          index: ['index1', 'index2', 'index3']
+        dest:
+          index: new_index
+    filters:
+    - filtertype: none
+-------------
+
+
+=== Rollover context
+
+For the rollover action, this setting is the number of shards expected to be
+active before the client returns.  This can be set to the number of primary
+shards, or all primaries and replicas, or somewhere in the middle.
+
+[source,yaml]
+-------------
+action: rollover
+description: >-
+  Rollover the index associated with index 'name', which should be in the
+  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+options:
+  name: aliasname
+  conditions:
+    max_age: 1d
+    max_docs: 1000000
+  wait_for_active_shards: 5
+  extra_settings:
+    index.number_of_shards: 3
+    index.number_of_replicas: 1
+  timeout_override:
+  continue_if_exception: False
+  disable_action: False
+-------------
+
+
 
 [[option_wfc]]
 == wait_for_completion

@@ -417,19 +417,6 @@ def get_indices(client):
             'Detected Elasticsearch version '
             '{0}'.format(".".join(map(str,version_number)))
         )
-        # This hack ONLY works if you're using 2.4.2 or higher, but is unneeded
-        # if you are using 5.0 or higher.  See issue #826
-        if version_number >= (2, 4, 2) \
-            and version_number < (5, 0, 0):
-            logger.debug('Using Elasticsearch >= 2.4.2 < 5.0.0')
-            if client.indices.exists(index='.security'):
-                logger.debug(
-                    'Found the ".security" index.  '
-                    'Adding to list of all indices'
-                )
-                # Double check to see if it's there before appending
-                if not '.security' in indices:
-                    indices.append('.security')
         logger.debug("All indices: {0}".format(indices))
         return indices
     except Exception as e:
@@ -645,28 +632,6 @@ def get_client(**kwargs):
             'Unable to create client connection to Elasticsearch.  '
             'Error: {0}'.format(e)
         )
-
-def override_timeout(timeout, action):
-    """
-    Override the default timeout for `forcemerge`, `snapshot`, and `sync_flush`
-    operations if the default value of ``30`` is provided.
-
-    :arg timeout: Number of seconds before the client will timeout.
-    :arg action: The `action` to be performed.
-    """
-    retval = timeout
-    if action in ['forcemerge', 'snapshot', 'sync_flush']:
-        # Check for default timeout of 30s
-        if timeout == 30:
-            if action in ['forcemerge', 'snapshot']:
-                retval = 21600
-            elif action == 'sync_flush':
-                retval = 180
-            logger.debug(
-                'Overriding default connection timeout for {0} action.  '
-                'New timeout: {1}'.format(action.upper(),timeout)
-            )
-    return retval
 
 def show_dry_run(ilo, action, **kwargs):
     """
@@ -1194,7 +1159,7 @@ def validate_actions(data):
                     )
             # Add/Remove here
             clean_config[action_id].update(add_remove)
-        elif current_action in [ 'cluster_routing', 'create_index', 'rollover' ]:
+        elif current_action in ['cluster_routing', 'create_index', 'rollover']:
             # neither cluster_routing nor create_index should have filters
             pass
         else: # Filters key only appears in non-alias actions
@@ -1206,7 +1171,22 @@ def validate_actions(data):
             ).result()
             clean_filters = validate_filters(current_action, valid_filters)
             clean_config[action_id].update({'filters' : clean_filters})
-
+        # This is a special case for remote reindex
+        if current_action == 'reindex':
+            # Check only if populated with something.
+            if 'remote_filters' in valid_structure['options']:
+                valid_filters = SchemaCheck(
+                    valid_structure['options']['remote_filters'],
+                    Schema(filters.Filters(current_action, location=loc)),
+                    'filters',
+                    '{0}, "filters"'.format(loc)
+                ).result()
+                clean_remote_filters = validate_filters(
+                    current_action, valid_filters)
+                clean_config[action_id]['options'].update(
+                    { 'remote_filters' : clean_remote_filters }
+                )
+                
     # if we've gotten this far without any Exceptions raised, it's valid!
     return { 'actions' : clean_config }
 
@@ -1443,7 +1423,8 @@ def wait_for_it(
         # Success
         if response:
             logger.debug(
-                'Action "{0}" has completed successfully'.format(action))
+                'Action "{0}" finished executing (may or may not have been '
+                'successful)'.format(action))
             result = True
             break
         # Not success, and reached maximum wait (if defined)
@@ -1462,4 +1443,8 @@ def wait_for_it(
             time.sleep(wait_interval)
 
     logger.debug('Result: {0}'.format(result))
-    return result
+    if result == False:
+        raise ActionTimeout(
+            'Action "{0}" failed to complete in the max_wait period of '
+            '{1} seconds'.format(action, max_wait)
+        )
