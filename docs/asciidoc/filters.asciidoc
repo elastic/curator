@@ -10,25 +10,27 @@ include::inc_filter_chaining.asciidoc[]
 
 The index filtertypes are:
 
-* <<filtertype_alias,alias>>
 * <<filtertype_age,age>>
-* <<filtertype_count,count>>
-* <<filtertype_pattern,pattern>>
-* <<filtertype_space,space>>
-* <<filtertype_kibana,kibana>>
-* <<filtertype_forcemerged,forcemerged>>
-* <<filtertype_closed,closed>>
-* <<filtertype_opened,opened>>
+* <<filtertype_alias,alias>>
 * <<filtertype_allocated,allocated>>
+* <<filtertype_closed,closed>>
+* <<filtertype_count,count>>
+* <<filtertype_forcemerged,forcemerged>>
+* <<filtertype_kibana,kibana>>
 * <<filtertype_none,none>>
+* <<filtertype_opened,opened>>
+* <<filtertype_pattern,pattern>>
+* <<filtertype_period,period>>
+* <<filtertype_space,space>>
 
 The snapshot filtertypes are:
 
 * <<filtertype_age,age>>
 * <<filtertype_count,count>>
-* <<filtertype_pattern,pattern>>
-* <<filtertype_state,state>>
 * <<filtertype_none,none>>
+* <<filtertype_pattern,pattern>>
+* <<filtertype_period,period>>
+* <<filtertype_state,state>>
 
 You can use <<envvars,environment variables>> in your configuration files.
 --
@@ -62,23 +64,25 @@ The index filtertypes are:
 
 * <<filtertype_age,age>>
 * <<filtertype_alias,alias>>
-* <<filtertype_count,count>>
-* <<filtertype_pattern,pattern>>
-* <<filtertype_space,space>>
-* <<filtertype_kibana,kibana>>
-* <<filtertype_forcemerged,forcemerged>>
-* <<filtertype_closed,closed>>
-* <<filtertype_opened,opened>>
 * <<filtertype_allocated,allocated>>
+* <<filtertype_closed,closed>>
+* <<filtertype_count,count>>
+* <<filtertype_forcemerged,forcemerged>>
+* <<filtertype_kibana,kibana>>
 * <<filtertype_none,none>>
+* <<filtertype_opened,opened>>
+* <<filtertype_pattern,pattern>>
+* <<filtertype_period,period>>
+* <<filtertype_space,space>>
 
 The snapshot filtertypes are:
 
 * <<filtertype_age,age>>
 * <<filtertype_count,count>>
-* <<filtertype_pattern,pattern>>
-* <<filtertype_state,state>>
 * <<filtertype_none,none>>
+* <<filtertype_pattern,pattern>>
+* <<filtertype_period,period>>
+* <<filtertype_state,state>>
 
 [[filtertype_age]]
 == age
@@ -111,10 +115,10 @@ Read more about the different settings for this <<filtertype,filtertype>>:
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_source,source>> (required)
-* <<fe_direction,direction>> (required)
-* <<fe_unit,unit>> (required)
-* <<fe_unit_count,unit_count>> (required)
+* <<fe_source,source>>
+* <<fe_direction,direction>>
+* <<fe_unit,unit>>
+* <<fe_unit_count,unit_count>>
 
 [float]
 Dependent settings
@@ -128,7 +132,7 @@ Dependent settings
 Optional settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_epoch,epoch>> (optional)
+* <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>> (default is `False`)
 
 
@@ -154,7 +158,7 @@ list based on the value of <<fe_exclude,exclude>>.
 [float]
 Required settings
 ~~~~~~~~~~~~~~~~~
-* <<fe_aliases,aliases>> (required)
+* <<fe_aliases,aliases>>
 
 [float]
 Optional settings
@@ -186,13 +190,13 @@ or be removed from the actionable list based on the value of
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_key,key>> (required)
-* <<fe_value,value>> (required)
+* <<fe_key,key>>
+* <<fe_value,value>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
-* <<fe_allocation_type,allocation_type>> (has a default value which can optionally be changed)
+* <<fe_allocation_type,allocation_type>>
 * <<fe_exclude,exclude>> (default is `True`)
 
 
@@ -254,14 +258,14 @@ Read more about the different settings for this <<filtertype,filtertype>>:
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_count,count>> (required)
+* <<fe_count,count>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_reverse,reverse>> (optional)
-* <<fe_use_age,use_age>> (optional)
+* <<fe_reverse,reverse>>
+* <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_exclude,exclude>> (default is `False`)
@@ -297,7 +301,7 @@ remain in, or be removed from the actionable list based on the value of
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_max_num_segments,max_num_segments>> (required)
+* <<fe_max_num_segments,max_num_segments>>
 
 [float]
 Optional settings
@@ -392,14 +396,131 @@ Read more about the different settings for this <<filtertype,filtertype>>:
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_kind,kind>> (required)
-* <<fe_value,value>> (required)
+* <<fe_kind,kind>>
+* <<fe_value,value>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
 
 * <<fe_exclude,exclude>> (default is `False`)
+
+
+
+[[filtertype_period]]
+== period
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices or snapshots based on whether they fit within the given time range.
+They will remain in, or be removed from the actionable list based on the value
+of <<fe_exclude,exclude>>.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: name
+   range_from: -1
+   range_to: -1
+   timestring: '%Y.%m.%d'
+   unit: weeks
+   week_starts_on: sunday
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given
+    <<filtertype,filtertype>>, it may generate an error.
+
+=== Periods, or Date Ranges
+
+For the purposes of this filter, a <<fe_unit,unit>> can be one of `hours`,
+`days`, `weeks`, `months`, or `years`.  Unless an <<fe_epoch,epoch>> timestamp
+is provided, reckoning will be centered on execution time.  Reckoning is
+truncated to the most recent whole unit.  For example, if I selected `hours` as
+my `unit`, and I began execution at 02:35, then the point of reckoning would be
+02:00. This is relatively easy with `days`, `months`, and `years`, but slightly
+more complicated with `weeks`. Some users may wish to reckon weeks by the ISO
+standard, which starts weeks on Monday. Others may wish to use Sunday as the
+first day of the week.  Both are acceptable options with the `period` filter.
+The default behavior for `weeks` is to have Sunday be the start of the week.
+This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: name
+   range_from: -1
+   range_to: -1
+   timestring: '%Y.%m.%d'
+   unit: weeks
+   week_starts_on: monday
+-------------
+
+<<fe_range_from,range_from>> and <<fe_range_to,range_to>> are counters of whole
+<<fe_unit,units>>. A negative number indicates a whole unit in the past, while
+a positive number indicates a whole unit in the future. A `0` indicates the
+present unit. With such a timeline mentality, it is relatively easy to create
+a date range that will meet your needs.
+
+If the time of execution time is *2017-04-03T13:45:23.831*, this table will help
+you figure out what the previous whole unit, current unit, and next whole unit
+will be, in ISO8601 format.
+
+[frame="topbot",options="header"]
+|======================================================================
+|unit      |-1                 |0                  |+1
+|hours     |2017-04-03T12:00:00|2017-04-03T13:00:00|2017-04-03T14:00:00
+|days      |2017-04-02T00:00:00|2017-04-03T00:00:00|2017-04-04T00:00:00
+|weeks sun |2017-03-26T00:00:00|2017-04-02T00:00:00|2017-04-09T00:00:00
+|weeks mon |2017-03-27T00:00:00|2017-04-03T00:00:00|2017-04-10T00:00:00
+|months    |2017-03-01T00:00:00|2017-04-01T00:00:00|2017-05-01T00:00:00
+|years     |2016-01-01T00:00:00|2017-01-01T00:00:00|2018-01-01T00:00:00
+|======================================================================
+
+Ranges must be from older dates to newer dates, or smaller numbers (including
+negative numbers) to larger numbers or Curator will return an exception.
+
+An example `period` filter demonstrating how to select all daily indices by
+timestring found in the index name from last month might look like this:
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: name
+   range_from: -1
+   range_to: -1
+   timestring: '%Y.%m.%d'
+   unit: months
+-------------
+
+Having `range_from` and `range_to` both be the same value will mean that only
+that whole unit will be selected, in this case, a month.
+
+=== Settings
+
+[float]
+Required settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_source,source>>
+* <<fe_range_from,range_from>>
+* <<fe_range_to,range_to>>
+* <<fe_unit,unit>>
+
+[float]
+Dependent settings
+~~~~~~~~~~~~~~~~~~
+
+* <<fe_timestring,timestring>> (required if `source` is `name`)
+* <<fe_field,field>> (required if `source` is `field_stats`) [Indices only]
+* <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`) [Indices only]
+
+[float]
+Optional settings
+~~~~~~~~~~~~~~~~~
+
+* <<fe_epoch,epoch>>
+* <<fe_exclude,exclude>> (default is `False`)
+* <<fe_week_starts_on,week_starts_on>>
 
 
 
@@ -468,14 +589,14 @@ Read more about the different settings for this <<filtertype,filtertype>>:
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_disk_space,disk_space>> (required)
+* <<fe_disk_space,disk_space>>
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_reverse,reverse>> (optional)
-* <<fe_use_age,use_age>> (optional)
+* <<fe_reverse,reverse>>
+* <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
@@ -504,7 +625,7 @@ removed from the actionable list based on the value of <<fe_exclude,exclude>>.
 Required settings
 ~~~~~~~~~~~~~~~~~
 
-* <<fe_state,state>> (required)
+* <<fe_state,state>>
 
 [float]
 Optional settings

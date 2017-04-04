@@ -88,6 +88,7 @@ class SnapshotList(object):
             'count': self.filter_by_count,
             'none': self.filter_none,
             'pattern': self.filter_by_regex,
+            'period': self.filter_period,
             'state': self.filter_by_state,
         }
         return methods[ft]
@@ -384,6 +385,59 @@ class SnapshotList(object):
             condition = True if idx <= count else False
             self.__excludify(condition, exclude, snap, msg)
             idx += 1
+
+    def filter_period(
+        self, source='name', range_from=None, range_to=None, timestring=None,
+        unit=None, field=None, stats_result='min_value', 
+        week_starts_on='sunday', epoch=None, exclude=False,
+        ):
+        """
+        Match `indices` within ages within a given period.
+
+        :arg source: Source of snapshot age. Can be 'name', or 'creation_date'.
+        :arg range_from: How many ``unit``s in the past/future is the origin?
+        :arg range_to: How many ``unit``s in the past/future is the end point?
+        :arg timestring: An strftime string to match the datestamp in an
+            snapshot name. Only used for snapshot filtering by ``name``.
+        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
+            ``years``.
+        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is 
+            ``sunday``
+        :arg epoch: An epoch timestamp used to establish a point of reference 
+            for calculations. If not provided, the current time will be used.
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
+        """
+
+        self.loggit.debug('Filtering snapshots by period')
+        try:
+            start, end = date_range(
+                unit, range_from, range_to, epoch, week_starts_on=week_starts_on
+            )
+        except Exception as e:
+            report_failure(e)
+        self._calculate_ages(source=source, timestring=timestring)
+        for snapshot in self.working_list():
+            if not self.snapshot_info[snapshot][self.age_keyfield]:
+                self.loggit.debug('Removing snapshot {0} for having no age')
+                self.snapshots.remove(snapshot)
+                continue
+            age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
+            msg = (
+                'Snapshot "{0}" age ({1}), period start: "{2}", period '
+                'end, ({3})'.format(
+                    snapshot,
+                    age,
+                    start,
+                    end
+                )
+            )
+            # Because time adds to epoch, smaller numbers are actually older
+            # timestamps.
+            inrange = ((age >= start) and (age <= end))
+            self.__excludify(inrange, exclude, snapshot, msg)
 
     def iterate_filters(self, config):
         """

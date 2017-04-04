@@ -13,6 +13,10 @@ production! There `will` be many more changes before 5.0.0 is released.
   * Reindex is here! The new reindex action has a ton of flexibility. You 
     can even reindex from remote locations!
 
+  * Added the ``period`` filter (#733). This allows you to select indices 
+    or snapshots, based on whether they fit within a period of hours, days, 
+    weeks, months, or years.
+
   * Add dedicated "wait for completion" functionality. This supports health
     checks, recovery (restore) checks, snapshot checks, and operations which
     support the new tasks API.  All actions which can use this have been 

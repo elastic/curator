@@ -386,3 +386,66 @@ class TestSnapshotListFilterCount(TestCase):
         snaps = slo.snapshots
         slo._sort_by_age(snaps)
         self.assertEqual(['snapshot-2015.03.01'], slo.snapshots)
+
+class TestSnapshotListPeriodFilter(TestCase):
+    def test_bad_args(self):
+        unit = 'days'
+        range_from = -1
+        range_to = -2
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = curator.FailedExecution
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertRaises(expected, sl.filter_period, unit=unit,
+            range_from=range_from, range_to=range_to, source='name', 
+            timestring=timestring, epoch=epoch
+        )
+    def test_in_range(self):
+        unit = 'days'
+        range_from = -2
+        range_to = 2
+        timestring = '%Y.%m.%d'
+        epoch = 1425168000
+        expected = ['snapshot-2015.03.01']
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        sl.filter_period(source='name', range_from=range_from, epoch=epoch,
+            range_to=range_to, timestring='%Y.%m.%d', unit=unit, 
+        )
+        self.assertEqual(expected, sl.snapshots)
+    def test_not_in_range(self):
+        unit = 'days'
+        range_from = 2
+        range_to = 4
+        timestring = '%Y.%m.%d'
+        epoch = 1425168000
+        expected = []
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        sl.filter_period(source='name', range_from=range_from, epoch=epoch,
+            range_to=range_to, timestring='%Y.%m.%d', unit=unit, 
+        )
+        self.assertEqual(expected, sl.snapshots)
+    def test_no_creation_date(self):
+        unit = 'days'
+        range_from = -2
+        range_to = 2
+        epoch = 1456963201
+        expected = []
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        sl.snapshot_info['snap_name']['start_time_in_millis'] = None
+        sl.snapshot_info['snapshot-2015.03.01']['start_time_in_millis'] = None
+        sl.filter_period(source='creation_date', range_from=range_from, 
+            epoch=epoch, range_to=range_to, unit=unit, 
+        )
+        self.assertEqual(expected, sl.snapshots)
