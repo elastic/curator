@@ -65,6 +65,36 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEquals(0, len(curator.get_indices(self.client)))
+    def test_delete_in_period(self):
+        # filtertype: {0}
+        # source: {1}
+        # range_from: {2}
+        # range_to: {3}
+        # timestring: {4}
+        # unit: {5}
+        # field: {6}
+        # stats_result: {7}
+        # epoch: {8}
+        # week_starts_on: {9}
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.delete_period_proto.format(
+                'period', 'name', '-5', '-1', "'%Y.%m.%d'", 'days',
+                ' ', ' ', ' ', 'monday'
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(0, result.exit_code)
+        self.assertEquals(5, len(curator.get_indices(self.client)))
     def test_empty_list(self):
         self.create_indices(10)
         self.write_config(

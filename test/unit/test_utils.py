@@ -776,3 +776,246 @@ class TestWaitForIt(TestCase):
             curator.wait_for_it, client, 'replicas', 
                 wait_interval=1, max_wait=1
         )
+
+class TestDateRange(TestCase):
+    def test_bad_unit(self):
+        self.assertRaises(curator.ConfigurationError,
+            curator.date_range, 'invalid', 1, 1
+        )
+    def test_bad_range(self):
+        self.assertRaises(curator.ConfigurationError,
+            curator.date_range, 'hours', 1, -1
+        )
+    def test_hours_single(self):
+        unit = 'hours'
+        range_from = -1
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  3, 21,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  3, 21, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_hours_past_range(self):
+        unit = 'hours'
+        range_from = -3
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  3, 19,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  3, 21, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_hours_future_range(self):
+        unit = 'hours'
+        range_from = 0
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  3, 22,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  4, 00, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_hours_span_range(self):
+        unit = 'hours'
+        range_from = -1
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  3, 21,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  4, 00, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_days_single(self):
+        unit = 'days'
+        range_from = -1
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  2,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_days_past_range(self):
+        unit = 'days'
+        range_from = -3
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 31,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_days_future_range(self):
+        unit = 'days'
+        range_from = 0
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  3,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  5, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_days_span_range(self):
+        unit = 'days'
+        range_from = -1
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  2,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  5, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_weeks_single(self):
+        unit = 'weeks'
+        range_from = -1
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 26,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  1, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_weeks_past_range(self):
+        unit = 'weeks'
+        range_from = -3
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 12,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  1, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_weeks_future_range(self):
+        unit = 'weeks'
+        range_from = 0
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  2, 00,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4, 22, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_weeks_span_range(self):
+        unit = 'weeks'
+        range_from = -1
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 26,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4, 22, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_weeks_single_iso(self):
+        unit = 'weeks'
+        range_from = -1
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 27,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+                week_starts_on='monday')
+        )
+    def test_weeks_past_range_iso(self):
+        unit = 'weeks'
+        range_from = -3
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 13,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+                week_starts_on='monday')
+        )
+    def test_weeks_future_range_iso(self):
+        unit = 'weeks'
+        range_from = 0
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  4,  3,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4, 23, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+                week_starts_on='monday')
+        )
+    def test_weeks_span_range_iso(self):
+        unit = 'weeks'
+        range_from = -1
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3, 27,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  4, 23, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+                week_starts_on='monday')
+        )
+    def test_months_single(self):
+        unit = 'months'
+        range_from = -1
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  3, 31, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_months_past_range(self):
+        unit = 'months'
+        range_from = -4
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2016, 12,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  3, 31, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_months_future_range(self):
+        unit = 'months'
+        range_from = 7
+        range_to = 10
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017, 11,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2018,  2, 28, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_months_super_future_range(self):
+        unit = 'months'
+        range_from = 9
+        range_to = 10
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2018,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2018,  2, 28, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_months_span_range(self):
+        unit = 'months'
+        range_from = -1
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  3,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  6, 30, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_years_single(self):
+        unit = 'years'
+        range_from = -1
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2016,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2016, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_years_past_range(self):
+        unit = 'years'
+        range_from = -3
+        range_to = -1
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2014,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2016, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_years_future_range(self):
+        unit = 'years'
+        range_from = 0
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2017,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2019, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+    def test_years_span_range(self):
+        unit = 'years'
+        range_from = -1
+        range_to = 2
+        epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
+        start = curator.datetime_to_epoch(datetime(2016,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2019, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end), 
+            curator.date_range(unit, range_from, range_to, epoch=epoch))        

@@ -72,11 +72,12 @@ def index_filtertypes():
         'none',
         'opened',
         'pattern',
+        'period',
         'space',
     ]
 
 def snapshot_filtertypes():
-    return ['age', 'count', 'none', 'pattern', 'state']
+    return ['age', 'count', 'none', 'pattern', 'period', 'state']
 
 def all_filtertypes():
     return sorted(list(set(index_filtertypes() + snapshot_filtertypes())))
@@ -106,6 +107,8 @@ def structural_filter_elements():
         Optional('kind'): Any(str, unicode),
         Optional('max_num_segments'): Coerce(int),
         Optional('reverse'): Any(int, str, unicode, bool, None),
+        Optional('range_from'): Coerce(int),
+        Optional('range_to'): Coerce(int),
         Optional('source'): Any(str, unicode),
         Optional('state'): Any(str, unicode),
         Optional('stats_result'): Any(str, unicode, None),
@@ -114,4 +117,5 @@ def structural_filter_elements():
         Optional('unit_count'): Coerce(int),
         Optional('use_age'): Boolean(),
         Optional('value'): Any(int, float, str, unicode, bool),
+        Optional('week_starts_on'): Any(str, unicode, None),
     }

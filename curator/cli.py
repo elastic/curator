@@ -121,7 +121,9 @@ def cli(config, dry_run, action_file):
     #########################################
     ### Start working on the actions here ###
     #########################################
+    logger.debug('action_file: {0}'.format(action_file))
     action_config = get_yaml(action_file)
+    logger.debug('action_config: {0}'.format(action_config))
     action_dict = validate_actions(action_config)
     actions = action_dict['actions']
     logger.debug('Full list of actions: {0}'.format(actions))
