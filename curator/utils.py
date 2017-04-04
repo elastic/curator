@@ -241,6 +241,14 @@ def fix_epoch(epoch):
         epoch = int(epoch/powers_of_ten)
     return epoch
 
+
+def datetime_to_epoch(mydate):
+   # I would have used `total_seconds`, but apparently that's new
+   # to Python 2.7+, and due to so many people still using
+   # RHEL/CentOS 6, I need this to support Python 2.6.
+   tdelta = (mydate - datetime(1970,1,1))
+   return tdelta.seconds + tdelta.days * 24 * 3600
+
 class TimestringSearch(object):
     """
     An object to allow repetitive search against a string, `searchme`, without
@@ -266,14 +274,17 @@ class TimestringSearch(object):
         if match:
             if match.group("date"):
                 timestamp = match.group("date")
-                # I would have used `total_seconds`, but apparently that's new
-                # to Python 2.7+, and due to so many people still using
-                # RHEL/CentOS 6, I need this to support Python 2.6.
-                tdelta = (
-                    get_datetime(timestamp, self.timestring) -
-                    datetime(1970,1,1)
+                return datetime_to_epoch(
+                    get_datetime(timestamp, self.timestring)
                 )
-                return tdelta.seconds + tdelta.days * 24 * 3600
+                # # I would have used `total_seconds`, but apparently that's new
+                # # to Python 2.7+, and due to so many people still using
+                # # RHEL/CentOS 6, I need this to support Python 2.6.
+                # tdelta = (
+                #     get_datetime(timestamp, self.timestring) -
+                #     datetime(1970,1,1)
+                # )
+                # return tdelta.seconds + tdelta.days * 24 * 3600
 
 def get_point_of_reference(unit, count, epoch=None):
     """
@@ -309,6 +320,110 @@ def get_point_of_reference(unit, count, epoch=None):
         epoch = time.time()
     epoch = fix_epoch(epoch)
     return epoch - multiplier * count
+   
+def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
+    """
+    Get the epoch start time and end time of a range of ``unit``s, reckoning the 
+    start of the week (if that's the selected unit) based on ``week_starts_on``, 
+    which can be either ``sunday`` or ``monday``.
+
+    :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
+    :arg range_from: How many ``unit``s in the past/future is the origin?
+    :arg range_to: How many ``unit``s in the past/future is the end point?
+    :arg epoch: An epoch timestamp used to establish a point of reference for 
+        calculations.
+    :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
+    :rtype: tuple
+    """
+    acceptable_units = ['hours', 'days', 'weeks', 'months', 'years']
+    if unit not in acceptable_units:
+        raise ConfigurationError(
+            '"unit" must be one of: {0}'.format(acceptable_units))
+    if not range_to >= range_from:
+        raise ConfigurationError(
+            '"range_to" must be greater than or equal to "range_from"')
+    if not epoch:
+        epoch = time.time()
+    epoch = fix_epoch(epoch)
+    rawPoR = datetime.utcfromtimestamp(epoch)
+    logger.debug('Raw point of Reference = {0}'.format(rawPoR))
+    # Reverse the polarity, because -1 as last week makes sense when read by
+    # humans, but datetime timedelta math makes -1 in the future.
+    origin = range_from * -1
+    # These if statements help get the start date or start_delta 
+    if unit == 'hours':
+        PoR = datetime(rawPoR.year, rawPoR.month, rawPoR.day, rawPoR.hour, 0, 0)
+        start_delta = timedelta(hours=origin)
+    if unit == 'days':
+        PoR = datetime(rawPoR.year, rawPoR.month, rawPoR.day, 0, 0, 0)
+        start_delta = timedelta(days=origin)
+    if unit == 'weeks':
+        PoR = datetime(rawPoR.year, rawPoR.month, rawPoR.day, 0, 0, 0)
+        sunday = False
+        if week_starts_on.lower() == 'sunday':
+            sunday = True
+        weekday = PoR.weekday()
+        # Compensate for ISO week starting on Monday by default
+        if sunday:
+            weekday += 1
+        logger.debug('Weekday = {0}'.format(weekday))
+        start_delta = timedelta(days=weekday, weeks=origin)
+    if unit == 'months':
+        PoR = datetime(rawPoR.year, rawPoR.month, 1, 0, 0, 0)
+        year = rawPoR.year
+        month = rawPoR.month
+        if origin > 0:
+            for m in range(0, origin):
+                if month == 1:
+                    year -= 1
+                    month = 12
+                else:
+                    month -= 1
+        else:
+            for m in range(origin, 0):
+                if month == 12:
+                    year += 1
+                    month = 1
+                else:
+                    month += 1         
+        start_date = datetime(year, month, 1, 0, 0, 0)
+    if unit == 'years':
+        PoR = datetime(rawPoR.year, 1, 1, 0, 0, 0)
+        start_date = datetime(rawPoR.year - origin, 1, 1, 0, 0, 0)
+    if unit not in ['months','years']:
+        start_date = PoR - start_delta
+    # By this point, we know our start date and can convert it to epoch time
+    start_epoch = datetime_to_epoch(start_date)
+    logger.debug('Start ISO8601 = {0}'.format(
+        datetime.utcfromtimestamp(start_epoch).isoformat()))
+    # This is the number of units we need to consider.
+    count = (range_to - range_from) + 1
+    # We have to iterate to one more month, and then subtract a second to get 
+    # the last day of the correct month
+    if unit == 'months':
+        month = start_date.month
+        year = start_date.year
+        for m in range(0, count):
+            if month == 12:
+                year += 1
+                month = 1
+            else:
+                month += 1
+        end_date = datetime(year, month, 1, 0, 0, 0)
+        end_epoch = datetime_to_epoch(end_date) - 1
+    # Similarly, with years, we need to get the last moment of the year
+    elif unit == 'years':
+        end_date = datetime((rawPoR.year - origin) + count, 1, 1, 0, 0, 0)
+        end_epoch = datetime_to_epoch(end_date) - 1
+    # It's not months or years, which have inconsistent reckoning...
+    else:
+        # This lets us use an existing method to simply add unit * count seconds
+        # to get hours, days, or weeks, as they don't change
+        end_epoch = get_point_of_reference(
+            unit, count * -1, epoch=start_epoch) -1
+    logger.debug('End ISO8601 = {0}'.format(
+        datetime.utcfromtimestamp(end_epoch).isoformat()))
+    return (start_epoch, end_epoch)
 
 def byte_size(num, suffix='B'):
     """

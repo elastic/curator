@@ -1074,3 +1074,70 @@ class TestIndexListFilterCount(TestCase):
             reverse=False
         )
         self.assertEqual([u'index-2016.03.04'], il.indices)
+class TestIndexListPeriodFilterName(TestCase):
+    def test_get_name_based_age_in_range(self):
+        unit = 'days'
+        range_from = -1
+        range_to = 0
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = ['index-2016.03.03']
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
+            source='name', timestring=timestring, epoch=epoch)
+        self.assertEqual(expected, il.indices)
+    def test_get_name_based_age_not_in_range(self):
+        unit = 'days'
+        range_from = -3
+        range_to = -2
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = []
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
+            source='name', timestring=timestring, epoch=epoch)
+        self.assertEqual(expected, il.indices)
+    def test_bad_arguments(self):
+        unit = 'days'
+        range_from = -2
+        range_to = -3
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = []
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertRaises(curator.FailedExecution, 
+            il.filter_period, unit=unit, range_from=range_from, 
+            range_to=range_to, source='name', timestring=timestring, epoch=epoch
+        )
+    def test_missing_creation_date_raises(self):
+        unit = 'days'
+        range_from = -1
+        range_to = 0
+        epoch = 1456963201
+        expected = []
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        il.index_info['index-2016.03.03']['age'].pop('creation_date')
+        il.index_info['index-2016.03.04']['age'].pop('creation_date')
+        il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
+            source='creation_date', epoch=epoch)
+        self.assertEqual(expected, il.indices)

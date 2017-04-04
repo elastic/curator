@@ -8,6 +8,7 @@ from click import testing as clicktest
 import time
 
 from . import CuratorTestCase
+from unittest.case import SkipTest
 from . import testvars as testvars
 
 import logging
@@ -123,7 +124,11 @@ class TestCLIReindex(CuratorTestCase):
         expected = 6
 
         # Build remote client
-        rclient = curator.get_client(host=rhost, port=rport)
+        try:
+            rclient = curator.get_client(host=rhost, port=rport)
+        except:
+            raise SkipTest(
+                'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
         for rindex in [source1, source2]:
@@ -195,7 +200,11 @@ class TestCLIReindex(CuratorTestCase):
         expected = 1
 
         # Build remote client
-        rclient = curator.get_client(host=rhost, port=rport)
+        try:
+            rclient = curator.get_client(host=rhost, port=rport)
+        except:
+            raise SkipTest(
+                'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
         for rindex in [source1, source2]:

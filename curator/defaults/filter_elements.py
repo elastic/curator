@@ -57,6 +57,12 @@ def max_num_segments(**kwargs):
         Required('max_num_segments'): All(Coerce(int), Range(min=1))
     }
 
+def range_from(**kwargs):
+    return { Required('range_from'): Coerce(int) }
+
+def range_to(**kwargs):
+    return { Required('range_to'): Coerce(int) }
+
 def reverse(**kwargs):
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
@@ -98,11 +104,18 @@ def timestring(**kwargs):
 def unit(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype if use_age is set to True.
-    return {
-        Required('unit'): Any(
-            'seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years'
-        )
-    }
+    if 'period' in kwargs and kwargs['period']:
+        return {
+            Required('unit'): Any(
+                'hours', 'days', 'weeks', 'months', 'years'
+            )
+        }    
+    else:
+        return {
+            Required('unit'): Any(
+                'seconds','minutes', 'hours', 'days', 'weeks', 'months', 'years'
+            )
+        }
 
 def unit_count(**kwargs):
     # This setting is only used with the age filtertype, or with the space
@@ -118,3 +131,10 @@ def value(**kwargs):
     # setting. There is a separate value option associated with the allocation
     # action, and the allocated filtertype.
     return { Required('value'): Any(str, unicode) }
+
+def week_starts_on(**kwargs):
+    return { 
+        Optional('week_starts_on', default='sunday'): Any(
+            'Sunday', 'sunday', 'SUNDAY', 'Monday', 'monday', 'MONDAY', None
+        )
+    }

@@ -15,6 +15,8 @@
 * <<fe_key,key>>
 * <<fe_kind,kind>>
 * <<fe_max_num_segments,max_num_segments>>
+* <<fe_range_from,range_from>>
+* <<fe_range_to,range_to>>
 * <<fe_reverse,reverse>>
 * <<fe_source,source>>
 * <<fe_state,state>>
@@ -24,9 +26,12 @@
 * <<fe_unit_count,unit_count>>
 * <<fe_use_age,use_age>>
 * <<fe_value,value>>
+* <<fe_week_starts_on,week_starts_on>>
 
 You can use <<envvars,environment variables>> in your configuration files.
 --
+
+
 
 [[fe_aliases]]
 == aliases
@@ -74,6 +79,8 @@ filters:
 There is no default value. This setting must be set by the user or an
 exception will be raised, and execution will halt.
 
+
+
 [[fe_allocation_type]]
 == allocation_type
 
@@ -85,6 +92,8 @@ The value of this setting must be one of `require`, `include`, or `exclude`.
 Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
+
+
 
 [[fe_count]]
 == count
@@ -99,6 +108,8 @@ Items will remain in the actionable list depending on the value of
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+
 
 [[fe_direction]]
 == direction
@@ -117,6 +128,8 @@ point in time will be matched.
 There is no default value. This setting must be set by the user or an
 exception will be raised, and execution will halt.
 
+
+
 [[fe_disk_space]]
 == disk_space
 
@@ -129,6 +142,7 @@ Indices in excess of this number of gigabytes will be matched.
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
 
 
 [[fe_epoch]]
@@ -154,6 +168,7 @@ a point of reference in the future by using a negative value for
 <<fe_unit_count,unit_count>>.
 
 
+
 [[fe_exclude]]
 == exclude
 
@@ -163,6 +178,7 @@ If `exclude` is `True`, the filter will remove matches from the actionable list.
 If `exclude` is `False`, then only matches will be kept in the actionable list.
 
 The default value for this setting is different for each filter type.
+
 
 
 [[fe_field]]
@@ -177,6 +193,8 @@ execution will halt.
 This setting is only used when <<fe_source,source>> is `field_stats`.
 
 The default value for this setting is `@timestamp`.
+
+
 
 [[fe_key]]
 == key
@@ -223,6 +241,8 @@ These special attributes are also supported:
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+
+
 [[fe_kind]]
 == kind
 
@@ -238,6 +258,8 @@ include::inc_filter_chaining.asciidoc[]
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+
+
 [[fe_max_num_segments]]
 == max_num_segments
 
@@ -252,6 +274,58 @@ the <<filtertype_forcemerged,forcemerged>> filter type.
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+
+
+[[fe_range_from]]
+== range_from
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: name
+   range_from: -1
+   range_to: -1
+   timestring: '%Y.%m.%d'
+   unit: days
+-------------
+
+<<fe_range_from,range_from>> and <<fe_range_to,range_to>> are counters of whole
+<<fe_unit,units>>. A negative number indicates a whole unit in the past, while
+a positive number indicates a whole unit in the future. A `0` indicates the
+present unit.
+
+Read more about this setting in context in the
+<<filtertype_period,period filtertype documentation>>, including examples.
+
+
+
+[[fe_range_to]]
+== range_to
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: name
+   range_from: -1
+   range_to: -1
+   timestring: '%Y.%m.%d'
+   unit: days
+-------------
+
+<<fe_range_from,range_from>> and <<fe_range_to,range_to>> are counters of whole
+<<fe_unit,units>>. A negative number indicates a whole unit in the past, while
+a positive number indicates a whole unit in the future. A `0` indicates the
+present unit.
+
+Read more about this setting in context in the
+<<filtertype_period,period filtertype documentation>>, including examples.
+
+
+
 [[fe_reverse]]
 == reverse
 
@@ -264,6 +338,7 @@ with a date--e.g. index-2016.03.01--older indices will be selected first.
 The default value of this setting is `True`.
 
 This setting is ignored if <<fe_use_age,use_age>> is `True`.
+
 
 
 [[fe_source]]
@@ -314,6 +389,8 @@ required to use the `field_stats` source.
 
 NOTE: Source `field_stats` only works with indices.
 
+
+
 [[fe_state]]
 == state
 
@@ -324,6 +401,8 @@ or `IN_PROGRESS`.  This setting determines what kind of snapshots will be
 passed.
 
 The default value for this setting is `SUCCESS`.
+
+
 
 [[fe_stats_result]]
 == stats_result
@@ -372,17 +451,22 @@ example, an index like `index-2016.04.01` would use a timestring of
 When <<fe_source,source>> is `name`, this setting must be set by the user or an
 exception will be raised, and execution will halt. There is no default value.
 
+
+
 [[fe_unit]]
 == unit
 
-NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
-with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
-set to `True`.
+NOTE: This setting is used with the <<filtertype_age,age>> filtertype, with the
+<<filtertype_period,period>> filtertype, or with the <<filtertype_space,space>>
+filtertype if <<fe_use_age,use_age>> is set to `True`.
 
 This setting must be one of `seconds`, `minutes`, `hours`, `days`, `weeks`,
-`months`, or `years`.
+`months`, or `years`. The values `seconds` and `minutes` are not allowed with
+the <<filtertype_period,period>> filtertype and will result in an error
+condition if used there.
 
-<<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
+For the <<filtertype_age,age>> filtertype, or when <<fe_use_age,use_age>> is set
+to `True`, <<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
 <<fe_epoch,epoch>>, are used by Curator to establish the moment in time point of
 reference with this formula:
 
@@ -414,6 +498,8 @@ a point of reference in the future by using a negative value for
 This setting must be set by the user or an exception will be raised, and
 execution will halt.
 
+
+
 [[fe_unit_count]]
 == unit_count
 
@@ -439,6 +525,8 @@ a point of reference in the future by using a negative value for
 This setting must be set by the user or an exception will be raised, and
 execution will halt.
 
+
+
 [[fe_use_age]]
 == use_age
 
@@ -452,6 +540,8 @@ indices.
 The default value of this setting is `False`
 
 NOTE: Use of this setting requires the additional setting, <<fe_source,source>>.
+
+
 
 [[fe_value]]
 == value
@@ -478,3 +568,18 @@ IMPORTANT: Whatever you provide for `value` is always going to be a part of a +
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+
+
+[[fe_week_starts_on]]
+== week_starts_on
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype.
+
+The value of this setting indicates whether weeks should be measured starting on
+`sunday` or `monday`.  Though Monday is the ISO standard, Sunday is frequently
+preferred.
+
+This setting is only used when <<fe_unit,unit>> is set to `weeks`.
+
+The default value for this setting is `sunday`.

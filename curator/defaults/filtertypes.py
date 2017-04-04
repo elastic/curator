@@ -97,6 +97,18 @@ def pattern(action, config):
         filter_elements.exclude(),
     ]
 
+def period(action, config):
+    retval = [
+        filter_elements.unit(period=True),
+        filter_elements.range_from(),
+        filter_elements.range_to(),
+        filter_elements.week_starts_on(),
+        filter_elements.epoch(),
+        filter_elements.exclude(),
+    ]
+    retval += _age_elements(action, config)
+    return retval
+
 def space(action, config):
     retval = [
         filter_elements.disk_space(),
