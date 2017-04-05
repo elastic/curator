@@ -12,13 +12,16 @@ Elasticsearch Curator helps you curate, or manage your indices.
 Compatibility Matrix
 ====================
 
-+--------+----------+------------+----------+------------+----------+
-|Version | ES 1.x   | AWS ES 1.x | ES 2.x   | AWS ES 2.x | ES 5.x   |
-+========+==========+============+==========+============+==========+
-|    3   |    yes   |     yes*   |   yes    |     yes*   |   no     |
-+--------+----------+------------+----------+------------+----------+
-|    4   |    no    |     no     |   yes    |     no     |   yes    |
-+--------+----------+------------+----------+------------+----------+
++--------+----------+------------+----------+------------+----------+------------+
+|Version | ES 1.x   | AWS ES 1.x | ES 2.x   | AWS ES 2.x | ES 5.x   | AWS ES 5.x |
++========+==========+============+==========+============+==========+============+
+|    3   |    yes   |     yes*   |   yes    |     yes*   |   no     |     no     |
++--------+----------+------------+----------+------------+----------+------------+
+|    4   |    no    |     no     |   yes    |     no     |   yes    |     ?      |
++--------+----------+------------+----------+------------+----------+------------+
+|    5   |    no    |     no     |   no     |     no     |   yes    |     ?      |
++--------+----------+------------+----------+------------+----------+------------+
+
 
 It is important to note that Curator 4 will not work with indices created in
 versions of Elasticsearch older than 1.4 (if they have been subsequently
@@ -44,6 +47,10 @@ make snapshots.
 
 .. _does not allow access to the snapshot status endpoint: https://github.com/elastic/curator/issues/796
 
+? Curator 4 and 5 should work with AWS ES 5.x, but the 
+``/_cluster/state/metadata`` endpoint is still not fully supported (see #880).
+If a future patch fixes this, then Curator 4 and 5 should work with AWS ES 5.x.
+
 Build Status
 ------------
 
@@ -52,11 +59,11 @@ Build Status
 +========+==========+
 | Master | |master| |
 +--------+----------+
+| 5.x    | |5_x|    |
++--------+----------+
+| 5.0    | |5_0|    |
++--------+----------+
 | 4.x    | |4_x|    |
-+--------+----------+
-| 4.0    | |4_0|    |
-+--------+----------+
-| 4.1    | |4_1|    |
 +--------+----------+
 | 4.2    | |4_2|    |
 +--------+----------+
@@ -65,11 +72,11 @@ PyPI: |pypi_pkg|
 
 .. |master| image:: https://travis-ci.org/elastic/curator.svg?branch=master
     :target: https://travis-ci.org/elastic/curator
+.. |5_x| image:: https://travis-ci.org/elastic/curator.svg?branch=5.x
+    :target: https://travis-ci.org/elastic/curator
+.. |5_0| image:: https://travis-ci.org/elastic/curator.svg?branch=5.0
+    :target: https://travis-ci.org/elastic/curator
 .. |4_x| image:: https://travis-ci.org/elastic/curator.svg?branch=4.x
-    :target: https://travis-ci.org/elastic/curator
-.. |4_0| image:: https://travis-ci.org/elastic/curator.svg?branch=4.0
-    :target: https://travis-ci.org/elastic/curator
-.. |4_1| image:: https://travis-ci.org/elastic/curator.svg?branch=4.1
     :target: https://travis-ci.org/elastic/curator
 .. |4_2| image:: https://travis-ci.org/elastic/curator.svg?branch=4.2
     :target: https://travis-ci.org/elastic/curator
@@ -79,7 +86,7 @@ PyPI: |pypi_pkg|
 `Curator API Documentation`_
 ----------------------------
 
-Version 4 of Curator ships with both an API and a wrapper script (which is
+Version 5 of Curator ships with both an API and a wrapper script (which is
 actually defined as an entry point).  The API allows you to write your own
 scripts to accomplish similar goals, or even new and different things with the
 `Curator API`_, and the `Elasticsearch Python API`_.
@@ -209,13 +216,9 @@ but rather pulls the version specified as an argument directly from GitHub.
 Versioning
 ----------
 
-Version 4 of Curator is the current ``master`` branch.  It supports
-Elasticsearch versions 2.0 through 5.0.  This is the first release of Curator
-that is not fully reverse compatible.
+Version 5 of Curator is the current ``master`` branch.  It supports only 5.x 
+versions of Elasticsearch.
 
-The ``3.x`` branch will continue to be available to support earlier versions of
-Elasticsearch. No new development is being done with the ``3.x`` branch, but bug
-fixes may be merged as necessary.
 
 Origins
 -------
