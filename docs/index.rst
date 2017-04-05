@@ -16,8 +16,8 @@ snapshots.
 Compatibility
 -------------
 
-The Elasticsearch Curator Python API is compatible with Elasticsearch versions 2.x
-through 5.0, and supports Python versions 2.6 and later.
+The Elasticsearch Curator Python API is compatible with the 5.x Elasticsearch versions, 
+and supports Python versions 2.7 and later.
 
 Example Usage
 -------------
@@ -76,7 +76,7 @@ Contents
 License
 -------
 
-Copyright (c) 2012–2016 Elasticsearch <http://www.elastic.co>
+Copyright (c) 2012–2017 Elasticsearch <http://www.elastic.co>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

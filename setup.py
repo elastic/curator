@@ -116,6 +116,7 @@ try:
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: 3.6",
         ],
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"],
@@ -154,6 +155,7 @@ except ImportError:
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: 3.6",
         ],
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"]
