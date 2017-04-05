@@ -42,6 +42,10 @@ IndexList
 .. automethod:: curator.indexlist.IndexList.filter_by_count
    :noindex:
 
+.. automethod:: curator.indexlist.IndexList.filter_period
+   :noindex:
+
+
 SnapshotList
 ------------
 
@@ -58,4 +62,7 @@ SnapshotList
   :noindex:
 
 .. automethod:: curator.snapshotlist.SnapshotList.filter_by_count
+  :noindex:
+
+.. automethod:: curator.snapshotlist.SnapshotList.filter_period
   :noindex:
