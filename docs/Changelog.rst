@@ -11,7 +11,8 @@ production! There `will` be many more changes before 5.0.0 is released.
 **New Features**
 
   * Reindex is here! The new reindex action has a ton of flexibility. You 
-    can even reindex from remote locations!
+    can even reindex from remote locations, so long as the remote cluster is
+    Elasticsearch 1.4 or newer.
 
   * Added the ``period`` filter (#733). This allows you to select indices 
     or snapshots, based on whether they fit within a period of hours, days, 
@@ -35,7 +36,7 @@ production! There `will` be many more changes before 5.0.0 is released.
 
   * Bumped ``click`` (python module) version dependency to 6.7
   * Bumped ``urllib3`` (python module) version dependency to 1.20
-  * Bumped ``elasticsearch`` (python module) version dependency to 5.2
+  * Bumped ``elasticsearch`` (python module) version dependency to 5.3
   * Refactored a ton of code to be cleaner and hopefully more consistent.
 
 **Bug Fixes**
