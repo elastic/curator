@@ -59,9 +59,19 @@ Open
 .. autoclass:: curator.actions.Open
    :members:
 
+Reindex
+--------
+.. autoclass:: curator.actions.Reindex
+  :members:
+
 Replicas
 --------
 .. autoclass:: curator.actions.Replicas
+  :members:
+
+Rollover
+--------
+.. autoclass:: curator.actions.Rollover
   :members:
 
 Snapshot
