@@ -1011,7 +1011,8 @@ class Reindex(object):
                     'client_key={7} '
                     'aws_key={8} '
                     'aws_secret_key={9} '
-                    'aws_region={10}'.format(
+                    'aws_region={10}'
+                    'skip_version_test=True'.format(
                         rhost,
                         rhttp_auth,
                         remote_url_prefix,
@@ -1039,6 +1040,7 @@ class Reindex(object):
                         aws_key=remote_aws_key,
                         aws_secret_key=remote_aws_secret_key,
                         aws_region=remote_aws_region,
+                        skip_version_test=True,
                     )
                 except Exception as e:
                     self.loggit.error(

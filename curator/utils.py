@@ -650,6 +650,8 @@ def get_client(**kwargs):
         not work if `hosts` has more than one value.**  It will raise an
         Exception in that case.
     :type master_only: bool
+    :arg skip_version_test: If `True`, skip the version check as part of the 
+        client connection.
     :rtype: :class:`elasticsearch.Elasticsearch`
     """
     if 'url_prefix' in kwargs:
@@ -667,6 +669,10 @@ def get_client(**kwargs):
     kwargs['hosts'] = '127.0.0.1' if not 'hosts' in kwargs else kwargs['hosts']
     kwargs['master_only'] = False if not 'master_only' in kwargs \
         else kwargs['master_only']
+    if 'skip_version_test' in kwargs:
+        skip_version_test = kwargs.pop('skip_version_test')
+    else:
+        skip_version_test = False
     kwargs['use_ssl'] = False if not 'use_ssl' in kwargs else kwargs['use_ssl']
     kwargs['ssl_no_validate'] = False if not 'ssl_no_validate' in kwargs \
         else kwargs['ssl_no_validate']
@@ -737,8 +743,14 @@ def get_client(**kwargs):
             )
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
-        # Verify the version is acceptable.
-        check_version(client)
+        if skip_version_test:
+            logger.warn(
+                'Skipping Elasticsearch version verification. This is '
+                'acceptable for remote reindex operations.'
+            )
+        else:
+            # Verify the version is acceptable.
+            check_version(client)
         # Verify "master_only" status, if applicable
         check_master(client, master_only=master_only)
         return client
