@@ -3,21 +3,18 @@
 Changelog
 =========
 
-5.0.0a2 (? ? ?)
+5.0.0 (5 April 2017)
 
-This will be the second alpha release of Curator 5. This should not be used for 
-production! There `will` be many more changes before 5.0.0 is released.
+The full feature set of 5.0 (including alpha releases) is included here.
 
 **New Features**
 
   * Reindex is here! The new reindex action has a ton of flexibility. You 
     can even reindex from remote locations, so long as the remote cluster is
     Elasticsearch 1.4 or newer.
-
   * Added the ``period`` filter (#733). This allows you to select indices 
     or snapshots, based on whether they fit within a period of hours, days, 
     weeks, months, or years.
-
   * Add dedicated "wait for completion" functionality. This supports health
     checks, recovery (restore) checks, snapshot checks, and operations which
     support the new tasks API.  All actions which can use this have been 
@@ -28,9 +25,16 @@ production! There `will` be many more changes before 5.0.0 is released.
     NOTE: There is one caveat: forceMerge does not support this, per the 
     Elasticsearch API. A forceMerge call will hold the client until complete, or
     the client times out.  There is no clean way around this that I can discern.
-  
   * Elasticsearch date math naming is supported and documented for the 
     ``create_index`` action.  An integration test is included for validation.
+  * Allow allocation action to unset a key/value pair by using an empty value.
+    Requested in #906. (untergeek)
+  * Added support for the Rollover API. Requested in #898, and by countless
+    others.
+  * Added ``warn_if_no_indices`` option for ``alias`` action in response to
+    #883.  Using this option will permit the ``alias`` add or remove to continue
+    with a logged warning, even if the filters result in a NoIndices condition.
+    Use with care.
 
 **General**
 
@@ -45,7 +49,17 @@ production! There `will` be many more changes before 5.0.0 is released.
     raising an Exception. #874 (untergeek)
   * The ``get_repository()`` function now properly raises an exception instead
     of returning `False` if nothing is found. #761 (untergeek)
+  * Check if an index is in an alias before attempting to delete it from the
+    alias.  Issue raised in #887. (untergeek)
+  * Fix allocation issues when using Elasticsearch 5.1+. Issue raised in #871
+    (untergeek)
 
+**Documentation**
+
+  * Add missing repository arg to auto-gen API docs. Reported in #888
+    (untergeek)
+  * Add all new documentation and clean up for v5 specific.
+  
 **Breaking Changes**
 
   * IndexList no longer checks to see if there are indices on initialization.
