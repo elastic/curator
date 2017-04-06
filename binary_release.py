@@ -58,17 +58,17 @@ if os.path.exists(build_path):
         print('An older build exists at {0}.  Please delete this before continuing.'.format(target_path))
         sys.exit(1)
     else:
-        os.rename(build_path, target_path)
+        shutil.copytree(build_path, target_path)
 
     # Ensure the rename went smoothly, then continue
     if os.path.exists(target_path):
         #print("Build successfully renamed")
         if float(pyver) >= 2.7:
-            shutil.make_archive(target_name, archive_format, '.', target_path)
+            shutil.make_archive('elasticsearch-' + target_name, archive_format, '.', target_path)
             if platform == 'win32':
-                fname = target_name + '.zip'
+                fname = 'elasticsearch-' + target_name + '.zip'
             else:
-                fname = target_name + '.tar.gz'
+                fname = 'elasticsearch-' + target_name + '.tar.gz'
             # Clean up directory if we made a viable archive.
             if os.path.exists(fname):
                 shutil.rmtree(target_path)
