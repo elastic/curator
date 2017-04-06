@@ -101,7 +101,7 @@ wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add 
 
 === Direct Package Download Link
 
-* https://packages.elastic.co/curator/{curator_major}/debian/pool/main/p/python/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
+* https://packages.elastic.co/curator/{curator_major}/debian/pool/main/e/elasticsearch-curator/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
 
 === Repository Configuration
 
@@ -239,9 +239,9 @@ WARNING: If you do have Python installed, do not uncompress the zip file into
 your Python directory.  It can cause library path collisions which will prevent
 Curator from properly functioning.
 
-* https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip[Download Curator]
-** https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip.md5.txt[MD5]
-** https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip.sha1.txt[SHA1]
+* https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.zip[Download Curator]
+** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.zip.md5.txt[MD5]
+** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.zip.sha1.txt[SHA1]
 
 
 [[windows-msi]]
