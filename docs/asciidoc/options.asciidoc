@@ -893,7 +893,7 @@ the `source` index to `REINDEX_SELECTION`, like this:
 actions:
   1:
     description: >-
-      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+      Reindex all daily logstash indices from March 2017 into logstash-2017.03
     action: reindex
     options:
       wait_interval: 9
@@ -917,8 +917,7 @@ You can also reindex from remote:
 -------------
 actions:
   1:
-    description: >-
-      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    description: "Reindex remote index1 to local index1"
     action: reindex
     options:
       wait_interval: 9
@@ -1002,8 +1001,8 @@ actions:
           index: logstash-2017.03
       remote_filters:
       - filtertype: pattern
-      kind: prefix
-      value: logstash-2017.03.
+        kind: prefix
+        value: logstash-2017.03.
     filters:
     - filtertype: none
 -------------
