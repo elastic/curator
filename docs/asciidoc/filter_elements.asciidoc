@@ -87,9 +87,19 @@ exception will be raised, and execution will halt.
 NOTE: This setting is used only when using the
     <<filtertype_allocated,allocated>> filter.
 
+[source,yaml]
+-------------
+- filtertype: allocated
+  key: ...
+  value: ...
+  allocation_type: require
+  exclude: True
+-------------
+
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
-Read more about these settings at {ref}/shard-allocation-filtering.html
+Read more about these settings in the
+{ref}/shard-allocation-filtering.html[Elasticsearch documentation].
 
 The default value for this setting is `require`.
 
@@ -100,6 +110,12 @@ The default value for this setting is `require`.
 
 NOTE: This setting is only used with the <<filtertype_count,count>> filtertype +
     and is a required setting.
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 10
+-------------
 
 The value for this setting is a number of indices or snapshots to match.
 
@@ -115,6 +131,15 @@ will be raised, and execution will halt.
 == direction
 
 NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+-------------
 
 This setting must be either `older` or `younger`.  This setting is used to
 determine whether indices or snapshots are `older` or `younger` than the
@@ -136,6 +161,12 @@ exception will be raised, and execution will halt.
 NOTE: This setting is only used with the <<filtertype_space,space>> filtertype +
     and is a required setting.
 
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 100
+-------------
+
 The value for this setting is a number of gigabytes.
 
 Indices in excess of this number of gigabytes will be matched.
@@ -148,11 +179,11 @@ will be raised, and execution will halt.
 [[fe_epoch]]
 == epoch
 
-NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+NOTE: This setting is available in the <<filtertype_age,age>> filtertype, and
+  any filter which has the <<fe_use_age,`use_age`>> setting. This setting is
+  strictly optional.
 
-NOTE: This setting is optional.
-
-The value for this setting must be an epoch timestamp.
+TIP: This setting is not common.  It is most frequently used for testing.
 
 <<fe_unit,unit>>, <<fe_unit_count,unit_count>>, and optionally,
 <<fe_epoch,epoch>>, are used by Curator to establish the moment in time point of
@@ -167,6 +198,22 @@ If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
 a point of reference in the future by using a negative value for
 <<fe_unit_count,unit_count>>.
 
+=== Example
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+   epoch: 1491577200
+-------------
+
+The value for this setting must be an epoch timestamp. In this example, the
+given epoch time of `1491577200` is 2017-04-04T15:00:00Z (UTC).  This will use
+3 days older than that timestamp as the point of reference for age comparisons.
+
 
 
 [[fe_exclude]]
@@ -179,16 +226,52 @@ If `exclude` is `False`, then only matches will be kept in the actionable list.
 
 The default value for this setting is different for each filter type.
 
+=== Examples
+
+[source,yaml]
+-------------
+- filtertype: opened
+  exclude: True
+-------------
+
+This filter will result in only `closed` indices being in the actionable list.
+
+[source,yaml]
+-------------
+- filtertype: opened
+  exclude: False
+-------------
+
+This filter will result in only `open` indices being in the actionable list.
+
 
 
 [[fe_field]]
 == field
 
-NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+NOTE: This setting is available in the <<filtertype_age,age>> filtertype, and
+  any filter which has the <<fe_use_age,`use_age`>> setting. This setting is
+  strictly optional.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: field_stats
+   direction: older
+   unit: days
+   unit_count: 3
+   field: '@timestamp'
+   stats_result: min_value
+-------------
 
 The value of this setting must be a timestamp field name.  This field must be
 present in the indices being filtered or an exception will be raised, and
 execution will halt.
+
+`field_stats` uses the {ref}search-field-stats.html[Field Stats API] to
+calculate either the `min_value` or the `max_value` of the <<fe_field,`field`>>
+as the <<fe_stats_result,`stats_result`>>, and then use that value for age
+comparisons.
 
 This setting is only used when <<fe_source,source>> is `field_stats`.
 
@@ -201,6 +284,15 @@ The default value for this setting is `@timestamp`.
 
 NOTE: This setting is required when using the
     <<filtertype_allocated,allocated filtertype>>.
+
+[source,yaml]
+-------------
+- filtertype: allocated
+  key: ...
+  value: ...
+  allocation_type:
+  exclude: True
+-------------
 
 The value of this setting should correspond to a node setting on one or more
 nodes in your cluster.
@@ -258,6 +350,8 @@ include::inc_filter_chaining.asciidoc[]
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+include::inc_kinds.asciidoc[]
+
 
 
 [[fe_max_num_segments]]
@@ -265,6 +359,13 @@ will be raised, and execution will halt.
 
 NOTE: This setting is only used with the <<filtertype_forcemerged,forcemerged>>
   filtertype.
+
+[source,yaml]
+-------------
+- filtertype: forcemerged
+  max_num_segments: 2
+  exclude: True
+-------------
 
 The value for this setting is the cutoff number of segments per shard.  Indices
 which have this number of segments per shard, or fewer, will be actionable
@@ -329,7 +430,8 @@ Read more about this setting in context in the
 [[fe_reverse]]
 == reverse
 
-NOTE: This setting is only used with the <<filtertype_space,space>> filtertype
+NOTE: This setting is used in the <<filtertype_count,count>> and
+ <<filtertype_space,space>> filtertypes
 
 This setting affects the sort order of the indices.  `True` means
 reverse-alphabetical.  This means that if all index names share the same pattern
@@ -338,6 +440,9 @@ with a date--e.g. index-2016.03.01--older indices will be selected first.
 The default value of this setting is `True`.
 
 This setting is ignored if <<fe_use_age,use_age>> is `True`.
+
+TIP: There are context-specific examples of how `reverse` works in the
+  <<filtertype_count,count>> and <<filtertype_space,space>> documentation.
 
 
 
@@ -354,40 +459,7 @@ NOTE: When using the <<filtertype_age,age>> filtertype, source requires +
 <<fe_direction,direction>>, <<fe_unit,unit>>, <<fe_unit_count,unit_count>>, +
 and additionally, the optional setting, <<fe_epoch,epoch>>.
 
-[float]
-name
-~~~~
-
-Setting source to `name` tells Curator to derive an epoch timestamp from an
-index or snapshot name based on a <<fe_timestring,timestring>>.  This was the
-only available behavior in previous versions of Curator.
-
-This source requires <<fe_timestring,timestring>> to be set, in addition to
-<<fe_direction,direction>>, <<fe_unit,unit>>, and <<fe_unit_count,unit_count>>.
-
-[float]
-creation_date
-~~~~~~~~~~~~~
-
-Setting source to `creation_date` tells Curator to reference the index or
-snapshot creation time, as stored in the cluster metadata.
-
-This source requires <<fe_direction,direction>>, <<fe_unit,unit>>, and
-<<fe_unit_count,unit_count>>.
-
-[float]
-field_stats
-~~~~~~~~~~~
-
-Setting source to `field_stats` tells Curator to use a newer Elasticsearch API
-call which returns the minimum and maximum value of a field in an index. Curator
-will only use timestamp fields, which should be mapped in Elasticsearch as type
-`date`.
-
-The <<fe_field,field>> and <<fe_stats_result,stats_result>> settings are
-required to use the `field_stats` source.
-
-NOTE: Source `field_stats` only works with indices.
+include::inc_sources.asciidoc[]
 
 
 
@@ -395,6 +467,12 @@ NOTE: Source `field_stats` only works with indices.
 == state
 
 NOTE: This setting is only used with the <<filtertype_state,state>> filtertype.
+
+[source,yaml]
+-------------
+- filtertype: state
+  state: SUCCESS
+-------------
 
 The value for this setting must be one of `SUCCESS`, `PARTIAL`, `FAILED`,
 or `IN_PROGRESS`.  This setting determines what kind of snapshots will be
@@ -408,6 +486,17 @@ The default value for this setting is `SUCCESS`.
 == stats_result
 
 NOTE: This setting is only used with the <<filtertype_age,age>> filtertype.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: field_stats
+   direction: older
+   unit: days
+   unit_count: 3
+   field: '@timestamp'
+   stats_result: min_value
+-------------
 
 The value for this setting can be either `min_value` or `max_value`.  This
 setting is only used when <<fe_source,source>> is `field_stats`, and determines
@@ -424,6 +513,9 @@ The default value for this setting is `min_value`.
 NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
 with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
 set to `True`.
+
+
+=== strftime
 
 This setting must be a valid Python strftime string.  It is used to match and
 extract the timestamp in an index or snapshot name.
@@ -451,6 +543,8 @@ example, an index like `index-2016.04.01` would use a timestring of
 When <<fe_source,source>> is `name`, this setting must be set by the user or an
 exception will be raised, and execution will halt. There is no default value.
 
+include::inc_timestring_regex.asciidoc[]
+
 
 
 [[fe_unit]]
@@ -459,6 +553,15 @@ exception will be raised, and execution will halt. There is no default value.
 NOTE: This setting is used with the <<filtertype_age,age>> filtertype, with the
 <<filtertype_period,period>> filtertype, or with the <<filtertype_space,space>>
 filtertype if <<fe_use_age,use_age>> is set to `True`.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+-------------
 
 This setting must be one of `seconds`, `minutes`, `hours`, `days`, `weeks`,
 `months`, or `years`. The values `seconds` and `minutes` are not allowed with
@@ -475,20 +578,7 @@ reference with this formula:
 point_of_reference = epoch - ((number of seconds in unit) * unit_count)
 -----------
 
-The following table helps to illustrate this:
-
-.Time unit reference
-[width="50%", cols="<m,<m,", options="header"]
-|===
-|Unit|Seconds|Note
-|seconds|1|One second
-|minutes|60|Calculated as 60 seconds
-|hours|3600|Calculated as 60 minutes (60 * 60)
-|days|86400|Calculated as 24 hours (24 * 3600)
-|weeks|604800|Calculated as 7 days (7 * 86400)
-|months|2592000|Calculated as 30 days (30 * 86400)
-|years|31536000|Calculated as 365 days (365 * 86400)
-|===
+include::inc_unit_table.asciidoc[]
 
 
 If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
@@ -498,6 +588,9 @@ a point of reference in the future by using a negative value for
 This setting must be set by the user or an exception will be raised, and
 execution will halt.
 
+TIP: See the <<filtertype_age,age filter documentation>> for more information
+  about time calculation.
+
 
 
 [[fe_unit_count]]
@@ -506,6 +599,15 @@ execution will halt.
 NOTE: This setting is only used with the <<filtertype_age,age>> filtertype, or +
 with the <<filtertype_space,space>> filtertype if <<fe_use_age,use_age>> is
 set to `True`.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+-------------
 
 The value of this setting will be used as a multiplier for <<fe_unit,unit>>.
 
@@ -518,6 +620,8 @@ reference with this formula:
 point_of_reference = epoch - ((number of seconds in unit) * unit_count)
 -----------
 
+include::inc_unit_table.asciidoc[]
+
 If <<fe_epoch,epoch>> is unset, the current time is used. It is possible to set
 a point of reference in the future by using a negative value for
 <<fe_unit_count,unit_count>>.
@@ -525,32 +629,42 @@ a point of reference in the future by using a negative value for
 This setting must be set by the user or an exception will be raised, and
 execution will halt.
 
+TIP: See the <<filtertype_age,age filter documentation>> for more information
+  about time calculation.
+
 
 
 [[fe_use_age]]
 == use_age
 
-This setting allows matching of indices by their age _and_ the space they
-consume.  In other words, it sorts all indices in the list by age, then starts
-adding the space consumed by each index, beginning from the youngest.  Once the
-value of <<fe_disk_space,disk_space>> is reached, all remaining indices, which
-are the oldest, will remain in the actionable list, omitting all of the younger
-indices.
+[source,yaml]
+-------------
+- filtertype: count
+  count: 10
+  use_age: True
+  source: creation_date
+-------------
+
+This setting allows filtering of indices by their age _after_ other
+considerations.
 
 The default value of this setting is `False`
 
 NOTE: Use of this setting requires the additional setting, <<fe_source,source>>.
+
+TIP: There are context-specific examples using `use_age` in the
+  <<filtertype_count,count>> and <<filtertype_space,space>> documentation.
 
 
 
 [[fe_value]]
 == value
 
-NOTE: This setting is only used with the <<filtertype_pattern,pattern>> +
-    filtertype and is a required setting.  There is a separate
-    <<option_value,value option>> associated with the
-    <<allocation,allocation action>>, and the
-    <<filtertype_allocated,allocated filtertype>>.
+NOTE: This setting is only used with the <<filtertype_pattern,pattern>>
+filtertype and is a required setting.  There is a separate
+  <<option_value,value option>> associated with the
+  <<allocation,allocation action>>, and the
+  <<filtertype_allocated,allocated filtertype>>.
 
 The value of this setting is used by <<fe_kind,kind>> as follows:
 
@@ -569,12 +683,26 @@ IMPORTANT: Whatever you provide for `value` is always going to be a part of a +
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+TIP: There are context-specific examples using `value` in the <<fe_kind,kind>>
+  documentation.
+
 
 
 [[fe_week_starts_on]]
 == week_starts_on
 
 NOTE: This setting is only used with the <<filtertype_period,period>> filtertype.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: name
+   range_from: -1
+   range_to: -1
+   timestring: '%Y.%m.%d'
+   unit: weeks
+   week_starts_on: sunday
+-------------
 
 The value of this setting indicates whether weeks should be measured starting on
 `sunday` or `monday`.  Though Monday is the ISO standard, Sunday is frequently

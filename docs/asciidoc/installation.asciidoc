@@ -5,8 +5,8 @@
 --
 Curator can be installed in a variety of ways, depending on what meets your
 needs.  It is important to note that Curator only requires access to a client
-node in the Elasticsearch cluster to work.  It need not be installed on one of
-the nodes in the cluster if you do not want it that way.
+node in the Elasticsearch cluster to work.  It does not need to be installed on
+one of the nodes in the cluster.
 
 IMPORTANT: If you plan on using SSL/TLS to connect to Elasticsearch, you may
   encounter issues with older versions of Python and outdated libraries.  The
@@ -344,8 +344,8 @@ version:
 Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10
 or greater):
 
-. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
-. `pip install PyYAML-3.11.tar.gz`
+. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz -O PyYAML-3.12.tar.gz`
+. `pip install PyYAML-3.12.tar.gz`
 
 or uncompress and run `python setup.py install`
 

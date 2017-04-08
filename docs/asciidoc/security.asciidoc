@@ -17,10 +17,10 @@ Curator was written in Python, which allows it to be distributed as code which
 can run across a wide variety of systems, including Linux, Windows, Mac OS, and
 any other system or architecture for which a Python interpreter has been
 written. Curator was also written to be usable by the 4 most recent major
-release branches of Python: 2.6, 2.7, 3.4, and 3.5.  It may even run on other
+release branches of Python: 2.7, 3.4, 3.5, and 3.6.  It may even run on other
 versions, but those versions are not tested.
 
-Unfortunately, this broad support comes at a cost.  While Curator happily runs
+Unfortunately, this broad support comes at a cost.  While Curator happily ran
 on Python version 2.6, this version had its last update more than 3 years ago.
 There have been many improvements to security, SSL/TLS and the libraries that
 support them since then.  Not all of these have been back-ported, which results
@@ -36,7 +36,7 @@ troubleshooting and support work for Curator.  The precompiled binary packages
 were created to address this.
 
 The precompiled binary packages (APT/YUM, Windows) have been compiled with
-Python 3.5.2, which has all of the up-to-date libraries needed for secure
+Python {pybuild_ver}, which has all of the up-to-date libraries needed for secure
 transactions.  These packages have been tested connecting to Security (5.x
 X-Pack) with self-signed PKI certificates.  Connectivity via SSL or TLS to other
 open-source plugins may work, but is not guaranteed.

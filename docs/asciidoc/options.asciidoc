@@ -62,6 +62,18 @@ You can use <<envvars,environment variables>> in your configuration files.
 
 NOTE: This setting is used only when using the <<allocation,allocation action>>
 
+[source,yaml]
+-------------
+action: allocation
+description: "Apply shard allocation filtering rules to the specified indices"
+options:
+  key: ...
+  value: ...
+  allocation_type: ...
+filters:
+- filtertype: ...
+-------------
+
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
 Read more about these settings at {ref}/shard-allocation-filtering.html
@@ -73,6 +85,16 @@ The default value for this setting is `require`.
 
 NOTE: This setting is available in all actions.
 
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete selected indices"
+options:
+  continue_if_exception: False
+filters:
+- filtertype: ...
+-------------
+
 If `continue_if_exception` is set to `True`, Curator will attempt to continue on
 to the next action, if any, even if an exception is encountered. Curator will
 log but ignore the exception that was raised.
@@ -83,6 +105,17 @@ The default value for this setting is `False`
 == count
 
 NOTE: This setting is required when using the <<replicas,replicas action>>.
+
+[source,yaml]
+-------------
+action: replicas
+description: >- Set the number of replicas per shard for selected
+    indices to 'count'
+options:
+  count: ...
+filters:
+- filtertype: ...
+-------------
 
 The value for this setting is the number of replicas to assign to matching
 indices.
@@ -96,6 +129,19 @@ will be raised, and execution will halt.
 NOTE: This setting is only used by the <<forcemerge,forceMerge action>>, and is
     optional.
 
+[source,yaml]
+-------------
+action: forcemerge
+description: >-
+  Perform a forceMerge on selected indices to 'max_num_segments' per shard
+options:
+  max_num_segments: 2
+  timeout_override: 21600
+  delay: 120
+filters:
+- filtertype: ...
+-------------
+
 The value for this setting is the number of seconds to delay between
 forceMerging indices, to allow the cluster to quiesce.
 
@@ -107,6 +153,16 @@ There is no default value.
 NOTE: This setting is only used by the <<close,close action>>, and is
     optional.
 
+[source,yaml]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  delete_aliases: False
+filters:
+- filtertype: ...
+-------------
+
 The value for this setting determines whether aliases will be deleted from
 indices before closing.
 
@@ -116,6 +172,16 @@ The default value is `False`.
 == disable_action
 
 NOTE: This setting is available in all actions.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete selected indices"
+options:
+  disable_action: False
+filters:
+- filtertype: ...
+-------------
 
 If `disable_action` is set to `True`, Curator will ignore the current action.
 This may be useful for temporarily disabling actions in a large configuration
@@ -129,12 +195,122 @@ The default value for this setting is `False`
 This setting should be nested YAML.  The values beneath `extra_settings` will be
 used by whichever action uses the option.
 
+=== <<alias,alias>>
+
+[source,yaml]
+-------------
+action: alias
+description: "Add/Remove selected indices to or from the specified alias"
+options:
+  name: alias_name
+  extra_settings:
+    filter:
+      term:
+        user: kimchy
+add:
+  filters:
+  - filtertype: ...
+remove:
+  filters:
+  - filtertype: ...
+-------------
+
+=== <<create_index,create_index>>
+
+[source,yaml]
+-------------
+action: create_index
+description: "Create index as named"
+options:
+  name: myindex
+  # ...
+  extra_settings:
+    settings:
+      number_of_shards: 1
+      number_of_replicas: 0
+    mappings:
+      type1:
+        properties:
+          field1:
+            type: string
+            index: not_analyzed
+-------------
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent snapshot with state SUCCESS.  Wait
+      for the restore to complete before continuing.  Do not skip the repository
+      filesystem access check.  Use the other options to define the index/shard
+      settings for the restore.
+    options:
+      repository:
+      # If name is blank, the most recent snapshot by age will be selected
+      name:
+      # If indices is blank, all indices in the snapshot will be restored
+      indices:
+      extra_settings:
+        settings:
+          number_of_shards: 1
+          number_of_replicas: 0
+        mappings:
+          type1:
+            properties:
+              field1:
+                type: string
+                index: not_analyzed
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+=== <<rollover,rollover>>
+
+[source,yaml]
+-------------
+action: rollover
+description: >-
+  Rollover the index associated with index 'name', which should be in the
+  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+options:
+  name: aliasname
+  conditions:
+    max_age: 1d
+    max_docs: 1000000
+  extra_settings:
+    index.number_of_shards: 3
+    index.number_of_replicas: 1
+  timeout_override:
+  continue_if_exception: False
+  disable_action: False
+-------------
+
 There is no default value.
 
 [[option_ignore_empty]]
 == ignore_empty_list
 
 This setting must be either `True` or `False`.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete selected indices"
+options:
+  ignore_empty_list: True
+filters:
+- filtertype: ...
+-------------
 
 Depending on your indices, and how you've filtered them, an empty list may be
 presented to the action.  This results in an error condition.
@@ -148,19 +324,89 @@ The default value of this setting is `False`
 [[option_ignore]]
 == ignore_unavailable
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+NOTE: This setting is used by the <<snapshot,snapshot>> and <<restore,restore>>
+actions.
 
 This setting must be either `True` or `False`.
 
-When the ignore_unavailable option is `False` and an index is missing the
-snapshot request will fail.
-
 The default value of this setting is `False`
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      ignore_unavailable: True
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+When the ignore_unavailable option is `False` and an index is missing the
+restore request will fail.
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  ignore_unavailable: False
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+When the ignore_unavailable option is `False` and an index is missing the
+snapshot request will fail.  This is not frequently a concern in Curator, as
+it should only ever find indices that exist.
+
+
 
 [[option_include_aliases]]
 == include_aliases
 
 NOTE: This setting is only used by the <<restore,restore>> action.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      include_aliases: True
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
 
 This setting must be either `True` or `False`.
 
@@ -172,30 +418,111 @@ The default value of this setting is `False`
 [[option_include_gs]]
 == include_global_state
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+NOTE: This setting is used by the <<snapshot,snapshot>> and
+<<restore,restore>> actions.
 
 This setting must be either `True` or `False`.
 
 The value of this setting determines whether Elasticsearch should include the
-global cluster state with the snapshot.
+global cluster state with the snapshot or restore.
 
-The default value of this setting is `True`
+When performing a <<snapshot,snapshot>>, the default value of this setting is
+`True`.
+
+When performing a <<restore,restore>>, the default value of this setting is
+`False`.
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      include_global_state: False
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  include_global_state: True
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
 
 [[option_indices]]
 == indices
 
 NOTE: This setting is only used by the <<restore,restore>> action.
 
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
 This setting must be a list of indices to restore.  Any valid YAML format for
 lists are acceptable here.  If `indices` is left empty, or unset, all indices in
 the snapshot will be restored.
 
-The default value of this setting is `None`
+The default value of this setting is an empty setting.
 
 [[option_key]]
 == key
 
 NOTE: This setting is required when using the <<allocation,allocation action>>.
+
+[source,yaml]
+-------------
+action: allocation
+description: "Apply shard allocation filtering rules to the specified indices"
+options:
+  key: ...
+  value: ...
+  allocation_type: ...
+filters:
+- filtertype: ...
+-------------
 
 The value of this setting should correspond to a node setting on one or more
 nodes in your cluster.
@@ -241,7 +568,12 @@ will be raised, and execution will halt.
 
 [source,yaml]
 -------------
+action: rollover
+description: >-
+  Rollover the index associated with index 'name', which should be in the
+  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
+  name: aliasname
   conditions:
     max_age: 1d
 -------------
@@ -260,9 +592,14 @@ Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 
 [source,yaml]
 -------------
+action: rollover
+description: >-
+  Rollover the index associated with index 'name', which should be in the
+  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
+  name: aliasname
   conditions:
-    max_docs: 10000000
+    max_docs: 1000000
 -------------
 
 NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
@@ -276,18 +613,9 @@ error.
 [[option_max_wait]]
 == max_wait
 
-[source,yaml]
--------------
-    options:
-      # ...
-      wait_interval: 10
-      max_wait: 900
-      # ...
--------------
-
 NOTE: This setting is used by the <<allocation,allocation>>,
-    <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>>
-    actions.
+  <<cluster_routing,cluster_routing>>, <<reindex,reindex>>,
+  <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>> actions.
 
 This setting must be a positive integer, or `-1`.
 
@@ -300,11 +628,132 @@ action is complete.
 The default value for this setting is `-1`, meaning that Curator will wait
 indefinitely for the action to complete.
 
+=== <<allocation,allocation>>
+
+[source,yaml]
+-------------
+action: allocation
+description: "Apply shard allocation filtering rules to the specified indices"
+options:
+  key: ...
+  value: ...
+  allocation_type: ...
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+=== <<cluster_routing,cluster_routing>>
+
+[source,yaml]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type:
+  value: ...
+  setting: enable
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+-------------
+
+=== <<reindex,reindex>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+=== <<replicas,replicas>>
+
+[source,yaml]
+-------------
+action: replicas
+description: >- Set the number of replicas per shard for selected
+    indices to 'count'
+options:
+  count: ...
+  wait_for_completion: True
+  max_wait: 600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      include_global_state: False
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  include_global_state: True
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
 [[option_mns]]
 == max_num_segments
 
-NOTE: This setting is required when using the <<forcemerge,forceMerge action>>
-    or the <<filtertype_forcemerged,forcemerged filtertype>>.
+NOTE: This setting is required when using the <<forcemerge,forceMerge action>>.
+
+[source,yaml]
+-------------
+action: forcemerge
+description: >-
+  Perform a forceMerge on selected indices to 'max_num_segments' per shard
+options:
+  max_num_segments: 2
+  timeout_override: 21600
+filters:
+- filtertype: ...
+-------------
 
 The value for this setting is the cutoff number of segments per shard.  Indices
 which have more than this number of segments per shard will remain in the index
@@ -317,8 +766,8 @@ will be raised, and execution will halt.
 [[option_name]]
 == name
 
-NOTE: This setting is used by the <<alias,alias>>, <<snapshot,snapshot>>, and
-    <<create_index,create_index>> actions.
+NOTE: This setting is used by the <<alias,alias>>, <<create_index,create_index>>
+  and <<snapshot,snapshot>>, actions.
 
 The value of this setting is the name of the alias, snapshot, or index,
 depending on which action makes use of `name`.
@@ -338,14 +787,72 @@ The Python strftime identifiers that Curator currently recognizes include:
 * `S`: The 2 digit number of second of the minute
 * `j`: The 3 digit day of the year
 
+
+=== <<alias,alias>>
+
+[source,yaml]
+-------------
+action: alias
+description: "Add/Remove selected indices to or from the specified alias"
+options:
+  name: alias_name
+add:
+  filters:
+  - filtertype: ...
+remove:
+  filters:
+  - filtertype: ...
+-------------
+
 This option is required by the <<alias,alias>> action, and has no default
 setting in that context.
 
-For the <<create_index,create_index>> action, there is no default setting, but
-you can use Elasticsearch
-https://www.elastic.co/guide/en/elasticsearch/reference/current/date-math-index-names.html[date math]
-to name your indices.  See more in the <<create_index,create_index>> documenation.
+=== <<create_index,create_index>>
 
+For the <<create_index,create_index>> action, there is no default setting, but
+you can use strftime:
+
+[source,yaml]
+-------------
+action: create_index
+description: "Create index as named"
+options:
+  name: 'myindex-%Y.%m'
+  # ...
+-------------
+
+or use Elasticsearch {ref}/date-math-index-names.html[date math]
+
+[source,yaml]
+-------------
+action: create_index
+description: "Create index as named"
+options:
+  name: '<logstash-{now/d+1d}>'
+  # ...
+-------------
+
+to name your indices.  See more in the <<create_index,create_index>>
+documenation.
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name:
+  include_global_state: True
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
 
 For the <<snapshot,snapshot>> action, the default value of this setting is
 `curator-%Y%m%d%H%M%S`
@@ -357,10 +864,27 @@ For the <<snapshot,snapshot>> action, the default value of this setting is
 
 NOTE: This setting is only used by the <<snapshot,snapshot>> action.
 
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: ...
+  partial: False
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
 This setting must be either `True` or `False`.
 
 The entire snapshot will fail if one or more indices being added to the
-snapshot don’t have all primary shards available. This behavior can be changed
+snapshot do not have all primary shards available. This behavior can be changed
 by setting partial to `True`.
 
 The default value of this setting is `False`
@@ -369,6 +893,25 @@ The default value of this setting is `False`
 == refresh
 
 NOTE: This setting is only used by the <<reindex,reindex>> action.
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      refresh: True
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
 
 Setting `refresh` to `True` will cause all re-indexed indexes to be refreshed.
 This differs from the Index API’s refresh parameter which causes just the
@@ -765,6 +1308,39 @@ original text as explained
 http://docs.oracle.com/javase/6/docs/api/java/util/regex/Matcher.html#appendReplacement(java.lang.StringBuffer,%20java.lang.String)[here].
 ======================================
 
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent snapshot with state SUCCESS.  Wait
+      for the restore to complete before continuing.  Do not skip the repository
+      filesystem access check.  Use the other options to define the index/shard
+      settings for the restore.
+    options:
+      repository:
+      # If name is blank, the most recent snapshot by age will be selected
+      name:
+      # If indices is blank, all indices in the snapshot will be restored
+      indices:
+      rename_pattern: 'index(.+)'
+      rename_replacement: 'restored_index$1'
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+In this configuration, Elasticsearch will capture whatever appears after `index`
+and put it after `restored_index`.  For example, if I was restoring
+`index-2017.03.01`, the resulting index would be renamed to
+`restored_index-2017.03.01`.
+
 Read more about this setting at {ref}/modules-snapshots.html#_restore
 
 There is no default value.
@@ -784,6 +1360,39 @@ original text as explained
 http://docs.oracle.com/javase/6/docs/api/java/util/regex/Matcher.html#appendReplacement(java.lang.StringBuffer,%20java.lang.String)[here].
 ======================================
 
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent snapshot with state SUCCESS.  Wait
+      for the restore to complete before continuing.  Do not skip the repository
+      filesystem access check.  Use the other options to define the index/shard
+      settings for the restore.
+    options:
+      repository:
+      # If name is blank, the most recent snapshot by age will be selected
+      name:
+      # If indices is blank, all indices in the snapshot will be restored
+      indices:
+      rename_pattern: 'index(.+)'
+      rename_replacement: 'restored_index$1'
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+In this configuration, Elasticsearch will capture whatever appears after `index`
+and put it after `restored_index`.  For example, if I was restoring
+`index-2017.03.01`, the resulting index would be renamed to
+`restored_index-2017.03.01`.
+
 Read more about this setting at {ref}/modules-snapshots.html#_restore
 
 There is no default value.
@@ -796,6 +1405,46 @@ NOTE: This setting is only used by the <<snapshot, snapshot>>, and
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
 
 [[option_requests_per_second]]
 == requests_per_second
@@ -880,7 +1529,7 @@ actions:
 -------------
 
 IMPORTANT: You _must_ set at least a <<filtertype_none,none>> filter, or the
-  action will fail.  Don't worry.  If you've manually specified your indices,
+  action will fail.  Do not worry.  If you've manually specified your indices,
   those are the only ones which will be reindexed.
 
 === Filter-Selected Indices
@@ -936,7 +1585,7 @@ actions:
 -------------
 
 IMPORTANT: You _must_ set at least a <<filtertype_none,none>> filter, or the
-  action will fail.  Don't worry.  Only the indices you specified in `source`
+  action will fail.  Do not worry.  Only the indices you specified in `source`
   will be reindexed.
 
 Curator will create a connection to the host specified as the `host` key in the
@@ -1008,7 +1657,7 @@ actions:
 -------------
 
 IMPORTANT: Even though you are reindexing from remote, you _must_ set at least a
-  <<filtertype_none,none>> filter, or the action will fail.  Don't worry.  Only
+  <<filtertype_none,none>> filter, or the action will fail.  Do not worry.  Only
   the indices specified in `source` will be reindexed.
 
 Curator will create a connection to the host specified as the `host` key in the
@@ -1072,6 +1721,18 @@ Notable exceptions include:
 
 NOTE: This setting is only used by the <<delete_snapshots, delete snapshots action>>.
 
+[source,yaml]
+-------------
+action: delete_snapshots
+description: "Delete selected snapshots from 'repository'"
+options:
+  repository: ...
+  retry_interval: 120
+  retry_count: 3
+filters:
+- filtertype: ...
+-------------
+
 The value of this setting is the number of times to retry deleting a snapshot.
 
 The default for this setting is `3`.
@@ -1083,6 +1744,18 @@ The default for this setting is `3`.
 
 NOTE: This setting is only used by the <<delete_snapshots, delete snapshots action>>.
 
+[source,yaml]
+-------------
+action: delete_snapshots
+description: "Delete selected snapshots from 'repository'"
+options:
+  repository: ...
+  retry_interval: 120
+  retry_count: 3
+filters:
+- filtertype: ...
+-------------
+
 The value of this setting is the number of seconds to delay between retries.
 
 The default for this setting is `120`.
@@ -1092,7 +1765,21 @@ The default for this setting is `120`.
 [[option_routing_type]]
 == routing_type
 
-NOTE: This setting is only used by the <<cluster_routing, cluster_routing action>>.
+NOTE: This setting is only used by the
+  <<cluster_routing,cluster_routing action>>.
+
+[source,yaml]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type:
+  value: ...
+  setting: enable
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+-------------
 
 The value of this setting must be either `allocation` or `rebalance`
 
@@ -1102,7 +1789,21 @@ will be raised, and execution will halt.
 [[option_setting]]
 == setting
 
-NOTE: This setting is only used by the <<cluster_routing, cluster_routing action>>.
+NOTE: This setting is only used by the
+  <<cluster_routing,cluster_routing action>>.
+
+[source,yaml]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type:
+  value: ...
+  setting: enable
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+-------------
 
 The value of this must be `enable` at present.  It is a placeholder for future
 expansion.
@@ -1117,8 +1818,9 @@ will be raised, and execution will halt.
 
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
-This setting can speed up reindexing operations by using https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html#sliced-scroll[Sliced Scroll]
-to slice on the \_uid.
+This setting can speed up reindexing operations by using
+{ref}/search-request-scroll.html#sliced-scroll[Sliced Scroll] to slice on the
+\_uid.
 
 [source,yaml]
 -------------
@@ -1153,17 +1855,72 @@ Here are a few recommendations around the number of `slices` to use:
 [[option_skip_fsck]]
 == skip_repo_fs_check
 
-NOTE: This setting is only used by the <<snapshot,snapshot>> action.
+NOTE: This setting is used by the <<snapshot,snapshot>> and <<restore,restore>>
+actions.
 
 This setting must be either `True` or `False`.
 
-Each master and data node in the cluster _must_ have write access to the shared
-filesystem used by the repository.  Some filesystems may take longer to respond
-to a check, which results in a false positive for the filesystem access check.
-For these cases, it is desirable to bypass this verification step, by setting
-this to `True.`
-
 The default value of this setting is `False`
+
+=== <<restore,restore>>
+
+Each master and data node in the cluster _must_ have write access to the shared
+filesystem used by the repository for a snapshot to be 100% valid. For the
+purposes of a <<restore,restore>>, this is a lightweight attempt to ensure that
+all nodes are _still_ actively able to write to the repository, in hopes that
+snapshots were from all nodes.  It is not otherwise necessary for the purposes
+of a restore.
+
+Some filesystems may take longer to respond to a check, which results in a false
+positive for the filesystem access check. For these cases, it is desirable to
+bypass this verification step, by setting this to `True.`
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      skip_repo_fs_check: False
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+=== <<snapshot,snapshot>>
+
+Each master and data node in the cluster _must_ have write access to the shared
+filesystem used by the repository for a snapshot to be 100% valid.
+
+Some filesystems may take longer to respond to a check, which results in a false
+positive for the filesystem access check. For these cases, it is desirable to
+bypass this verification step, by setting this to `True.`
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  skip_repo_fs_check: False
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
 
 
 
@@ -1201,6 +1958,18 @@ actions:
 
 NOTE: This setting is available in all actions.
 
+[source,yaml]
+-------------
+action: forcemerge
+description: >-
+  Perform a forceMerge on selected indices to 'max_num_segments' per shard
+options:
+  max_num_segments: 2
+  timeout_override: 21600
+filters:
+- filtertype: ...
+-------------
+
 Actions <<snapshot,snapshot>>, <<restore,restore>>, and
     <<forcemerge,forcemerge>> will override this value to `21600` if
     `timeout_override` is unset.  The <<close,close>> action will override the
@@ -1218,13 +1987,16 @@ shows these default values:
 |snapshot |21600
 |===
 
+
 All other actions have no default value for `timeout_override`.
 
 This setting must be an integer number of seconds, or an error will result.
 
 This setting is particularly useful for the <<forcemerge,forceMerge>> action,
-the <<snapshot,snapshot>> action, and any other action where a longer timeout
-from the client-defined default would be desirable.
+as all other actions have a new polling behavior when using
+<<option_wfc,wait_for_completion>> that should reduce or prevent client
+timeouts.
+
 
 
 [[option_value]]
@@ -1233,7 +2005,7 @@ from the client-defined default would be desirable.
 NOTE: This setting is optional when using the <<allocation,allocation action>>
     and required when using the <<cluster_routing,cluster_routing action>>.
 
-=== <<allocation,allocation>> value
+=== <<allocation,allocation>>
 
 For the <<allocation,allocation action>>, the value of this setting should
 correspond to a node setting on one or more nodes in your cluster
@@ -1279,7 +2051,7 @@ similar to this:
         passing an empty value.
       options:
         key: size
-        value:
+        value: ...
         allocation_type: exclude
       filters:
       - filtertype: pattern
@@ -1287,10 +2059,23 @@ similar to this:
         value: '^test$'
 -----------
 
-=== <<cluster_routing,cluster_routing>> value
+=== <<cluster_routing,cluster_routing>>
 
 For the <<cluster_routing,cluster_routing action>>, the acceptable values for
 this setting depend on the value of <<option_routing_type,routing_type>>.
+
+[source,yaml]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type: ...
+  value: ...
+  setting: enable
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+-------------
 
 Acceptable values when <<option_routing_type,routing_type>> is either
 `allocation` or `rebalance` are `all`, `primaries`, and  `none` (string, not
@@ -1311,7 +2096,7 @@ NOTE: This setting is used by the <<reindex,Reindex>> and
 <<rollover,Rollover>> actions.  Each use it differently.
 
 
-=== Reindex context
+=== Reindex
 
 For the reindex action, this setting determines the number of shard copies that
 must be active before proceeding with the reindex operation. The default value
@@ -1341,7 +2126,7 @@ actions:
 -------------
 
 
-=== Rollover context
+=== Rollover
 
 For the rollover action, this setting is the number of shards expected to be
 active before the client returns.  This can be set to the number of primary
@@ -1373,52 +2158,268 @@ options:
 == wait_for_completion
 
 NOTE: This setting is used by the <<allocation,allocation>>,
-    <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>>
-    actions.
+  <<cluster_routing,cluster_routing>>, <<reindex,reindex>>,
+  <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>> actions.
 
 This setting must be either `True` or `False`.
 
 This setting specifies whether or not the request should return immediately or
 wait for the operation to complete before returning.
 
+=== <<allocation,allocation>>
+
+[source,yaml]
+-------------
+action: allocation
+description: "Apply shard allocation filtering rules to the specified indices"
+options:
+  key: ...
+  value: ...
+  allocation_type: ...
+  wait_for_completion: False
+  max_wait: 300
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+The default value for the <<allocation,allocation>> action is `False`.
+
+=== <<cluster_routing,cluster_routing>>
+
+[source,yaml]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type:
+  value: ...
+  setting: enable
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+-------------
+
+The default value for the <<cluster_routing,cluster_routing>> action is `False`.
+
+=== <<reindex,reindex>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+The default value for the <<reindex,reindex>> action is `False`.
+
+=== <<replicas,replicas>>
+
+[source,yaml]
+-------------
+action: replicas
+description: >- Set the number of replicas per shard for selected
+    indices to 'count'
+options:
+  count: ...
+  wait_for_completion: True
+  max_wait: 600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+The default value for the <<replicas,replicas>> action is `False`.
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+The default value for the <<restore,restore>> action is `True`.
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+The default value for the <<snapshot,snapshot>> action is `True`.
 
 TIP: During snapshot initialization, information about all previous snapshots is
     loaded into the memory, which means that in large repositories it may take
     several seconds (or even minutes) for this command to return even if the
     `wait_for_completion` setting is set to `False`.
 
-The default value of this setting differs for each action.  The default for the
-<<allocation,allocation>> and <<replicas,replicas>> actions is `False`.  The
-default for the <<restore,restore>> and <<snapshot,snapshot>> actions is `True`.
+
 
 [[option_wait_interval]]
 == wait_interval
 
-[source,yaml]
--------------
-    options:
-      # ...
-      wait_interval: 10
-      max_wait: 900
-      # ...
--------------
-
 NOTE: This setting is used by the <<allocation,allocation>>,
-    <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>>
-    actions.
+  <<cluster_routing,cluster_routing>>, <<reindex,reindex>>,
+  <<replicas,replicas>>, <<restore,restore>>, and <<snapshot,snapshot>> actions.
 
 This setting must be a positive integer between 1 and 30.
 
 This setting specifies how long to wait between checks to see if the action has
-completed or not.  This number should not be larger than the client timeout or
-the timeout override.  As the default client timeout value for is 30, this
-should be uncommon.
+completed or not.  This number should not be larger than the client
+<<timeout,timeout>> or the <<option_timeout_override,timeout_override>>.  As the
+default client <<timeout,timeout>> value for is 30, this should be uncommon.
 
 The default value for this setting is `9`, meaning 9 seconds between checks.
 
 This option is generally used in conjunction with <<option_max_wait,max_wait>>,
 which is the maximum amount of time in seconds to wait for the given action to
 complete.
+
+=== <<allocation,allocation>>
+
+[source,yaml]
+-------------
+action: allocation
+description: "Apply shard allocation filtering rules to the specified indices"
+options:
+  key: ...
+  value: ...
+  allocation_type: ...
+  wait_for_completion: False
+  max_wait: 300
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+=== <<cluster_routing,cluster_routing>>
+
+[source,yaml]
+-------------
+action: cluster_routing
+description: "Apply routing rules to the entire cluster"
+options:
+  routing_type:
+  value: ...
+  setting: enable
+  wait_for_completion: True
+  max_wait: 300
+  wait_interval: 10
+-------------
+
+=== <<reindex,reindex>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+=== <<replicas,replicas>>
+
+[source,yaml]
+-------------
+action: replicas
+description: >- Set the number of replicas per shard for selected
+    indices to 'count'
+options:
+  count: ...
+  wait_for_completion: True
+  max_wait: 600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
+
+=== <<restore,restore>>
+
+[source,yaml]
+-------------
+actions:
+  1:
+    action: restore
+    description: Restore my_index from my_snapshot in my_repository
+    options:
+      repository: my_repository
+      name: my_snapshot
+      indices: my_index
+      wait_for_completion: True
+      max_wait: 3600
+      wait_interval: 10
+    filters:
+    - filtertype: state
+      state: SUCCESS
+      exclude:
+    - filtertype: ...
+-------------
+
+=== <<snapshot,snapshot>>
+
+[source,yaml]
+-------------
+action: snapshot
+description: >-
+  Snapshot selected indices to 'repository' with the snapshot name or name
+  pattern in 'name'.  Use all other options as assigned
+options:
+  repository: my_repository
+  name: my_snapshot
+  wait_for_completion: True
+  max_wait: 3600
+  wait_interval: 10
+filters:
+- filtertype: ...
+-------------
 
 [[option_warn_if_no_indices]]
 == warn_if_no_indices
@@ -1427,15 +2428,43 @@ NOTE: This setting is only used by the <<alias,alias>> action.
 
 This setting must be either `True` or `False`.
 
+The default value for this setting is `False`.
+
+[source,yaml]
+-------------
+action: alias
+description: "Add/Remove selected indices to or from the specified alias"
+options:
+  name: alias_name
+  warn_if_no_indices: False
+add:
+  filters:
+  - filtertype: ...
+remove:
+  filters:
+  - filtertype: ...
+-------------
+
 This setting specifies whether or not the alias action should continue with a
 warning or return immediately in the event that the filters in the add or remove
 section result in an empty index list.
 
-**Use with caution.**  This option is particularly beneficial when trying to alias
-a new set of time-series indices.  For example, you want to add the most recent
-seven days into a _lastweek_ alias, and remove indices older than seven days
-from this same alias.  If you do not have any indices older than seven days,
-this will result in an empty index list condition which will prevent the entire
-alias action from completing successfully.  A non-beneficial case would be where
-a typo results in indices not being removed, and suddenly an alias that should
-only query one week has three weeks of data.
+[WARNING]
+.Improper use of this setting can yield undesirable results
+=====================================================================
+*Ideal use case:*
+For example, you want to add the most recent seven days of time-series indices
+into a _lastweek_ alias, and remove indices older than seven days from this same
+alias.  If you do not not yet have any indices older than seven days, this will
+result in an empty index list condition which will prevent the entire alias
+action from completing successfully. If `warn_if_no_indices` were set to `True`,
+however, it would avert that potential outcome.
+
+*Potentially undesirable outcome:*
+A _non-beneficial_ case would be where if `warn_if_no_indices` is set to `True`,
+and a misconfiguration results in indices not being found, and therefore not
+being disassociated from the alias.  As a result, an alias that should only
+query one week now references multiple weeks of data. If `warn_if_no_indices`
+were set to `False`, this scenario would have been averted because the empty
+list condition would have resulted in an error.
+=====================================================================

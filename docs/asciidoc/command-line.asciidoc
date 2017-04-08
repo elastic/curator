@@ -152,9 +152,7 @@ NOTE: You may need to escape all of the double quotes on some platforms, or
 Caveats to this approach:
 
 1. Only one action can be taken at a time.
-2. You must still specify a <<filtertype_none,none>> filter if you want to act +
-  on all indices or snapshots.
-3. Not all actions have singleton analogs.  <<alias,Alias>> and +
+2. Not all actions have singleton analogs. For example, <<alias,Alias>> and +
   <<restore,Restore>> do not have singleton actions.
 
 === Show Indices/Snapshots
