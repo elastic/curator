@@ -357,7 +357,7 @@ SSL key. The key file must be an unencrypted key in PEM format.
 === aws_key
 
 WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
+    <<faq_aws_iam,Curator 5 does not currently work with AWS ES>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -377,7 +377,7 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 === aws_secret_key
 
 WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
+    <<faq_aws_iam,Curator 5 does not currently work with AWS ES>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -397,7 +397,7 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 === aws_region
 
 WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
+    <<faq_aws_iam,Curator 5 does not currently work with AWS ES>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.

@@ -45,8 +45,11 @@ def ignore_unavailable():
 def include_aliases():
     return { Optional('include_aliases', default=False): Boolean() }
 
-def include_global_state():
-    return { Optional('include_global_state', default=True): Boolean() }
+def include_global_state(action):
+    default = False
+    if action == 'snapshot':
+        default = True
+    return { Optional('include_global_state', default=default): Boolean() }
 
 def indices():
     return { Optional('indices', default=None): Any(None, list) }
