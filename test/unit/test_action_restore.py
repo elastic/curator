@@ -63,7 +63,7 @@ class TestActionRestore(TestCase):
                 'rename_replacement': '',
                 'rename_pattern': '',
                 'indices': ['index-2015.01.01', 'index-2015.02.01'],
-                'include_global_state': True
+                'include_global_state': False
             }
         )
     def test_get_expected_output(self):

@@ -1322,7 +1322,7 @@ class Snapshot(object):
 
 class Restore(object):
     def __init__(self, slo, name=None, indices=None, include_aliases=False,
-                ignore_unavailable=False, include_global_state=True,
+                ignore_unavailable=False, include_global_state=False,
                 partial=False, rename_pattern=None, rename_replacement=None,
                 extra_settings={}, wait_for_completion=True, wait_interval=9,
                 max_wait=-1, skip_repo_fs_check=False):
@@ -1340,8 +1340,8 @@ class Restore(object):
         :arg ignore_unavailable: Ignore unavailable shards/indices.
             (default: `False`)
         :type ignore_unavailable: bool
-        :arg include_global_state: Store cluster global state with snapshot.
-            (default: `True`)
+        :arg include_global_state: Restore cluster global state with snapshot.
+            (default: `False`)
         :type include_global_state: bool
         :arg partial: Do not fail if primary shard is unavailable. (default:
             `False`)

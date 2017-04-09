@@ -56,27 +56,26 @@ snapshots, including:
 * <<delete_snapshots,Delete snapshots>>
 * <<open,Open>> closed indices
 * <<forcemerge,forceMerge>> indices
+* <<reindex,reindex>> indices, including from remote clusters
 * Change the number of <<replicas,replicas>> per shard for indices
+* <<rollover,rollover>> indices
 * Take a <<snapshot,snapshot>> (backup) of indices
 * <<restore,Restore>> snapshots
 
 [[about-cli]]
 == Command-Line Interface (CLI)
 
-Curator has always been a command-line tool. When Curator 2.0 was released, it
-was the first attempt to separate the <<about-api,API>> from the CLI.
-
-This site provides the documentation for how to use Curator on the command-line.
+Curator has always been a command-line tool. This site provides the
+documentation for how to use Curator on the command-line.
 
 TIP: Learn more about <<command-line,the command-line interface>>.
 
 [[about-api]]
 == Application Program Interface (API)
 
-Since version 2.0, Curator ships with both an API and wrapper scripts (which are
-actually defined as entry points).  The API, or Application Program Interface,
-allows you to write your own scripts to accomplish similar goals--or even new
-and different things--with the same code that Curator uses.
+Curator ships with both an API and CLI tool.  The API, or Application Program
+Interface, allows you to write your own scripts to accomplish similar goals--or
+even new and different things--with the same code that Curator uses.
 
 The API documentation is not on this site, but is available at
 http://curator.readthedocs.io/.  The Curator API is built using the

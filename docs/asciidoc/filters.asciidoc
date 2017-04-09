@@ -35,6 +35,8 @@ The snapshot filtertypes are:
 You can use <<envvars,environment variables>> in your configuration files.
 --
 
+
+
 [[filtertype]]
 == filtertype
 
@@ -84,22 +86,10 @@ The snapshot filtertypes are:
 * <<filtertype_period,period>>
 * <<filtertype_state,state>>
 
+
+
 [[filtertype_age]]
 == age
-
-[source,yaml]
--------------
- - filtertype: age
-   source: name
-   direction: older
-   timestring: '%Y.%m.%d'
-   unit: days
-   unit_count: 3
-   field:
-   stats_result:
-   epoch:
-   exclude: False
--------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
@@ -109,31 +99,83 @@ This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices based on their age.  They will remain in, or be removed from the
 actionable list based on the value of <<fe_exclude,exclude>>.
 
-Read more about the different settings for this <<filtertype,filtertype>>:
+=== Age calculation
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+include::inc_unit_table.asciidoc[]
+
+All calculations are in epoch time, which is the number of seconds elapsed since
+1 Jan 1970.  If no <<fe_epoch,`epoch`>> is specified in the filter, then the
+current epoch time-which is always UTC-is used as the basis for comparison.
+
+As epoch time is always increasing, lower numbers indicate dates and times in
+the past.
+
+When age is calculated, <<fe_unit,`unit`>> is multiplied by
+<<fe_unit_count,`unit_count`>> to obtain a total number of seconds to use as a
+differential.
+
+For example, if the time at execution were 2017-04-07T15:00:00Z (UTC), then the
+epoch timestamp would be `1491577200`.  If I had an age filter defined like
+this:
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+-------------
+
+The time differential would be `3*24*60*60` seconds, which is `259200` seconds.
+Subtracting this value from `1491577200` gives us `1491318000`, which is
+2017-04-04T15:00:00Z (UTC), exactly 3 days in the past.  The `creation_date` of
+indices or snapshots is compared to this timestamp. If it is `older`, it stays
+in the actionable list, otherwise it is removed from the actionable list.
+
+[IMPORTANT]
+.`age` filter vs. `period` filter
+=================================
+The time differential means of calculation can lead to frustration.
+
+Setting `unit` to `months`, and `unit_count` to `3` will actually calculate the
+age as `3*30*24*60*60`, which is `7776000` seconds. This may be a big deal. If
+the date is 2017-01-01T02:30:00Z, or `1483237800` in epoch time. Subtracting
+`7776000` seconds makes `1475461800`, which is 2016-10-03T02:30:00Z. If you were
+to try to match monthly indices, `index-2016.12`, `index-2016.11`, `2016.10`,
+`2016.09`, etc., then both `index-2016.09` _and_ `index-2016.10` will be _older_
+than the cutoff date.  This may result in unintended behavior.
+
+Another way this can cause issues is with weeks. Weekly indices may start on
+Sunday or Monday. The age filter's calculation doesn't take this into
+consideration, and merely tests the difference between execution time and the
+timestamp on the index (from any `source`).
+
+Another means of selecting indices and snapshots is the
+<<filtertype_period,period>> filter, which is perhaps a better choice for
+selecting weeks and months as it compensates for these differences.
+=================================
+
+include::inc_sources.asciidoc[]
+
+=== Required settings
 
 * <<fe_source,source>>
 * <<fe_direction,direction>>
 * <<fe_unit,unit>>
 * <<fe_unit_count,unit_count>>
 
-[float]
-Dependent settings
-~~~~~~~~~~~~~~~~~~
+=== Dependent settings
 
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`) [Indices only]
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`) [Indices only]
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>> (default is `False`)
+
 
 
 [[filtertype_alias]]
@@ -142,8 +184,7 @@ Optional settings
 [source,yaml]
 -------------
 - filtertype: alias
-  aliases:
-  exclude: True
+  aliases: ...
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
@@ -152,18 +193,19 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices based on whether they are associated with the given
-<<fe_aliases,aliases>>.  They will remain in, or be removed from the actionable
-list based on the value of <<fe_exclude,exclude>>.
+<<fe_aliases,aliases>>, which can be a single value, or an array.  They will
+remain in, or be removed from the actionable list based on the value of
+<<fe_exclude,exclude>>.
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+=== Required settings
+
 * <<fe_aliases,aliases>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
-* <<fe_exclude,exclude>> (default is `False`)
+=== Optional settings
+
+* <<fe_exclude,exclude>>
+
+
 
 [[filtertype_allocated]]
 == allocated
@@ -171,8 +213,8 @@ Optional settings
 [source,yaml]
 -------------
 - filtertype: allocated
-  key:
-  value:
+  key: ...
+  value: ...
   allocation_type:
   exclude: True
 -------------
@@ -186,18 +228,16 @@ indices based on their shard routing allocation settings.  They will remain in,
 or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+=== Required settings
 
 * <<fe_key,key>>
 * <<fe_value,value>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
+
 * <<fe_allocation_type,allocation_type>>
 * <<fe_exclude,exclude>> (default is `True`)
+
 
 
 [[filtertype_closed]]
@@ -213,11 +253,11 @@ This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices which are closed.  They will remain in, or be removed from the
 actionable list based on the value of <<fe_exclude,exclude>>.
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_exclude,exclude>> (default is `True`)
+
+
 
 [[filtertype_count]]
 == count
@@ -226,13 +266,6 @@ Optional settings
 -------------
 - filtertype: count
   count: 10
-  reverse: True
-  use_age: False
-  source: creation_date
-  timestring:
-  field:
-  stats_result:
-  exclude: False
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
@@ -245,6 +278,8 @@ that the correct items will remain in, or be removed from the actionable list
 based on the values of <<fe_count,count>>, <<fe_exclude,exclude>>, and
 <<fe_reverse,reverse>>.
 
+=== Age-based sorting
+
 For use cases, where "like" items are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as item names will be sorted in
@@ -252,17 +287,111 @@ set <<fe_use_age,use_age>> to `True`, as item names will be sorted in
 start beginning with the _newest_ indices or snapshots, and proceed through to
 the oldest.
 
-Read more about the different settings for this <<filtertype,filtertype>>:
+Where this is not the case, the <<fe_use_age,`use_age`>> setting can be used to
+ensure that index or snapshot ages are properly considered for sorting:
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+[source,yaml]
+-------------
+- filtertype: count
+  count: 10
+  use_age: True
+  source: creation_date
+-------------
+
+All of the age-related settings from the <<filtertype_age,`age`>> filter are
+supported, and the same restrictions apply with regard to filtering indices vs.
+snapshots.
+
+=== Reversing sorting
+
+Using the default configuration, <<fe_reverse,`reverse`>> is `True`.  Given
+These indices:
+
+[source,sh]
+-------------
+index1
+index2
+index3
+index4
+index5
+-------------
+
+And this filter:
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 2
+-------------
+
+Indices `index5` and `index4` will be recognized as the `2` _most recent,_ and
+will be removed from the actionable list, leaving `index1`, `index2`, and
+`index3` to be acted on by the given <<actions,action>>.
+
+Similarly, given these indices:
+
+[source,sh]
+-------------
+index-2017.03.01
+index-2017.03.02
+index-2017.03.03
+index-2017.03.04
+index-2017.03.05
+-------------
+
+And this filter:
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 2
+  use_age: True
+  source: name
+  timestring: '%Y.%m.%d'
+-------------
+
+The result will be similar.  Indices `index-2017.03.05` and `index-2017.03.04`
+will be recognized as the `2` _most recent,_ and will be removed from the
+actionable list, leaving `index-2017.03.01`, `index-2017.03.02`, and
+`index-2017.03.03` to be acted on by the given <<actions,action>>.
+
+In some cases, you may wish to filter for the most recent indices.  To
+accomplish this you set <<fe_reverse,`reverse`>> to `False`:
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 2
+  reverse: False
+-------------
+
+This time indices `index1` and `index2` will be the `2` which will be removed
+from the actionable list, leaving `index3`, `index4`, and `index5` to be acted
+on by the given <<actions,action>>.
+
+Likewise with the age sorted indices:
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 2
+  use_age: True
+  source: name
+  timestring: '%Y.%m.%d'
+  reverse: True
+-------------
+
+Indices `index-2017.03.01` and `index-2017.03.02` will be the `2` which will be
+removed from the actionable list, leaving `index-2017.03.03`,
+`index-2017.03.04`, and `index-2017.03.05` to be acted on by the given
+<<actions,action>>.
+
+
+=== Required settings
 
 * <<fe_count,count>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_reverse,reverse>>
 * <<fe_use_age,use_age>>
@@ -270,12 +399,11 @@ Optional settings
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_exclude,exclude>> (default is `False`)
 
-[float]
-Index-only settings
-~~~~~~~~~~~~~~~~~~~
+=== Index-only settings
 
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
+
 
 
 [[filtertype_forcemerged]]
@@ -297,17 +425,15 @@ indices which have `max_num_segments` segments per shard, or fewer.  They will
 remain in, or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+=== Required settings
 
 * <<fe_max_num_segments,max_num_segments>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_exclude,exclude>> (default is `True`)
+
+
 
 [[filtertype_kibana]]
 == kibana
@@ -326,11 +452,10 @@ indices `.kibana`, `.marvel-kibana`, `kibana-int`, or `.marvel-es-data`. They
 will remain in, or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_exclude,exclude>> (default is `True`)
+
 
 
 [[filtertype_none]]
@@ -347,6 +472,7 @@ list of indices or snapshots.
 There are no settings for this <<filtertype,filtertype>>.
 
 
+
 [[filtertype_opened]]
 == opened
 
@@ -360,12 +486,9 @@ This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices which are opened.  They will remain in, or be removed from the
 actionable list based on the value of <<fe_exclude,exclude>>.
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_exclude,exclude>> (default is `True`)
-
 
 
 
@@ -375,9 +498,8 @@ Optional settings
 [source,yaml]
 -------------
 - filtertype: pattern
- kind: prefix
- value: logstash-
- exclude: False
+ kind: ...
+ value: ...
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
@@ -390,18 +512,14 @@ the actionable list based on the value of <<fe_exclude,exclude>>.
 
 include::inc_filter_chaining.asciidoc[]
 
-Read more about the different settings for this <<filtertype,filtertype>>:
+include::inc_kinds.asciidoc[]
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+=== Required settings
 
 * <<fe_kind,kind>>
 * <<fe_value,value>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_exclude,exclude>> (default is `False`)
 
@@ -495,28 +613,20 @@ timestring found in the index name from last month might look like this:
 Having `range_from` and `range_to` both be the same value will mean that only
 that whole unit will be selected, in this case, a month.
 
-=== Settings
-
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+=== Required settings
 
 * <<fe_source,source>>
 * <<fe_range_from,range_from>>
 * <<fe_range_to,range_to>>
 * <<fe_unit,unit>>
 
-[float]
-Dependent settings
-~~~~~~~~~~~~~~~~~~
+=== Dependent settings
 
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`) [Indices only]
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`) [Indices only]
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>> (default is `False`)
@@ -527,23 +637,6 @@ Optional settings
 [[filtertype_space]]
 == space
 
-[source,yaml]
--------------
-- filtertype: space
-  disk_space: 100
-  reverse: True
-  use_age: False
-  source: creation_date
-  timestring:
-  field:
-  stats_result:
-  exclude: False
--------------
-
-NOTE: Empty values and commented lines will result in the default value, if any,
-    being selected.  If a setting is set, but not used by a given
-    <<filtertype,filtertype>>, it may generate an error.
-
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices when their cumulative disk consumption exceeds
 <<fe_disk_space,disk_space>> gigabytes.  They are first ordered by age,
@@ -551,9 +644,13 @@ or by alphabet, so as to guarantee the oldest indices are deleted first. They
 will remain in, or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
-[float]
-Deleting Indices By Space
-~~~~~~~~~~~~~~~~~~~~~~~~~
+=== Deleting Indices By Space
+
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 100
+-------------
 
 This <<filtertype,filtertype>> is for those who want to retain indices based on
 disk consumption, rather than by a set number of days. There are some important
@@ -573,8 +670,22 @@ caveats regarding this choice:
 These are only a few of the caveats. This is still a valid use-case, especially
 for those running a single-node test box.
 
-NOTE: The <<fe_reverse,reverse>> option will be ignored if
-    <<fe_use_age,use_age>> is `True`
+For use cases, where "like" indices are being counted, and their name pattern
+guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
+set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
+<<fe_reverse,reverse>> order by default.  For this case, this means that disk
+space calculations will start beginning with the _newest_ indices, and
+proceeding through to the oldest.
+
+=== Age-based sorting
+
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 100
+  use_age: True
+  source: creation_date
+-------------
 
 For use cases, where "like" indices are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
@@ -583,17 +694,105 @@ set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
 space calculations will start beginning with the _newest_ indices, and
 proceeding through to the oldest.
 
-Read more about the different settings for this <<filtertype,filtertype>>:
+Where this is not the case, the <<fe_use_age,`use_age`>> setting can be used to
+ensure that index or snapshot ages are properly considered for sorting:
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+All of the age-related settings from the <<filtertype_age,`age`>> filter are
+supported.
+
+=== Reversing sorting
+
+IMPORTANT: The <<fe_reverse,`reverse`>> setting is ignored when
+<<fe_use_age,`use_age`>> is `True`. When <<fe_use_age,`use_age`>> is `True`,
+sorting is _always_ from newest to oldest, ensuring that old indices are always
+selected first.
+
+Using the default configuration, <<fe_reverse,`reverse`>> is `True`.  Given
+These indices:
+
+[source,sh]
+-------------
+index1 10g
+index2 10g
+index3 10g
+index4 10g
+index5 10g
+-------------
+
+And this filter:
+
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 21
+-------------
+
+The indices will be sorted alphabetically and iterated over in the indicated
+order (the value of <<fe_reverse,`reverse`>>) and the total disk space compared
+after adding the size of each successive index. In this example, that means that
+`index5` will be added first, and the running total of consumed disk space will
+be `10g`. Since `10g` is less than the indicated threshold of `21`, `index5`
+will be removed from the actionable list.
+
+On the next iteration, the amount of space consumed by `index4` will be added,
+which brings the running total to `20g`, which is still less than the `21`
+threshold, so `index4` is also removed from the actionable list.
+
+This process changes when the iteration adds the disk space consumed by
+`index3`. Now the running total crosses the `21` threshold established by
+<<fe_disk_space,`disk_space`>> (the running total is now `30g`).  Even though
+it is only `1g` in excess of the total, `index3` will remain in the actionable
+list. The threshold is absolute.
+
+The remaining indices, `index2` and `index1` will also be in excess of the
+threshold, so they will also remain in the actionable list.
+
+So in this example `index1`, `index2`, and `index3` will be acted on by the
+<<actions,action>> for this block.
+
+If you were to run this with <<loglevel,loglevel>> set to `DEBUG`, you might see
+messages like these in the output:
+
+[source,sh]
+-------------
+...Removed from actionable list: index5, summed disk usage is 10GB and disk limit is 21.0GB.
+...Removed from actionable list: index4, summed disk usage is 20GB and disk limit is 21.0GB.
+...Remains in actionable list: index3, summed disk usage is 30GB and disk limit is 21.0GB.
+...Remains in actionable list: index2, summed disk usage is 40GB and disk limit is 21.0GB.
+...Remains in actionable list: index1, summed disk usage is 50GB and disk limit is 21.0GB.
+-------------
+
+In some cases, you may wish to filter in the reverse order.  To accomplish this,
+you set <<fe_reverse,`reverse`>> to `False`:
+
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 21
+  reverse: False
+-------------
+
+This time indices `index1` and `index2` will be the ones removed from the
+actionable list, leaving `index3`, `index4`, and `index5` to be acted on by the
+given <<actions,action>>.
+
+If you were to run this with <<loglevel,loglevel>> set to `DEBUG`, you might see
+messages like these in the output:
+
+[source,sh]
+-------------
+...Removed from actionable list: index1, summed disk usage is 10GB and disk limit is 21.0GB.
+...Removed from actionable list: index2, summed disk usage is 20GB and disk limit is 21.0GB.
+...Remains in actionable list: index3, summed disk usage is 30GB and disk limit is 21.0GB.
+...Remains in actionable list: index4, summed disk usage is 40GB and disk limit is 21.0GB.
+...Remains in actionable list: index5, summed disk usage is 50GB and disk limit is 21.0GB.
+-------------
+
+=== Required settings
 
 * <<fe_disk_space,disk_space>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_reverse,reverse>>
 * <<fe_use_age,use_age>>
@@ -603,6 +802,8 @@ Optional settings
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 * <<fe_exclude,exclude>> (default is `False`)
 
+
+
 [[filtertype_state]]
 == state
 
@@ -610,7 +811,6 @@ Optional settings
 -------------
 - filtertype: state
   state: SUCCESS
-  exclude: False
 -------------
 
 NOTE: Empty values and commented lines will result in the default value, if any,
@@ -621,14 +821,10 @@ This <<filtertype,filtertype>> will iterate over the actionable list and match
 snapshots based on the value of <<fe_state,state>>.  They will remain in, or be
 removed from the actionable list based on the value of <<fe_exclude,exclude>>.
 
-[float]
-Required settings
-~~~~~~~~~~~~~~~~~
+=== Required settings
 
 * <<fe_state,state>>
 
-[float]
-Optional settings
-~~~~~~~~~~~~~~~~~
+=== Optional settings
 
 * <<fe_exclude,exclude>> (default is `False`)

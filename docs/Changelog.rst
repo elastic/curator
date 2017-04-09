@@ -3,6 +3,19 @@
 Changelog
 =========
 
+5.0.1 (10 April 2017)
+
+**Bug Fixes**
+
+  * Fixed default values for ``include_global_state`` on the restore 
+    action to be in line with defaults in Elasticsearch 5.3
+
+**Documentation**
+
+  * Huge improvement to documenation, with many more examples.
+  * Address age filter limitations per #859 (untergeek)
+  * Address date matching behavior better per #858 (untergeek)
+
 5.0.0 (5 April 2017)
 
 The full feature set of 5.0 (including alpha releases) is included here.
