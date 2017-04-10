@@ -101,7 +101,7 @@ wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add 
 
 === Direct Package Download Link
 
-* https://packages.elastic.co/curator/{curator_major}/debian/pool/main/p/python/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
+* https://packages.elastic.co/curator/{curator_major}/debian/pool/main/e/elasticsearch-curator/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
 
 === Repository Configuration
 
