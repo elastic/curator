@@ -1,7 +1,8 @@
-:curator_version: 4.3.0.dev0
+:curator_version: 4.3.0
 :curator_major: 4
 :es_py_version: 2.4.1
-:ref:  http://www.elastic.co/guide/en/elasticsearch/reference/current
+:es_doc_release: 5.3
+:ref:  http://www.elastic.co/guide/en/elasticsearch/reference/{es_doc_release}
 
 [[curator-reference]]
 = Curator Reference
