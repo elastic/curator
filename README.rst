@@ -65,7 +65,7 @@ Build Status
 +--------+----------+
 | 4.x    | |4_x|    |
 +--------+----------+
-| 4.2    | |4_2|    |
+| 4.3    | |4_3|    |
 +--------+----------+
 
 PyPI: |pypi_pkg|
@@ -78,7 +78,7 @@ PyPI: |pypi_pkg|
     :target: https://travis-ci.org/elastic/curator
 .. |4_x| image:: https://travis-ci.org/elastic/curator.svg?branch=4.x
     :target: https://travis-ci.org/elastic/curator
-.. |4_2| image:: https://travis-ci.org/elastic/curator.svg?branch=4.2
+.. |4_3| image:: https://travis-ci.org/elastic/curator.svg?branch=4.3
     :target: https://travis-ci.org/elastic/curator
 .. |pypi_pkg| image:: https://badge.fury.io/py/elasticsearch-curator.svg
     :target: https://badge.fury.io/py/elasticsearch-curator
