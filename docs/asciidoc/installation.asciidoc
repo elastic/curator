@@ -257,9 +257,9 @@ WARNING: If you do have Python installed, do not uncompress the zip file into
 your Python directory.  It can cause library path collisions which will prevent
 Curator from properly functioning.
 
-* https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip[Download Curator]
-** https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip.md5.txt[MD5]
-** https://packages.elastic.co/curator/{curator_major}/windows/curator-{curator_version}-win32.zip.sha1.txt[SHA1]
+* https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.zip[Download Curator]
+** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.zip.md5.txt[MD5]
+** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-win32.zip.sha1.txt[SHA1]
 
 
 [[windows-msi]]
@@ -342,8 +342,8 @@ or uncompress and run `python setup.py install`
 Download and install the http://click.pocoo.org/[click] dependency (6.0 or
 greater):
 
-. `wget https://pypi.python.org/packages/source/c/click/click-6.3.tar.gz -O click-6.3.tar.gz`
-. `pip install click-6.3.tar.gz`
+. `wget https://pypi.python.org/packages/source/c/click/click-6.7.tar.gz -O click-6.7.tar.gz`
+. `pip install click-6.7.tar.gz`
 
 or uncompress and run `python setup.py install`
 
@@ -353,7 +353,7 @@ or uncompress and run `python setup.py install`
 Download and install the `certifi` dependency.  Always use the most recent
 version:
 
-. `wget https://github.com/certifi/python-certifi/archive/2016.09.26.tar.gz -O certifi.tar.gz`
+. `wget https://github.com/certifi/python-certifi/archive/2017.1.23.tar.gz -O certifi.tar.gz`
 . `pip install certifi.tar.gz`
 
 &nbsp;
@@ -362,8 +362,8 @@ version:
 Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10
 or greater):
 
-. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.11.tar.gz -O PyYAML-3.11.tar.gz`
-. `pip install PyYAML-3.11.tar.gz`
+. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz -O PyYAML-3.12.tar.gz`
+. `pip install PyYAML-3.12.tar.gz`
 
 or uncompress and run `python setup.py install`
 
