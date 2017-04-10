@@ -1,0 +1,92 @@
+The different <<fe_kind,`kinds`>> are described as follows:
+
+=== prefix
+
+To match all indices starting with `logstash-`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: prefix
+ value: logstash-
+-------------
+
+To match all indices _except_ those starting with `logstash-`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: prefix
+ value: logstash-
+ exclude: True
+-------------
+
+=== suffix
+
+To match all indices ending with `-prod`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: suffix
+ value: -prod
+-------------
+
+To match all indices _except_ those ending with `-prod`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: prefix
+ value: -prod
+ exclude: True
+-------------
+
+=== timestring
+
+IMPORTANT: No age calculation takes place here. It is strictly a pattern match.
+
+To match all indices with a Year.month.day pattern, like `index-2017.04.01`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: timestring
+ value: '%Y.%m.%d'
+-------------
+
+To match all indices _except_ those with a Year.month.day pattern, like
+`index-2017.04.01`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: timestring
+ value: '%Y.%m.%d'
+-------------
+
+include::inc_timestring_regex.asciidoc[]
+
+=== regex
+
+This <<fe_kind,`kind`>> allows you to design a regular-expression to match
+indices or snapshots:
+
+To match all indices starting with `a-`, `b-`, or `c-`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: regex
+ value: '^a-|^b-|^c-'
+-------------
+
+To match all indices _except_ those ending with `a-`, `b-`, or `c-`:
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: prefix
+ value: '^a-|^b-|^c-'
+ exclude: True
+-------------

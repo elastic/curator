@@ -1,0 +1,34 @@
+[WARNING]
+.A word about regular expression matching with timestrings
+==========================================================
+Timestrings are parsed from strftime patterns, like `%Y.%m.%d`, into regular
+expressions.  For example, `%Y` is 4 digits, so the regular expression for that
+looks like `\d{4}`, and `%m` is 2 digits, so the regular expression is `\d{2}`.
+
+What this means is that a simple timestring to match year and month, `%Y.%m`
+will result in a regular expression like this: `^.*\d{4}\.\d{2}.*$`.  This
+pattern will match any 4 digits, followed by a period `.`, followed by 2 digits,
+occurring anywhere in the index name.  This means it _will_ match monthly
+indices, like `index-2016.12`, as well as daily indices, like
+`index-2017.04.01`, which may not be the intended behavior.
+
+To compensate for this, when selecting indices matching a subset of another
+pattern, use a second filter with `exclude` set to `True`
+
+[source,yaml]
+-------------
+- filtertype: pattern
+ kind: timestring
+ value: '%Y.%m'
+- filtertype: pattern
+ kind: timestring
+ value: '%Y.%m.%d'
+ exclude: True
+-------------
+
+This will prevent the `%Y.%m` pattern from matching the `%Y.%m` part of the
+daily indices.
+
+*This applies whether using `timestring` as a mere pattern match, or as part of
+date calculations.*
+==========================================================
