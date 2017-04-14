@@ -504,7 +504,7 @@ Set the minimum acceptable log severity to display.
 
 * `CRITICAL` will only display critical messages.
 * `ERROR` will only display error and critical messages.
-* `WARN` will display error, warning, and critical messages.
+* `WARNING` will display error, warning, and critical messages.
 * `INFO` will display informational, error, warning, and critical messages.
 * `DEBUG` will display debug messages, in addition to all of the above.
 
