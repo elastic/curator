@@ -252,22 +252,19 @@ def fix_epoch(epoch):
 
 def _handle_iso_week_number(date, timestring, index_timestamp):
     date_iso = date.isocalendar()
-    iso_week_str = "{Y}{W}".format(Y=date_iso[0], W=date_iso[1])
+    iso_week_str = "{Y:04d}{W:02d}".format(Y=date_iso[0], W=date_iso[1])
     greg_week_str = datetime.strftime(date, "%Y%W")
 
-    # Handle edge cases between ISO week number and Greg week number
-    if iso_week_str != greg_week_str:
-        # Edge case 1: ISO week number is bigger than Greg week number.
-        # Ex: year 2014, all ISO week numbers were 1 more than in Greg.
-        if iso_week_str > greg_week_str:
-            # Simply remove one week
-            date = date - timedelta(days=7)
+    # Edge case 1: ISO week number is bigger than Greg week number.
+    # Ex: year 2014, all ISO week numbers were 1 more than in Greg.
+    if (iso_week_str > greg_week_str or
         # Edge case 2: 2010-01-01 in ISO: 2009.W53, in Greg: 2010.W00
-        # For Greg converting 2009.W53 gives 2010-01-04, converting back to same timestring gives:
-        # 2010.W01.
-        elif datetime.strftime(date, timestring) != index_timestamp:
-            # Also remove one week in this case
-            date = date - timedelta(days=7)
+        # For Greg converting 2009.W53 gives 2010-01-04, converting back
+        # to same timestring gives: 2010.W01.
+            datetime.strftime(date, timestring) != index_timestamp):
+
+        # Remove one week in this case
+        date = date - timedelta(days=7)
     return date
 
 def datetime_to_epoch(mydate):
