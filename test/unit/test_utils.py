@@ -110,6 +110,17 @@ class TestGetIndexTime(TestCase):
             ('2010.12.29.12', '%Y.%m.%d.%H', datetime(2010, 12, 29, 12)),
             ('2009101112136', '%Y%m%d%H%M%S', datetime(2009, 10, 11, 12, 13, 6)),
             ('2016-03-30t16', '%Y-%m-%dt%H', datetime(2016, 3, 30, 16, 0)),
+            # ISO weeks
+            # In 2014 ISO weeks were one week more than Greg weeks
+            ('2014-42', '%Y-%W', datetime(2014, 10, 20)),
+            ('2014-42', '%G-%V', datetime(2014, 10, 13)),
+            ('2014-43', '%G-%V', datetime(2014, 10, 20)),
+            # The case when both ISO and Greg are same week number
+            ('2017-16', '%Y-%W', datetime(2017, 4, 17)),
+            ('2017-16', '%G-%V', datetime(2017, 4, 17)),
+            # In Greg week 53 doesn't exist, it converts to week 1 of next year.
+            ('2009-53', '%Y-%W', datetime(2010, 1, 4)),
+            ('2009-53', '%G-%V', datetime(2009, 12, 28)),
                 ]:
             self.assertEqual(dt, curator.get_datetime(text, datestring))
 
