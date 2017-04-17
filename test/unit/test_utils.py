@@ -115,10 +115,20 @@ class TestGetIndexTime(TestCase):
             ('2014-42', '%Y-%W', datetime(2014, 10, 20)),
             ('2014-42', '%G-%V', datetime(2014, 10, 13)),
             ('2014-43', '%G-%V', datetime(2014, 10, 20)),
+            # 
+            ('2008-52', '%G-%V', datetime(2008, 12, 22)),
+            ('2008-52', '%Y-%W', datetime(2008, 12, 29)),
+            ('2009-01', '%Y-%W', datetime(2009, 1, 5)),
+            ('2009-01', '%G-%V', datetime(2008, 12, 29)),
             # The case when both ISO and Greg are same week number
             ('2017-16', '%Y-%W', datetime(2017, 4, 17)),
             ('2017-16', '%G-%V', datetime(2017, 4, 17)),
-            # In Greg week 53 doesn't exist, it converts to week 1 of next year.
+            # Weeks were leading 0 is needed for week number
+            ('2017-02', '%Y-%W', datetime(2017, 1, 9)),
+            ('2017-02', '%G-%V', datetime(2017, 1, 9)),
+            ('2010-01', '%G-%V', datetime(2010, 1, 4)),
+            ('2010-01', '%Y-%W', datetime(2010, 1, 4)),
+            # In Greg week 53 for year 2009 doesn't exist, it converts to week 1 of next year.
             ('2009-53', '%Y-%W', datetime(2010, 1, 4)),
             ('2009-53', '%G-%V', datetime(2009, 12, 28)),
                 ]:
