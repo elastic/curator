@@ -15,7 +15,7 @@ def conditions():
     }
 
 def continue_if_exception():
-    return { Optional('continue_if_exception', default=False): Boolean() }
+    return { Optional('continue_if_exception', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def count():
     return { Required('count'): All(Coerce(int), Range(min=0, max=10)) }
@@ -28,28 +28,28 @@ def delay():
     }
 
 def delete_aliases():
-    return { Optional('delete_aliases', default=False): Boolean() }
+    return { Optional('delete_aliases', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def disable_action():
-    return { Optional('disable_action', default=False): Boolean() }
+    return { Optional('disable_action', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def extra_settings():
     return { Optional('extra_settings', default={}): dict }
 
 def ignore_empty_list():
-    return { Optional('ignore_empty_list', default=False): Boolean() }
+    return { Optional('ignore_empty_list', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def ignore_unavailable():
-    return { Optional('ignore_unavailable', default=False): Boolean() }
+    return { Optional('ignore_unavailable', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def include_aliases():
-    return { Optional('include_aliases', default=False): Boolean() }
+    return { Optional('include_aliases', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def include_global_state(action):
     default = False
     if action == 'snapshot':
         default = True
-    return { Optional('include_global_state', default=default): Boolean() }
+    return { Optional('include_global_state', default=default): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def indices():
     return { Optional('indices', default=None): Any(None, list) }
@@ -82,10 +82,10 @@ def name(action):
         return { Optional('name'): Any(str, unicode) }
 
 def partial():
-    return { Optional('partial', default=False): Boolean() }
+    return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def refresh():
-    return { Optional('refresh', default=True): Boolean() }
+    return { Optional('refresh', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def remote_aws_key():
     return { Optional('remote_aws_key', default=None): Any(str, unicode, None) }
@@ -120,7 +120,7 @@ def remote_filters():
     }
 
 def remote_ssl_no_validate():
-    return { Optional('remote_ssl_no_validate', default=False): Boolean() }
+    return { Optional('remote_ssl_no_validate', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def remote_url_prefix():
     return { Optional('remote_url_prefix', default=''): Any(None, str, unicode) }
@@ -199,7 +199,7 @@ def cluster_routing_value():
     }
 
 def skip_repo_fs_check():
-    return { Optional('skip_repo_fs_check', default=False): Boolean() }
+    return { Optional('skip_repo_fs_check', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def slices():
     return { Optional('slices', default=1): Any(
@@ -240,7 +240,7 @@ def wait_for_completion(action):
     value = True
     if action in ['allocation', 'cluster_routing', 'replicas']:
         value = False
-    return { Optional('wait_for_completion', default=value): Boolean() }
+    return { Optional('wait_for_completion', default=value): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def wait_interval(action):
     minval = 1
@@ -253,4 +253,4 @@ def wait_interval(action):
                 Coerce(int), Range(min=minval, max=maxval)), None) }
 
 def warn_if_no_indices():
-    return { Optional('warn_if_no_indices', default=False): Boolean() }
+    return { Optional('warn_if_no_indices', default=False): Any(bool, All(Any(str, unicode), Boolean())) }

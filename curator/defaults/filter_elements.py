@@ -33,7 +33,7 @@ def exclude(**kwargs):
         val = True
     else: # False by default
         val = False
-    return { Optional('exclude', default=val): Boolean() }
+    return { Optional('exclude', default=val): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def field(**kwargs):
     # This setting is only used with the age filtertype.
@@ -66,7 +66,7 @@ def range_to(**kwargs):
 def reverse(**kwargs):
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
-    return { Optional('reverse', default=True): Boolean() }
+    return { Optional('reverse', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space
@@ -124,7 +124,7 @@ def unit_count(**kwargs):
 
 def use_age(**kwargs):
     # Use of this setting requires the additional setting, source.
-    return { Optional('use_age', default=False): Boolean() }
+    return { Optional('use_age', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def value(**kwargs):
     # This setting is only used with the pattern filtertype and is a required

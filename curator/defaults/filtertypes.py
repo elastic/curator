@@ -52,6 +52,7 @@ def age(action, config):
         filter_elements.exclude(),
     ]
     retval += _age_elements(action, config)
+    logger.debug('AGE FILTER = {0}'.format(retval))
     return retval
 
 def allocated(action, config):

@@ -127,6 +127,7 @@ class TestCLIReindex(CuratorTestCase):
         try:
             rclient = curator.get_client(
                 host=rhost, port=rport, skip_version_test=True)
+            rclient.info()
         except:
             raise SkipTest(
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
@@ -204,6 +205,7 @@ class TestCLIReindex(CuratorTestCase):
         try:
             rclient = curator.get_client(
                 host=rhost, port=rport, skip_version_test=True)
+            rclient.info()
         except:
             raise SkipTest(
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
