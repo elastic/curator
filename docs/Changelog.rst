@@ -17,6 +17,7 @@ Changelog
 
   * Document substitute strftime symbols for doing ISO Week timestrings added in
     #932. (untergeek)
+  * Document how to include file paths better. Fixes #944. (untergeek)
 
 5.0.1 (10 April 2017)
 
