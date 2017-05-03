@@ -520,17 +520,7 @@ set to `True`.
 This setting must be a valid Python strftime string.  It is used to match and
 extract the timestamp in an index or snapshot name.
 
-The identifiers that Curator currently recognizes include:
-
-* `Y`: A 4 digit year
-* `y`: A 2 digit year
-* `m`: The 2 digit month
-* `W`: The 2 digit week of the year
-* `d`: The 2 digit day of the month
-* `H`: The 2 digit hour of the day, in 24 hour notation
-* `M`: The 2 digit minute of the hour
-* `S`: The 2 digit number of second of the minute
-* `j`: The 3 digit day of the year
+include::inc_strftime_table.asciidoc[]
 
 These identifiers may be combined with each other, and/or separated from each
 other with hyphens `-`, periods `.`, underscores `_`, or other characters valid
