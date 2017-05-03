@@ -3,8 +3,22 @@
 Changelog
 =========
 
+4.3.1 (8 May 2017)
+------------------
+
+**Bug Fixes**
+
+  * Nasty bug in schema validation fixed where boolean options or filter flags 
+    would validate as True if non-boolean types were submitted. Reported in 
+    #945. (untergeek)
+  * Fix an edge case where an index named with 1970.01.01 could not be sorted by 
+    index-name age. Reported in #951. (untergeek)
+  * Update tests to include ES 5.3.2 and 5.4.0
+  * Bump certifi requirement to 2017.4.17.  
+  * Fix Travis tests for ES 5.4
+  
 4.3.0 (10 April 2017)
--------------
+---------------------
 
 **New Features**
 
