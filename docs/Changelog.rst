@@ -3,6 +3,18 @@
 Changelog
 =========
 
+5.0.2 (? ? ?)
+
+**Bug Fixes**
+
+  * Nasty bug in schema validation fixed where boolean options or filter flags
+    would validate as ``True`` if non-boolean types were submitted.
+    Reported in #945. (untergeek)
+  * Check for presence of alias after reindex, in case the reindex was to an
+    alias. Reported in #941. (untergeek)
+
+**Documentation**
+
 5.0.1 (10 April 2017)
 
 **Bug Fixes**
