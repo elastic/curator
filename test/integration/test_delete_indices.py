@@ -149,3 +149,17 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEqual(-1, result.exit_code)
+    def test_945(self):
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'], testvars.test_945)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(-1, result.exit_code)
