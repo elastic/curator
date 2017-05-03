@@ -12,6 +12,9 @@ Changelog
     Reported in #945. (untergeek)
   * Check for presence of alias after reindex, in case the reindex was to an
     alias. Reported in #941. (untergeek)
+  * Fix an edge case where an index named with `1970.01.01` could not be sorted
+    by index-name age. Reported in #951. (untergeek)
+  * Update tests to include ES 5.3.2
 
 **Documentation**
 
