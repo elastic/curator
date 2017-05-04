@@ -27,8 +27,31 @@ setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_
 
 java_home='/usr/lib/jvm/java-8-oracle'
 
-start_es $java_home '-d -Edefault.network.host=127.0.0.1 -Edefault.http.port=9200 -Edefault.cluster.name=local  -Edefault.node.max_local_storage_nodes=2 -Edefault.discovery.zen.ping.unicast.hosts=127.0.0.1:9200 -Edefault.path.repo=/ -Edefault.reindex.remote.whitelist=localhost:9201' 9200 "local"
-start_es $java_home '-d -Edefault.network.host=127.0.0.1 -Edefault.http.port=9201 -Edefault.cluster.name=remote -Edefault.node.max_local_storage_nodes=2 -Edefault.discovery.zen.ping.unicast.hosts=127.0.0.1:9201' 9201 "remote"
+### Build local cluster config (since 5.4 removed most flags)
+LC=elasticsearch/localcluster
+mkdir -p $LC
+cp elasticsearch/config/log4j2.properties $LC
+echo 'network.host: 127.0.0.1' > $LC/elasticsearch.yml
+echo 'http.port: 9200' >> $LC/elasticsearch.yml
+echo 'cluster.name: local' >> $LC/elasticsearch.yml
+echo 'node.max_local_storage_nodes: 2' >> $LC/elasticsearch.yml
+echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9200"]' >> $LC/elasticsearch.yml
+echo 'path.repo: /' >> $LC/elasticsearch.yml
+echo 'reindex.remote.whitelist: localhost:9201' >> $LC/elasticsearch.yml
+
+### Build remote cluster config (since 5.4 removed most flags)
+RC=elasticsearch/remotecluster
+mkdir -p $RC
+cp elasticsearch/config/log4j2.properties $RC
+echo 'network.host: 127.0.0.1' > $RC/elasticsearch.yml
+echo 'http.port: 9201' >> $RC/elasticsearch.yml
+echo 'cluster.name: remote' >> $RC/elasticsearch.yml
+echo 'node.max_local_storage_nodes: 2' >> $RC/elasticsearch.yml
+echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9201"]' >> $RC/elasticsearch.yml
+
+
+start_es $java_home "-d -Epath.conf=$LC" 9200 "local"
+start_es $java_home "-d -Epath.conf=$RC" 9201 "remote"
 
 python setup.py test
 result=$(head -1 nosetests.xml | awk '{print $6 " " $7 " " $8}' | awk -F\> '{print $1}' | tr -d '"')
