@@ -3,7 +3,7 @@
 Changelog
 =========
 
-5.0.2 (? ? ?)
+5.0.2 (4 May 2017)
 
 **Bug Fixes**
 
@@ -15,6 +15,7 @@ Changelog
   * Fix an edge case where an index named with `1970.01.01` could not be sorted
     by index-name age. Reported in #951. (untergeek)
   * Update tests to include ES 5.3.2
+  * Bump certifi requirement to 2017.4.17.
 
 **Documentation**
 
