@@ -230,7 +230,7 @@ class IndexList(object):
         ts = TimestringSearch(timestring)
         for index in self.working_list():
             epoch = ts.get_epoch(index)
-            if epoch:
+            if isinstance(epoch, int):
                 self.index_info[index]['age']['name'] = epoch
 
     def _get_field_stats_dates(self, field='@timestamp'):

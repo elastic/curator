@@ -186,7 +186,7 @@ def allocation_singleton(
     logger.debug('Validating provided options: {0}'.format(raw_options))
     mykwargs = option_schema_check(action, raw_options)
     mykwargs.update(
-        { 'timeout': c_args['timeout'] if c_args['timeout'] else 30 }
+        { 'max_wait': c_args['timeout'] if c_args['timeout'] else 30 }
     )
     logger.debug('Validating provided filters: {0}'.format(filter_list))
     clean_filters = {

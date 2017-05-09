@@ -3,6 +3,26 @@
 Changelog
 =========
 
+5.0.2 (4 May 2017)
+
+**Bug Fixes**
+
+  * Nasty bug in schema validation fixed where boolean options or filter flags
+    would validate as ``True`` if non-boolean types were submitted.
+    Reported in #945. (untergeek)
+  * Check for presence of alias after reindex, in case the reindex was to an
+    alias. Reported in #941. (untergeek)
+  * Fix an edge case where an index named with `1970.01.01` could not be sorted
+    by index-name age. Reported in #951. (untergeek)
+  * Update tests to include ES 5.3.2
+  * Bump certifi requirement to 2017.4.17.
+
+**Documentation**
+
+  * Document substitute strftime symbols for doing ISO Week timestrings added in
+    #932. (untergeek)
+  * Document how to include file paths better. Fixes #944. (untergeek)
+
 5.0.1 (10 April 2017)
 
 **Bug Fixes**

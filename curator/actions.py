@@ -1138,7 +1138,10 @@ class Reindex(object):
                 )
                 # Verify the destination index is there after the fact
                 post_run = get_indices(self.client)
-                if self.body['dest']['index'] not in post_run:
+                alias_instead = self.client.exists_alias(
+                    name=self.body['dest']['index'])
+                if self.body['dest']['index'] not in post_run \
+                        and not alias_instead:
                     self.loggit.error(
                         'Index "{0}" not found after reindex operation. Check '
                         'Elasticsearch logs for more '

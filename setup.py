@@ -26,7 +26,7 @@ def get_install_requires():
     res.append('click>=6.7')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
-    res.append('certifi>=2017.1.23')
+    res.append('certifi>=2017.4.17')
     return res
 
 try:

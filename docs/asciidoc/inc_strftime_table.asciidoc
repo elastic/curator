@@ -1,0 +1,17 @@
+The identifiers that Curator currently recognizes include:
+
+[width="50%", cols="<m,,", options="header"]
+|===
+|Unit|Value|Note
+|%Y|4 digit year|
+|%G|4 digit year| use instead of `%Y` when doing ISO Week calculations
+|%y|2 digit year|
+|%m|2 digit month|
+|%W|2 digit week of the year|
+|%V|2 digit week of the year| use instead of `%W` when doing ISO Week calculations
+|%d|2 digit day of the month|
+|%H|2 digit hour| 24 hour notation
+|%M|2 digit minute|
+|%S|2 digit second|
+|%j|3 digit day of the year|
+|===

@@ -775,17 +775,21 @@ depending on which action makes use of `name`.
 This setting may contain a valid Python strftime string.  Curator will
 extract the strftime identifiers and replace them with the corresponding values.
 
-The Python strftime identifiers that Curator currently recognizes include:
+The identifiers that Curator currently recognizes include:
 
-* `Y`: A 4 digit year
-* `y`: A 2 digit year
-* `m`: The 2 digit month
-* `W`: The 2 digit week of the year
-* `d`: The 2 digit day of the month
-* `H`: The 2 digit hour of the day, in 24 hour notation
-* `M`: The 2 digit minute of the hour
-* `S`: The 2 digit number of second of the minute
-* `j`: The 3 digit day of the year
+[width="50%", cols="<m,", options="header"]
+|===
+|Unit|Value
+|%Y| 4 digit year
+|%y| 2 digit year
+|%m| 2 digit month
+|%W| 2 digit week of the year
+|%d| 2 digit day of the month
+|%H| 2 digit hour of the day, in 24 hour notation
+|%M| 2 digit minute of the hour
+|%S| 2 digit second of the minute
+|%j| 3 digit day of the year
+|===
 
 
 === <<alias,alias>>

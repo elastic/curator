@@ -320,10 +320,13 @@ SSL certificate used by Elasticsearch.
 
 There is no default.
 
+include::inc_filepath.asciidoc[]
+
 [[client_cert]]
 === client_cert
 
 This should be a file path to a client certificate (public key), or left empty.
+
 
 [source,sh]
 -----------
@@ -337,6 +340,8 @@ key, in which case <<client_key,client_key>> is not used. If specifying
 <<client_key,client_key>> to specify the file containing the SSL key. The file
 must be in PEM format, and the key part, if used, must be an unencrypted key in
 PEM format as well.
+
+include::inc_filepath.asciidoc[]
 
 [[client_key]]
 === client_key
@@ -352,6 +357,8 @@ Allows the use of a specified SSL client key file to authenticate to
 Elasticsearch. If using <<client_cert,client_cert>> and the file specified does
 not also contain the key, use `client_key` to specify the file containing the
 SSL key. The key file must be an unencrypted key in PEM format.
+
+include::inc_filepath.asciidoc[]
 
 [[aws_key]]
 === aws_key
@@ -519,6 +526,8 @@ This should be a path to a log file, or left empty.
 -----------
 logfile:
 -----------
+
+include::inc_filepath.asciidoc[]
 
 The default value is empty, which will result in logging to `STDOUT`, or the
 console.

@@ -202,17 +202,26 @@ def get_datetime(index_timestamp, timestring):
     """
     # Compensate for week of year by appending '%w' to the timestring
     # and '1' (Monday) to index_timestamp
-    if '%W' in timestring:
+    iso_week_number = False
+    if '%W' in timestring or '%U' in timestring or '%V' in timestring:
         timestring += '%w'
         index_timestamp += '1'
-    elif '%U' in timestring:
-        timestring += '%w'
-        index_timestamp += '1'
+        if '%V' in timestring and '%G' in timestring:
+            iso_week_number = True
+            # Fake as so we read Greg format instead. We will process it later
+            timestring = timestring.replace("%G", "%Y").replace("%V", "%W")
     elif '%m' in timestring:
         if not '%d' in timestring:
             timestring += '%d'
             index_timestamp += '1'
-    return datetime.strptime(index_timestamp, timestring)
+
+    date = datetime.strptime(index_timestamp, timestring)
+
+    # Handle ISO time string
+    if iso_week_number:
+        date = _handle_iso_week_number(date, timestring, index_timestamp)
+
+    return date
 
 def fix_epoch(epoch):
     """
@@ -241,6 +250,22 @@ def fix_epoch(epoch):
         epoch = int(epoch/powers_of_ten)
     return epoch
 
+def _handle_iso_week_number(date, timestring, index_timestamp):
+    date_iso = date.isocalendar()
+    iso_week_str = "{Y:04d}{W:02d}".format(Y=date_iso[0], W=date_iso[1])
+    greg_week_str = datetime.strftime(date, "%Y%W")
+
+    # Edge case 1: ISO week number is bigger than Greg week number.
+    # Ex: year 2014, all ISO week numbers were 1 more than in Greg.
+    if (iso_week_str > greg_week_str or
+        # Edge case 2: 2010-01-01 in ISO: 2009.W53, in Greg: 2010.W00
+        # For Greg converting 2009.W53 gives 2010-01-04, converting back
+        # to same timestring gives: 2010.W01.
+            datetime.strftime(date, timestring) != index_timestamp):
+
+        # Remove one week in this case
+        date = date - timedelta(days=7)
+    return date
 
 def datetime_to_epoch(mydate):
    # I would have used `total_seconds`, but apparently that's new
@@ -269,7 +294,6 @@ class TimestringSearch(object):
             `timestring`
         :rtype: int
         """
-
         match = self.pattern.search(searchme)
         if match:
             if match.group("date"):
