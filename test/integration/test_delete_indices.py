@@ -119,6 +119,20 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEqual(-1, result.exit_code)
+    def test_945(self):
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'], testvars.test_945)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(-1, result.exit_code)
 
 class TestCLIFixFor687(CuratorTestCase):
     @unittest.skipIf(curator.get_version(global_client) >= (3, 0, 0),
@@ -200,6 +214,42 @@ class TestCLIFixFor687(CuratorTestCase):
                     ],
                     )
         snapshot = curator.get_snapshot(
-                    self.client, self.args['repository'], '_all'
+                       self.client, self.args['repository'], '_all'
                    )
         self.assertEquals(6, len(curator.get_indices(self.client)))
+    def test_name_epoch_zero(self):
+        self.create_index('epoch_zero-1970.01.01')
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.delete_proto.format(
+                'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 5, ' ', ' ', ' '
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEquals(0, len(curator.get_indices(self.client)))
+    def test_name_negative_epoch(self):
+        self.create_index('index-1969.12.31')
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.delete_proto.format(
+                'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 5, ' ', ' ', ' '
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEquals(0, len(curator.get_indices(self.client)))

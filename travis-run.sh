@@ -12,27 +12,35 @@ setup_es() {
 
 }
 
-start_es() {
-  jhome=$1
-  es_args=$2
-  export JAVA_HOME=$jhome
-  elasticsearch/bin/elasticsearch $es_args > /tmp/elasticsearch.log &
-  sleep 10
-  curl http://localhost:9200 && echo "ES is up!" || cat /tmp/elasticsearch.log
-}
-
 if [[ "$ES_VERSION" == 5.* ]]; then
   setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
 else
   setup_es https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/$ES_VERSION/elasticsearch-$ES_VERSION.tar.gz
 fi
 
+start_es() {
+  jhome=$1
+  es_port=$2
+  es_cluster=$3
+  export JAVA_HOME=$jhome
+  elasticsearch/bin/elasticsearch $es_args > /tmp/$es_cluster.log &
+  sleep 20
+  curl http://127.0.0.1:$es_port && echo "$es_cluster Elasticsearch is up!" || cat /tmp/$es_cluster.log ./elasticsearch/logs/$es_cluster.log  
+}
+
 java_home='/usr/lib/jvm/java-8-oracle'
-if [[ "$ES_VERSION" == 5.* ]]; then
-  start_es $java_home '-d -Edefault.path.repo=/'
-else
-  start_es $java_home '-d -Des.path.repo=/'
-fi
+
+### Build local cluster config (since 5.4 removed most flags)
+LC=elasticsearch/config
+mkdir -p $LC
+echo 'network.host: 127.0.0.1' > $LC/elasticsearch.yml
+echo 'http.port: 9200' >> $LC/elasticsearch.yml
+echo 'cluster.name: local' >> $LC/elasticsearch.yml
+echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9200"]' >> $LC/elasticsearch.yml
+echo 'path.repo: /' >> $LC/elasticsearch.yml
+
+start_es $java_home 9200 "local"
+
 python setup.py test
 result=$(head -1 nosetests.xml | awk '{print $6 " " $7 " " $8}' | awk -F\> '{print $1}' | tr -d '"')
 echo "Result = $result"

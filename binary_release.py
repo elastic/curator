@@ -33,7 +33,7 @@ if platform == 'win32':
     # Win32 stuff
     archive_format = 'zip'
     build_name = 'exe.win-' + enviro['PROCESSOR_ARCHITECTURE'].lower() + '-' + pyver
-    target_name = "curator-" + str(get_version()) + "-win32"
+    target_name = "curator-" + str(get_version()) + "-amd64"
 elif platform == 'linux' or platform == 'linux2':
     sys_string = enviro['_system_type'].lower() + '-' + enviro['_system_arch'].lower()
     build_name = 'exe.' + sys_string + '-' + pyver
@@ -42,7 +42,7 @@ else:
     # Unsupported platform?
     print('Your platform ({0}) is not yet supported for binary build/distribution.'.format(platform))
     sys.exit(1)
-    
+
 #sys_string = sys_type + '-' + sys_arch
 #build_name = 'exe.' + sys_string + '-' + pyver
 #print('Expected build directory: {0}'.format(build_name))
@@ -50,7 +50,7 @@ build_path = os.path.join('build', build_name)
 
 if os.path.exists(build_path):
     #print("I found the path: {0}".format(build_path))
-    
+
     target_path = os.path.join('.', target_name)
 
     # Check to see if an older directory exists...
@@ -58,17 +58,17 @@ if os.path.exists(build_path):
         print('An older build exists at {0}.  Please delete this before continuing.'.format(target_path))
         sys.exit(1)
     else:
-        os.rename(build_path, target_path)
+        shutil.copytree(build_path, target_path)
 
     # Ensure the rename went smoothly, then continue
     if os.path.exists(target_path):
         #print("Build successfully renamed")
         if float(pyver) >= 2.7:
-            shutil.make_archive(target_name, archive_format, '.', target_path)
+            shutil.make_archive('elasticsearch-' + target_name, archive_format, '.', target_path)
             if platform == 'win32':
-                fname = target_name + '.zip'
+                fname = 'elasticsearch-' + target_name + '.zip'
             else:
-                fname = target_name + '.tar.gz'
+                fname = 'elasticsearch-' + target_name + '.tar.gz'
             # Clean up directory if we made a viable archive.
             if os.path.exists(fname):
                 shutil.rmtree(target_path)

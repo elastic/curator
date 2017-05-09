@@ -633,3 +633,24 @@ CRA_all = {
     u'persistent':{},
     u'transient':{u'cluster':{u'routing':{u'allocation':{u'enable':u'all'}}}}
 }
+
+test_945 = ('---\n'
+'actions:\n'
+'  1:\n'
+'    action: delete_indices\n'
+'    description: >-\n'
+'      Delete indices older than 7 days\n'
+'    options:\n'
+'      continue_if_exception: False\n'
+'      disable_action: False\n'
+'    filters:\n'
+'    - filtertype: pattern\n'
+'      kind: prefix\n'
+'      value: logstash-\n'
+'      exclude:\n'
+'      - filtertype: age\n'
+'        source: name\n'
+'        direction: older\n'
+'        unit: days\n'
+'        unit_count: 7\n')
+
