@@ -3,9 +3,11 @@
 BASEPATH=$(pwd)
 PKG_TARGET=/curator_packages
 WORKDIR=/tmp/curator
-CX_VER="5.0"
+CX_VER="5.0.1"
 CX_FILE="/curator_source/unix_packages/cx_freeze-${CX_VER}.dev.tar.gz"
-CX_PATH="anthony_tuininga-cx_freeze-71554144c9cc"
+CX_PATH="anthony_tuininga-cx_freeze-0e565139e6a3"
+PYVER=3.6
+MINOR=1
 INPUT_TYPE=python
 CATEGORY=python
 VENDOR=Elastic
@@ -63,6 +65,8 @@ case "$ID" in
   	PKGTYPE=deb
   	PLATFORM=debian
     PACKAGEDIR="${PKG_TARGET}/${1}/${PLATFORM}"
+    sudo apt update -y
+    sudo apt install -y openssl
 	;;
   centos|rhel)
   	PKGTYPE=rpm
@@ -71,6 +75,7 @@ case "$ID" in
 	  6|7)
       sudo rm -f /etc/yum.repos.d/puppetlabs-pc1.repo
       sudo yum -y update
+      sudo yum install -y openssl
 		;;
  	  *) echo "unknown system version: ${VERSION_ID}"; exit 1;;
 	esac
@@ -79,31 +84,21 @@ case "$ID" in
   *) echo "unknown system type: ${ID}"; exit 1;;
 esac
 
-HAS_PY3=$(which python3.5)
+HAS_PY3=$(which python${PYVER})
 if [ "${HAS_PY3}x" == "x" ]; then
   cd /tmp
-  wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz
-  tar zxf Python-3.5.2.tgz
-  cd Python-3.5.2
+  wget https://www.python.org/ftp/python/${PYVER}.${MINOR}/Python-${PYVER}.${MINOR}.tgz
+  tar zxf Python-${PYVER}.${MINOR}.tgz
+  cd Python-${PYVER}.${MINOR}
   ./configure --prefix=/usr/local
   sudo make altinstall
   cd /usr/lib
-  sudo ln -s /usr/local/lib/libpython3.5m.a libpython3.5.a
+  sudo ln -s /usr/local/lib/libpython${PYVER}m.a libpython${PYVER}.a
   cd ${WORKDIR}
 fi
 
-PYVER=3.5
-PIPBIN=/usr/local/bin/pip3.5
-PYBIN=/usr/local/bin/python3.5
-
-if [ "${CX_VER}" != "$(${PIPBIN} list | grep cx | awk '{print $2}' | tr -d '()')" ]; then
-  cd ${WORKDIR}
-  rm -rf ${CX_PATH}
-  tar zxf ${CX_FILE}
-  cd ${CX_PATH}
-  ${PIPBIN} install -U --user .
-  cd ${WORKDIR}
-fi
+PIPBIN=/usr/local/bin/pip${PYVER}
+PYBIN=/usr/local/bin/python${PYVER}
 
 if [ -e "${HOME}/.rvm/scripts/rvm" ]; then
   source ${HOME}/.rvm/scripts/rvm
@@ -117,11 +112,20 @@ if [ "${HAS_FPM}x" == "x" ]; then
   gem install fpm
 fi
 
+${PIPBIN} install -U --user setuptools
+${PIPBIN} install -U --user requests_aws4auth
+if [ "${CX_VER}" != "$(${PIPBIN} list | grep cx | awk '{print $2}' | tr -d '()')" ]; then
+  cd ${WORKDIR}
+  rm -rf ${CX_PATH}
+  tar zxf ${CX_FILE}
+  cd ${CX_PATH}
+  ${PIPBIN} install -U --user .
+  cd ${WORKDIR}
+fi
+
 cd $SOURCE_DIR
 
 mkdir -p ${PACKAGEDIR}
-${PIPBIN} install -U --user setuptools
-${PIPBIN} install -U --user requests_aws4auth
 ${PIPBIN} install -U --user -r requirements.txt
 ${PYBIN} setup.py build_exe
 sudo mv build/exe.linux-x86_64-${PYVER} /opt/elasticsearch-curator
