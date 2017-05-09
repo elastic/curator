@@ -3,7 +3,7 @@
 Changelog
 =========
 
-4.3.1 (8 May 2017)
+4.3.1 (9 May 2017)
 ------------------
 
 **Bug Fixes**
@@ -16,6 +16,7 @@ Changelog
   * Update tests to include ES 5.3.2 and 5.4.0
   * Bump certifi requirement to 2017.4.17.  
   * Fix Travis tests for ES 5.4
+  * Sync package build scripts with master
   
 4.3.0 (10 April 2017)
 ---------------------
