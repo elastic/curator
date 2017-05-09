@@ -33,7 +33,7 @@ if platform == 'win32':
     # Win32 stuff
     archive_format = 'zip'
     build_name = 'exe.win-' + enviro['PROCESSOR_ARCHITECTURE'].lower() + '-' + pyver
-    target_name = "curator-" + str(get_version()) + "-win32"
+    target_name = "curator-" + str(get_version()) + "-amd64"
 elif platform == 'linux' or platform == 'linux2':
     sys_string = enviro['_system_type'].lower() + '-' + enviro['_system_arch'].lower()
     build_name = 'exe.' + sys_string + '-' + pyver
