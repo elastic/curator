@@ -52,6 +52,25 @@ The default value for this setting is `require`.
 [[option_continue]]
 == continue_if_exception
 
+[IMPORTANT]
+.Using `ignore_empty_list` rather than `continue_if_exception`
+====================================
+Curator has two genernal classifications of exceptions: Empty list exceptions,
+and everything else. The empty list conditions are `curator.exception.NoIndices`
+and `curator.exception.NoSnapshots`.  The `continue_if_exception` option _only_
+catches conditions _other_ than empty list conditions. In most cases, you will
+want to use `ignore_empty_list` instead of `continue_if_exception`.
+
+So why are there two kinds of exceptions? When Curator 4 was released, the
+ability to continue in the event of any exception was covered by the
+`continue_if_exception` option.  However, an empty list is a _benign_ condition.
+In fact, it's expected with brand new clusters, or new index patterns are added.
+The decision was made to split the exceptions, and have a new option catch the
+empty lists.
+
+See <<option_ignore_empty,`ignore_empty_list`>> for more information.
+====================================
+
 NOTE: This setting is available in all actions.
 
 If `continue_if_exception` is set to `True`, Curator will attempt to continue on
