@@ -133,12 +133,13 @@ Required settings
 ~~~~~~~~~~~~~~~~~
 
 * <<option_key,key>> (required)
-* <<option_value,value>> (required)
 
 [float]
 Optional settings
 ~~~~~~~~~~~~~~~~~
 * <<option_allocation_type,allocation_type>> (has a default value which can
+    optionally be changed)
+* <<option_value,value>> (has a default value which can
     optionally be changed)
 * <<option_wfc,wait_for_completion>> (has a default value which can optionally
     be changed)

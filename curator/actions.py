@@ -160,7 +160,8 @@ class Allocation(object):
             assigned to at least some of your nodes to have any effect.
         :arg value: An arbitrary metadata attribute value.  Must correspond to
             values associated with `key` assigned to at least some of your nodes
-            to have any effect.
+            to have any effect. If a `None` value is provided, it will remove
+            any setting associated with that `key`.
         :arg allocation_type: Type of allocation to apply. Default is `require`
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `False`)
@@ -174,8 +175,6 @@ class Allocation(object):
         verify_index_list(ilo)
         if not key:
             raise MissingArgument('No value for "key" provided')
-        if not value:
-            raise MissingArgument('No value for "value" provided')
         if allocation_type not in ['require', 'include', 'exclude']:
             raise ValueError(
                 '{0} is an invalid allocation_type.  Must be one of "require", '
