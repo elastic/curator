@@ -219,7 +219,7 @@ enabled=1
 [[yum-binary]]
 === Binary Package Installation
 
-Starting with version 4.1.2, Curator comes with a binary version.  What this
+Starting with version 4.1.2, Curator is only distributed as binary version. If you have installed an older version you won't get any updates until you manually install the `elasticsearch-curator` package.  What this
 really means is that the source is compiled, and all required libraries are
 bundled with the `curator` binary, so there are no conflicts.
 
