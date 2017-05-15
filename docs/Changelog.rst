@@ -3,7 +3,14 @@
 Changelog
 =========
 
-5.1.0 (? ? ?)
+5.0.3 (15 May 2017)
+
+**Bug Fixes**
+
+  * Restoring a snapshot on an exceptionally fast cluster/node can create a race
+    race condition where a ``_recovery`` check returns an empty dictionary 
+    ``{}``, which causes Curator to fail.  Added test and code to correct this.
+    Reported in #962. (untergeek)
 
 5.0.2 (4 May 2017)
 
