@@ -1435,6 +1435,11 @@ def restore_check(client, index_list):
             'Unable to obtain recovery information for specified indices. '
             'Error: {0}'.format(e)
         )
+    # This should address #962, where perhaps the cluster state hasn't yet
+    # had a chance to add a _recovery state yet, so it comes back empty.
+    if response == {}:
+        logger.info('_recovery returned an empty response. Trying again.')
+        return False
     for index in index_list:
         for shard in range(0, len(response[index]['shards'])):
             if response[index]['shards'][shard]['stage'] is not 'DONE':
