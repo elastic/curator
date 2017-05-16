@@ -3,6 +3,14 @@
 Changelog
 =========
 
+5.0.4 (16 May 2017)
+
+**Bug Fixes**
+
+  * The ``_recovery`` check needs to compare using ``!=`` instead of ``is not``,
+    which apparently does not accurately compare unicode strings.  Reported in
+    #966.  (untergeek)
+
 5.0.3 (15 May 2017)
 
 **Bug Fixes**
