@@ -1442,7 +1442,9 @@ def restore_check(client, index_list):
         return False
     for index in index_list:
         for shard in range(0, len(response[index]['shards'])):
-            if response[index]['shards'][shard]['stage'] is not 'DONE':
+            # Apparently `is not` is not always `!=`.  Unsure why, will
+            # research later.  Using != fixes #966
+            if response[index]['shards'][shard]['stage'] != 'DONE':
                 logger.info(
                     'Index "{0}" is still in stage "{1}"'.format(
                         index, response[index]['shards'][shard]['stage']

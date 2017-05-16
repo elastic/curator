@@ -743,6 +743,12 @@ class TestRestoreCheck(TestCase):
         self.assertFalse(
             curator.restore_check(client, testvars.named_indices)
         )
+    def test_fix_966(self):
+        client = Mock()
+        client.indices.recovery.return_value = testvars.recovery_966
+        self.assertTrue(
+            curator.restore_check(client, testvars.index_list_966)
+        )
 
 class TestTaskCheck(TestCase):
     def test_bad_task_id(self):
