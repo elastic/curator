@@ -15,7 +15,7 @@ def action_specific(action):
             option_defaults.allocation_type(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
-            option_defaults.max_wait(action),            
+            option_defaults.max_wait(action),
         ],
         'close' : [ option_defaults.delete_aliases() ],
         'cluster_routing' : [
@@ -24,7 +24,7 @@ def action_specific(action):
             option_defaults.cluster_routing_value(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
-            option_defaults.max_wait(action),        
+            option_defaults.max_wait(action),
         ],
         'create_index' : [
             option_defaults.name(action),
@@ -50,7 +50,7 @@ def action_specific(action):
             option_defaults.wait_for_active_shards(action),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
-            option_defaults.max_wait(action),    
+            option_defaults.max_wait(action),
             option_defaults.remote_certificate(),
             option_defaults.remote_client_cert(),
             option_defaults.remote_client_key(),
@@ -65,10 +65,11 @@ def action_specific(action):
             option_defaults.count(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
-            option_defaults.max_wait(action),            
+            option_defaults.max_wait(action),
         ],
         'rollover' : [
             option_defaults.name(action),
+            option_defaults.new_index(),
             option_defaults.conditions(),
             option_defaults.extra_settings(),
             option_defaults.wait_for_active_shards(action),
@@ -86,7 +87,7 @@ def action_specific(action):
             option_defaults.extra_settings(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
-            option_defaults.max_wait(action),            
+            option_defaults.max_wait(action),
             option_defaults.skip_repo_fs_check(),
         ],
         'snapshot' : [
