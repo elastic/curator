@@ -81,6 +81,9 @@ def name(action):
     elif action == 'restore':
         return { Optional('name'): Any(str, unicode) }
 
+def new_index():
+    return { Optional('new_index', default=None): Any(str, unicode) }
+
 def partial():
     return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
@@ -106,7 +109,7 @@ def remote_client_key():
     return { Optional('remote_client_key', default=None): Any(str, unicode, None) }
 
 def remote_filters():
-    # This is really just a basic check here.  The real check is in the 
+    # This is really just a basic check here.  The real check is in the
     # validate_actions() method in utils.py
     return { Optional('remote_filters', default=[
                 {
@@ -116,7 +119,7 @@ def remote_filters():
                   'exclude': True,
                 }
             ]
-        ): Any(list, None) 
+        ): Any(list, None)
     }
 
 def remote_ssl_no_validate():
@@ -139,7 +142,7 @@ def request_body():
         Required('request_body'): {
             Optional('conflicts'): Any(str, unicode),
             Optional('size'): Coerce(int),
-            Required('source'): { 
+            Required('source'): {
                 Required('index'): Any(Any(str, unicode), list),
                 Optional('remote'): {
                     Optional('host'): Any(str, unicode),
@@ -154,7 +157,7 @@ def request_body():
                 Optional('sort'): dict,
                 Optional('_source'): Any(Any(str, unicode), list),
             },
-            Required('dest'): { 
+            Required('dest'): {
                 Required('index'): Any(str, unicode),
                 Optional('type'): Any(Any(str, unicode), list),
                 Optional('op_type'): Any(str, unicode),
