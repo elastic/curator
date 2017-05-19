@@ -18,14 +18,14 @@ class TestActionRollover(TestCase):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
         self.assertRaises(
-            curator.ConfigurationError, curator.Rollover, client, 'name', 
-            {'a':'b'}, 'string')
+            curator.ConfigurationError, curator.Rollover, client, 'name',
+            {'a':'b'}, None, 'string')
     def test_init_raise_non_rollable_index(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_alias.return_value = testvars.alias_retval
         self.assertRaises(
-            ValueError, curator.Rollover, client, testvars.named_alias, 
+            ValueError, curator.Rollover, client, testvars.named_alias,
             {'a':'b'})
     def test_do_dry_run(self):
         client = Mock()

@@ -166,7 +166,7 @@ class Allocation(object):
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `False`)
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for 
+        :arg wait_interval: How long in seconds to wait between checks for
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
 
@@ -236,7 +236,7 @@ class Allocation(object):
                         ' {0}'.format(to_csv(l))
                     )
                     wait_for_it(
-                        self.client, 'allocation', 
+                        self.client, 'allocation',
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
         except Exception as e:
@@ -321,7 +321,7 @@ class ClusterRouting(object):
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `False`)
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for 
+        :arg wait_interval: How long in seconds to wait between checks for
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
         """
@@ -386,7 +386,7 @@ class ClusterRouting(object):
                     'Waiting for shards to complete routing and/or rebalancing'
                 )
                 wait_for_it(
-                    self.client, 'cluster_routing', 
+                    self.client, 'cluster_routing',
                     wait_interval=self.wait_interval, max_wait=self.max_wait
                 )
         except Exception as e:
@@ -623,7 +623,7 @@ class Open(object):
             report_failure(e)
 
 class Replicas(object):
-    def __init__(self, ilo, count=None, wait_for_completion=False, 
+    def __init__(self, ilo, count=None, wait_for_completion=False,
         wait_interval=9, max_wait=-1):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
@@ -631,7 +631,7 @@ class Replicas(object):
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `False`)
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for 
+        :arg wait_interval: How long in seconds to wait between checks for
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
         """
@@ -693,7 +693,7 @@ class Replicas(object):
                         'indices: {0}'.format(to_csv(l))
                     )
                     wait_for_it(
-                        self.client, 'replicas', 
+                        self.client, 'replicas',
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
         except Exception as e:
@@ -701,13 +701,14 @@ class Replicas(object):
 
 class Rollover(object):
     def __init__(
-            self, client, name, conditions, extra_settings=None,
+            self, client, name, conditions, new_index=None, extra_settings=None,
             wait_for_active_shards=1
         ):
         """
         :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg name: The name of the single-index-mapped alias to test for
             rollover conditions.
+        :new_index: The new index name
         :arg conditions: A dictionary of conditions to test
         :arg extra_settings: Must be either `None`, or a dictionary of settings
             to apply to the new index on rollover. This is used in place of
@@ -734,6 +735,9 @@ class Rollover(object):
         #: Instance variable.
         #: Internal reference to `extra_settings`
         self.settings   = extra_settings
+        #: Instance variable.
+        #: Internal reference to `new_index`
+        self.new_index = new_index
         #: Instance variable.
         #: Internal reference to `wait_for_active_shards`
         self.wait_for_active_shards = wait_for_active_shards
@@ -765,6 +769,7 @@ class Rollover(object):
         """
         return self.client.indices.rollover(
             alias=self.name,
+            new_index=self.new_index,
             body=self.body(),
             dry_run=dry_run,
             wait_for_active_shards=self.wait_for_active_shards,
@@ -852,29 +857,29 @@ class DeleteSnapshots(object):
             report_failure(e)
 
 class Reindex(object):
-    def __init__(self, ilo, request_body, refresh=True, 
+    def __init__(self, ilo, request_body, refresh=True,
         requests_per_second=-1, slices=1, timeout=60, wait_for_active_shards=1,
         wait_for_completion=True, max_wait=-1, wait_interval=9,
-        remote_url_prefix=None, remote_ssl_no_validate=None, 
-        remote_certificate=None, remote_client_cert=None, 
-        remote_client_key=None, remote_aws_key=None, remote_aws_secret_key=None, 
+        remote_url_prefix=None, remote_ssl_no_validate=None,
+        remote_certificate=None, remote_client_cert=None,
+        remote_client_key=None, remote_aws_key=None, remote_aws_secret_key=None,
         remote_aws_region=None, remote_filters={}):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
-        :arg request_body: The body to send to 
-            :class:`elasticsearch.Indices.Reindex`, which must be complete and 
-            usable, as Curator will do no vetting of the request_body. If it 
+        :arg request_body: The body to send to
+            :class:`elasticsearch.Indices.Reindex`, which must be complete and
+            usable, as Curator will do no vetting of the request_body. If it
             fails to function, Curator will return an exception.
-        :arg refresh: Whether to refresh the entire target index after the 
+        :arg refresh: Whether to refresh the entire target index after the
             operation is complete. (default: `True`)
         :type refresh: bool
-        :arg requests_per_second: The throttle to set on this request in 
-            sub-requests per second. ``-1`` means set no throttle as does 
-            ``unlimited`` which is the only non-float this accepts. (default: 
+        :arg requests_per_second: The throttle to set on this request in
+            sub-requests per second. ``-1`` means set no throttle as does
+            ``unlimited`` which is the only non-float this accepts. (default:
             ``-1``)
-        :arg slices: The number of slices this task  should be divided into. 1 
+        :arg slices: The number of slices this task  should be divided into. 1
             means the task will not be sliced into subtasks. (default: ``1``)
-        :arg timeout: The length in seconds each individual bulk request should 
+        :arg timeout: The length in seconds each individual bulk request should
             wait for shards that are unavailable. (default: ``60``)
         :arg wait_for_active_shards: Sets the number of shard copies that must
             be active before proceeding with the reindex operation. (default:
@@ -884,32 +889,32 @@ class Reindex(object):
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `True`)
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for 
+        :arg wait_interval: How long in seconds to wait between checks for
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
-        :arg remote_url_prefix: `Optional` url prefix, if needed to reach the 
+        :arg remote_url_prefix: `Optional` url prefix, if needed to reach the
             Elasticsearch API (i.e., it's not at the root level)
         :type remote_url_prefix: str
         :arg remote_ssl_no_validate: If `True`, do not validate the certificate
             chain.  This is an insecure option and you will see warnings in the
             log output.
-        :type remote_ssl_no_validate: bool          
+        :type remote_ssl_no_validate: bool
         :arg remote_certificate: Path to SSL/TLS certificate
         :arg remote_client_cert: Path to SSL/TLS client certificate (public key)
         :arg remote_client_key: Path to SSL/TLS private key
-        :arg remote_aws_key: AWS IAM Access Key (Only used if the 
+        :arg remote_aws_key: AWS IAM Access Key (Only used if the
             :mod:`requests-aws4auth` python module is installed)
         :arg remote_aws_secret_key: AWS IAM Secret Access Key (Only used if the
             :mod:`requests-aws4auth` python module is installed)
-        :arg remote_aws_region: AWS Region (Only used if the 
+        :arg remote_aws_region: AWS Region (Only used if the
             :mod:`requests-aws4auth` python module is installed)
         :arg remote_filters: Apply these filters to the remote client for
-            remote index selection.  
+            remote index selection.
         """
         self.loggit = logging.getLogger('curator.actions.reindex')
         verify_index_list(ilo)
         # Normally, we'd check for an empty list here.  But since we can reindex
-        # from remote, we might just be starting with an empty one. 
+        # from remote, we might just be starting with an empty one.
         # ilo.empty_list_check()
         if not isinstance(request_body, dict):
             raise ConfigurationError('"request_body" is not of type dictionary')
@@ -959,10 +964,10 @@ class Reindex(object):
         # provided 'ilo' (index list object).
         if self.body['source']['index'] == 'REINDEX_SELECTION' \
                 and 'remote' not in self.body['source']:
-            self.body['source']['index'] = self.index_list.indices        
+            self.body['source']['index'] = self.index_list.indices
 
         # Remote section
-        
+
         elif 'remote' in self.body['source']:
             self.loggit.debug('Remote reindex request detected')
             if 'host' not in self.body['source']['remote']:
@@ -1029,7 +1034,7 @@ class Reindex(object):
 
                 try: # let's try to build a remote connection with these!
                     rclient = get_client(
-                        host=rhost, 
+                        host=rhost,
                         http_auth=rhttp_auth,
                         url_prefix=remote_url_prefix,
                         use_ssl=use_ssl,
@@ -1048,7 +1053,7 @@ class Reindex(object):
                         ' with provided credentials/certificates/settings.'
                     )
                     report_failure(e)
-                try:    
+                try:
                     rio = IndexList(rclient)
                     rio.iterate_filters({'filters': remote_filters})
                     try:
@@ -1110,8 +1115,8 @@ class Reindex(object):
             version = get_version(self.client)
             if version >= (5,1,0):
                 response = self.client.reindex(
-                    body=self.body, refresh=self.refresh, 
-                    requests_per_second=self.requests_per_second, 
+                    body=self.body, refresh=self.refresh,
+                    requests_per_second=self.requests_per_second,
                     slices=self.slices,
                     timeout=self.timeout,
                     wait_for_active_shards=self.wait_for_active_shards,
@@ -1124,8 +1129,8 @@ class Reindex(object):
                     'used'.format(version)
                 )
                 response = self.client.reindex(
-                    body=self.body, refresh=self.refresh, 
-                    requests_per_second=self.requests_per_second, 
+                    body=self.body, refresh=self.refresh,
+                    requests_per_second=self.requests_per_second,
                     timeout=self.timeout,
                     wait_for_active_shards=self.wait_for_active_shards,
                     wait_for_completion=False
@@ -1133,7 +1138,7 @@ class Reindex(object):
             self.loggit.debug('TASK ID = {0}'.format(response['task']))
             if self.wfc:
                 wait_for_it(
-                    self.client, 'reindex', task_id=response['task'], 
+                    self.client, 'reindex', task_id=response['task'],
                     wait_interval=self.wait_interval, max_wait=self.max_wait
                 )
                 # Verify the destination index is there after the fact
@@ -1159,7 +1164,7 @@ class Reindex(object):
                         'Reindex failed. Index "{0}" not found.'.format(
                             self.body['dest']['index'])
                     )
-                
+
             else:
                 self.loggit.warn(
                     '"wait_for_completion" set to {0}.'
@@ -1182,7 +1187,7 @@ class Snapshot(object):
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `True`)
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for 
+        :arg wait_interval: How long in seconds to wait between checks for
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
         :arg ignore_unavailable: Ignore unavailable shards/indices.
@@ -1310,8 +1315,8 @@ class Snapshot(object):
             )
             if self.wait_for_completion:
                 wait_for_it(
-                    self.client, 'snapshot', snapshot=self.name, 
-                    repository=self.repository, 
+                    self.client, 'snapshot', snapshot=self.name,
+                    repository=self.repository,
                     wait_interval=self.wait_interval, max_wait=self.max_wait
                 )
             else:
@@ -1362,7 +1367,7 @@ class Restore(object):
         :type extra_settings: dict, representing the settings.
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `True`)
-        :arg wait_interval: How long in seconds to wait between checks for 
+        :arg wait_interval: How long in seconds to wait between checks for
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
         :type wait_for_completion: bool
@@ -1412,7 +1417,7 @@ class Restore(object):
         #: Instance variable.
         #: How long in seconds to `wait_for_completion` before returning with an
         #: exception. A value of -1 means wait forever.
-        self.max_wait   = max_wait        
+        self.max_wait   = max_wait
         #: Instance variable version of ``rename_pattern``
         self.rename_pattern = rename_pattern if rename_replacement is not None \
             else ''
