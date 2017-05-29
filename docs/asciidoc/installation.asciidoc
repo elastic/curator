@@ -110,7 +110,7 @@ Add the following in your `/etc/apt/sources.list.d/` directory in a file with a
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
-deb http://packages.elastic.co/curator/{curator_major}/debian stable main
+deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian stable main
 --------------------------------------------------
 
 After running `sudo apt-get update`, the repository is ready for use.
