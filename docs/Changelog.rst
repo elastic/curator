@@ -3,6 +3,17 @@
 Changelog
 =========
 
+5.1.0 (? ? ?)
+
+**New Features**
+
+  * Testing against ES 5.4.1
+  
+**Bug Fixes**
+
+  * Since Curator no longer supports old versions of python, convert tests to 
+    use ``isinstance``. #973 (untergeek)
+
 5.0.4 (16 May 2017)
 
 **Bug Fixes**
