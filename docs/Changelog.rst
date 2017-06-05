@@ -13,6 +13,8 @@ Changelog
 
   * Since Curator no longer supports old versions of python, convert tests to 
     use ``isinstance``. #973 (untergeek)
+  * Fix stray instance of ``is not`` comparison instead of ``!=`` #972 
+    (untergeek)
 
 5.0.4 (16 May 2017)
 

@@ -770,7 +770,7 @@ class IndexList(object):
         working_list = self.working_list()
 
         if use_age:
-            if source is not 'name':
+            if source != 'name':
                 self.loggit.warn(
                     'Cannot get age information from closed indices unless '
                     'source="name".  Omitting any closed indices.'

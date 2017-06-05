@@ -475,7 +475,7 @@ def ensure_list(indices):
     :arg indices: A list of indices to act upon
     :rtype: list
     """
-    if type(indices) is not type(list()):   # in case of a single value passed
+    if not isinstance(indices, list): # in case of a single value passed
         indices = [indices]
     return indices
 
@@ -502,14 +502,14 @@ def check_csv(value):
     :arg value: The value to test, if list or csv string
     :rtype: bool
     """
-    if type(value) is type(list()):
+    if isinstance(value, list):
         return True
     string = False
     # Python3 hack because it doesn't recognize unicode as a type anymore
     if sys.version_info < (3, 0):
-        if type(value) is type(unicode()):
+        if isinstance(value, unicode):
             value = str(value)
-    if type(value) is type(str()):
+    if isinstance(value, str):
         if len(value.split(',')) > 1: # It's a csv string.
             return True
         else: # There's only one value here, so it's not a csv string

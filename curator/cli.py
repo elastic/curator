@@ -151,7 +151,7 @@ def cli(config, dry_run, action_file):
         else:
             logger.info('Preparing Action ID: {0}, "{1}"'.format(idx, action))
         # Override the timeout, if specified, otherwise use the default.
-        if type(timeout_override) == type(int()):
+        if isinstance(timeout_override, int):
             client_args['timeout'] = timeout_override
         else:
             client_args['timeout'] = default_timeout
@@ -161,7 +161,6 @@ def cli(config, dry_run, action_file):
         kwargs['master_timeout'] = (
             client_args['timeout'] if client_args['timeout'] <= 300 else 300)
         kwargs['dry_run'] = dry_run
-#        kwargs['timeout'] = client_args['timeout']
 
         # Create a client object for each action...
         client = get_client(**client_args)
