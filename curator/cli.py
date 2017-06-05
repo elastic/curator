@@ -175,8 +175,7 @@ def cli(config, dry_run, action_file):
             )
             process_action(client, actions[idx], **kwargs)
         except Exception as e:
-            if str(type(e)) == "<class 'curator.exceptions.NoIndices'>" or \
-                str(type(e)) == "<class 'curator.exceptions.NoSnapshots'>":
+            if isinstance(e, NoIndices) or isinstance(e, NoSnapshots):
                 if ignore_empty_list:
                     logger.info(
                         'Skipping action "{0}" due to empty list: '

@@ -3,6 +3,7 @@ import elasticsearch
 import time
 import logging
 import yaml, os, re, sys
+import mock
 from voluptuous import Schema
 from .exceptions import *
 from .defaults import settings
@@ -122,8 +123,7 @@ def verify_client_object(test):
     :rtype: None
     """
     # Ignore mock type for testing
-    if str(type(test)) == "<class 'mock.Mock'>" or \
-        str(type(test)) == "<class 'mock.mock.Mock'>":
+    if isinstance(test, mock.Mock) or isinstance(test, mock.mock.Mock):
         pass
     elif not isinstance(test, elasticsearch.Elasticsearch):
         raise TypeError(
@@ -138,7 +138,9 @@ def verify_index_list(test):
     :arg test: The variable or object to test
     :rtype: None
     """
-    if not str(type(test)) == "<class 'curator.indexlist.IndexList'>":
+    # It breaks if this import isn't local to this function
+    from .indexlist import IndexList
+    if not isinstance(test, IndexList):
         raise TypeError(
             'Not an IndexList object. Type: {0}.'.format(type(test))
         )
@@ -151,7 +153,9 @@ def verify_snapshot_list(test):
     :arg test: The variable or object to test
     :rtype: None
     """
-    if not str(type(test)) == "<class 'curator.snapshotlist.SnapshotList'>":
+    # It breaks if this import isn't local to this function
+    from .snapshotlist import SnapshotList
+    if not isinstance(test, SnapshotList):    
         raise TypeError(
             'Not an SnapshotList object. Type: {0}.'.format(type(test))
         )
