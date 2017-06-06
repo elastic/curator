@@ -15,6 +15,8 @@ Changelog
     use ``isinstance``. #973 (untergeek)
   * Fix stray instance of ``is not`` comparison instead of ``!=`` #972 
     (untergeek)
+  * Increase remote client timeout to 180 seconds for remote reindex. #930
+    (untergeek)
 
 5.0.4 (16 May 2017)
 
