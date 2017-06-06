@@ -448,7 +448,7 @@ class DeleteIndices(object):
         :arg master_timeout: Number of seconds to wait for master node response
         """
         verify_index_list(ilo)
-        if not type(master_timeout) == type(int()):
+        if not isinstance(master_timeout, int):
             raise TypeError(
                 'Incorrect type for "master_timeout": {0}. '
                 'Should be integer value.'.format(type(master_timeout))
