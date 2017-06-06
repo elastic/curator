@@ -27,6 +27,7 @@ def get_install_requires():
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
     res.append('certifi>=2017.4.17')
+    res.append('mock')
     return res
 
 try:
