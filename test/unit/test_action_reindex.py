@@ -17,6 +17,15 @@ class TestActionReindex(TestCase):
         ilo = curator.IndexList(client)
         self.assertRaises(curator.ConfigurationError, 
             curator.Reindex, ilo, 'invalid')
+    def test_init_raise_local_migration_no_prefix_or_suffix(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        ilo = curator.IndexList(client)
+        self.assertRaises(curator.ConfigurationError, 
+            curator.Reindex, ilo, testvars.reindex_migration)
     def test_init(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }

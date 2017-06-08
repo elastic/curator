@@ -2,6 +2,7 @@ from .exceptions import *
 from .utils import *
 import logging
 import time
+from copy import deepcopy
 from datetime import datetime
 
 class Alias(object):
@@ -863,7 +864,8 @@ class Reindex(object):
         remote_url_prefix=None, remote_ssl_no_validate=None,
         remote_certificate=None, remote_client_cert=None,
         remote_client_key=None, remote_aws_key=None, remote_aws_secret_key=None,
-        remote_aws_region=None, remote_filters={}):
+        remote_aws_region=None, remote_filters={}, migration_prefix='', 
+        migration_suffix=''):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg request_body: The body to send to
@@ -910,6 +912,10 @@ class Reindex(object):
             :mod:`requests-aws4auth` python module is installed)
         :arg remote_filters: Apply these filters to the remote client for
             remote index selection.
+        :arg migration_prefix: When migrating, prepend this value to the index 
+            name.
+        :arg migration_suffix: When migrating, append this value to the index 
+            name.
         """
         self.loggit = logging.getLogger('curator.actions.reindex')
         verify_index_list(ilo)
@@ -953,22 +959,38 @@ class Reindex(object):
         #: How long in seconds to `wait_for_completion` before returning with an
         #: exception. A value of -1 means wait forever.
         self.max_wait   = max_wait
-        # This is for error logging later...
+        #: Instance variable.
+        #: Internal reference to `migration_prefix`
+        self.mpfx = migration_prefix
+        #: Instance variable.
+        #: Internal reference to `migration_suffix`
+        self.msfx = migration_suffix
 
+        # This is for error logging later...
         self.remote = False
         if 'remote' in self.body['source']:
             self.remote = True
 
+        self.migration = False
+        if self.body['dest']['index'] == 'MIGRATION':
+            self.migration = True
+
+        if self.migration:
+            if not self.remote and not self.mpfx and not self.msfx:
+                raise ConfigurationError(
+                    'MIGRATION can only be used locally with one or both of '
+                    'migration_prefix or migration_suffix.'
+                )
+            
         # REINDEX_SELECTION is the designated token.  If you use this for the
         # source "index," it will be replaced with the list of indices from the
         # provided 'ilo' (index list object).
         if self.body['source']['index'] == 'REINDEX_SELECTION' \
-                and 'remote' not in self.body['source']:
+                and not self.remote:
             self.body['source']['index'] = self.index_list.indices
 
         # Remote section
-
-        elif 'remote' in self.body['source']:
+        elif self.remote:
             self.loggit.debug('Remote reindex request detected')
             if 'host' not in self.body['source']['remote']:
                 raise ConfigurationError('Missing remote "host"')
@@ -1080,10 +1102,75 @@ class Reindex(object):
         self.loggit.debug(
             'Reindexing indices: {0}'.format(self.body['source']['index']))
 
-    def show_run_args(self):
+    def _get_request_body(self, source, dest):
+        body = deepcopy(self.body)
+        body['source']['index'] = source
+        body['dest']['index'] = dest
+        return body
+
+    def _get_reindex_args(self, source, dest):
+        # Always set wait_for_completion to False. Let 'wait_for_it' do its
+        # thing if wait_for_completion is set to True. Report the task_id
+        # either way.
+        reindex_args = {
+            'body':self._get_request_body(source, dest), 'refresh':self.refresh, 
+            'requests_per_second': self.requests_per_second,
+            'timeout': self.timeout, 
+            'wait_for_active_shards': self.wait_for_active_shards,
+            'wait_for_completion': False,
+            'slices': self.slices
+        }
+        version = get_version(self.client)
+        if version < (5,1,0):
+            self.loggit.info(
+                'Your version of elasticsearch ({0}) does not support '
+                'sliced scroll for reindex, so that setting will not be '
+                'used'.format(version)
+            )
+            del reindex_args['slices']
+        return reindex_args
+
+    def _post_run_quick_check(self, index_name):
+        # Verify the destination index is there after the fact
+        post_run = get_indices(self.client)
+        alias_instead = self.client.indices.exists_alias(name=index_name)
+        if index_name not in post_run and not alias_instead:
+            self.loggit.error(
+                'Index "{0}" not found after reindex operation. Check '
+                'Elasticsearch logs for more '
+                'information.'.format(index_name)
+            )
+            if self.remote:
+                self.loggit.error(
+                    'Did you forget to add "reindex.remote.whitelist: '
+                    '{0}:{1}" to the elasticsearch.yml file on the '
+                    '"dest" node?'.format(
+                        self.remote_host, self.remote_port
+                    )
+                )
+            raise FailedExecution(
+                'Reindex failed. Index "{0}" not found.'.format(index_name)
+            )
+
+    def sources(self):
+        # Generator for sources & dests
+        dest = self.body['dest']['index']
+
+        if not self.migration:
+            yield self.body['source']['index'], dest
+
+        # Loop over all sources (default will only be one)
+        else:
+            for source in ensure_list(self.body['source']['index']):
+                if self.migration:
+                    dest = self.mpfx + source + self.msfx
+                yield source, dest
+
+    def show_run_args(self, source, dest):
         """
         Show what will run
         """
+
         return ('request body: {0} with arguments: '
             'refresh={1} '
             'requests_per_second={2} '
@@ -1091,7 +1178,7 @@ class Reindex(object):
             'timeout={4} '
             'wait_for_active_shards={5} '
             'wait_for_completion={6}'.format(
-                self.body,
+                self._get_request_body(source, dest),
                 self.refresh,
                 self.requests_per_second,
                 self.slices,
@@ -1106,7 +1193,10 @@ class Reindex(object):
         Log what the output would be, but take no action.
         """
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
-        self.loggit.info('DRY-RUN: REINDEX: {0}'.format(self.show_run_args()))
+        for source, dest in self.sources():
+            self.loggit.info(
+                'DRY-RUN: REINDEX: {0}'.format(self.show_run_args(source, dest))
+            )
 
     def do_action(self):
         """
@@ -1114,70 +1204,28 @@ class Reindex(object):
         provided request_body and arguments.
         """
         try:
-            self.loggit.info('Commencing reindex operation')
-            self.loggit.debug('REINDEX: {0}'.format(self.show_run_args()))
-            # Always set wait_for_completion to False. Let 'wait_for_it' do its
-            # thing if wait_for_completion is set to True. Report the task_id
-            # either way.
-            version = get_version(self.client)
-            if version >= (5,1,0):
+            # Loop over all sources (default will only be one)
+            for source, dest in self.sources():
+                self.loggit.info('Commencing reindex operation')
+                self.loggit.debug(
+                    'REINDEX: {0}'.format(self.show_run_args(source, dest)))
                 response = self.client.reindex(
-                    body=self.body, refresh=self.refresh,
-                    requests_per_second=self.requests_per_second,
-                    slices=self.slices,
-                    timeout=self.timeout,
-                    wait_for_active_shards=self.wait_for_active_shards,
-                    wait_for_completion=False
-                )
-            else: # No slices for you
-                self.loggit.info(
-                    'Your version of elasticsearch ({0}) does not support '
-                    'sliced scroll for reindex, so that setting will not be '
-                    'used'.format(version)
-                )
-                response = self.client.reindex(
-                    body=self.body, refresh=self.refresh,
-                    requests_per_second=self.requests_per_second,
-                    timeout=self.timeout,
-                    wait_for_active_shards=self.wait_for_active_shards,
-                    wait_for_completion=False
-                )
-            self.loggit.debug('TASK ID = {0}'.format(response['task']))
-            if self.wfc:
-                wait_for_it(
-                    self.client, 'reindex', task_id=response['task'],
-                    wait_interval=self.wait_interval, max_wait=self.max_wait
-                )
-                # Verify the destination index is there after the fact
-                post_run = get_indices(self.client)
-                alias_instead = self.client.exists_alias(
-                    name=self.body['dest']['index'])
-                if self.body['dest']['index'] not in post_run \
-                        and not alias_instead:
-                    self.loggit.error(
-                        'Index "{0}" not found after reindex operation. Check '
-                        'Elasticsearch logs for more '
-                        'information.'.format(self.body['dest']['index'])
-                    )
-                    if self.remote:
-                        self.loggit.error(
-                            'Did you forget to add "reindex.remote.whitelist: '
-                            '{0}:{1}" to the elasticsearch.yml file on the '
-                            '"dest" node?'.format(
-                                self.remote_host, self.remote_port
-                            )
-                        )
-                    raise FailedExecution(
-                        'Reindex failed. Index "{0}" not found.'.format(
-                            self.body['dest']['index'])
-                    )
+                                **self._get_reindex_args(source, dest))
 
-            else:
-                self.loggit.warn(
-                    '"wait_for_completion" set to {0}.'
-                    'Remember to check task_id "{1}" for successful completion '
-                    'manually.'.format(self.wfc, response['task'])
-                )
+                self.loggit.debug('TASK ID = {0}'.format(response['task']))
+                if self.wfc:
+                    wait_for_it(
+                        self.client, 'reindex', task_id=response['task'],
+                        wait_interval=self.wait_interval, max_wait=self.max_wait
+                    )
+                    self._post_run_quick_check(dest)
+
+                else:
+                    self.loggit.warn(
+                        '"wait_for_completion" set to {0}.  Remember '
+                        'to check task_id "{1}" for successful completion '
+                        'manually.'.format(self.wfc, response['task'])
+                    )
         except Exception as e:
             report_failure(e)
 
