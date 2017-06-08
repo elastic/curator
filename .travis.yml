@@ -10,7 +10,7 @@ env:
   - ES_VERSION=5.0.2
   - ES_VERSION=5.1.2
   - ES_VERSION=5.2.2
-  - ES_VERSION=5.3.2
+  - ES_VERSION=5.3.3
   - ES_VERSION=5.4.1
 
 os: linux

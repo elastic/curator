@@ -165,6 +165,122 @@ class TestCLIReindex(CuratorTestCase):
         # Do our own cleanup here.
         rclient.indices.delete(index='{0},{1}'.format(source1, source2))
         self.assertEqual(expected, self.client.count(index=dest)['count'])
+    def test_reindex_migrate_from_remote(self):
+        wait_interval = 1
+        max_wait = 3
+        source1 = 'my_source1'
+        source2 = 'my_source2'
+        prefix = 'my_'
+        dest = 'MIGRATION'
+        expected = 3
+
+
+        # Build remote client
+        try:
+            rclient = curator.get_client(
+                host=rhost, port=rport, skip_version_test=True)
+            rclient.info()
+        except:
+            raise SkipTest(
+                'Unable to connect to host at {0}:{1}'.format(rhost, rport))
+        # Build indices remotely.
+        counter = 0
+        for rindex in [source1, source2]:
+            rclient.indices.create(index=rindex)
+            for i in range(0, 3):
+                rclient.create(
+                    index=rindex, doc_type='log', id=str(counter+1),
+                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                )
+                counter += 1
+                rclient.indices.flush(index=rindex, force=True)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.remote_reindex.format(
+                wait_interval, 
+                max_wait, 
+                'http://{0}:{1}'.format(rhost, rport),
+                'REINDEX_SELECTION', 
+                dest,
+                prefix
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        # Do our own cleanup here.
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2))
+        # And now the neat trick of verifying that the reindex worked to both 
+        # indices, and they preserved their names
+        self.assertEqual(expected, self.client.count(index=source1)['count'])
+        self.assertEqual(expected, self.client.count(index=source2)['count'])
+
+    def test_reindex_migrate_from_remote_with_pre_suf_fixes(self):
+        wait_interval = 1
+        max_wait = 3
+        source1 = 'my_source1'
+        source2 = 'my_source2'
+        prefix = 'my_'
+        dest = 'MIGRATION'
+        expected = 3
+        mpfx = 'pre-'
+        msfx = '-fix'
+
+
+        # Build remote client
+        try:
+            rclient = curator.get_client(
+                host=rhost, port=rport, skip_version_test=True)
+            rclient.info()
+        except:
+            raise SkipTest(
+                'Unable to connect to host at {0}:{1}'.format(rhost, rport))
+        # Build indices remotely.
+        counter = 0
+        for rindex in [source1, source2]:
+            rclient.indices.create(index=rindex)
+            for i in range(0, 3):
+                rclient.create(
+                    index=rindex, doc_type='log', id=str(counter+1),
+                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                )
+                counter += 1
+                rclient.indices.flush(index=rindex, force=True)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.migration_reindex.format(
+                wait_interval, 
+                max_wait,
+                mpfx,
+                msfx,
+                'http://{0}:{1}'.format(rhost, rport),
+                'REINDEX_SELECTION', 
+                dest,
+                prefix
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        # Do our own cleanup here.
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2))
+        # And now the neat trick of verifying that the reindex worked to both 
+        # indices, and they preserved their names
+        self.assertEqual(expected, self.client.count(index='{0}{1}{2}'.format(mpfx,source1,msfx))['count'])
+        self.assertEqual(expected, self.client.count(index='{0}{1}{2}'.format(mpfx,source1,msfx))['count'])
+
     def test_reindex_from_remote_no_connection(self):
         wait_interval = 1
         max_wait = 3

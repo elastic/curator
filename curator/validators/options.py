@@ -60,6 +60,8 @@ def action_specific(action):
             option_defaults.remote_filters(),
             option_defaults.remote_url_prefix(),
             option_defaults.remote_ssl_no_validate(),
+            option_defaults.migration_prefix(),
+            option_defaults.migration_suffix(),
         ],
         'replicas' : [
             option_defaults.count(),
