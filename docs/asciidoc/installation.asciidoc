@@ -31,6 +31,17 @@ target machine has internet connectivity.
 pip install elasticsearch-curator
 ---------------------------------
 
+[IMPORTANT]
+======================
+If you plan on using Curator with AWS ES using IAM credentials, you must also
+install the `requests_aws4auth` python module:
+
+---------------------------------
+pip install requests_aws4auth
+---------------------------------
+
+======================
+
 === Upgrading with pip
 
 If you already have Elasticsearch Curator installed, and want to upgrade to the
