@@ -22,12 +22,12 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=5.3.0,<6.0.0' ]
+    res = ['elasticsearch>=5.4.0,<6.0.0' ]
     res.append('click>=6.7')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
     res.append('certifi>=2017.4.17')
-    res.append('mock')
+    res.append('mock>=2.0.0')
     return res
 
 try:

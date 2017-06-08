@@ -71,6 +71,12 @@ def max_wait(action):
     #     value = -1
     return { Optional('max_wait', default=value): Any(-1, Coerce(int), None) }
 
+def migration_prefix():
+    return { Optional('migration_prefix', default=''): Any(str, unicode, None)}
+
+def migration_suffix():
+    return { Optional('migration_suffix', default=''): Any(str, unicode, None)}
+
 def name(action):
     if action in ['alias', 'create_index', 'rollover']:
         return { Required('name'): Any(str, unicode) }

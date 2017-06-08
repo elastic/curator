@@ -610,6 +610,8 @@ this action.  All other options are as follows.
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
 * <<option_disable,disable_action>>
+* <<option_migration_prefix,migration_prefix>>
+* <<option_migration_suffix,migration_suffix>>
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_reindex,here>>.
@@ -624,7 +626,9 @@ used to facilitate this due to Curator's dependency on changes released in 1.4.
 However, there is a https://github.com/elastic/elasticsearch/pull/23805[known bug]
 with Elasticsearch 5.3.0 not being able to reindex from remote clusters older
 than 2.0.  The patch is available in Elasticsearch 5.3.1.  Earlier versions of
-Elasticsearch 5.x do not suffer from this bug.
+Elasticsearch 5.x do not suffer from this bug. This bug appeared again in
+Elasticsearch 5.4.0, and was fixed in 5.4.1, and hopefully will not appear in
+any other future releases.
 
 
 [[replicas]]

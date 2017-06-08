@@ -7,7 +7,10 @@ Changelog
 
 **New Features**
 
-  * Testing against ES 5.4.1
+  * Remote reindex now adds the ability to migrate from one cluster to another,
+    preserving the index names, or optionally adding a prefix and/or a suffix.
+    The official documentation shows you how. (untergeek)
+  * Testing against ES 5.4.1, 5.3.3
   
 **Bug Fixes**
 
@@ -17,6 +20,13 @@ Changelog
     (untergeek)
   * Increase remote client timeout to 180 seconds for remote reindex. #930
     (untergeek)
+
+**General**
+
+  * elasticsearch-py dependency bumped to 5.4.0
+  * Added mock dependency due to isinstance and testing requirements
+  * AWS ES 5.3 officially supports Curator now.  Documentation has been updated
+    to reflect this.
 
 5.0.4 (16 May 2017)
 
