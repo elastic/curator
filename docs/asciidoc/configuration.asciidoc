@@ -221,6 +221,9 @@ hosts: 127.0.0.1
 
 Or multiple values in the 3 acceptable YAML ways to render sequences, or arrays:
 
+WARNING: Curator can only work with one cluster at a time.  Including clients
+from multiple clusters in the `hosts` setting will result in errors.
+
 Flow:
 
 [source,sh]

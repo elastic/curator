@@ -345,8 +345,8 @@ The default value of this setting is `False`
 [[option_ignore]]
 == ignore_unavailable
 
-NOTE: This setting is used by the <<snapshot,snapshot>> and <<restore,restore>>
-actions.
+NOTE: This setting is used by the <<snapshot,snapshot>>, <<restore,restore>>,
+and <<index_settings,index_settings>> actions.
 
 This setting must be either `True` or `False`.
 
@@ -375,7 +375,7 @@ actions:
     - filtertype: ...
 -------------
 
-When the ignore_unavailable option is `False` and an index is missing the
+When the `ignore_unavailable` option is `False` and an index is missing the
 restore request will fail.
 
 === <<snapshot,snapshot>>
@@ -397,11 +397,35 @@ filters:
 - filtertype: ...
 -------------
 
-When the ignore_unavailable option is `False` and an index is missing the
+When the `ignore_unavailable` option is `False` and an index is missing, the
 snapshot request will fail.  This is not frequently a concern in Curator, as
 it should only ever find indices that exist.
 
+=== <<index_settings,index_settings>>
 
+[source,yaml]
+-------------
+action: index_settings
+description: "Change settings for selected indices"
+options:
+  index_settings:
+    index:
+      refresh_interval: 5s
+  ignore_unavailable: False
+  preserve_existing: False
+filters:
+- filtertype: ...
+-------------
+
+When the `ignore_unavailable` option is `False` and an index is missing,
+or if the request is to apply a
+https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#_static_index_settings[static]
+setting and the index is opened, the index setting request will fail.
+The `ignore_unavailable` option allows these indices to be skipped, when set to
+`True`.
+
+NOTE: https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#dynamic-index-settings[Dynamic]
+index settings can be applied to either open or closed indices.
 
 [[option_include_aliases]]
 == include_aliases
@@ -985,6 +1009,31 @@ This setting must be either `True` or `False`.
 The entire snapshot will fail if one or more indices being added to the
 snapshot do not have all primary shards available. This behavior can be changed
 by setting partial to `True`.
+
+The default value of this setting is `False`
+
+[[option_preserve_existing]]
+== preserve_existing
+
+[source,yaml]
+-------------
+action: index_settings
+description: "Change settings for selected indices"
+options:
+  index_settings:
+    index:
+      refresh_interval: 5s
+  ignore_unavailable: False
+  preserve_existing: False
+filters:
+- filtertype: ...
+-------------
+
+This setting must be either `True` or `False`.
+
+If `preserve_existing` is set to `True`, and the configuration attempts to push
+a setting to an index that already has any value for that setting, the
+existing setting will be preserved, and remain unchanged.
 
 The default value of this setting is `False`
 

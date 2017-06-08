@@ -3,13 +3,17 @@
 Changelog
 =========
 
-5.1.0 (? ? ?)
+5.1.0 (8 June 2017)
 
 **New Features**
 
+  * Index Settings are here! First requested as far back as #160, it's been 
+    requested in various forms culminating in #656.  The official documentation
+    addresses the usage. (untergeek)
   * Remote reindex now adds the ability to migrate from one cluster to another,
     preserving the index names, or optionally adding a prefix and/or a suffix.
     The official documentation shows you how. (untergeek)
+  * Added support for naming rollover indices. #970 (jurajseffer)
   * Testing against ES 5.4.1, 5.3.3
   
 **Bug Fixes**
