@@ -22,6 +22,7 @@ CLASS_MAP = {
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,
+    'index_settings' : IndexSettings,
     'open' : Open,
     'reindex' : Reindex,
     'replicas' : Replicas,

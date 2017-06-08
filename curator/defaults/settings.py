@@ -49,6 +49,7 @@ def index_actions():
         'create_index',
         'delete_indices',
         'forcemerge',
+        'index_settings',
         'open',
         'reindex',
         'replicas',

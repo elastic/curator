@@ -40,6 +40,11 @@ def action_specific(action):
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
+        'index_settings' : [
+            option_defaults.index_settings(),
+            option_defaults.ignore_unavailable(),
+            option_defaults.preserve_existing(),
+        ],
         'open' : [],
         'reindex' : [
             option_defaults.request_body(),
