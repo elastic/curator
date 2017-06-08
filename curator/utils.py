@@ -3,7 +3,6 @@ import elasticsearch
 import time
 import logging
 import yaml, os, re, sys
-import mock
 from voluptuous import Schema
 from .exceptions import *
 from .defaults import settings
@@ -123,7 +122,8 @@ def verify_client_object(test):
     :rtype: None
     """
     # Ignore mock type for testing
-    if isinstance(test, mock.Mock) or isinstance(test, mock.mock.Mock):
+    if str(type(test)) == "<class 'mock.Mock'>" or \
+        str(type(test)) == "<class 'mock.mock.Mock'>":
         pass
     elif not isinstance(test, elasticsearch.Elasticsearch):
         raise TypeError(
