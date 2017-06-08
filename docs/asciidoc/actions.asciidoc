@@ -14,8 +14,9 @@ once created, can only be deleted.
 * <<create_index,Create Index>>
 * <<delete_indices,Delete Indices>>
 * <<delete_snapshots,Delete Snapshots>>
-* <<open,Open>>
 * <<forcemerge,forceMerge>>
+* <<index_settings,Index Settings>>
+* <<open,Open>>
 * <<reindex,Reindex>>
 * <<replicas,Replicas>>
 * <<restore,Restore>>
@@ -469,38 +470,6 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_delete_snapshots,here>>.
 
 
-
-[[open]]
-== Open
-
-[source,yaml]
--------------
-action: open
-description: "open selected indices"
-options:
-  continue_if_exception: False
-filters:
-- filtertype: ...
--------------
-
-NOTE: Empty values and commented lines will result in the default value, if any,
-    being selected.  If a setting is set, but not used by a given action, it
-    will be ignored.
-
-This action opens the selected indices.
-
-=== Optional settings
-
-* <<option_ignore_empty,ignore_empty_list>>
-* <<option_timeout_override,timeout_override>>
-* <<option_continue,continue_if_exception>>
-* <<option_disable,disable_action>>
-
-TIP: See an example of this action in an <<actionfile,actionfile>>
-    <<ex_open,here>>.
-
-
-
 [[forcemerge]]
 == Forcemerge
 
@@ -554,6 +523,106 @@ filters:
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_forcemerge,here>>.
+
+
+[[index_settings]]
+== Index Settings
+
+[source,yaml]
+-------------
+action: index_settings
+description: "Change settings for selected indices"
+options:
+  index_settings:
+    index:
+      refresh_interval: 5s
+  ignore_unavailable: False
+  preserve_existing: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action updates the specified index settings for the selected indices.
+
+[IMPORTANT]
+=======================
+While Elasticsearch allows for either dotted notation of index settings, such as
+
+[source,json]
+-------------
+PUT /indexname/_settings
+{
+  "index.blocks.read_only": true
+}
+-------------
+
+or in nested structure, like this:
+
+[source,json]
+-------------
+PUT /indexname/_settings
+{
+  "index": {
+    "blocks": {
+      "read_only": true
+    }
+  }
+}
+-------------
+
+In order to appropriately detect
+https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#_static_index_settings[static]
+vs.
+https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#dynamic-index-settings[dynamic]
+settings, and to be able to verify configurational integrity in the YAML file,
+**Curator does not support using dotted notation.**
+
+=======================
+
+=== Optional settings
+
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
+* <<option_ignore,ignore_unavailable>>
+* <<option_preserve_existing,preserve_existing>>
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_index_settings,here>>.
+
+[[open]]
+== Open
+
+[source,yaml]
+-------------
+action: open
+description: "open selected indices"
+options:
+  continue_if_exception: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action opens the selected indices.
+
+=== Optional settings
+
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_open,here>>.
 
 
 

@@ -51,6 +51,9 @@ def include_global_state(action):
         default = True
     return { Optional('include_global_state', default=default): Any(bool, All(Any(str, unicode), Boolean())) }
 
+def index_settings():
+    return { Required('index_settings'): {'index': dict} }
+
 def indices():
     return { Optional('indices', default=None): Any(None, list) }
 
@@ -92,6 +95,9 @@ def new_index():
 
 def partial():
     return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
+
+def preserve_existing():
+    return { Optional('preserve_existing', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def refresh():
     return { Optional('refresh', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
