@@ -3,6 +3,13 @@
 Changelog
 =========
 
+5.1.1 (8 June 2017)
+
+**Bug Fixes**
+
+  * Mock and cx_Freeze don't play well together.  Packages weren't working, so
+    I reverted the string-based comparison as before.
+    
 5.1.0 (8 June 2017)
 
 **New Features**
