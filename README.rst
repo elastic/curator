@@ -74,6 +74,8 @@ PyPI: |pypi_pkg|
     :target: https://travis-ci.org/elastic/curator
 .. |5_x| image:: https://travis-ci.org/elastic/curator.svg?branch=5.x
     :target: https://travis-ci.org/elastic/curator
+.. |5_1| image:: https://travis-ci.org/elastic/curator.svg?branch=5.1
+    :target: https://travis-ci.org/elastic/curator
 .. |5_0| image:: https://travis-ci.org/elastic/curator.svg?branch=5.0
     :target: https://travis-ci.org/elastic/curator
 .. |4_x| image:: https://travis-ci.org/elastic/curator.svg?branch=4.x
