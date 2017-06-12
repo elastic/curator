@@ -221,7 +221,10 @@ This fix originally appeared https://github.com/elastic/curator/issues/56#issuec
 
 === A: Because Curator requires access to the `/_cluster/state/metadata` endpoint.
 
-NOTE: AWS ES 5.3 officially supports Curator.  Older versions do not.
+NOTE: AWS ES 5.3 officially supports Curator for index managment operations. AWS ES
+5.3 does not yet expose the `/_snapshot/_status` endpoint Curator uses, and therefore
+does not yet support snapshot operations.  Older versions of AWS ES are not supported
+by Curator versions 4 or 5.
 
 There is some confusion because Curator 3 supported AWS ES, but Curator 4 & 5 do
 not.  There are even some IAM credentials listed as options for client
@@ -236,7 +239,9 @@ doing this in order to reduce the number of repetitive client calls that were
 made in the previous versions. Curator 5 uses the same method.
 
 AWS currently has a 5.3 version of Elasticsearch, which officially supports
-Curator.  Unfortunately, version 5.1 does not fully support the
+Curator _for index management operations only._ AWS ES does not yet expose the
+`/_snapshot/status` endpoint, which is required by Curator for snapshot management.
+Additionally, AWS ES versions 5.1 and older do not fully support the
 `/_cluster/state/metadata` endpoint, which means that Curator cannot be used to
 manage indices in AWS if your cluster is version 5.1 or older.
 
