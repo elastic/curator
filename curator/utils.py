@@ -1444,7 +1444,10 @@ def restore_check(client, index_list):
     if response == {}:
         logger.info('_recovery returned an empty response. Trying again.')
         return False
-    for index in index_list:
+    # Fixes added in #989
+    logger.info('Provided indices: {0}'.format(index_list))
+    logger.info('Found indices: {0}'.format(list(response.keys())))
+    for index in response:
         for shard in range(0, len(response[index]['shards'])):
             # Apparently `is not` is not always `!=`.  Unsure why, will
             # research later.  Using != fixes #966

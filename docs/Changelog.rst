@@ -3,6 +3,14 @@
 Changelog
 =========
 
+5.1.2 (? ? ?)
+
+**Bug Fixes**
+
+  * The ``restore_check`` function did not work properly with wildcard index
+    patterns.  This has been rectified, and an integration test added to 
+    satisfy this.  Reported in #989 (untergeek)
+
 5.1.1 (8 June 2017)
 
 **Bug Fixes**
