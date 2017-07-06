@@ -48,6 +48,7 @@ def age(action, config):
         filter_elements.direction(),
         filter_elements.unit(),
         filter_elements.unit_count(),
+        filter_elements.unit_count_pattern(),
         filter_elements.epoch(),
         filter_elements.exclude(),
     ]

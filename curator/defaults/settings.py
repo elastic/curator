@@ -118,6 +118,7 @@ def structural_filter_elements():
         Optional('timestring'): Any(str, unicode, None),
         Optional('unit'): Any(str, unicode),
         Optional('unit_count'): Coerce(int),
+        Optional('unit_count_pattern'): Any(str, unicode),
         Optional('use_age'): Boolean(),
         Optional('value'): Any(int, float, str, unicode, bool),
         Optional('week_starts_on'): Any(str, unicode, None),

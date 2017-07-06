@@ -348,7 +348,19 @@ def get_point_of_reference(unit, count, epoch=None):
         epoch = time.time()
     epoch = fix_epoch(epoch)
     return epoch - multiplier * count
-   
+
+def get_unit_count_from_name(index_name, pattern):
+    if (pattern == None):
+        return None
+    match = pattern.search(index_name)
+    if match:
+        try:
+            return int(match.group(1))
+        except Exception:
+            return None
+    else:
+        return None
+
 def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     """
     Get the epoch start time and end time of a range of ``unit``s, reckoning the 

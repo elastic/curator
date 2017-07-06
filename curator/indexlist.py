@@ -390,7 +390,7 @@ class IndexList(object):
 
     def filter_by_age(self, source='name', direction=None, timestring=None,
         unit=None, unit_count=None, field=None, stats_result='min_value',
-        epoch=None, exclude=False,
+        epoch=None, exclude=False, unit_count_pattern=False
         ):
         """
         Match `indices` by relative age calculations.
@@ -431,6 +431,12 @@ class IndexList(object):
             source=source, timestring=timestring, field=field,
             stats_result=stats_result
         )
+        if unit_count_pattern:
+            try:
+                unit_count_matcher = re.compile(unit_count_pattern)
+            except:
+                # We got an illegal regex, so won't be able to match anything
+                unit_count_matcher = None
         for index in self.working_list():
             try:
                 age = int(self.index_info[index]['age'][self.age_keyfield])
@@ -445,10 +451,30 @@ class IndexList(object):
                 )
                 # Because time adds to epoch, smaller numbers are actually older
                 # timestamps.
-                if direction == 'older':
-                    agetest = age < PoR
+                if unit_count_pattern:
+                    self.loggit.debug("unit_count_pattern is set, trying to match pattern to index " + index)
+                    unit_count_from_index = get_unit_count_from_name(index, unit_count_matcher)
+                    if unit_count_from_index:
+                        self.loggit.debug("pattern matched, applying unit_count of  " + str(unit_count_from_index))
+                        adjustedPoR = get_point_of_reference(unit, unit_count_from_index, epoch)
+                        test = 0
+                    elif unit_count == -1:
+                        # Unable to match pattern and unit_count is -1, meaning no fallback, so this
+                        # index is removed from the list
+                        self.loggit.debug("unable to match pattern and no fallback value set, failing index " + index)
+                        exclude = True
+                        adjustedPoR = PoR # necessary to avoid exception if the first index is excluded
+                    else:
+                        # Unable to match the pattern and unit_count is set, so fall back to using unit_count
+                        # for determining whether to keep this index in the list
+                        self.loggit.debug("unable to match pattern using fallback value of " + str(unit_count))
+                        adjustedPoR = PoR
                 else:
-                    agetest = age > PoR
+                    adjustedPoR = PoR
+                if direction == 'older':
+                    agetest = age < adjustedPoR
+                else:
+                    agetest = age > adjustedPoR
                 self.__excludify(agetest, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(

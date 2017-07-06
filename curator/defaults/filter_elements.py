@@ -122,6 +122,12 @@ def unit_count(**kwargs):
     # filtertype if use_age is set to True.
     return { Required('unit_count'): Coerce(int) }
 
+def unit_count_pattern(**kwargs):
+    # This setting is used with the age filtertype to define, whether
+    # the unit_count value is taken from the configuration or read from
+    # the index name via a regular expression
+    return { Optional('unit_count_pattern'): Any(str, unicode) }
+
 def use_age(**kwargs):
     # Use of this setting requires the additional setting, source.
     return { Optional('use_age', default=False): Any(bool, All(Any(str, unicode), Boolean())) }

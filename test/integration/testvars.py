@@ -393,6 +393,23 @@ delete_proto = ('---\n'
 '        stats_result: {7}\n'
 '        epoch: {8}\n')
 
+delete_pattern_proto = ('---\n'
+                'actions:\n'
+                '  1:\n'
+                '    description: "Delete indices as filtered"\n'
+                '    action: delete_indices\n'
+                '    options:\n'
+                '      continue_if_exception: False\n'
+                '      disable_action: False\n'
+                '    filters:\n'
+                '      - filtertype: {0}\n'
+                '        source: {1}\n'
+                '        direction: {2}\n'
+                '        timestring: {3}\n'
+                '        unit: {4}\n'
+                '        unit_count: {5}\n'
+                '        unit_count_pattern: {6}\n')
+
 delete_period_proto = ('---\n'
 'actions:\n'
 '  1:\n'
