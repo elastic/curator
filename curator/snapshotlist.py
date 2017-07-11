@@ -254,7 +254,7 @@ class SnapshotList(object):
             snapshot name. Only used for snapshot filtering by ``name``.
         :arg unit: One of ``seconds``, ``minutes``, ``hours``, ``days``,
             ``weeks``, ``months``, or ``years``.
-        :arg unit_count: The number of ``unit``s. ``unit_count`` * ``unit`` will
+        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
         :arg epoch: An epoch timestamp used in conjunction with ``unit`` and
             ``unit_count`` to establish a point of reference for calculations.
@@ -395,8 +395,8 @@ class SnapshotList(object):
         Match `indices` within ages within a given period.
 
         :arg source: Source of snapshot age. Can be 'name', or 'creation_date'.
-        :arg range_from: How many ``unit``s in the past/future is the origin?
-        :arg range_to: How many ``unit``s in the past/future is the end point?
+        :arg range_from: How many ``unit`` (s) in the past/future is the origin?
+        :arg range_to: How many ``unit`` (s) in the past/future is the end point?
         :arg timestring: An strftime string to match the datestamp in an
             snapshot name. Only used for snapshot filtering by ``name``.
         :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
