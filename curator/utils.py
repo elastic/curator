@@ -356,8 +356,8 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     which can be either ``sunday`` or ``monday``.
 
     :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
-    :arg range_from: How many ``unit``s in the past/future is the origin?
-    :arg range_to: How many ``unit``s in the past/future is the end point?
+    :arg range_from: How many ``unit`` (s) in the past/future is the origin?
+    :arg range_to: How many ``unit`` (s) in the past/future is the end point?
     :arg epoch: An epoch timestamp used to establish a point of reference for 
         calculations.
     :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``

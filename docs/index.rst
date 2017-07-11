@@ -58,7 +58,7 @@ logger logs requests to the server in JSON format as pretty-printed ``curl``
 commands that you can execute from the command line. The ``elasticsearch.trace``
 logger is not inherited from the base logger and must be activated separately.
 
-.. _logging library: http://docs.python.org/3.5/library/logging.html
+.. _logging library: http://docs.python.org/3.6/library/logging.html
 
 Contents
 --------

@@ -402,7 +402,7 @@ class IndexList(object):
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``seconds``, ``minutes``, ``hours``, ``days``,
             ``weeks``, ``months``, or ``years``.
-        :arg unit_count: The number of ``unit``s. ``unit_count`` * ``unit`` will
+        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
@@ -808,13 +808,13 @@ class IndexList(object):
 
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
-        :arg range_from: How many ``unit``s in the past/future is the origin?
-        :arg range_to: How many ``unit``s in the past/future is the end point?
+        :arg range_from: How many ``unit`` (s) in the past/future is the origin?
+        :arg range_to: How many ``unit`` (s) in the past/future is the end point?
         :arg timestring: An strftime string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
             ``years``.
-        :arg unit_count: The number of ``unit``s. ``unit_count`` * ``unit`` will
+        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
