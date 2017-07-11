@@ -86,7 +86,7 @@ To match all indices _except_ those ending with `a-`, `b-`, or `c-`:
 [source,yaml]
 -------------
 - filtertype: pattern
- kind: prefix
+ kind: regex
  value: '^a-|^b-|^c-'
  exclude: True
 -------------
