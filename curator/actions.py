@@ -863,7 +863,7 @@ class Rollover(object):
         self.settings   = extra_settings
         #: Instance variable.
         #: Internal reference to `new_index`
-        self.new_index = new_index
+        self.new_index = parse_date_pattern(new_index) if new_index else new_index
         #: Instance variable.
         #: Internal reference to `wait_for_active_shards`
         self.wait_for_active_shards = wait_for_active_shards
