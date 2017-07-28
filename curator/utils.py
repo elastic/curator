@@ -734,10 +734,10 @@ def get_client(**kwargs):
     try:
         from requests_aws4auth import AWS4Auth
         from boto3 import session
+        global aws_flag
         kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
             else kwargs['aws_sign_request']
         if kwargs['aws_sign_request']:
-            global aws_flag
             aws_flag = True
             session = session.Session()
             credentials = session.get_credentials()
@@ -755,6 +755,7 @@ def get_client(**kwargs):
                     kwargs['aws_region'], 'es', session_token=aws_token)
             )
         else:
+            aws_flag = False
             logger.debug('"requests_aws4auth" module present, but not used.')
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
