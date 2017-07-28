@@ -1174,7 +1174,27 @@ def snapshot_running(client):
     :rtype: bool
     """
     try:
-        status = client.snapshot.status()['snapshots']
+        if aws_flag:
+            if sys.version_info[0] < 3:
+                # On AWS we need to check each repository for running snapshots
+                repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories').encode("utf-8"))
+                for r in repos:
+                    repo = r.partition(' ')[0]
+                    if repo != "cs-automated":
+                        status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[ \
+                            u'snapshots']
+                        return False if status == [] else True
+            else:
+                repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories')[1])
+                for r in repos:
+                    repo = r.partition(' ')[0]
+                    if repo != "cs-automated":
+                        status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[1][
+                            "snapshots"]
+                        return False if status == [] else True
+
+        else:
+            status = client.snapshot.status()['snapshots']
     except Exception as e:
         report_failure(e)
     # We will only accept a positively identified False.  Anything else is
