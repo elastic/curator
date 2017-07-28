@@ -635,11 +635,10 @@ def check_master(client, master_only=False):
 
 def get_client(**kwargs):
     """
-    NOTE: AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
-    provided for future compatibility, should AWS ES support the
-    ``/_cluster/state/metadata`` endpoint.  So long as this endpoint does not
-    function in AWS ES, the client will not be able to use
-    :class:`curator.indexlist.IndexList`, which is the backbone of Curator 4
+    NOTE: AWS IAM parameters `aws_sign_request` and `aws_region` are
+    provided to facilitate request signing. The credentials will be
+    fetched from the local environment as per the AWS documentation:
+    http://amzn.to/2fRCGCt
 
     Return an :class:`elasticsearch.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
@@ -659,12 +658,10 @@ def get_client(**kwargs):
     :arg certificate: Path to SSL/TLS certificate
     :arg client_cert: Path to SSL/TLS client certificate (public key)
     :arg client_key: Path to SSL/TLS private key
-    :arg aws_key: AWS IAM Access Key (Only used if the :mod:`requests-aws4auth`
-        python module is installed)
-    :arg aws_secret_key: AWS IAM Secret Access Key (Only used if the
-        :mod:`requests-aws4auth` python module is installed)
-    :arg aws_region: AWS Region (Only used if the :mod:`requests-aws4auth`
-        python module is installed)
+    :arg aws_sign_request: Sign request to AWS (Only used if the :mod:`requests-aws4auth`
+        and :mod:`boto3` python modules are installed)
+    :arg aws_region: AWS Region where the cluster exists (Only used if the :mod:`requests-aws4auth`
+        and :mod:`boto3` python modules are installed)
     :arg ssl_no_validate: If `True`, do not validate the certificate
         chain.  This is an insecure option and you will see warnings in the
         log output.
@@ -736,27 +733,26 @@ def get_client(**kwargs):
 
     try:
         from requests_aws4auth import AWS4Auth
-        kwargs['aws_key'] = False if not 'aws_key' in kwargs \
-            else kwargs['aws_key']
-        kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
-            else kwargs['aws_secret_key']
-        kwargs['aws_region'] = False if not 'aws_region' in kwargs \
-            else kwargs['aws_region']
-        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
-            if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
-                    and kwargs['aws_region']:
-                raise MissingArgument(
-                    'Missing one or more of "aws_key", "aws_secret_key", '
-                    'or "aws_region".'
-                )
+        from boto3 import session
+        kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
+            else kwargs['aws_sign_request']
+        if kwargs['aws_sign_request']:
+            global aws_flag
+            aws_flag = True
+            session = session.Session()
+            credentials = session.get_credentials()
+            aws_key = credentials.access_key
+            aws_secret_key = credentials.secret_key
+            aws_token = credentials.token
+
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
             kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
             kwargs['http_auth'] = (
                 AWS4Auth(
-                    kwargs['aws_key'], kwargs['aws_secret_key'],
-                    kwargs['aws_region'], 'es')
+                    aws_key, aws_secret_key,
+                    kwargs['aws_region'], 'es', session_token=aws_token)
             )
         else:
             logger.debug('"requests_aws4auth" module present, but not used.')
@@ -1159,7 +1155,27 @@ def snapshot_running(client):
     :rtype: bool
     """
     try:
-        status = client.snapshot.status()['snapshots']
+        if aws_flag:
+            if sys.version_info[0] < 3:
+                # On AWS we need to check each repository for running snapshots
+                repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories').encode("utf-8"))
+                for r in repos:
+                    repo = r.partition(' ')[0]
+                    if repo != "cs-automated":
+                        status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[ \
+                            u'snapshots']
+                        return False if status == [] else True
+            else:
+                repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories')[1])
+                for r in repos:
+                    repo = r.partition(' ')[0]
+                    if repo != "cs-automated":
+                        status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[1][
+                            "snapshots"]
+                        return False if status == [] else True
+
+        else:
+            status = client.snapshot.status()['snapshots']
     except Exception as e:
         report_failure(e)
     # We will only accept a positively identified False.  Anything else is
