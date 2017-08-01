@@ -610,12 +610,12 @@ def check_version(client):
         logger.error(
             'Elasticsearch version {0} incompatible '
             'with this version of Curator '
-            '({0})'.format(".".join(map(str,version_number)), __version__)
+            '({1})'.format(".".join(map(str,version_number)), __version__)
         )
         raise CuratorException(
             'Elasticsearch version {0} incompatible '
             'with this version of Curator '
-            '({0})'.format(".".join(map(str,version_number)), __version__)
+            '({1})'.format(".".join(map(str,version_number)), __version__)
         )
 
 def check_master(client, master_only=False):
