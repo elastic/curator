@@ -4,7 +4,6 @@ Changelog
 =========
 
 5.1.2 (? ? ?)
--------------
 
 **Bug Fixes**
 
@@ -13,7 +12,6 @@ Changelog
     satisfy this.  Reported in #989 (untergeek)
 
 5.1.1 (8 June 2017)
--------------------
 
 **Bug Fixes**
 
@@ -21,7 +19,6 @@ Changelog
     I reverted the string-based comparison as before.
     
 5.1.0 (8 June 2017)
--------------------
 
 **New Features**
 
@@ -51,7 +48,6 @@ Changelog
     to reflect this.
 
 5.0.4 (16 May 2017)
--------------------
 
 **Bug Fixes**
 
@@ -60,7 +56,6 @@ Changelog
     #966.  (untergeek)
 
 5.0.3 (15 May 2017)
--------------------
 
 **Bug Fixes**
 
@@ -70,7 +65,6 @@ Changelog
     Reported in #962. (untergeek)
 
 5.0.2 (4 May 2017)
-------------------
 
 **Bug Fixes**
 
@@ -91,7 +85,6 @@ Changelog
   * Document how to include file paths better. Fixes #944. (untergeek)
 
 5.0.1 (10 April 2017)
----------------------
 
 **Bug Fixes**
 
@@ -105,7 +98,6 @@ Changelog
   * Address date matching behavior better per #858 (untergeek)
 
 5.0.0 (5 April 2017)
---------------------
 
 The full feature set of 5.0 (including alpha releases) is included here.
 
