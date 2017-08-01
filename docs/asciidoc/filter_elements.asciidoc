@@ -268,7 +268,7 @@ The value of this setting must be a timestamp field name.  This field must be
 present in the indices being filtered or an exception will be raised, and
 execution will halt.
 
-`field_stats` uses the {ref}search-field-stats.html[Field Stats API] to
+`field_stats` uses the {ref}/search-field-stats.html[Field Stats API] to
 calculate either the `min_value` or the `max_value` of the <<fe_field,`field`>>
 as the <<fe_stats_result,`stats_result`>>, and then use that value for age
 comparisons.

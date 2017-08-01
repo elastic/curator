@@ -33,7 +33,7 @@ include::inc_timestring_regex.asciidoc[]
 
 NOTE: `source` can only be `field_stats` when filtering indices.
 
-`field_stats` uses the {ref}search-field-stats.html[Field Stats API] to
+`field_stats` uses the {ref}/search-field-stats.html[Field Stats API] to
 calculate either the `min_value` or the `max_value` of the <<fe_field,`field`>>
 as the <<fe_stats_result,`stats_result`>>, and then use that value for age
 comparisons.
