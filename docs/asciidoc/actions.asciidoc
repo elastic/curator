@@ -218,7 +218,7 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 
 This action changes the shard routing allocation for the selected indices.
 
-See {ref}/current/shards-allocation.html for more information.
+See {ref}/shards-allocation.html for more information.
 
 You can optionally set `wait_for_completion` to `True`
 to have Curator wait for the shard routing to complete before continuing:
