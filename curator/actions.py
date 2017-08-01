@@ -1689,7 +1689,7 @@ class Restore(object):
         logger.info(
             'DRY-RUN: restore: Repository: {0} Snapshot name: {1} Arguments: '
             '{2}'.format(
-                self.name, self.repository,
+                self.repository, self.name,
                 { 'wait_for_completion' : self.wfc, 'body' : self.body }
             )
         )
