@@ -8,6 +8,10 @@ Changelog
 
 **Bug Fixes**
 
+  * Support date math in reindex operations better.  It did work previously,
+    but would report failure because the test was looking for the index with
+    that name from a list of indices, rather than letting Elasticsearch do
+    the date math.  Reported by DPattee in #1008 (untergeek)
   * Under rare circumstances, snapshot delete (or create) actions could fail,
     even when there were no snapshots in state ``IN_PROGRESS``.  This was
     tracked down by JD557 as a collision with a previously deleted snapshot

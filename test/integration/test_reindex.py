@@ -381,3 +381,25 @@ class TestCLIReindex(CuratorTestCase):
                     ],
                     )
         self.assertEqual(expected, self.client.count(index=dest)['count'])
+    def test_reindex_manual_date_math(self):
+        wait_interval = 1
+        max_wait = 3
+        source = '<source-{now/d}>'
+        dest = '<target-{now/d}>'
+        expected = 3
+
+        self.create_index(source)
+        self.add_docs(source)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.reindex.format(wait_interval, max_wait, source, dest))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, self.client.count(index=dest)['count'])
