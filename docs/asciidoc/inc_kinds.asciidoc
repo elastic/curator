@@ -37,7 +37,7 @@ To match all indices _except_ those ending with `-prod`:
 [source,yaml]
 -------------
 - filtertype: pattern
- kind: prefix
+ kind: suffix
  value: -prod
  exclude: True
 -------------
