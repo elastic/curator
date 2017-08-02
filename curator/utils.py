@@ -734,11 +734,10 @@ def get_client(**kwargs):
     try:
         from requests_aws4auth import AWS4Auth
         from boto3 import session
-        global aws_flag
         kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
             else kwargs['aws_sign_request']
         if kwargs['aws_sign_request']:
-            aws_flag = True
+            settings.aws_flag = True
             session = session.Session()
             credentials = session.get_credentials()
             aws_key = credentials.access_key
@@ -755,7 +754,6 @@ def get_client(**kwargs):
                     kwargs['aws_region'], 'es', session_token=aws_token)
             )
         else:
-            aws_flag = False
             logger.debug('"requests_aws4auth" module present, but not used.')
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
@@ -1175,7 +1173,7 @@ def snapshot_running(client):
     :rtype: bool
     """
     try:
-        if aws_flag:
+        if settings.aws_flag:
             if sys.version_info[0] < 3:
                 # On AWS we need to check each repository for running snapshots
                 repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories').encode("utf-8"))
