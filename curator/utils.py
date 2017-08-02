@@ -897,6 +897,24 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
                 'More than 1 snapshot in progress: {0}'.format(inprogress)
             )
 
+def find_snapshot_tasks(client):
+    """
+    Check if there is snapshot activity in the Tasks API.
+    Return `True` if activity is found, or `False`
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: bool
+    """
+    retval = False
+    tasklist = client.tasks.get()
+    for node in tasklist['nodes']:
+        for task in tasklist['nodes'][node]['tasks']:
+            activity = tasklist['nodes'][node]['tasks'][task]['action']
+            if 'snapshot' in activity:
+                logger.debug('Snapshot activity detected: {0}'.format(activity))
+                retval = True
+    return retval
+
 def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     """
     Ensure there are no snapshots in progress.  Pause and retry accordingly
@@ -914,19 +932,20 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
         in_progress = snapshot_in_progress(
             client, repository=repository
         )
-        if in_progress:
+        ongoing_task = find_snapshot_tasks(client)
+        if in_progress or ongoing_task:
+            if in_progress:
+                logger.info(
+                    'Snapshot already in progress: {0}'.format(in_progress))
+            elif ongoing_task:
+                logger.info('Snapshot activity detected in Tasks API')
             logger.info(
-                'Snapshot already in progress: {0}'.format(in_progress))
-            logger.info(
-                'Pausing {0} seconds before retrying...'.format(
-                    retry_interval)
-            )
+                'Pausing {0} seconds before retrying...'.format(retry_interval))
             time.sleep(retry_interval)
             logger.info('Retry {0} of {1}'.format(count, retry_count))
         else:
             return True
     return False
-
 
 def create_snapshot_body(indices, ignore_unavailable=False,
                          include_global_state=True, partial=False):
