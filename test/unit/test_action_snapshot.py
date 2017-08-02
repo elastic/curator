@@ -56,6 +56,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         ilo = curator.IndexList(client)
         so = curator.Snapshot(ilo, repository=testvars.repo_name,
             name=testvars.snap_name)
@@ -69,6 +70,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = {'snapshots':[]}
+        client.tasks.get.return_value = testvars.no_snap_tasks
         ilo = curator.IndexList(client)
         so = curator.Snapshot(ilo, repository=testvars.repo_name,
             name=testvars.snap_name)
@@ -81,6 +83,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         ilo = curator.IndexList(client)
         so = curator.Snapshot(ilo, repository=testvars.repo_name,
             name=testvars.snap_name)
@@ -94,6 +97,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.highly_unlikely
+        client.tasks.get.return_value = testvars.no_snap_tasks
         ilo = curator.IndexList(client)
         so = curator.Snapshot(ilo, repository=testvars.repo_name,
             name=testvars.snap_name)
@@ -107,6 +111,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         client.snapshot.create.return_value = None
         client.snapshot.status.return_value = testvars.nosnap_running
         client.snapshot.verify_repository.return_value = testvars.verified_nodes
@@ -122,6 +127,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         client.snapshot.create.return_value = testvars.generic_task
         client.tasks.get.return_value = testvars.completed_task
         client.snapshot.status.return_value = testvars.nosnap_running
@@ -138,6 +144,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         client.snapshot.create.return_value = None
         client.snapshot.status.return_value = testvars.snap_running
         client.snapshot.verify_repository.return_value = testvars.verified_nodes
@@ -153,6 +160,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         client.snapshot.create.return_value = testvars.generic_task
         client.snapshot.status.return_value = testvars.nosnap_running
         client.snapshot.verify_repository.return_value = testvars.verified_nodes
@@ -168,6 +176,7 @@ class TestActionSnapshot(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.get.return_value = testvars.snapshots
+        client.tasks.get.return_value = testvars.no_snap_tasks
         client.snapshot.create.return_value = None
         client.snapshot.create.side_effect = testvars.fake_fail
         client.snapshot.status.return_value = testvars.nosnap_running
