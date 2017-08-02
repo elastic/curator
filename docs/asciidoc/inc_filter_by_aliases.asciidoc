@@ -1,0 +1,11 @@
+[IMPORTANT]
+.API Change in Elasticsearch 5.5.0
+============================
+https://www.elastic.co/guide/en/elasticsearch/reference/5.5/breaking-changes-5.5.html#breaking_55_rest_changes[An update to Elasticsearch 5.5.0 changes the behavior of this filter, differing from previous 5.x versions].
+
+If a list of <<fe_aliases,aliases>> is provided (instead of only one), indices
+must appear in _all_ listed <<fe_aliases,aliases>> or a 404 error will result,
+leading to no indices being matched.  In older versions, if the index was
+associated with even one of the aliases in <<fe_aliases,aliases>>, it would
+result in a match.
+============================
