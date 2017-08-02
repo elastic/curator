@@ -122,3 +122,6 @@ def structural_filter_elements():
         Optional('value'): Any(int, float, str, unicode, bool),
         Optional('week_starts_on'): Any(str, unicode, None),
     }
+
+# Flag used to track if we're using AWS Elasticsearch
+aws_flag = False
