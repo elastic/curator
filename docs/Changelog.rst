@@ -7,6 +7,12 @@ Changelog
 
 **Bug Fixes**
 
+  * Under rare circumstances, snapshot delete (or create) actions could fail,
+    even when there were no snapshots in state ``IN_PROGRESS``.  This was
+    tracked down by JD557 as a collision with a previously deleted snapshot
+    that hadn't finished deleting.  It could be seen in the tasks API.  An
+    additional test for snapshot activity in the tasks API has been added to
+    cover this scenario.  Reported in #999 (untergeek)
   * The ``restore_check`` function did not work properly with wildcard index
     patterns.  This has been rectified, and an integration test added to 
     satisfy this.  Reported in #989 (untergeek)

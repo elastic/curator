@@ -553,6 +553,18 @@ class TestSafeToSnap(TestCase):
         client = Mock()
         client.snapshot.get.return_value = testvars.inprogress
         client.snapshot.get_repository.return_value = testvars.test_repo
+        client.tasks.get.return_value = testvars.no_snap_tasks
+        self.assertFalse(
+            curator.safe_to_snap(
+                client, repository=testvars.repo_name,
+                retry_interval=0, retry_count=1
+            )
+        )
+    def test_ongoing_tasks_fail(self):
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        client.tasks.get.return_value = testvars.snap_task
         self.assertFalse(
             curator.safe_to_snap(
                 client, repository=testvars.repo_name,
@@ -563,6 +575,7 @@ class TestSafeToSnap(TestCase):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
+        client.tasks.get.return_value = testvars.no_snap_tasks
         self.assertTrue(
             curator.safe_to_snap(
                 client, repository=testvars.repo_name,
