@@ -52,7 +52,11 @@ class TestFilters(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(1, len(curator.get_indices(self.client)))
+        ver = curator.get_version(self.client)
+        if ver >= (5,5,0):
+            self.assertEquals(2, len(curator.get_indices(self.client)))
+        else:
+            self.assertEquals(1, len(curator.get_indices(self.client)))
     def test_filter_by_alias_bad_aliases(self):
         alias = 'testalias'
         self.write_config(
