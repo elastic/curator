@@ -6,6 +6,18 @@ Changelog
 5.1.2 (? ? ?)
 -------------
 
+**Errata**
+
+  * An update to Elasticsearch 5.5.0 changes the behavior of 
+    ``filter_by_aliases``, differing from previous 5.x versions.
+
+    If a list of aliases is provided, indices must appear in _all_ listed 
+    aliases or a 404 error will result, leading to no indices being matched.  
+    In older versions, if the index was associated with even one of the 
+    aliases in aliases, it would result in a match.
+
+    Tests and documentation have been updated to address these changes.
+
 **Bug Fixes**
 
   * Support date math in reindex operations better.  It did work previously,

@@ -36,6 +36,8 @@ You can use <<envvars,environment variables>> in your configuration files.
 [[fe_aliases]]
 == aliases
 
+include::inc_filter_by_aliases.asciidoc[]
+
 NOTE: This setting is used only when using the <<filtertype_alias,alias>>
     filter.
 
@@ -78,7 +80,6 @@ filters:
 
 There is no default value. This setting must be set by the user or an
 exception will be raised, and execution will halt.
-
 
 
 [[fe_allocation_type]]

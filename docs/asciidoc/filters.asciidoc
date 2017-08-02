@@ -197,6 +197,8 @@ indices based on whether they are associated with the given
 remain in, or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
+include::inc_filter_by_aliases.asciidoc[]
+
 === Required settings
 
 * <<fe_aliases,aliases>>
