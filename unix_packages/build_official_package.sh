@@ -28,6 +28,28 @@ for file in ${C_POST_INSTALL} ${C_PRE_REMOVE} ${C_POST_REMOVE}; do
   chmod +x ${file}
 done
 
+remove_python() {
+  sudo rm -f /usr/local/lib/libpython${1}m.a
+  sudo rm -f /usr/local/lib/pkgconfig/python-${1}.pc
+  sudo rm -rf /usr/local/lib/python${1}
+  sudo rm -f /usr/lib/libpython${1}.a
+  sudo rm -rf /usr/local/include/python${1}m
+  cd /usr/local/bin
+  sudo rm -f 2to3-${1} easy_install-${1} idle${1} pip${1} pydoc${1} python${1} python${1}m python${1}m-config pyvenv-${1}
+  cd -
+}
+
+build_python() {
+  cd /tmp
+  wget -c https://www.python.org/ftp/python/${1}/Python-${1}.tgz
+  tar zxf Python-${1}.tgz
+  cd Python-${1}
+  ./configure --prefix=/usr/local
+  sudo make altinstall
+  sudo ln -s /usr/local/lib/libpython${1}m.a /usr/lib/libpython${1}.a
+  cd -
+}
+
 echo "ln -s /opt/elasticsearch-curator/curator /usr/bin/curator" >> ${C_POST_INSTALL}
 echo "ln -s /opt/elasticsearch-curator/curator_cli /usr/bin/curator_cli" >> ${C_POST_INSTALL}
 echo "ln -s /opt/elasticsearch-curator/es_repo_mgr /usr/bin/es_repo_mgr" >> ${C_POST_INSTALL}
@@ -58,16 +80,20 @@ if [ "${1}x" == "x" ]; then
 else
   FILE="v${1}.tar.gz"
   cd ${WORKDIR}
-  wget https://github.com/elastic/curator/archive/${FILE}
+  wget -c https://github.com/elastic/curator/archive/${FILE}
 fi
 
 case "$ID" in
   ubuntu|debian)
     PKGTYPE=deb
     PLATFORM=debian
-    PACKAGEDIR="${PKG_TARGET}/${1}/${PLATFORM}"
+    case "$VERSION_ID" in
+      1404|1604|8) PACKAGEDIR="${PKG_TARGET}/${1}/${PLATFORM}";;
+      9)           PACKAGEDIR="${PKG_TARGET}/${1}/${PLATFORM}${VERSION_ID}";;
+      *)           PACKAGEDIR="${PKG_TARGET}/${1}/${PLATFORM}";;
+    esac
     sudo apt update -y
-    sudo apt install -y openssl
+    sudo apt install -y openssl zlib1g zlib1g-dev libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev dirmngr curl
   ;;
   centos|rhel)
     PKGTYPE=rpm
@@ -87,15 +113,13 @@ esac
 
 HAS_PY3=$(which python${PYVER})
 if [ "${HAS_PY3}x" == "x" ]; then
-  cd /tmp
-  wget https://www.python.org/ftp/python/${PYVER}.${MINOR}/Python-${PYVER}.${MINOR}.tgz
-  tar zxf Python-${PYVER}.${MINOR}.tgz
-  cd Python-${PYVER}.${MINOR}
-  ./configure --prefix=/usr/local
-  sudo make altinstall
-  cd /usr/lib
-  sudo ln -s /usr/local/lib/libpython${PYVER}m.a libpython${PYVER}.a
-  cd ${WORKDIR}
+  build_python ${PYVER}.${MINOR}
+fi
+
+FOUNDVER=$(python${PYVER} --version | awk '{print $2}')
+if [ "${FOUNDVER}" != "${PYVER}.${MINOR}" ]; then
+  remove_python $(echo ${FOUNDVER} | awk -F\. '{print $1"."$2}')
+  build_python ${PYVER}.${MINOR}
 fi
 
 PIPBIN=/usr/local/bin/pip${PYVER}
