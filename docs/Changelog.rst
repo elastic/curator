@@ -3,8 +3,8 @@
 Changelog
 =========
 
-5.1.2 (2 August 2017)
----------------------
+5.1.2 (?? August 2017)
+----------------------
 
 **Errata**
 
@@ -17,6 +17,11 @@ Changelog
     aliases in aliases, it would result in a match.
 
     Tests and documentation have been updated to address these changes.
+
+  * Debian 9 changed SSL versions, which means that the pre-built debian 
+    packages no longer work in Debian 9.  In the short term, this requires 
+    a new repository.  In the long term, I will try to get a better 
+    repository system working for these so they all work together, better.
 
 **Bug Fixes**
 
