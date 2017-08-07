@@ -768,7 +768,7 @@ and put it after `restored_index`.  For example, if I was restoring
 === Extra settings
 
 The <<option_extra_settings,extra_settings>> option allows the addition of extra
-settings, such as index settings and mappings.  An example of how these settings
+settings, such as index settings.  An example of how these settings
 can be used to change settings for an index being restored might be:
 
 [source,yaml]
@@ -790,12 +790,6 @@ actions:
       extra_settings:
         index_settings:
           number_of_replicas: 0
-        mappings:
-          type1:
-            properties:
-              field1:
-                type: string
-                index: not_analyzed
       wait_for_completion: True
       max_wait: 3600
       wait_interval: 10
@@ -806,8 +800,9 @@ actions:
     - filtertype: ...
 -------------
 
-In this case, the number of shards and replicas, and the mapping will be applied
-to  restored indices.
+In this case, the number of replicas will be applied to the restored indices.
+
+For more information see the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
 
 === Required settings
 
