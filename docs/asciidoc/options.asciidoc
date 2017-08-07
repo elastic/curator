@@ -259,7 +259,7 @@ options:
 
 === <<restore,restore>>
 
-{ref}/current/modules-snapshots.html#_changing_index_settings_during_restore[Elasticsearch Documentation]
+See the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
 
 [source,yaml]
 -------------
@@ -280,12 +280,6 @@ actions:
       extra_settings:
         index_settings:
           number_of_replicas: 0
-        mappings:
-          type1:
-            properties:
-              field1:
-                type: string
-                index: not_analyzed
       wait_for_completion: True
       max_wait: 3600
       wait_interval: 10
