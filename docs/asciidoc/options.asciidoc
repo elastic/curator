@@ -259,6 +259,8 @@ options:
 
 === <<restore,restore>>
 
+{ref}/current/modules-snapshots.html#_changing_index_settings_during_restore[Elasticsearch Documentation]
+
 [source,yaml]
 -------------
 actions:
@@ -276,8 +278,7 @@ actions:
       # If indices is blank, all indices in the snapshot will be restored
       indices:
       extra_settings:
-        settings:
-          number_of_shards: 1
+        index_settings:
           number_of_replicas: 0
         mappings:
           type1:
