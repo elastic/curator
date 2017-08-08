@@ -3,7 +3,7 @@
 Changelog
 =========
 
-5.1.2 (?? August 2017)
+5.1.2 (08 August 2017)
 ----------------------
 
 **Errata**
@@ -22,6 +22,7 @@ Changelog
     packages no longer work in Debian 9.  In the short term, this requires 
     a new repository.  In the long term, I will try to get a better 
     repository system working for these so they all work together, better.
+    Requested in #998 (untergeek)
 
 **Bug Fixes**
 
@@ -38,6 +39,18 @@ Changelog
   * The ``restore_check`` function did not work properly with wildcard index
     patterns.  This has been rectified, and an integration test added to 
     satisfy this.  Reported in #989 (untergeek)
+  * Make Curator report the Curator version, and not just reiterate the 
+    elasticsearch version when reporting version incompatibilities. Reported 
+    in #992. (untergeek)
+  * Fix repository/snapshot name logging issue. #1005 (jpcarey)
+  * Fix Windows build issue #1014 (untergeek)
+
+
+**Documentation**
+
+  * Fix/improve rST API documentation.
+  * Thanks to many users who not only found and reported documentation issues,
+    but also submitted corrections.
 
 5.1.1 (8 June 2017)
 
