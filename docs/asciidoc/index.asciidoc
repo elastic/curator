@@ -1,6 +1,6 @@
-:curator_version: 5.1.2
+:curator_version: 5.2.0dev0
 :curator_major: 5
-:curator_doc_tree: 5.1
+:curator_doc_tree: 5.2
 :es_py_version: 5.4.0
 :es_doc_tree: 5.5
 :pybuild_ver: 3.6.2
