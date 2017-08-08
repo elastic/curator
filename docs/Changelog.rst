@@ -3,7 +3,7 @@
 Changelog
 =========
 
-5.1.2 (?? August 2017)
+5.1.2 (08 August 2017)
 ----------------------
 
 **Errata**
@@ -22,6 +22,7 @@ Changelog
     packages no longer work in Debian 9.  In the short term, this requires 
     a new repository.  In the long term, I will try to get a better 
     repository system working for these so they all work together, better.
+    Requested in #998 (untergeek)
 
 **Bug Fixes**
 
@@ -42,6 +43,7 @@ Changelog
     elasticsearch version when reporting version incompatibilities. Reported 
     in #992. (untergeek)
   * Fix repository/snapshot name logging issue. #1005 (jpcarey)
+  * Fix Windows build issue #1014 (untergeek)
 
 
 **Documentation**

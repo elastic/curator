@@ -113,15 +113,35 @@ wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add 
 === Direct Package Download Link
 
 * https://packages.elastic.co/curator/{curator_major}/debian/pool/main/e/elasticsearch-curator/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
+* https://packages.elastic.co/curator/{curator_major}/debian9/pool/main/e/elasticsearch-curator/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package for newer Debian 9 based systems (DEB)]
 
 === Repository Configuration
 
-Add the following in your `/etc/apt/sources.list.d/` directory in a file with a
-`.list` suffix, for example `curator.list`
+[IMPORTANT]
+====================================================
+Debian 9 was recently released, and it uses OpenSSL 1.1.0 libraries, where
+earlier releases, including Debian 8, Ubuntu 12.04 - 16.04 LTS, and others
+used OpenSSL 1.0.0 libraries.  As a consequence, a new repository has been
+introduced, in order to preserve the functionality of the old one, without
+causing collisions.
+
+Please use the appropriate package or repository.
+====================================================
+
+Add one of the following -- **noting the correct path, `debian` or `debian9`** --
+in your `/etc/apt/sources.list.d/` directory in a file with a `.list` suffix,
+for example `curator.list`
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
 deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian stable main
+--------------------------------------------------
+
+or
+
+["source","sh",subs="attributes,callouts"]
+--------------------------------------------------
+deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian9 stable main
 --------------------------------------------------
 
 After running `sudo apt-get update`, the repository is ready for use.
