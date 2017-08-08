@@ -3,6 +3,55 @@
 Changelog
 =========
 
+5.1.2 (08 August 2017)
+----------------------
+
+**Errata**
+
+  * An update to Elasticsearch 5.5.0 changes the behavior of 
+    ``filter_by_aliases``, differing from previous 5.x versions.
+
+    If a list of aliases is provided, indices must appear in _all_ listed 
+    aliases or a 404 error will result, leading to no indices being matched.  
+    In older versions, if the index was associated with even one of the 
+    aliases in aliases, it would result in a match.
+
+    Tests and documentation have been updated to address these changes.
+
+  * Debian 9 changed SSL versions, which means that the pre-built debian 
+    packages no longer work in Debian 9.  In the short term, this requires 
+    a new repository.  In the long term, I will try to get a better 
+    repository system working for these so they all work together, better.
+    Requested in #998 (untergeek)
+
+**Bug Fixes**
+
+  * Support date math in reindex operations better.  It did work previously,
+    but would report failure because the test was looking for the index with
+    that name from a list of indices, rather than letting Elasticsearch do
+    the date math.  Reported by DPattee in #1008 (untergeek)
+  * Under rare circumstances, snapshot delete (or create) actions could fail,
+    even when there were no snapshots in state ``IN_PROGRESS``.  This was
+    tracked down by JD557 as a collision with a previously deleted snapshot
+    that hadn't finished deleting.  It could be seen in the tasks API.  An
+    additional test for snapshot activity in the tasks API has been added to
+    cover this scenario.  Reported in #999 (untergeek)
+  * The ``restore_check`` function did not work properly with wildcard index
+    patterns.  This has been rectified, and an integration test added to 
+    satisfy this.  Reported in #989 (untergeek)
+  * Make Curator report the Curator version, and not just reiterate the 
+    elasticsearch version when reporting version incompatibilities. Reported 
+    in #992. (untergeek)
+  * Fix repository/snapshot name logging issue. #1005 (jpcarey)
+  * Fix Windows build issue #1014 (untergeek)
+
+
+**Documentation**
+
+  * Fix/improve rST API documentation.
+  * Thanks to many users who not only found and reported documentation issues,
+    but also submitted corrections.
+
 5.1.1 (8 June 2017)
 
 **Bug Fixes**
