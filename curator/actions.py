@@ -994,7 +994,7 @@ class Reindex(object):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg request_body: The body to send to
-            :class:`elasticsearch.Indices.Reindex`, which must be complete and
+            :py:meth:`elasticsearch.Elasticsearch.reindex`, which must be complete and
             usable, as Curator will do no vetting of the request_body. If it
             fails to function, Curator will return an exception.
         :arg refresh: Whether to refresh the entire target index after the
@@ -1257,12 +1257,12 @@ class Reindex(object):
 
     def _post_run_quick_check(self, index_name):
         # Verify the destination index is there after the fact
-        post_run = get_indices(self.client)
+        index_exists = self.client.indices.exists(index=index_name)
         alias_instead = self.client.indices.exists_alias(name=index_name)
-        if index_name not in post_run and not alias_instead:
+        if not index_exists and not alias_instead:
             self.loggit.error(
-                'Index "{0}" not found after reindex operation. Check '
-                'Elasticsearch logs for more '
+                'The index described as "{0}" was not found after the reindex '
+                'operation. Check Elasticsearch logs for more '
                 'information.'.format(index_name)
             )
             if self.remote:
@@ -1274,7 +1274,8 @@ class Reindex(object):
                     )
                 )
             raise FailedExecution(
-                'Reindex failed. Index "{0}" not found.'.format(index_name)
+                'Reindex failed. The index or alias identified by "{0}" was '
+                'not found.'.format(index_name)
             )
 
     def sources(self):
@@ -1325,7 +1326,7 @@ class Reindex(object):
 
     def do_action(self):
         """
-        Execute :class:`elasticsearch.Elasticsearch.reindex` operation with the
+        Execute :py:meth:`elasticsearch.Elasticsearch.reindex` operation with the
         provided request_body and arguments.
         """
         try:
@@ -1689,7 +1690,7 @@ class Restore(object):
         logger.info(
             'DRY-RUN: restore: Repository: {0} Snapshot name: {1} Arguments: '
             '{2}'.format(
-                self.name, self.repository,
+                self.repository, self.name,
                 { 'wait_for_completion' : self.wfc, 'body' : self.body }
             )
         )

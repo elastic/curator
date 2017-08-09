@@ -402,7 +402,7 @@ class IndexList(object):
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``seconds``, ``minutes``, ``hours``, ``days``,
             ``weeks``, ``months``, or ``years``.
-        :arg unit_count: The number of ``unit``s. ``unit_count`` * ``unit`` will
+        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
@@ -681,7 +681,22 @@ class IndexList(object):
 
     def filter_by_alias(self, aliases=None, exclude=False):
         """
-        Match indices which are associated with the alias identified by `name`
+        Match indices which are associated with the alias or list of aliases 
+        identified by `aliases`.
+
+        An update to Elasticsearch 5.5.0 changes the behavior of this from 
+        previous 5.x versions:
+        https://www.elastic.co/guide/en/elasticsearch/reference/5.5/breaking-changes-5.5.html#breaking_55_rest_changes
+
+        What this means is that indices must appear in all aliases in list
+        `aliases` or a 404 error will result, leading to no indices being 
+        matched.  In older versions, if the index was associated with even one 
+        of the aliases in `aliases`, it would result in a match.
+
+        It is unknown if this behavior affects anyone.  At the time this was 
+        written, no users have been bit by this.  The code could be adapted
+        to manually loop if the previous behavior is desired.  But if no users
+        complain, this will become the accepted/expected behavior.
 
         :arg aliases: A list of alias names.
         :type aliases: list
@@ -808,13 +823,13 @@ class IndexList(object):
 
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
-        :arg range_from: How many ``unit``s in the past/future is the origin?
-        :arg range_to: How many ``unit``s in the past/future is the end point?
+        :arg range_from: How many ``unit`` (s) in the past/future is the origin?
+        :arg range_to: How many ``unit`` (s) in the past/future is the end point?
         :arg timestring: An strftime string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
             ``years``.
-        :arg unit_count: The number of ``unit``s. ``unit_count`` * ``unit`` will
+        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.

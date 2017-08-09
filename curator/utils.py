@@ -356,8 +356,8 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     which can be either ``sunday`` or ``monday``.
 
     :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
-    :arg range_from: How many ``unit``s in the past/future is the origin?
-    :arg range_to: How many ``unit``s in the past/future is the end point?
+    :arg range_from: How many ``unit`` (s) in the past/future is the origin?
+    :arg range_to: How many ``unit`` (s) in the past/future is the end point?
     :arg epoch: An epoch timestamp used to establish a point of reference for 
         calculations.
     :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
@@ -897,6 +897,24 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
                 'More than 1 snapshot in progress: {0}'.format(inprogress)
             )
 
+def find_snapshot_tasks(client):
+    """
+    Check if there is snapshot activity in the Tasks API.
+    Return `True` if activity is found, or `False`
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: bool
+    """
+    retval = False
+    tasklist = client.tasks.get()
+    for node in tasklist['nodes']:
+        for task in tasklist['nodes'][node]['tasks']:
+            activity = tasklist['nodes'][node]['tasks'][task]['action']
+            if 'snapshot' in activity:
+                logger.debug('Snapshot activity detected: {0}'.format(activity))
+                retval = True
+    return retval
+
 def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     """
     Ensure there are no snapshots in progress.  Pause and retry accordingly
@@ -914,19 +932,20 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
         in_progress = snapshot_in_progress(
             client, repository=repository
         )
-        if in_progress:
+        ongoing_task = find_snapshot_tasks(client)
+        if in_progress or ongoing_task:
+            if in_progress:
+                logger.info(
+                    'Snapshot already in progress: {0}'.format(in_progress))
+            elif ongoing_task:
+                logger.info('Snapshot activity detected in Tasks API')
             logger.info(
-                'Snapshot already in progress: {0}'.format(in_progress))
-            logger.info(
-                'Pausing {0} seconds before retrying...'.format(
-                    retry_interval)
-            )
+                'Pausing {0} seconds before retrying...'.format(retry_interval))
             time.sleep(retry_interval)
             logger.info('Retry {0} of {1}'.format(count, retry_count))
         else:
             return True
     return False
-
 
 def create_snapshot_body(indices, ignore_unavailable=False,
                          include_global_state=True, partial=False):
@@ -1444,7 +1463,10 @@ def restore_check(client, index_list):
     if response == {}:
         logger.info('_recovery returned an empty response. Trying again.')
         return False
-    for index in index_list:
+    # Fixes added in #989
+    logger.info('Provided indices: {0}'.format(index_list))
+    logger.info('Found indices: {0}'.format(list(response.keys())))
+    for index in response:
         for shard in range(0, len(response[index]['shards'])):
             # Apparently `is not` is not always `!=`.  Unsure why, will
             # research later.  Using != fixes #966
