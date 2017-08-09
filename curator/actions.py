@@ -1744,3 +1744,85 @@ class Restore(object):
                 )
         except Exception as e:
             report_failure(e)
+
+class Shrink(object):
+    def __init__(self, ilo, shrink_node='DETERMINISTIC', node_filters={},
+                shrink_prefix='', shrink_suffix='-shrink',
+                delete_after=True, post_allocation={},
+                wait_for_active_shards=1,
+                extra_settings={}, wait_for_completion=True, wait_interval=9,
+                max_wait=-1):
+        """
+        :arg ilo: A :class:`curator.indexlist.IndexList` object
+        :arg shrink_node: The node name to use as the shrink target, or
+            ``DETERMINISTIC``, which will use the values in ``node_filters`` to
+            determine which node will be the shrink node.
+        :arg node_filters: If the value of ``shrink_node`` is ``DETERMINISTIC``,
+            the values in ``node_filters`` will be used to automatically 
+            determine which node to allocate the shards on before performing
+            the shrink.
+        :type node_filters: dict, representing the filters
+        :arg extra_settings: Extra settings, including shard count and alias
+        :type extra_settings: dict, representing the settings.
+        :arg wait_for_completion: Wait (or not) for the operation
+            to complete before returning.  (default: `True`)
+        :arg wait_interval: How long in seconds to wait between checks for
+            completion.
+        :arg max_wait: Maximum number of seconds to `wait_for_completion`
+        :type wait_for_completion: bool
+        """
+        self.loggit = logging.getLogger('curator.actions.shrink')
+        verify_index_list(ilo)
+        #: Instance variable.
+        #: The Elasticsearch Client object derived from `slo`
+        self.client              = ilo.client
+        #: Instance variable.
+        #: Internal reference to `ilo`
+        self.index_list = ilo
+        #: Instance variable.
+        #: Internal reference to `shrink_node`
+        self.shrink_node = shrink_node
+        #: Instance variable.
+        #: Internal reference to `node_filters`
+        self.node_filters = node_filters
+        #: Instance variable.
+        #: Internal reference to `shrink_prefix`
+        self.shrink_prefix = shrink_prefix
+        #: Instance variable.
+        #: Internal reference to `shrink_suffix`
+        self.shrink_suffix = shrink_suffix
+        #: Instance variable.
+        #: Internal reference to `delete_after`
+        self.delete_after = delete_after
+        #: Instance variable.
+        #: Internal reference to `post_allocation`
+        self.post_allocation = post_allocation
+        #: Instance variable.
+        #: Internal reference to `wait_for_completion`
+        self.wfc = wait_for_completion
+        #: Instance variable
+        #: How many seconds to wait between checks for completion.
+        self.wait_interval = wait_interval
+        #: Instance variable.
+        #: How long in seconds to `wait_for_completion` before returning with an
+        #: exception. A value of -1 means wait forever.
+        self.max_wait   = max_wait
+        
+        if extra_settings:
+            self.loggit.debug(
+                'Adding extra_settings to restore body: '
+                '{0}'.format(extra_settings)
+            )
+            try:
+                self.body.update(extra_settings)
+            except:
+                self.loggit.error(
+                    'Unable to apply extra settings to shrink body')
+        self.loggit.debug('REPOSITORY: {0}'.format(self.repository))
+        self.loggit.debug('WAIT_FOR_COMPLETION: {0}'.format(self.wfc))
+        self.loggit.debug(
+            'SKIP_REPO_FS_CHECK: {0}'.format(self.skip_repo_fs_check))
+        self.loggit.debug('BODY: {0}'.format(self.body))
+        # Populate the expected output index list.
+        self._get_expected_output()
+
