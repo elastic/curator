@@ -1173,9 +1173,9 @@ def snapshot_running(client):
     :rtype: bool
     """
     try:
-        if settings.aws_flag:
+        # Check to see if we're running AWS Elasticsearch and if so, iterate through each repository to check for running snapshots
+        if settings.aws_versions['5.3.2'] == client.info()['version']:
             if sys.version_info[0] < 3:
-                # On AWS we need to check each repository for running snapshots
                 repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories').encode("utf-8"))
                 for r in repos:
                     repo = r.partition(' ')[0]

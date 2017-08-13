@@ -123,5 +123,5 @@ def structural_filter_elements():
         Optional('week_starts_on'): Any(str, unicode, None),
     }
 
-# Flag used to track if we're using AWS Elasticsearch
-aws_flag = False
+# Dictionary of AWS version detail, used to check if we're running AWS Elasticsearch
+aws_versions = {'5.3.2': {'build_date': '2017-04-28T21:44:52.237Z','build_hash': 'Unknown','build_snapshot': False,'lucene_version': '6.4.2','number': '5.3.2'}}
