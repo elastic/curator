@@ -353,7 +353,7 @@ actions:
       disable_action: True
       index_settings:
         index:
-          block:
+          blocks:
             write: True
       ignore_unavailable: False
       preserve_existing: False
