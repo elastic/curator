@@ -1174,7 +1174,12 @@ def snapshot_running(client):
     """
     try:
         # Check to see if we're running AWS Elasticsearch and if so, iterate through each repository to check for running snapshots
-        if settings.aws_versions['5.3.2'] == client.info()['version']:
+        is_aws = False
+        found_version = client.info()['version']
+        for aws_version in settings.aws_versions:
+            if found_version == settings.aws_versions[aws_version]:
+                is_aws = True
+        if is_aws:
             if sys.version_info[0] < 3:
                 repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories').encode("utf-8"))
                 for r in repos:
