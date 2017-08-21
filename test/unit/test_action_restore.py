@@ -125,6 +125,7 @@ class TestActionRestore(TestCase):
         self.assertIsNone(ro.do_action())
     def test_do_action_snap_in_progress(self):
         client = Mock()
+        client.info.return_value = testvars.es_release_version
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.status.return_value = testvars.snap_running
@@ -135,6 +136,7 @@ class TestActionRestore(TestCase):
         self.assertRaises(curator.SnapshotInProgress, ro.do_action)
     def test_do_action_success_no_wfc(self):
         client = Mock()
+        client.info.return_value = testvars.es_release_version
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.status.return_value = testvars.nosnap_running

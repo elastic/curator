@@ -586,10 +586,12 @@ class TestSafeToSnap(TestCase):
 class TestSnapshotRunning(TestCase):
     def test_true(self):
         client = Mock()
+        client.info.return_value = testvars.es_release_version
         client.snapshot.status.return_value = testvars.snap_running
         self.assertTrue(curator.snapshot_running(client))
     def test_false(self):
         client = Mock()
+        client.info.return_value = testvars.es_release_version
         client.snapshot.status.return_value = testvars.nosnap_running
         self.assertFalse(curator.snapshot_running(client))
     def test_raises_exception(self):
