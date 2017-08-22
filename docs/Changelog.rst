@@ -15,6 +15,12 @@ Changelog
     to take place.  Curator will try its best to ensure that all of these
     conditions are met so you can comfortably rest assured that shrink will
     work properly unattended.  See the documentation for more information.
+  * The ``cli`` function has been split into ``cli`` and ``run`` functions.  
+    The behavior of ``cli`` will be indistinguishable from previous releases,
+    preserving API integrity.  The new ``run`` function allows lambda and other
+    users to `run` Curator from the API with only a client configuration file
+    and action file as arguments.  Requested in #1031 (untergeek)
+
 
 5.1.2 (08 August 2017)
 ----------------------
