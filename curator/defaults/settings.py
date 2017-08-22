@@ -54,6 +54,7 @@ def index_actions():
         'reindex',
         'replicas',
         'rollover',
+        'shrink',
         'snapshot',
     ]
 

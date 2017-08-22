@@ -46,6 +46,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_retry_interval,retry_interval>>
 * <<option_routing_type,routing_type>>
 * <<option_setting,setting>>
+* <<option_shrink_node,shrink_node>>
 * <<option_slices,slices>>
 * <<option_skip_fsck,skip_repo_fs_check>>
 * <<option_timeout,timeout>>
@@ -167,6 +168,29 @@ The value for this setting is the number of seconds to delay between
 forceMerging indices, to allow the cluster to quiesce.
 
 There is no default value.
+
+
+[[option_delete_after]]
+== delete_after
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Delete source index after successful shrink.
+options:
+  shrink_node: DETERMINISTIC
+  delete_after: True
+filters:
+  - filtertype: ...
+-------------
+
+The default value of this setting is `True`.  After an index has been successfully
+shrunk, the source index will be deleted or preserved based on the value of this setting.
+
 
 [[option_delete_aliases]]
 == delete_aliases
@@ -309,6 +333,28 @@ options:
   timeout_override:
   continue_if_exception: False
   disable_action: False
+-------------
+
+=== <<shrink,shrink>>
+
+NOTE: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shrink-index.html#_shrinking_an_index[Only `settings` and `aliases` are acceptable] when used in <<shrink,shrink>>.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Delete source index after successful shrink, then reroute the shrunk
+  index with the provided parameters.
+options:
+  shrink_node: DETERMINISTIC
+  extra_settings:
+    settings:
+      index.codec: best_compression
+    aliases:
+      my_alias: {}
+filters:
+  - filtertype: ...
 -------------
 
 There is no default value.
@@ -976,6 +1022,101 @@ For the <<snapshot,snapshot>> action, the default value of this setting is
 `curator-%Y%m%d%H%M%S`
 
 
+[[option_node_filters]]
+== node_filters
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Allow master/data nodes to be potential shrink targets, but exclude
+  'named_node' from potential selection.
+options:
+  shrink_node: DETERMINISTIC
+  node_filters:
+    permit_masters: True
+    exclude_nodes: ['named_node']
+filters:
+  - filtertype: ...
+-------------
+
+There is no default value for `node_filters`.
+
+
+The current sub-options are as follows:
+
+=== permit_masters
+
+[IMPORTANT]
+=====================================
+The `permit_masters` sub-option has a default value of `False`.  If you have a small cluster
+with only master/data nodes, you must set `permit_masters` to `True` in order to select one
+of those nodes as a potential <<option_shrink_node,shrink_node>>.
+=====================================
+
+=== exclude_nodes
+
+This option provides means to exclude nodes from selection when using `DETERMINISTIC`
+as the value for <<option_shrink_node,shrink_node>>.  It should be noted that you _can_
+use a named node for <<option_shrink_node,shrink_node>> and then exclude it here, and
+it will prevent a shrink from occurring.
+
+
+
+[[option_number_of_replicas]]
+== number_of_replicas
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Set the number of replicas to 0.
+options:
+  shrink_node: DETERMINISTIC
+  number_of_replicas: 0
+filters:
+  - filtertype: ...
+-------------
+
+The value of this setting determines the number of replica shards per primary
+shard in the target index.  The default value is `1`.
+
+
+[[option_number_of_shards]]
+== number_of_shards
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Set the number of shards to 2.
+options:
+  shrink_node: DETERMINISTIC
+  number_of_shards: 2
+filters:
+  - filtertype: ...
+-------------
+
+The value of this setting determines the number of primary shards
+in the target index.  The default value is `1`.
+
+[IMPORTANT]
+===========================
+The value for `number_of_shards` must meet the following criteria:
+
+* It must be lower than the number of primary shards in the source index.
+* It must be a factor of the number of primary shards in the source index.
+===========================
+
 
 [[option_partial]]
 == partial
@@ -1006,6 +1147,34 @@ snapshot do not have all primary shards available. This behavior can be changed
 by setting partial to `True`.
 
 The default value of this setting is `False`
+
+
+[[option_post_allocation]]
+== post_allocation
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Apply shard routing allocation to target indices.
+options:
+  shrink_node: DETERMINISTIC
+  post_allocation:
+    allocation_type: include
+    key: node_tag
+    value: cold
+filters:
+  - filtertype: ...
+-------------
+
+The only permitted subkeys for `post_allocation` are the same options used by the <<allocation,allocation>> action: <<option_allocation_type,allocation_type>>, <<option_key,key>>, and <<option_value,value>>.
+
+If present, these values will be use to apply shard routing allocation to the target index after shrinking.
+
+There is no default value for `post_allocation`.
 
 [[option_preserve_existing]]
 == preserve_existing
@@ -2054,6 +2223,89 @@ There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
 
+[[option_shrink_node]]
+== shrink_node
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space, excluding
+  master nodes and the node named 'not_this_node'
+options:
+  shrink_node: DETERMINISTIC
+  node_filters:
+    permit_masters: False
+    exclude_nodes: ['not_this_node']
+  shrink_suffix: '-shrink'
+filters:
+  - filtertype: ...
+-------------
+
+This setting is required.  There is no default value.
+
+The value of this setting must be the valid name of a node in your Elasticsearch cluster,
+or `DETERMINISTIC`.  If the value is `DETERMINISTIC`, Curator will automatically
+select the data node with the most available free space and make that the target node.
+Curator will repeat this process for each successive index when the value is `DETERMINISTIC`.
+
+If <<option_node_filters,node_filters>>, such as `exclude_nodes` are defined, those nodes will
+not be considered as potential target nodes.
+
+
+[[option_shrink_prefix]]
+== shrink_prefix
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Prepend target index names with 'foo-' and append a suffix of '-shrink'
+options:
+  shrink_node: DETERMINISTIC
+  shrink_prefix: 'foo-'
+  shrink_suffix: '-shrink'
+filters:
+  - filtertype: ...
+-------------
+
+There is no default value for this setting.
+
+The value of this setting will be prepended to target index names.  If the source
+index were `index`, and the `shrink_prefix` were `foo-`, and the `shrink_suffix`
+were `-shrink`, the resulting target index name would be `foo-index-shrink`.
+
+
+[[option_shrink_suffix]]
+== shrink_suffix
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Prepend target index names with 'foo-' and append a suffix of '-shrink'
+options:
+  shrink_node: DETERMINISTIC
+  shrink_prefix: 'foo-'
+  shrink_suffix: '-shrink'
+filters:
+  - filtertype: ...
+-------------
+
+The default value for this setting is `-shrink`.
+
+The value of this setting will be appended to target index names.  If the source
+index were `index`, and the `shrink_prefix` were `foo-`, and the `shrink_suffix`
+were `-shrink`, the resulting target index name would be `foo-index-shrink`.
+
 
 [[option_slices]]
 == slices
@@ -2334,19 +2586,19 @@ will be raised, and execution will halt.
 [[option_wait_for_active_shards]]
 == wait_for_active_shards
 
-NOTE: This setting is used by the <<reindex,Reindex>> and
-<<rollover,Rollover>> actions.  Each use it differently.
+NOTE: This setting is used by the <<reindex,Reindex>>, <<rollover,Rollover>>,
+and <<shrink,Shrink>> actions.  Each use it similarly.
 
-
-=== Reindex
-
-For the reindex action, this setting determines the number of shard copies that
-must be active before proceeding with the reindex operation. The default value
-is 1, which implies only the primary shard.
+This setting determines the number of shard copies that must be active before
+the client returns. The default value is 1, which implies only the primary shards.
 
 Set to `all` for all shard copies, otherwise set to any non-negative value less
 than or equal to the total number of copies for the shard (number of
 replicas + 1)
+
+Read {ref}/docs-index_.html#index-wait-for-active-shards[the Elasticsearch documentation] for more information.
+
+=== Reindex
 
 [source,yaml]
 -------------
@@ -2370,10 +2622,6 @@ actions:
 
 === Rollover
 
-For the rollover action, this setting is the number of shards expected to be
-active before the client returns.  This can be set to the number of primary
-shards, or all primaries and replicas, or somewhere in the middle.
-
 [source,yaml]
 -------------
 action: rollover
@@ -2385,13 +2633,28 @@ options:
   conditions:
     max_age: 1d
     max_docs: 1000000
-  wait_for_active_shards: 5
+  wait_for_active_shards: 1
   extra_settings:
     index.number_of_shards: 3
     index.number_of_replicas: 1
   timeout_override:
   continue_if_exception: False
   disable_action: False
+-------------
+
+=== Shrink
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Prepend target index names with 'foo-' and append a suffix of '-shrink'
+options:
+  shrink_node: DETERMINISTIC
+  wait_for_active_shards: all
+filters:
+  - filtertype: ...
 -------------
 
 

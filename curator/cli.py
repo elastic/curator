@@ -29,6 +29,7 @@ CLASS_MAP = {
     'restore' : Restore,
     'rollover' : Rollover,
     'snapshot' : Snapshot,
+    'shrink' : Shrink,
 }
 
 def process_action(client, config, **kwargs):

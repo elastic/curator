@@ -1064,4 +1064,44 @@ class TestDateRange(TestCase):
         start = curator.datetime_to_epoch(datetime(2016,  1,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2019, 12, 31, 23, 59, 59))
         self.assertEqual((start,end), 
-            curator.date_range(unit, range_from, range_to, epoch=epoch))        
+            curator.date_range(unit, range_from, range_to, epoch=epoch))
+
+class TestNodeRoles(TestCase):
+    def test_node_roles(self):
+        node_id = u'my_node'
+        expected = ['data']
+        client = Mock()
+        client.nodes.info.return_value = {u'nodes':{node_id:{u'roles':testvars.data_only_node_role}}}
+        self.assertEqual(expected, curator.node_roles(client, node_id))
+
+class TestSingleDataPath(TestCase):
+    def test_single_data_path(self):
+        node_id = 'my_node'
+        client = Mock()
+        client.nodes.stats.return_value = {u'nodes':{node_id:{u'fs':{u'data':[u'one']}}}}
+        self.assertTrue(curator.single_data_path(client, node_id))
+    def test_two_data_paths(self):
+        node_id = 'my_node'
+        client = Mock()
+        client.nodes.stats.return_value = {u'nodes':{node_id:{u'fs':{u'data':[u'one',u'two']}}}}
+        self.assertFalse(curator.single_data_path(client, node_id))
+
+class TestNameToNodeId(TestCase):
+    def test_positive(self):
+        node_id = 'node_id'
+        node_name = 'node_name'
+        client = Mock()
+        client.nodes.stats.return_value = {u'nodes':{node_id:{u'name':node_name}}}
+        self.assertEqual(node_id, curator.name_to_node_id(client, node_name))
+    def test_negative(self):
+        node_id = 'node_id'
+        node_name = 'node_name'
+        client = Mock()
+        client.nodes.stats.return_value = {u'nodes':{node_id:{u'name':node_name}}}
+        self.assertIsNone(curator.name_to_node_id(client, 'wrong_name'))
+
+class TestNodeIdToName(TestCase):
+    def test_negative(self):
+        client = Mock()
+        client.nodes.stats.return_value = {u'nodes':{'my_node_id':{u'name':'my_node_name'}}}
+        self.assertIsNone(curator.node_id_to_name(client, 'not_my_node_id'))
