@@ -190,6 +190,7 @@ def request_body():
                     Optional('socket_timeout'): Any(str, unicode),
                     Optional('connect_timeout'): Any(str, unicode),
                 },
+                Optional('size'): Coerce(int),
                 Optional('type'): Any(Any(str, unicode), list),
                 Optional('query'): dict,
                 Optional('sort'): dict,

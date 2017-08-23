@@ -23,6 +23,12 @@ Changelog
   * Allow use of time/date string interpolation for Rollover index naming.
     Added in #1010 (tschroeder-zendesk)
 
+**Bug Fixes**
+
+  * Reindex ``request_body`` allows for 2 different ``size`` options.  One 
+    limits the number of documents reindexed.  The other is for batch sizing.
+    The batch sizing option was missing from the schema validator.  This has
+    been corrected.  Reported in #1038 (untergeek)
 
 5.1.2 (08 August 2017)
 ----------------------
