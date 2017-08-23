@@ -27,6 +27,9 @@ def delay():
             )
     }
 
+def delete_after():
+    return { Optional('delete_after', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
+
 def delete_aliases():
     return { Optional('delete_aliases', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
@@ -70,7 +73,7 @@ def max_wait(action):
     value = -1
     # if action in ['allocation', 'cluster_routing', 'replicas']:
     #     value = -1
-    # elif action in ['restore', 'snapshot', 'reindex']:
+    # elif action in ['restore', 'snapshot', 'reindex', 'shrink']:
     #     value = -1
     return { Optional('max_wait', default=value): Any(-1, Coerce(int), None) }
 
@@ -93,8 +96,31 @@ def name(action):
 def new_index():
     return { Optional('new_index', default=None): Any(str, unicode) }
 
+def node_filters():
+    return { 
+        Optional('node_filters', default={}): {
+          Optional('permit_masters', default=False): Any(bool, All(Any(str, unicode), Boolean())),
+          Optional('exclude_nodes', default=[]): Any(list, None)
+        }
+    }
+
+def number_of_replicas():
+    return { Optional('number_of_replicas', default=1): All(Coerce(int), Range(min=0, max=10)) }
+
+def number_of_shards():
+    return { Optional('number_of_shards', default=1): All(Coerce(int), Range(min=1, max=99)) }
+
 def partial():
     return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
+
+def post_allocation():
+    return { 
+        Optional('post_allocation', default={}): {
+          Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
+          Required('key'): Any(str, unicode),
+          Required('value', default=None): Any(str, unicode, None)
+        }
+    }
 
 def preserve_existing():
     return { Optional('preserve_existing', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
@@ -213,6 +239,15 @@ def cluster_routing_value():
             )
     }
 
+def shrink_node():
+    return { Required('shrink_node'): Any(str, unicode) }
+
+def shrink_prefix():
+    return { Optional('shrink_prefix', default=''): Any(str, unicode, None) }
+
+def shrink_suffix():
+    return { Optional('shrink_suffix', default=''): Any(str, unicode, None) }
+
 def skip_repo_fs_check():
     return { Optional('skip_repo_fs_check', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
@@ -243,11 +278,11 @@ def value():
 
 def wait_for_active_shards(action):
     value = 0
-    if action == 'reindex':
+    if action in ['reindex', 'shrink']:
         value = 1
     return {
         Optional('wait_for_active_shards', default=value): Any(
-            Coerce(int), None)
+            Coerce(int), 'all', None)
     }
 
 def wait_for_completion(action):
@@ -262,7 +297,7 @@ def wait_interval(action):
     maxval = 30
     # if action in ['allocation', 'cluster_routing', 'replicas']:
     value = 3
-    if action in ['restore', 'snapshot', 'reindex']:
+    if action in ['restore', 'snapshot', 'reindex', 'shrink']:
         value = 9
     return { Optional('wait_interval', default=value): Any(All(
                 Coerce(int), Range(min=minval, max=maxval)), None) }

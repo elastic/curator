@@ -6,6 +6,16 @@ Changelog
 5.2.0 (?? ??? 2017)
 -------------------
 
+**New Features**
+
+  * Shrink action! Apologies to all who have patiently waited for this 
+    feature.  It's been a long time coming, but it is hopefully worth the 
+    wait.  There are a lot of checks and tests associated with this action,
+    as there are many conditions that have to be met in order for a shrink
+    to take place.  Curator will try its best to ensure that all of these
+    conditions are met so you can comfortably rest assured that shrink will
+    work properly unattended.  See the documentation for more information.
+
 5.1.2 (08 August 2017)
 ----------------------
 

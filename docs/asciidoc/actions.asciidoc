@@ -21,6 +21,7 @@ once created, can only be deleted.
 * <<replicas,Replicas>>
 * <<restore,Restore>>
 * <<rollover,Rollover>>
+* <<shrink,Shrink>>
 * <<snapshot,Snapshot>>
 --
 
@@ -987,6 +988,117 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_rollover,here>>.
 
 
+
+[[shrink]]
+== Shrink
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Delete source index after successful shrink, then reroute the shrunk
+  index with the provided parameters.
+options:
+  ignore_empty_list: True
+  shrink_node: DETERMINISTIC
+  node_filters:
+    permit_masters: False
+    exclude_nodes: ['not_this_node']
+  number_of_shards: 1
+  number_of_replicas: 1
+  shrink_prefix:
+  shrink_suffix: '-shrink'
+  delete_after: True
+  post_allocation:
+    allocation_type: include
+    key: node_tag
+    value: cold
+  wait_for_active_shards: 1
+  extra_settings:
+    settings:
+      index.codec: best_compression
+  wait_for_completion: True
+  wait_interval: 9
+  max_wait: -1
+filters:
+  - filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+Shrinking an index is a good way to reduce the total shard count in your cluster.
+https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shrink-index.html#_shrinking_an_index[Several conditions need to be met]
+in order for index shrinking to take place:
+
+* The index must be marked as read-only
+* A (primary or replica) copy of every shard in the index must be relocated to the same node
+* The cluster must have health `green`
+* The target index must not exist
+* The number of primary shards in the target index must be a factor of the number of primary shards in the source index.
+* The source index must have more primary shards than the target index.
+* The index must not contain more than 2,147,483,519 documents in total across all shards that will be shrunk into a single shard on the target index as this is the maximum number of docs that can fit into a single shard.
+* The node handling the shrink process must have sufficient free disk space to accommodate a second copy of the existing index.
+
+Curator will try to meet these conditions.  If it is unable to meet them all, it will not perform a shrink operation.
+
+This action will shrink indices to the target index, the name of which is the value of
+<<option_shrink_prefix,shrink_prefix>> + the source index name + <<option_shrink_suffix,shrink_suffix>>.
+The resulting index will have <<option_number_of_shards,number_of_shards>> primary shards, and
+<<option_number_of_replicas,number_of_replicas>> replica shards.
+
+The shrinking will take place on the node identified by <<option_shrink_node,shrink_node>>,
+unless `DETERMINISTIC` is specified, in which case Curator will evaluate all of
+the nodes to determine which one has the most free space.  If multiple indices
+are identified for shrinking by the filter block, and `DETERMINISTIC` is specified,
+the node selection process will be repeated for each successive index, preventing
+all of the space being consumed on a single node.
+
+By default, Curator will delete the source index after a successful shrink. This
+can be disabled by setting <<option_delete_after,delete_after>> to `False`.  If the source index,
+is not deleted after a successful shrink, Curator will remove the read-only setting and the
+shard allocation routing applied to the source index to put it on the shrink node.  Curator will
+wait for the shards to stop rerouting before continuing.
+
+The <<option_post_allocation,post_allocation>> option applies to the target index after
+the shrink is complete.  If set, this shard allocation routing will be applied (after a
+successful shrink) and Curator will wait for all shards to stop rerouting before continuing.
+
+The only <<option_extra_settings,extra_settings>> which are acceptable are `settings` and `aliases`.
+Please note that in the example above, while `best_compression` is being applied to the new index,
+it will not take effect until new writes are made to the index, such as when
+<<forcemerge,force-merging>> the shard to a single segment.
+
+The other options are usually okay to leave at the defaults, but feel free to change them
+as needed.
+
+=== Required settings
+
+* <<option_shrink_node,shrink_node>>
+
+=== Optional settings
+
+* <<option_continue,continue_if_exception>>
+* <<option_ignore_empty_list,ignore_empty_list>>
+* <<option_delete_after,delete_after>>
+* <<option_disable,disable_action>>
+* <<option_extra_settings,extra_settings>>
+* <<option_node_filters,node_filters>>
+* <<option_number_of_shards,number_of_shards>>
+* <<option_number_of_replicas,number_of_replicas>>
+* <<option_post_allocation,post_allocation>>
+* <<option_shrink_prefix,shrink_prefix>>
+* <<option_shrink_suffix,shrink_suffix>>
+* <<option_timeout_override,timeout_override>>
+* <<option_wait_for_active_shards,wait_for_active_shards>>
+* <<option_wfc,wait_for_completion>>
+* <<option_max_wait,max_wait>>
+* <<option_wait_interval,wait_interval>>
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_shrink,here>>.
 
 [[snapshot]]
 == Snapshot
