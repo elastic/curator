@@ -404,6 +404,8 @@ class IndexList(object):
             ``weeks``, ``months``, or ``years``.
         :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
+        :arg unit_count_pattern: A regular expression whose capture group identifies
+            the value for ``unit_count``.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
@@ -461,7 +463,7 @@ class IndexList(object):
                     elif unit_count == -1:
                         # Unable to match pattern and unit_count is -1, meaning no fallback, so this
                         # index is removed from the list
-                        self.loggit.debug("unable to match pattern and no fallback value set, failing index " + index)
+                        self.loggit.debug("Unable to match pattern and no fallback value set. Removing index " + index + " from actionable list")
                         exclude = True
                         adjustedPoR = PoR # necessary to avoid exception if the first index is excluded
                     else:
