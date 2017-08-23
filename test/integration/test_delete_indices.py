@@ -28,6 +28,170 @@ port = int(port) if port else 9200
 global_client = elasticsearch.Elasticsearch(host=host, port=port)
 
 class TestCLIDeleteIndices(CuratorTestCase):
+    def test_retention_from_name_months(self):
+        # Test extraction of unit_count from index name
+        # Create indices for 10 months with retention time of 2 months in index name
+        # Expected: 8 oldest indices are deleted, 2 remain
+        self.args['prefix'] = 'logstash_2_'
+        self.args['time_unit'] = 'months'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m\'', 'months', -1, '_([0-9]+)_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(2, len(curator.get_indices(self.client)))
+    def test_retention_from_name_days(self):
+        # Test extraction of unit_count from index name
+        # Create indices for 10 days with retention time of 5 days in index name
+        # Expected: 5 oldest indices are deleted, 5 remain
+        self.args['prefix'] = 'logstash_5_'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 30, '_([0-9]+)_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(5, len(curator.get_indices(self.client)))
+    def test_retention_from_name_days_ignore_failed_match(self):
+        # Test extraction of unit_count from index name
+        # Create indices for 10 days with retention time of 5 days in index name
+        # Create indices for 10 days with no retention time in index name
+        # Expected: 5 oldest indices are deleted, 5 remain - 10 indices without retention time are ignored and remain
+        self.args['prefix'] = 'logstash_5_'
+        self.create_indices(10)
+        self.args['prefix'] = 'logstash_'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 30, '_([0-9]+)_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(15, len(curator.get_indices(self.client)))
+    def test_retention_from_name_days_failed_match_with_fallback(self):
+        # Test extraction of unit_count from index name
+        # Create indices for 10 days with retention time of 5 days in index name
+        # Create indices for 10 days with no retention time in index name but configure fallback value of 7
+        # Expected: 5 oldest indices are deleted, 5 remain - 7 indices without retention time are ignored and remain due to the fallback value
+        self.args['prefix'] = 'logstash_5_'
+        self.create_indices(10)
+        self.args['prefix'] = 'logstash_'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 7, '_([0-9]+)_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(12, len(curator.get_indices(self.client)))
+    def test_retention_from_name_no_capture_group(self):
+        # Test extraction of unit_count from index name when pattern contains no capture group
+        # Create indices for 10 months with retention time of 2 months in index name
+        # Expected: all indices remain as the pattern cannot be used to extract a retention time
+        self.args['prefix'] = 'logstash_2_'
+        self.args['time_unit'] = 'months'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m\'', 'months', -1, '_[0-9]+_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(10, len(curator.get_indices(self.client)))
+    def test_retention_from_name_illegal_regex_no_fallback(self):
+        # Test extraction of unit_count from index name when pattern contains an illegal regular expression
+        # Create indices for 10 months with retention time of 2 months in index name
+        # Expected: all indices remain as the pattern cannot be used to extract a retention time
+        self.args['prefix'] = 'logstash_2_'
+        self.args['time_unit'] = 'months'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m\'', 'months', -1, '_[0-9+_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(10, len(curator.get_indices(self.client)))
+    def test_retention_from_name_illegal_regex_with_fallback(self):
+        # Test extraction of unit_count from index name when pattern contains an illegal regular expression
+        # Create indices for 10 months with retention time of 2 months in index name
+        # Expected: Fallback value of 3 is used and 3 most recent indices remain in place
+        self.args['prefix'] = 'logstash_2_'
+        self.args['time_unit'] = 'months'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m\'', 'months', 3, '_[0-9+_', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(3, len(curator.get_indices(self.client)))
     def test_name_older_than_now(self):
         self.create_indices(10)
         self.write_config(
