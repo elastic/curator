@@ -3,6 +3,19 @@
 Changelog
 =========
 
+5.2.0 (?? ??? 2017)
+-------------------
+
+**New Features**
+
+  * Shrink action! Apologies to all who have patiently waited for this 
+    feature.  It's been a long time coming, but it is hopefully worth the 
+    wait.  There are a lot of checks and tests associated with this action,
+    as there are many conditions that have to be met in order for a shrink
+    to take place.  Curator will try its best to ensure that all of these
+    conditions are met so you can comfortably rest assured that shrink will
+    work properly unattended.  See the documentation for more information.
+
 5.1.2 (08 August 2017)
 ----------------------
 
@@ -51,8 +64,13 @@ Changelog
   * Fix/improve rST API documentation.
   * Thanks to many users who not only found and reported documentation issues,
     but also submitted corrections.
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 
 5.1.1 (8 June 2017)
+-------------------
 
 **Bug Fixes**
 
@@ -60,6 +78,7 @@ Changelog
     I reverted the string-based comparison as before.
     
 5.1.0 (8 June 2017)
+-------------------
 
 **New Features**
 
@@ -89,6 +108,7 @@ Changelog
     to reflect this.
 
 5.0.4 (16 May 2017)
+-------------------
 
 **Bug Fixes**
 
@@ -97,6 +117,7 @@ Changelog
     #966.  (untergeek)
 
 5.0.3 (15 May 2017)
+-------------------
 
 **Bug Fixes**
 
@@ -106,6 +127,7 @@ Changelog
     Reported in #962. (untergeek)
 
 5.0.2 (4 May 2017)
+------------------
 
 **Bug Fixes**
 
@@ -126,6 +148,7 @@ Changelog
   * Document how to include file paths better. Fixes #944. (untergeek)
 
 5.0.1 (10 April 2017)
+---------------------
 
 **Bug Fixes**
 
@@ -139,6 +162,7 @@ Changelog
   * Address date matching behavior better per #858 (untergeek)
 
 5.0.0 (5 April 2017)
+--------------------
 
 The full feature set of 5.0 (including alpha releases) is included here.
 

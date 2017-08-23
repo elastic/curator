@@ -108,6 +108,21 @@ def action_specific(action):
             option_defaults.max_wait(action),
             option_defaults.skip_repo_fs_check(),
         ],
+        'shrink' : [
+            option_defaults.shrink_node(),
+            option_defaults.node_filters(),
+            option_defaults.number_of_shards(),
+            option_defaults.number_of_replicas(),
+            option_defaults.shrink_prefix(),
+            option_defaults.shrink_suffix(),
+            option_defaults.delete_after(),
+            option_defaults.post_allocation(),
+            option_defaults.wait_for_active_shards(action),
+            option_defaults.extra_settings(),
+            option_defaults.wait_for_completion(action),
+            option_defaults.wait_interval(action),
+            option_defaults.max_wait(action),
+        ],
     }
     return options[action]
 
