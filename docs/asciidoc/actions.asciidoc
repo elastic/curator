@@ -1081,7 +1081,7 @@ as needed.
 === Optional settings
 
 * <<option_continue,continue_if_exception>>
-* <<option_ignore_empty_list,ignore_empty_list>>
+* <<option_ignore_empty,ignore_empty_list>>
 * <<option_delete_after,delete_after>>
 * <<option_disable,disable_action>>
 * <<option_extra_settings,extra_settings>>

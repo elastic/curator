@@ -20,6 +20,8 @@ Changelog
     preserving API integrity.  The new ``run`` function allows lambda and other
     users to `run` Curator from the API with only a client configuration file
     and action file as arguments.  Requested in #1031 (untergeek)
+  * Allow use of time/date string interpolation for Rollover index naming.
+    Added in #1010 (tschroeder-zendesk)
 
 
 5.1.2 (08 August 2017)
