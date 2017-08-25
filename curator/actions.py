@@ -1772,9 +1772,9 @@ class Shrink(object):
             `value` will be applied to the shrunk index to re-route it.
         :type post_allocation: dict, with keys `allocation_type`, `key`, and `value`
         :arg wait_for_active_shards: The number of shards expected to be active before returning.
-        :arg extra_settings:  Permitted root keys are `settings` and `alias`.  
+        :arg extra_settings:  Permitted root keys are `settings` and `aliases`.  
             See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shrink-index.html
-        :type extra_settings: dict, with permitted root keys of `settings` and `alias`.
+        :type extra_settings: dict
         :arg wait_for_active_shards: Wait for active shards before returning.
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  You should not normally change this,
@@ -1783,7 +1783,6 @@ class Shrink(object):
             completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
         :type wait_for_completion: bool
-        name
         """
         self.loggit = logging.getLogger('curator.actions.shrink')
         verify_index_list(ilo)

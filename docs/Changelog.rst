@@ -22,6 +22,10 @@ Changelog
     and action file as arguments.  Requested in #1031 (untergeek)
   * Allow use of time/date string interpolation for Rollover index naming.
     Added in #1010 (tschroeder-zendesk)
+  * New ``unit_count_pattern`` allows you to derive the ``unit_count`` from 
+    the index name itself.  This involves regular expressions, so be sure to
+    do lots of testing in ``--dry-run`` mode before deploying to production.
+    Added by (soenkeliebau) in #997
 
 **Bug Fixes**
 
