@@ -173,6 +173,7 @@ include::inc_sources.asciidoc[]
 
 === Optional settings
 
+* <<fe_unit_count_pattern,unit_count_pattern>>
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>> (default is `False`)
 

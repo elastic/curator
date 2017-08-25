@@ -454,22 +454,22 @@ class IndexList(object):
                 # Because time adds to epoch, smaller numbers are actually older
                 # timestamps.
                 if unit_count_pattern:
-                    self.loggit.debug("unit_count_pattern is set, trying to match pattern to index " + index)
+                    self.loggit.debug('Unit_count_pattern is set, trying to match pattern to index "{0}"'.format(index))
                     unit_count_from_index = get_unit_count_from_name(index, unit_count_matcher)
                     if unit_count_from_index:
-                        self.loggit.debug("pattern matched, applying unit_count of  " + str(unit_count_from_index))
+                        self.loggit.debug('Pattern matched, applying unit_count of  "{0}"'.format(unit_count_from_index))
                         adjustedPoR = get_point_of_reference(unit, unit_count_from_index, epoch)
                         test = 0
                     elif unit_count == -1:
                         # Unable to match pattern and unit_count is -1, meaning no fallback, so this
                         # index is removed from the list
-                        self.loggit.debug("Unable to match pattern and no fallback value set. Removing index " + index + " from actionable list")
+                        self.loggit.debug('Unable to match pattern and no fallback value set. Removing index "{0}" from actionable list'.format(index))
                         exclude = True
                         adjustedPoR = PoR # necessary to avoid exception if the first index is excluded
                     else:
                         # Unable to match the pattern and unit_count is set, so fall back to using unit_count
                         # for determining whether to keep this index in the list
-                        self.loggit.debug("unable to match pattern using fallback value of " + str(unit_count))
+                        self.loggit.debug('Unable to match pattern using fallback value of "{0}"'.format(unit_count))
                         adjustedPoR = PoR
                 else:
                     adjustedPoR = PoR
