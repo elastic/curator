@@ -1638,8 +1638,8 @@ def wait_for_it(
         else:
             logger.debug(
                 'Action "{0}" not yet complete, {1} total seconds elapsed. '
-                'Waiting {1} seconds before checking '
-                'again.'.format(action, wait_interval))
+                'Waiting {2} seconds before checking '
+                'again.'.format(action, elapsed, wait_interval))
             time.sleep(wait_interval)
 
     logger.debug('Result: {0}'.format(result))
@@ -1702,4 +1702,4 @@ def node_id_to_name(client, node_id):
     else:
         logger.error('No node_id found matching: "{0}"'.format(node_id))
     logger.debug('Name associated with node_id "{0}": {1}'.format(node_id, name))
-    return None
+    return name

@@ -2030,6 +2030,8 @@ class Shrink(object):
         """
         Show what a regular run would do, but don't actually do it.
         """
+        self.index_list.filter_closed()
+        self.index_list.empty_list_check()
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -2046,6 +2048,8 @@ class Shrink(object):
             report_failure(e)
 
     def do_action(self):
+        self.index_list.filter_closed()
+        self.index_list.empty_list_check()
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -2071,6 +2075,7 @@ class Shrink(object):
                     if self.wfc:
                         self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
                         wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                    self.loggit.info('Index "{0}" successfully shrunk to "{1}"'.format(idx, target))
                     # Do post-shrink steps
                     # Unblock writes on index (just in case)
                     self._unblock_writes(idx)

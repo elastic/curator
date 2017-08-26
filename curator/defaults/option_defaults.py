@@ -247,7 +247,7 @@ def shrink_prefix():
     return { Optional('shrink_prefix', default=''): Any(str, unicode, None) }
 
 def shrink_suffix():
-    return { Optional('shrink_suffix', default=''): Any(str, unicode, None) }
+    return { Optional('shrink_suffix', default='-shrink'): Any(str, unicode, None) }
 
 def skip_repo_fs_check():
     return { Optional('skip_repo_fs_check', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
