@@ -33,6 +33,7 @@ Changelog
     limits the number of documents reindexed.  The other is for batch sizing.
     The batch sizing option was missing from the schema validator.  This has
     been corrected.  Reported in #1038 (untergeek)
+  * A few sundry logging and notification changes were made.
 
 5.1.2 (08 August 2017)
 ----------------------
