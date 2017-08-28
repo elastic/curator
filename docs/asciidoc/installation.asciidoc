@@ -134,14 +134,14 @@ for example `curator.list`
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
-deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian stable main
+deb [arch=amd64] https://packages.elastic.co/curator/{curator_major}/debian stable main
 --------------------------------------------------
 
 or
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
-deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian9 stable main
+deb [arch=amd64] https://packages.elastic.co/curator/{curator_major}/debian9 stable main
 --------------------------------------------------
 
 After running `sudo apt-get update`, the repository is ready for use.
