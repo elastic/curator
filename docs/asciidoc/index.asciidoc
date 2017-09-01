@@ -1,4 +1,4 @@
-:curator_version: 5.2.0.rc2
+:curator_version: 5.2.0
 :curator_major: 5
 :curator_doc_tree: 5.2
 :es_py_version: 5.4.0
