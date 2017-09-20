@@ -9,7 +9,7 @@ actions:
   1:
     action: shrink
     description: >-
-      Shrink logstash indices older than 21 days on the node with the most
+      Shrink logstash indices older than 2 days on the node with the most
       available space, excluding the node named 'not_this_node'.
       Delete each source index after successful shrink, then reroute the shrunk
       index with the provided parameters.
@@ -25,7 +25,7 @@ actions:
       shrink_prefix:
       shrink_suffix: '-shrink'
       copy_aliases: True
-      delete_after: False
+      delete_after: True
       post_allocation:
         allocation_type: include
         key: node_tag
@@ -45,4 +45,4 @@ actions:
       source: creation_date
       direction: older
       unit: days
-      unit_count: 0
+      unit_count: 2

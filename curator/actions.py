@@ -1806,10 +1806,6 @@ class Shrink(object):
         self.shrink_suffix    = shrink_suffix
         #: Instance variable. Internal reference to `copy_aliases`
         self.copy_aliases = copy_aliases
-        #: The list of actions to perform for copy_aliases.  Populated by
-        #: :mod:`curator.actions.Alias.add` and
-        #: :mod:`curator.actions.Alias.remove`
-        self.alias_actions = []
         #: Instance variable. Internal reference to `delete_after`
         self.delete_after     = delete_after
         #: Instance variable. Internal reference to `post_allocation`
@@ -2037,16 +2033,17 @@ class Shrink(object):
         self.loggit.debug('FINISH PRE_SHRINK_CHECK')
 
     def do_copy_aliases(self, source_idx, target_idx):
+        alias_actions = []
         aliases = self.client.indices.get_alias(index=source_idx)
         for alias in aliases[source_idx]['aliases']:
             self.loggit.debug('alias: {0}'.format(alias))
-            self.alias_actions.append(
+            alias_actions.append(
                 {'remove': {'index': source_idx, 'alias': alias}})
-            self.alias_actions.append(
+            alias_actions.append(
                 {'add': {'index': target_idx, 'alias': alias}})
-        if self.alias_actions:
-            self.loggit.info('Copy alias actions: {0}'.format(self.alias_actions))
-            self.client.indices.update_aliases({ 'actions' : self.alias_actions })
+        if alias_actions:
+            self.loggit.info('Copy alias actions: {0}'.format(alias_actions))
+            self.client.indices.update_aliases({ 'actions' : alias_actions })
 
     def do_dry_run(self):
         """
