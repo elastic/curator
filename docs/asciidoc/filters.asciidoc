@@ -642,7 +642,7 @@ that whole unit will be selected, in this case, a month.
 == space
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices when their cumulative disk consumption exceeds
+indices when their cumulative disk consumption is `greater_than` (default) or `less_than` than
 <<fe_disk_space,disk_space>> gigabytes.  They are first ordered by age,
 or by alphabet, so as to guarantee the oldest indices are deleted first. They
 will remain in, or be removed from the actionable list based on the value of
@@ -802,6 +802,7 @@ messages like these in the output:
 * <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
+* <<fe_threshold_behavior,fe_threshold_behavior>> (default is `greater_than`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 * <<fe_exclude,exclude>> (default is `False`)

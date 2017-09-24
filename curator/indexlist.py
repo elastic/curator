@@ -506,6 +506,10 @@ class IndexList(object):
         ``max_value``, or ``min_value``.  The ``name`` `source` requires the
         timestring argument.
 
+        `threshold_behavior`, when set to `greater_than` (default), includes if it the index
+        tests to be larger than `disk_space`. When set to `less_than`, it includes if
+        the index is smaller than `disk_space`
+
         :arg disk_space: Filter indices over *n* gigabytes
         :arg threshold_behavior: Size to filter, either ``greater_than`` or ``less_than``. Defaults
             to ``greater_than`` to preserve backwards compatability.
