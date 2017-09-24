@@ -1882,6 +1882,7 @@ class Shrink(object):
             raise ActionError(
                 'Node "{0}" has multiple data paths and cannot be used '
                 'for shrink operations.'
+                .format(self.shrink_node)
             )
         self.shrink_node_avail = (
             self.client.nodes.stats()['nodes'][node_id]['fs']['total']['available_in_bytes']
