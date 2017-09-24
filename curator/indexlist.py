@@ -487,7 +487,7 @@ class IndexList(object):
     def filter_by_space(
         self, disk_space=None, reverse=True, use_age=False,
         source='creation_date', timestring=None, field=None,
-        stats_result='min_value', exclude=False):
+        stats_result='min_value', exclude=False, threshold_behavior='greater_than'):
         """
         Remove indices from the actionable list based on space
         consumed, sorted reverse-alphabetically by default.  If you set
@@ -507,6 +507,8 @@ class IndexList(object):
         timestring argument.
 
         :arg disk_space: Filter indices over *n* gigabytes
+        :arg threshold_behavior: Size to filter, either ``greater_than`` or ``less_than``. Defaults
+            to ``greater_than`` to preserve backwards compatability.
         :arg reverse: The filtering direction. (default: `True`).  Ignored if
             `use_age` is `True`
         :arg use_age: Sort indices by age.  ``source`` is required in this
@@ -529,6 +531,12 @@ class IndexList(object):
         # Ensure that disk_space is a float
         if not disk_space:
             raise MissingArgument('No value for "disk_space" provided')
+
+        if threshold_behavior not in ['greater_than', 'less_than']:
+            raise ValueError(
+                'Invalid value for "threshold_behavior": {0}'.format(
+                    threshold_behavior)
+            )
 
         disk_space = float(disk_space)
 
@@ -564,7 +572,12 @@ class IndexList(object):
                     index, byte_size(disk_usage), byte_size(disk_limit)
                 )
             )
-            self.__excludify((disk_usage > disk_limit), exclude, index, msg)
+            if threshold_behavior == 'greater_than':
+                self.__excludify((disk_usage > disk_limit),
+                                 exclude, index, msg)
+            elif threshold_behavior == 'less_than':
+                self.__excludify((disk_usage < disk_limit),
+                                 exclude, index, msg)
 
     def filter_kibana(self, exclude=True):
         """

@@ -105,6 +105,10 @@ def timestring(**kwargs):
     else:
         return { Optional('timestring', default=None): Any(str, unicode, None) }
 
+def threshold_behavior(**kwargs):
+    # This setting is only used with the space filtertype and defaults to 'greater_than'.
+    return { Optional('threshold_behavior', default='greater_than'): Any('greater_than', 'less_than') }
+
 def unit(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype if use_age is set to True.

@@ -118,6 +118,7 @@ def space(action, config):
         filter_elements.reverse(),
         filter_elements.use_age(),
         filter_elements.exclude(),
+        filter_elements.threshold_behavior(),
     ]
     retval += _age_elements(action, config)
     return retval
