@@ -1093,6 +1093,8 @@ def create_repository(client, **kwargs):
         raise MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
+    verify = kwargs.pop('verify', True)
+    params = {'verify': 'true' if verify else 'false'}
 
     try:
         body = create_repo_body(**kwargs)
@@ -1107,7 +1109,7 @@ def create_repository(client, **kwargs):
                     repository
                 )
             )
-            client.snapshot.create_repository(repository=repository, body=body)
+            client.snapshot.create_repository(repository=repository, body=body, params=params)
         else:
             raise FailedExecution(
                 'Unable to create repository {0}.  A repository with that name '

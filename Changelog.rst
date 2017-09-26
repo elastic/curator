@@ -11,6 +11,11 @@ Changelog
     patterns.  This has been rectified, and an integration test added to 
     satisfy this.  Reported in #989 (untergeek)
 
+**General**
+
+  * The ``es_repo_mgr create`` command now can take ``verify`` as an argument
+    (default is True).
+
 5.1.1 (8 June 2017)
 
 **Bug Fixes**

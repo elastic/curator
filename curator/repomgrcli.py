@@ -76,11 +76,13 @@ def fs(
 @click.option('--max_snapshot_bytes_per_sec', type=str, default='20mb',
             show_default=True,
             help='Throttles per node snapshot rate (per second).')
+@click.option('--verify', type=bool, default=True, show_default=True,
+            help='Verify repository after creation')
 @click.pass_context
 def s3(
     ctx, repository, bucket, region, base_path, access_key, secret_key,
     compression, chunk_size, max_restore_bytes_per_sec,
-    max_snapshot_bytes_per_sec):
+    max_snapshot_bytes_per_sec, verify):
     """
     Create an S3 repository.
     """
