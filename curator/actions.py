@@ -2071,11 +2071,17 @@ class Shrink(object):
                         raise ActionError('Unable to proceed with shrink action. Cluster health is not "green"')
                     # Do the shrink
                     self.loggit.info('Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
-                    self.client.indices.shrink(index=idx, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
-                    # Wait for it to complete
-                    if self.wfc:
-                        self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
-                        wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                    try:
+                        self.client.indices.shrink(index=idx, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
+                        # Wait for it to complete
+                        if self.wfc:
+                            self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
+                            wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                    except Exception as e:
+                        if self.client.indices.exists(index=target):
+                            self.loggit.error('Deleting target index "{0}" due to failure to complete shrink'.format(target))
+                            self.client.indices.delete(index=target)
+                        raise ActionError('Unable to shrink index "{0}" -- Error: {1}'.format(index, e))
                     self.loggit.info('Index "{0}" successfully shrunk to "{1}"'.format(idx, target))
                     # Do post-shrink steps
                     # Unblock writes on index (just in case)

@@ -3,6 +3,16 @@
 Changelog
 =========
 
+5.3.0 (? ? ?)
+-------------
+
+**New Features**
+
+**Bug Fixes**
+
+  * Delete the target index (if it exists) in the event that a shrink fails.
+    Requested in #1058 (untergeek)
+
 5.2.0 (1 September 2017)
 ------------------------
 
