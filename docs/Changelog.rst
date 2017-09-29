@@ -8,10 +8,16 @@ Changelog
 
 **New Features**
 
+  * With the period filter and field_stats, it is useful to match indices
+    that fit `within` the period, rather than just their start dates.  This
+    is now possible with ``intersect``.  See more in the documentation.
+    Requested in #1045. (untergeek)
+
 **Bug Fixes**
 
   * Delete the target index (if it exists) in the event that a shrink fails.
     Requested in #1058 (untergeek)
+  * Fixed an integration test that could fail in the waning days of a month.
 
 5.2.0 (1 September 2017)
 ------------------------

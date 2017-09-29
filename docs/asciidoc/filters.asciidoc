@@ -628,6 +628,7 @@ that whole unit will be selected, in this case, a month.
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`) [Indices only]
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`) [Indices only]
+* <<fe_intersect,intersect>> (optional if `source` is `field_stats`) [Indices only]
 
 === Optional settings
 

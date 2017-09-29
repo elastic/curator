@@ -427,8 +427,9 @@ delete_period_proto = ('---\n'
 '      unit: {5}\n'
 '      field: {6}\n'
 '      stats_result: {7}\n'
-'      epoch: {8}\n'
-'      week_starts_on: {9}\n')
+'      intersect: {8}\n'
+'      epoch: {9}\n'
+'      week_starts_on: {10}\n')
 
 delete_ignore_proto = ('---\n'
 'actions:\n'

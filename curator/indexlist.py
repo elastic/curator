@@ -843,7 +843,7 @@ class IndexList(object):
 
     def filter_period(
         self, source='name', range_from=None, range_to=None, timestring=None,
-        unit=None, field=None, stats_result='min_value', 
+        unit=None, field=None, stats_result='min_value', intersect=False,
         week_starts_on='sunday', epoch=None, exclude=False,
         ):
         """
@@ -862,8 +862,12 @@ class IndexList(object):
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
-            conjunction with `source`=``field_stats`` to choose whether to
+            conjunction with ``source``=``field_stats`` to choose whether to
             reference the minimum or maximum result value.
+        :arg intersect: Only used when ``source``=``field_stats``.
+            If `True`, only indices where both `min_value` and `max_value` are
+            within the period will be selected. If `False`, it will use whichever
+            you specified.  Default is `False` to preserve expected behavior.
         :arg week_starts_on: Either ``sunday`` or ``monday``. Default is 
             ``sunday``
         :arg epoch: An epoch timestamp used to establish a point of reference 
@@ -888,19 +892,38 @@ class IndexList(object):
         )
         for index in self.working_list():
             try:
-                age = int(self.index_info[index]['age'][self.age_keyfield])
-                msg = (
-                    'Index "{0}" age ({1}), period start: "{2}", period '
-                    'end, "{3}"'.format(
-                        index,
-                        age,
-                        start,
-                        end
+                if source == 'field_stats' and intersect:
+                    min_age = int(self.index_info[index]['age']['min_value'])
+                    max_age = int(self.index_info[index]['age']['max_value'])
+                    msg = (
+                        'Index "{0}", timestamp field "{1}", min_value ({2}), '
+                        'max_value ({3}), period start: "{4}", period '
+                        'end, "{5}"'.format(
+                            index,
+                            field,
+                            min_age,
+                            max_age,
+                            start,
+                            end
+                        )
                     )
-                )
-                # Because time adds to epoch, smaller numbers are actually older
-                # timestamps.
-                inrange = ((age >= start) and (age <= end))
+                    # Because time adds to epoch, smaller numbers are actually older
+                    # timestamps.
+                    inrange = ((min_age >= start) and (max_age <= end))
+                else:
+                    age = int(self.index_info[index]['age'][self.age_keyfield])
+                    msg = (
+                        'Index "{0}" age ({1}), period start: "{2}", period '
+                        'end, "{3}"'.format(
+                            index,
+                            age,
+                            start,
+                            end
+                        )
+                    )
+                    # Because time adds to epoch, smaller numbers are actually older
+                    # timestamps.
+                    inrange = ((age >= start) and (age <= end))
                 self.__excludify(inrange, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(
