@@ -12,6 +12,7 @@
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>>
 * <<fe_field,field>>
+* <<fe_intersect,intersect>>
 * <<fe_key,key>>
 * <<fe_kind,kind>>
 * <<fe_max_num_segments,max_num_segments>>
@@ -278,6 +279,41 @@ comparisons.
 This setting is only used when <<fe_source,source>> is `field_stats`.
 
 The default value for this setting is `@timestamp`.
+
+
+
+[[fe_intersect]]
+== intersect
+
+NOTE: This setting is only available in the <<filtertype_age,period>> filtertype.
+   This setting is strictly optional.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: field_stats
+   direction: older
+   intersect: true
+   unit: weeks
+   range_from: -1
+   range_to: -1
+   field: '@timestamp'
+   stats_result: min_value
+-------------
+
+The value of this setting must be `True` or `False`.
+
+`field_stats` uses the {ref}/search-field-stats.html[Field Stats API] to
+calculate either the `min_value` and the `max_value` of the <<fe_field,`field`>>
+as the <<fe_stats_result,`stats_result`>>.  If `intersect` is `True`, then
+only indices where the `min_value` _and_ the `max_value` are within the `range_from`
+and `range_to` (relative to `unit`) will match.  This means that either `min_value`
+or `max_value` can be used for <<fe_stats_result,`stats_result`>> when `intersect`
+is `True` with identical results.
+
+This setting is only used when <<fe_source,source>> is `field_stats`.
+
+The default value for this setting is `False`.
 
 
 

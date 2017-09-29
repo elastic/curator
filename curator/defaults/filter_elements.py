@@ -42,6 +42,10 @@ def field(**kwargs):
     else:
         return { Optional('field'): Any(str, unicode) }
 
+def intersect(**kwargs):
+    # This setting is only used with the age filtertype when using field_stats.
+    return { Optional('intersect', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
+
 def key(**kwargs):
     # This setting is only used with the allocated filtertype.
     return { Required('key'): Any(str, unicode) }

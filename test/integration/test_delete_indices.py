@@ -171,16 +171,15 @@ class TestCLIDeleteIndices(CuratorTestCase):
         self.assertEquals(10, len(curator.get_indices(self.client)))
     def test_retention_from_name_illegal_regex_with_fallback(self):
         # Test extraction of unit_count from index name when pattern contains an illegal regular expression
-        # Create indices for 10 months with retention time of 2 months in index name
+        # Create indices for 10 days with retention time of 2 days in index name
         # Expected: Fallback value of 3 is used and 3 most recent indices remain in place
         self.args['prefix'] = 'logstash_2_'
-        self.args['time_unit'] = 'months'
         self.create_indices(10)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
                           testvars.delete_pattern_proto.format(
-                              'age', 'name', 'older', '\'%Y.%m\'', 'months', 3, '_[0-9+_', ' ', ' ', ' '
+                              'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 3, '_[0-9+_', ' ', ' ', ' '
                           )
                           )
         test = clicktest.CliRunner()
@@ -238,15 +237,16 @@ class TestCLIDeleteIndices(CuratorTestCase):
         # unit: {5}
         # field: {6}
         # stats_result: {7}
-        # epoch: {8}
-        # week_starts_on: {9}
+        # intersect: {8}
+        # epoch: {9}
+        # week_starts_on: {10}
         self.create_indices(10)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.delete_period_proto.format(
                 'period', 'name', '-5', '-1', "'%Y.%m.%d'", 'days',
-                ' ', ' ', ' ', 'monday'
+                ' ', ' ', ' ', ' ', 'monday'
             )
         )
         test = clicktest.CliRunner()
@@ -259,6 +259,48 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     )
         self.assertEqual(0, result.exit_code)
         self.assertEquals(5, len(curator.get_indices(self.client)))
+    def test_delete_in_period_intersect(self):
+        # filtertype: {0}
+        # source: {1}
+        # range_from: {2}
+        # range_to: {3}
+        # timestring: {4}
+        # unit: {5}
+        # field: {6}
+        # stats_result: {7}
+        # intersect: {8}
+        # epoch: {9}
+        # week_starts_on: {10}
+        # 2017-09-01T01:00:00 = 1504227600
+        # 2017-09-25T01:00:00 = 1506301200
+        # 2017-09-29T01:00:00 = 1506646800
+        self.create_index('intersecting') 
+        self.create_index('notintersecting')
+        self.client.index(index='intersecting', doc_type='log', id='1', body={'@timestamp': '2017-09-25T01:00:00Z', 'doc' :'Earliest'})
+        self.client.index(index='intersecting', doc_type='log', id='2', body={'@timestamp': '2017-09-29T01:00:00Z', 'doc' :'Latest'})
+        self.client.index(index='notintersecting', doc_type='log', id='1', body={'@timestamp': '2017-09-01T01:00:00Z', 'doc' :'Earliest'})
+        self.client.index(index='notintersecting', doc_type='log', id='2', body={'@timestamp': '2017-09-29T01:00:00Z', 'doc' :'Latest'})
+        self.client.indices.flush(index='_all', force=True)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.delete_period_proto.format(
+                'period', 'field_stats', '0', '0', ' ', 'weeks',
+                "'@timestamp'", 'min_value', 'true', 1506716040, 'sunday'
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(0, result.exit_code)
+        indices = curator.get_indices(self.client)
+        self.assertEquals(1, len(indices))
+        self.assertEqual('notintersecting', indices[0])
     def test_empty_list(self):
         self.create_indices(10)
         self.write_config(
