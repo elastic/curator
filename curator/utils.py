@@ -1172,30 +1172,23 @@ def snapshot_running(client):
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
+    status = []
+
     try:
         # Check to see if we're running AWS Elasticsearch and if so, iterate through each repository to check for running snapshots
         is_aws = False
         found_version = client.info()['version']
         for aws_version in settings.aws_versions:
-            if found_version == settings.aws_versions[aws_version]:
+            if found_version == aws_version:
                 is_aws = True
         if is_aws:
-            if sys.version_info[0] < 3:
-                repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories').encode("utf-8"))
-                for r in repos:
-                    repo = r.partition(' ')[0]
-                    if repo != "cs-automated":
-                        status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[ \
-                            u'snapshots']
-                        return False if status == [] else True
-            else:
-                repos = str.splitlines(client.transport.perform_request('GET', '/_cat/repositories')[1])
-                for r in repos:
-                    repo = r.partition(' ')[0]
-                    if repo != "cs-automated":
-                        status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[1][
-                            "snapshots"]
-                        return False if status == [] else True
+            repos = client.transport.perform_request('GET', '/_cat/repositories').splitlines()
+            for r in repos:
+                repo = r.partition(' ')[0]
+                if repo != "cs-automated":
+                    status = client.transport.perform_request('GET', ('/_snapshot/' + repo + '/_current'))[ \
+                        u'snapshots']
+                    return False if status == [] else True
 
         else:
             status = client.snapshot.status()['snapshots']
