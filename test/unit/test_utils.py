@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
-from mock import Mock
+from mock import Mock, MagicMock
 import elasticsearch
 import yaml
 from . import testvars as testvars
@@ -596,6 +596,24 @@ class TestSnapshotRunning(TestCase):
         self.assertFalse(curator.snapshot_running(client))
     def test_raises_exception(self):
         client = Mock()
+        client.snapshot.status.return_value = testvars.nosnap_running
+        client.snapshot.status.side_effect = testvars.fake_fail
+        self.assertRaises(
+            curator.FailedExecution, curator.snapshot_running, client)
+
+class TestSnapshotRunningAWS(TestCase):
+    def test_true(self):
+        client = MagicMock()
+        client.info.return_value = testvars.aws_release_version
+        client.snapshot.status.return_value = testvars.snap_running
+        self.assertTrue(curator.snapshot_running(client))
+    def test_false(self):
+        client = MagicMock()
+        client.info.return_value = testvars.aws_release_version
+        client.snapshot.status.return_value = testvars.nosnap_running
+        self.assertFalse(curator.snapshot_running(client))
+    def test_raises_exception(self):
+        client = MagicMock()
         client.snapshot.status.return_value = testvars.nosnap_running
         client.snapshot.status.side_effect = testvars.fake_fail
         self.assertRaises(
