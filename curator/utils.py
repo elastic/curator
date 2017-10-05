@@ -677,6 +677,9 @@ def get_client(**kwargs):
         :mod:`requests-aws4auth` python module is installed)
     :arg aws_region: AWS Region (Only used if the :mod:`requests-aws4auth`
         python module is installed)
+    :arg aws_session_token: AWS Session Token for use with STS temporary
+        credentials (Only used if the :mod:`requests-aws4auth` python
+        module is installed)
     :arg ssl_no_validate: If `True`, do not validate the certificate
         chain.  This is an insecure option and you will see warnings in the
         log output.
@@ -768,7 +771,9 @@ def get_client(**kwargs):
             kwargs['http_auth'] = (
                 AWS4Auth(
                     kwargs['aws_key'], kwargs['aws_secret_key'],
-                    kwargs['aws_region'], 'es')
+                    kwargs['aws_region'],
+                    'es',
+                    session_token=kwargs.get('aws_session_token', None))
             )
         else:
             logger.debug('"requests_aws4auth" module present, but not used.')

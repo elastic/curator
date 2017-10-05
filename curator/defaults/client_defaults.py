@@ -15,6 +15,7 @@ def config_client():
         Optional('aws_key', default=None): Any(None, str, unicode),
         Optional('aws_secret_key', default=None): Any(None, str, unicode),
         Optional('aws_region', default=None): Any(None, str, unicode),
+        Optional('aws_session_token', default=None): Any(None, str, unicode),
         Optional('ssl_no_validate', default=False): Boolean(),
         Optional('http_auth', default=None): Any(None, str, unicode),
         Optional('timeout', default=30): All(
