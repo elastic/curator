@@ -12,6 +12,8 @@ Changelog
     that fit `within` the period, rather than just their start dates.  This
     is now possible with ``intersect``.  See more in the documentation.
     Requested in #1045. (untergeek)
+  * Add a ``restore`` function to ``curator_cli`` singleton. Mentioned in
+    #851 (alexef)
 
 **Bug Fixes**
 

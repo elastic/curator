@@ -11,11 +11,6 @@ Changelog
     patterns.  This has been rectified, and an integration test added to 
     satisfy this.  Reported in #989 (untergeek)
 
-**New features**
-
-  * Add a ``restore`` function to ``curator_cli`` singleton. Mentioned in
-    #851 (alexef)
-
 5.1.1 (8 June 2017)
 
 **Bug Fixes**
