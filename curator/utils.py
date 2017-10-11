@@ -1093,8 +1093,8 @@ def create_repository(client, **kwargs):
         raise MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
-    verify = kwargs.pop('verify', True)
-    params = {'verify': 'true' if verify else 'false'}
+    skip_repo_fs_check = kwargs.pop('skip_repo_fs_check', False)
+    params = {'verify': 'false' if skip_repo_fs_check else 'true'}
 
     try:
         body = create_repo_body(**kwargs)

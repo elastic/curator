@@ -23,6 +23,11 @@ Changelog
     Requested in #1058 (untergeek)
   * Fixed an integration test that could fail in the waning days of a month.
 
+**General**
+
+  * The ``es_repo_mgr create`` command now can take ``skip_repo_fs_check`` as an
+    argument (default is False).
+
 5.2.0 (1 September 2017)
 ------------------------
 
