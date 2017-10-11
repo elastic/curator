@@ -390,7 +390,7 @@ class IndexList(object):
 
     def filter_by_age(self, source='name', direction=None, timestring=None,
         unit=None, unit_count=None, field=None, stats_result='min_value',
-        epoch=None, exclude=False,
+        epoch=None, exclude=False, unit_count_pattern=False
         ):
         """
         Match `indices` by relative age calculations.
@@ -404,6 +404,8 @@ class IndexList(object):
             ``weeks``, ``months``, or ``years``.
         :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
             be calculated out to the relative number of seconds.
+        :arg unit_count_pattern: A regular expression whose capture group identifies
+            the value for ``unit_count``.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
@@ -431,6 +433,12 @@ class IndexList(object):
             source=source, timestring=timestring, field=field,
             stats_result=stats_result
         )
+        if unit_count_pattern:
+            try:
+                unit_count_matcher = re.compile(unit_count_pattern)
+            except:
+                # We got an illegal regex, so won't be able to match anything
+                unit_count_matcher = None
         for index in self.working_list():
             try:
                 age = int(self.index_info[index]['age'][self.age_keyfield])
@@ -445,10 +453,30 @@ class IndexList(object):
                 )
                 # Because time adds to epoch, smaller numbers are actually older
                 # timestamps.
-                if direction == 'older':
-                    agetest = age < PoR
+                if unit_count_pattern:
+                    self.loggit.debug('Unit_count_pattern is set, trying to match pattern to index "{0}"'.format(index))
+                    unit_count_from_index = get_unit_count_from_name(index, unit_count_matcher)
+                    if unit_count_from_index:
+                        self.loggit.debug('Pattern matched, applying unit_count of  "{0}"'.format(unit_count_from_index))
+                        adjustedPoR = get_point_of_reference(unit, unit_count_from_index, epoch)
+                        test = 0
+                    elif unit_count == -1:
+                        # Unable to match pattern and unit_count is -1, meaning no fallback, so this
+                        # index is removed from the list
+                        self.loggit.debug('Unable to match pattern and no fallback value set. Removing index "{0}" from actionable list'.format(index))
+                        exclude = True
+                        adjustedPoR = PoR # necessary to avoid exception if the first index is excluded
+                    else:
+                        # Unable to match the pattern and unit_count is set, so fall back to using unit_count
+                        # for determining whether to keep this index in the list
+                        self.loggit.debug('Unable to match pattern using fallback value of "{0}"'.format(unit_count))
+                        adjustedPoR = PoR
                 else:
-                    agetest = age > PoR
+                    adjustedPoR = PoR
+                if direction == 'older':
+                    agetest = age < adjustedPoR
+                else:
+                    agetest = age > adjustedPoR
                 self.__excludify(agetest, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(
@@ -815,7 +843,7 @@ class IndexList(object):
 
     def filter_period(
         self, source='name', range_from=None, range_to=None, timestring=None,
-        unit=None, field=None, stats_result='min_value', 
+        unit=None, field=None, stats_result='min_value', intersect=False,
         week_starts_on='sunday', epoch=None, exclude=False,
         ):
         """
@@ -834,8 +862,12 @@ class IndexList(object):
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
-            conjunction with `source`=``field_stats`` to choose whether to
+            conjunction with ``source``=``field_stats`` to choose whether to
             reference the minimum or maximum result value.
+        :arg intersect: Only used when ``source``=``field_stats``.
+            If `True`, only indices where both `min_value` and `max_value` are
+            within the period will be selected. If `False`, it will use whichever
+            you specified.  Default is `False` to preserve expected behavior.
         :arg week_starts_on: Either ``sunday`` or ``monday``. Default is 
             ``sunday``
         :arg epoch: An epoch timestamp used to establish a point of reference 
@@ -860,19 +892,38 @@ class IndexList(object):
         )
         for index in self.working_list():
             try:
-                age = int(self.index_info[index]['age'][self.age_keyfield])
-                msg = (
-                    'Index "{0}" age ({1}), period start: "{2}", period '
-                    'end, "{3}"'.format(
-                        index,
-                        age,
-                        start,
-                        end
+                if source == 'field_stats' and intersect:
+                    min_age = int(self.index_info[index]['age']['min_value'])
+                    max_age = int(self.index_info[index]['age']['max_value'])
+                    msg = (
+                        'Index "{0}", timestamp field "{1}", min_value ({2}), '
+                        'max_value ({3}), period start: "{4}", period '
+                        'end, "{5}"'.format(
+                            index,
+                            field,
+                            min_age,
+                            max_age,
+                            start,
+                            end
+                        )
                     )
-                )
-                # Because time adds to epoch, smaller numbers are actually older
-                # timestamps.
-                inrange = ((age >= start) and (age <= end))
+                    # Because time adds to epoch, smaller numbers are actually older
+                    # timestamps.
+                    inrange = ((min_age >= start) and (max_age <= end))
+                else:
+                    age = int(self.index_info[index]['age'][self.age_keyfield])
+                    msg = (
+                        'Index "{0}" age ({1}), period start: "{2}", period '
+                        'end, "{3}"'.format(
+                            index,
+                            age,
+                            start,
+                            end
+                        )
+                    )
+                    # Because time adds to epoch, smaller numbers are actually older
+                    # timestamps.
+                    inrange = ((age >= start) and (age <= end))
                 self.__excludify(inrange, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(

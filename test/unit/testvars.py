@@ -820,3 +820,13 @@ no_snap_tasks = {u'nodes': {u'node1': {u'tasks': {u'task1': {u'action': u'cluste
 snap_task = {u'nodes': {u'node1': {u'tasks': {u'task1': {u'action': u'cluster:admin/snapshot/delete'}}}}}
 es_release_version = { 'version': {u'build_date': u'2017-06-22T00:34:03.743Z', u'build_hash': u'eed30a8', u'build_snapshot': False, u'lucene_version': u'6.5.1', u'number': u'5.4.3'} }
 aws_release_version = { 'version': {'build_date': '2017-04-28T21:44:52.237Z','build_hash': 'Unknown','build_snapshot': False,'lucene_version': '6.4.2','number': '5.3.2'} }
+=======
+watermark_persistent = {u'persistent':{u'cluster':{u'routing':{u'allocation':{u'disk':{u'watermark':{u'low':u'11%',u'high':u'60gb'}}}}}}}
+watermark_transient = {u'transient':{u'cluster':{u'routing':{u'allocation':{u'disk':{u'watermark':{u'low':u'9%',u'high':u'50gb'}}}}}}}
+watermark_both = {
+    u'persistent': {u'cluster':{u'routing':{u'allocation':{u'disk':{u'watermark':{u'low':u'11%',u'high':u'60gb'}}}}}},
+    u'transient': {u'cluster':{u'routing':{u'allocation':{u'disk':{u'watermark':{u'low':u'9%',u'high':u'50gb'}}}}}},
+}
+empty_cluster_settings = {u'persistent':{},u'transient':{}}
+data_only_node_role = ['data']
+master_data_node_role = ['data','master']

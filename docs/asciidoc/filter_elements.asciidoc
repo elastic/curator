@@ -12,6 +12,7 @@
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>>
 * <<fe_field,field>>
+* <<fe_intersect,intersect>>
 * <<fe_key,key>>
 * <<fe_kind,kind>>
 * <<fe_max_num_segments,max_num_segments>>
@@ -24,6 +25,7 @@
 * <<fe_timestring,timestring>>
 * <<fe_unit,unit>>
 * <<fe_unit_count,unit_count>>
+* <<fe_unit_count_pattern,unit_count_pattern>>
 * <<fe_use_age,use_age>>
 * <<fe_value,value>>
 * <<fe_week_starts_on,week_starts_on>>
@@ -277,6 +279,41 @@ comparisons.
 This setting is only used when <<fe_source,source>> is `field_stats`.
 
 The default value for this setting is `@timestamp`.
+
+
+
+[[fe_intersect]]
+== intersect
+
+NOTE: This setting is only available in the <<filtertype_age,period>> filtertype.
+   This setting is strictly optional.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: field_stats
+   direction: older
+   intersect: true
+   unit: weeks
+   range_from: -1
+   range_to: -1
+   field: '@timestamp'
+   stats_result: min_value
+-------------
+
+The value of this setting must be `True` or `False`.
+
+`field_stats` uses the {ref}/search-field-stats.html[Field Stats API] to
+calculate either the `min_value` and the `max_value` of the <<fe_field,`field`>>
+as the <<fe_stats_result,`stats_result`>>.  If `intersect` is `True`, then
+only indices where the `min_value` _and_ the `max_value` are within the `range_from`
+and `range_to` (relative to `unit`) will match.  This means that either `min_value`
+or `max_value` can be used for <<fe_stats_result,`stats_result`>> when `intersect`
+is `True` with identical results.
+
+This setting is only used when <<fe_source,source>> is `field_stats`.
+
+The default value for this setting is `False`.
 
 
 
@@ -620,9 +657,94 @@ a point of reference in the future by using a negative value for
 This setting must be set by the user or an exception will be raised, and
 execution will halt.
 
+If this setting is used in conjunction with <<fe_unit_count_pattern,unit_count_pattern>>, the configured
+value will only be used as a fallback value in case the pattern could not be matched. The value _-1_ has
+a special meaning in this case and causes the index to be ignored when pattern matching fails.
+
 TIP: See the <<filtertype_age,age filter documentation>> for more information
   about time calculation.
 
+
+
+[[fe_unit_count_pattern]]
+== unit_count_pattern
+
+NOTE: This setting is only used with the age filtertype to define, whether the
+<<fe_unit_count,unit_count>> value is taken from the configuration or read from
+the index name via a regular expression.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+   unit_count_pattern: -([0-9]+)-
+-------------
+
+This setting can be used in cases where the value against which index age should be assessed is not a static
+value but can be different for every index. For this case, there is the option of extracting the index
+specific value from the index names via a regular expression defined in this parameter.
+
+Consider for example the following index name patterns that contain the retention time in their name:
+_logstash-30-yyyy.mm.dd_, _logstash-12-yyyy.mm_, __3_logstash-yyyy.mm.dd_.
+
+To extract a value from the index names, this setting will be compiled as a regular expression and matched
+against index names, for a successful match, the value of the first capture group from the regular expression
+is used as the value for <<fe_unit_count,unit_count>>.
+
+If there is any error during compiling or matching the expression, or the expression does not
+contain a capture group, the value configured in <<fe_unit_count,unit_count>> is used as a fallback value,
+unless it is set to _-1_, in which case the index will be skipped.
+
+TIP: Regular expressions and match groups are not explained here as they are a fairly large and complex topic,
+but there are numerous resources online that will help. Using an online tool for testing regular expressions
+like https://regex101.com/[regex101.com] will help a lot when developing patterns.
+
+*Examples*
+
+* _logstash-30-yyyy.mm.dd_: Daily index that should be deleted after 30 days, indices that
+don't match the pattern will be deleted after 365 days
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 365
+   unit_count_pattern: -([0-9]+)-
+-------------
+
+
+* _logstash-12-yyyy.mm_: Monthly index that should be deleted after 12 months, indices that
+don't match the pattern will be deleted after 3 months
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: months
+   unit_count: 3
+   unit_count_pattern: -([0-9]+)-
+-------------
+
+
+* __3_logstash-yyyy.mm.dd_: Daily index that should be deleted after 3 years, indices that
+don't match the pattern will be ignored
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: years
+   unit_count: -1
+   unit_count_pattern: ^_([0-9]+)_
+-------------
+
+IMPORTANT: Be sure to pay attention to the interaction of this parameter and <<fe_unit_count,unit_count>>!
 
 
 [[fe_use_age]]

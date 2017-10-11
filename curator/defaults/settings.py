@@ -54,6 +54,7 @@ def index_actions():
         'reindex',
         'replicas',
         'rollover',
+        'shrink',
         'snapshot',
     ]
 
@@ -106,6 +107,7 @@ def structural_filter_elements():
         Optional('epoch'): Any(Coerce(int), None),
         Optional('exclude'): Any(int, str, unicode, bool, None),
         Optional('field'): Any(str, unicode, None),
+        Optional('intersect'): Any(int, str, unicode, bool, None),
         Optional('key'): Any(str, unicode),
         Optional('kind'): Any(str, unicode),
         Optional('max_num_segments'): Coerce(int),
@@ -118,6 +120,7 @@ def structural_filter_elements():
         Optional('timestring'): Any(str, unicode, None),
         Optional('unit'): Any(str, unicode),
         Optional('unit_count'): Coerce(int),
+        Optional('unit_count_pattern'): Any(str, unicode),
         Optional('use_age'): Boolean(),
         Optional('value'): Any(int, float, str, unicode, bool),
         Optional('week_starts_on'): Any(str, unicode, None),

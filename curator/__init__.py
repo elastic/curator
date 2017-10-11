@@ -1,3 +1,4 @@
+from ._version import __version__
 from .exceptions import *
 from .defaults import *
 from .validators import *

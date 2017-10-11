@@ -3,8 +3,55 @@
 Changelog
 =========
 
-5.2.0 (?? ??? 2017)
--------------------
+5.3.0 (? ? ?)
+-------------
+
+**New Features**
+
+  * With the period filter and field_stats, it is useful to match indices
+    that fit `within` the period, rather than just their start dates.  This
+    is now possible with ``intersect``.  See more in the documentation.
+    Requested in #1045. (untergeek)
+  * Add a ``restore`` function to ``curator_cli`` singleton. Mentioned in
+    #851 (alexef)
+
+**Bug Fixes**
+
+  * Delete the target index (if it exists) in the event that a shrink fails.
+    Requested in #1058 (untergeek)
+  * Fixed an integration test that could fail in the waning days of a month.
+
+5.2.0 (1 September 2017)
+------------------------
+
+**New Features**
+
+  * Shrink action! Apologies to all who have patiently waited for this 
+    feature.  It's been a long time coming, but it is hopefully worth the 
+    wait.  There are a lot of checks and tests associated with this action,
+    as there are many conditions that have to be met in order for a shrink
+    to take place.  Curator will try its best to ensure that all of these
+    conditions are met so you can comfortably rest assured that shrink will
+    work properly unattended.  See the documentation for more information.
+  * The ``cli`` function has been split into ``cli`` and ``run`` functions.  
+    The behavior of ``cli`` will be indistinguishable from previous releases,
+    preserving API integrity.  The new ``run`` function allows lambda and other
+    users to `run` Curator from the API with only a client configuration file
+    and action file as arguments.  Requested in #1031 (untergeek)
+  * Allow use of time/date string interpolation for Rollover index naming.
+    Added in #1010 (tschroeder-zendesk)
+  * New ``unit_count_pattern`` allows you to derive the ``unit_count`` from 
+    the index name itself.  This involves regular expressions, so be sure to
+    do lots of testing in ``--dry-run`` mode before deploying to production.
+    Added by (soenkeliebau) in #997
+
+**Bug Fixes**
+
+  * Reindex ``request_body`` allows for 2 different ``size`` options.  One 
+    limits the number of documents reindexed.  The other is for batch sizing.
+    The batch sizing option was missing from the schema validator.  This has
+    been corrected.  Reported in #1038 (untergeek)
+  * A few sundry logging and notification changes were made.
 
 5.1.2 (08 August 2017)
 ----------------------

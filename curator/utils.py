@@ -348,7 +348,19 @@ def get_point_of_reference(unit, count, epoch=None):
         epoch = time.time()
     epoch = fix_epoch(epoch)
     return epoch - multiplier * count
-   
+
+def get_unit_count_from_name(index_name, pattern):
+    if (pattern == None):
+        return None
+    match = pattern.search(index_name)
+    if match:
+        try:
+            return int(match.group(1))
+        except Exception:
+            return None
+    else:
+        return None
+
 def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     """
     Get the epoch start time and end time of a range of ``unit``s, reckoning the 
@@ -1578,6 +1590,10 @@ def wait_for_it(
             'function':task_check,
             'args':{'task_id':task_id},
         },
+        'shrink':{
+            'function': health_check,
+            'args': {'status':'green'},
+        },
     }
     wait_actions = list(action_map.keys())
 
@@ -1635,8 +1651,8 @@ def wait_for_it(
         else:
             logger.debug(
                 'Action "{0}" not yet complete, {1} total seconds elapsed. '
-                'Waiting {1} seconds before checking '
-                'again.'.format(action, wait_interval))
+                'Waiting {2} seconds before checking '
+                'again.'.format(action, elapsed, wait_interval))
             time.sleep(wait_interval)
 
     logger.debug('Result: {0}'.format(result))
@@ -1645,3 +1661,58 @@ def wait_for_it(
             'Action "{0}" failed to complete in the max_wait period of '
             '{1} seconds'.format(action, max_wait)
         )
+
+def node_roles(client, node_id):
+    """
+    Return the list of roles assigned to the node identified by ``node_id``
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: list
+    """
+    return client.nodes.info()['nodes'][node_id]['roles']
+
+def index_size(client, idx):
+    return client.indices.stats(index=idx)['indices'][idx]['total']['store']['size_in_bytes']
+
+def single_data_path(client, node_id):
+    """
+    In order for a shrink to work, it should be on a single filesystem, as 
+    shards cannot span filesystems.  Return `True` if the node has a single
+    filesystem, and `False` otherwise.
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: bool
+    """
+    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1 
+
+
+def name_to_node_id(client, name):
+    """
+    Return the node_id of the node identified by ``name``
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: str
+    """
+    stats = client.nodes.stats()
+    for node in stats['nodes']:
+        if stats['nodes'][node]['name'] == name:
+            logger.debug('Found node_id "{0}" for name "{1}".'.format(node, name))
+            return node
+    logger.error('No node_id found matching name: "{0}"'.format(name))
+    return None
+
+def node_id_to_name(client, node_id):
+    """
+    Return the name of the node identified by ``node_id``
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: str
+    """
+    stats = client.nodes.stats()
+    name = None
+    if node_id in stats['nodes']:
+        name = stats['nodes'][node_id]['name']
+    else:
+        logger.error('No node_id found matching: "{0}"'.format(node_id))
+    logger.debug('Name associated with node_id "{0}": {1}'.format(node_id, name))
+    return name

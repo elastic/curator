@@ -29,6 +29,7 @@ CLASS_MAP = {
     'restore' : Restore,
     'rollover' : Rollover,
     'snapshot' : Snapshot,
+    'shrink' : Shrink,
 }
 
 def process_action(client, config, **kwargs):
@@ -98,19 +99,9 @@ def process_action(client, config, **kwargs):
         logger.debug('Doing the action here.')
         action_obj.do_action()
 
-@click.command()
-@click.option('--config',
-    help="Path to configuration file. Default: ~/.curator/curator.yml",
-    type=click.Path(exists=True), default=settings.config_file()
-)
-@click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
-@click.argument('action_file', type=click.Path(exists=True), nargs=1)
-@click.version_option(version=__version__)
-def cli(config, dry_run, action_file):
+def run(config, action_file, dry_run=False):
     """
-    Curator for Elasticsearch indices.
-
-    See http://elastic.co/guide/en/elasticsearch/client/curator/current
+    Actually run.
     """
     client_args = process_config(config)
     logger = logging.getLogger(__name__)
@@ -202,3 +193,19 @@ def cli(config, dry_run, action_file):
                     sys.exit(1)
         logger.info('Action ID: {0}, "{1}" completed.'.format(idx, action))
     logger.info('Job completed.')
+
+@click.command()
+@click.option('--config',
+    help="Path to configuration file. Default: ~/.curator/curator.yml",
+    type=click.Path(exists=True), default=settings.config_file()
+)
+@click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
+@click.argument('action_file', type=click.Path(exists=True), nargs=1)
+@click.version_option(version=__version__)
+def cli(config, dry_run, action_file):
+    """
+    Curator for Elasticsearch indices.
+
+    See http://elastic.co/guide/en/elasticsearch/client/curator/current
+    """
+    run(config, action_file, dry_run)

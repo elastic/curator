@@ -48,6 +48,7 @@ def age(action, config):
         filter_elements.direction(),
         filter_elements.unit(),
         filter_elements.unit_count(),
+        filter_elements.unit_count_pattern(),
         filter_elements.epoch(),
         filter_elements.exclude(),
     ]
@@ -106,6 +107,7 @@ def period(action, config):
         filter_elements.week_starts_on(),
         filter_elements.epoch(),
         filter_elements.exclude(),
+        filter_elements.intersect(),
     ]
     retval += _age_elements(action, config)
     return retval
