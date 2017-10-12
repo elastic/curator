@@ -751,13 +751,16 @@ def get_client(**kwargs):
                     import certifi
                     kwargs['verify_certs'] = True
                     kwargs['ca_certs'] = certifi.where()
-
     try:
         from requests_aws4auth import AWS4Auth
-        from boto3 import session
         kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
             else kwargs['aws_sign_request']
         if kwargs['aws_sign_request']:
+            try:
+                from boto3 import session
+            except ImportError as e:
+                logger.debug('Failed to import the "boto3" module.')
+                exit(e)
             session = session.Session()
             credentials = session.get_credentials()
             kwargs['aws_key'] = credentials.access_key
@@ -770,7 +773,6 @@ def get_client(**kwargs):
                 else kwargs['aws_secret_key']
             kwargs['aws_token='] = '' if not 'aws_token' in kwargs \
                 else kwargs['aws_token']
-
         if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
             if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
                      and kwargs['aws_region']:
@@ -778,7 +780,6 @@ def get_client(**kwargs):
                     'Missing one or more of "aws_key", "aws_secret_key", '
                     'or "aws_region".'
                     )
-
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
@@ -792,7 +793,6 @@ def get_client(**kwargs):
             logger.debug('"requests_aws4auth" module present, but not used.')
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
-
     if master_only:
         if len(kwargs['hosts']) > 1:
             raise ConfigurationError(
