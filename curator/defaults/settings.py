@@ -119,6 +119,7 @@ def structural_filter_elements():
         Optional('state'): Any(str, unicode),
         Optional('stats_result'): Any(str, unicode, None),
         Optional('timestring'): Any(str, unicode, None),
+        Optional('threshold_behavior'): Any(str, unicode),
         Optional('unit'): Any(str, unicode),
         Optional('unit_count'): Coerce(int),
         Optional('unit_count_pattern'): Any(str, unicode),

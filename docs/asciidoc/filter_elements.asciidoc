@@ -23,6 +23,7 @@
 * <<fe_state,state>>
 * <<fe_stats_result,stats_result>>
 * <<fe_timestring,timestring>>
+* <<fe_threshold_behavior,threshold_behavior>>
 * <<fe_unit,unit>>
 * <<fe_unit_count,unit_count>>
 * <<fe_unit_count_pattern,unit_count_pattern>>
@@ -609,6 +610,26 @@ When <<fe_source,source>> is `name`, this setting must be set by the user or an
 exception will be raised, and execution will halt. There is no default value.
 
 include::inc_timestring_regex.asciidoc[]
+
+
+
+[[fe_threshold_behavior]]
+== threshold_behavior
+
+NOTE: This setting is only available in the <<filtertype_space,space>> filtertype.
+  This setting is optional, and defaults to `greater_than` to preserve backwards compatability.
+
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 5
+  threshold_behavior: less_than
+-------------
+
+The value for this setting is `greater_than` (default) or `less_than`.
+
+When set to `less_than`, indices in less than `disk_space` gigabytes will be matched.
+When set to `greater_than` (default), indices larger than `disk_space` will be matched.
 
 
 
