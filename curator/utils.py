@@ -647,11 +647,13 @@ def check_master(client, master_only=False):
 
 def get_client(**kwargs):
     """
-    NOTE: AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
-    provided for future compatibility, should AWS ES support the
-    ``/_cluster/state/metadata`` endpoint.  So long as this endpoint does not
-    function in AWS ES, the client will not be able to use
-    :class:`curator.indexlist.IndexList`, which is the backbone of Curator 4
+    NOTE: AWS IAM parameters `aws_sign_request` and `aws_region` are
+     provided to facilitate request signing. The credentials will be
+     fetched from the local environment as per the AWS documentation:
+     http://amzn.to/2fRCGCt
+
+    AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
+    provided for users that still have their keys included in the Curator config file.
 
     Return an :class:`elasticsearch.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
@@ -677,6 +679,10 @@ def get_client(**kwargs):
         :mod:`requests-aws4auth` python module is installed)
     :arg aws_region: AWS Region (Only used if the :mod:`requests-aws4auth`
         python module is installed)
+    :arg aws_sign_request: Sign request to AWS (Only used if the :mod:`requests-aws4auth`
+         and :mod:`boto3` python modules are installed)
+     :arg aws_region: AWS Region where the cluster exists (Only used if the :mod:`requests-aws4auth`
+         and :mod:`boto3` python modules are installed)
     :arg ssl_no_validate: If `True`, do not validate the certificate
         chain.  This is an insecure option and you will see warnings in the
         log output.
@@ -748,19 +754,31 @@ def get_client(**kwargs):
 
     try:
         from requests_aws4auth import AWS4Auth
-        kwargs['aws_key'] = False if not 'aws_key' in kwargs \
-            else kwargs['aws_key']
-        kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
-            else kwargs['aws_secret_key']
-        kwargs['aws_region'] = False if not 'aws_region' in kwargs \
-            else kwargs['aws_region']
+        from boto3 import session
+        kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
+            else kwargs['aws_sign_request']
+        if kwargs['aws_sign_request']:
+            session = session.Session()
+            credentials = session.get_credentials()
+            kwargs['aws_key'] = credentials.access_key
+            kwargs['aws_secret_key'] = credentials.secret_key
+            kwargs['aws_token'] = credentials.token
+        else:
+            kwargs['aws_key'] = False if not 'aws_key' in kwargs \
+                else kwargs['aws_key']
+            kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
+                else kwargs['aws_secret_key']
+            kwargs['aws_token='] = '' if not 'aws_token' in kwargs \
+                else kwargs['aws_token']
+
         if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
             if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
-                    and kwargs['aws_region']:
+                     and kwargs['aws_region']:
                 raise MissingArgument(
                     'Missing one or more of "aws_key", "aws_secret_key", '
                     'or "aws_region".'
-                )
+                    )
+
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
@@ -768,7 +786,7 @@ def get_client(**kwargs):
             kwargs['http_auth'] = (
                 AWS4Auth(
                     kwargs['aws_key'], kwargs['aws_secret_key'],
-                    kwargs['aws_region'], 'es')
+                    kwargs['aws_region'], 'es', session_token=kwargs['aws_token'])
             )
         else:
             logger.debug('"requests_aws4auth" module present, but not used.')
