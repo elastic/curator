@@ -61,6 +61,11 @@ def max_num_segments(**kwargs):
         Required('max_num_segments'): All(Coerce(int), Range(min=1))
     }
 
+def pattern(**kwargs):
+    return {
+        Optional('pattern'): Any(str, unicode)
+    }
+
 def range_from(**kwargs):
     return { Required('range_from'): Coerce(int) }
 

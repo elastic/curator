@@ -410,6 +410,7 @@ delete_pattern_proto = ('---\n'
                 '        unit_count: {5}\n'
                 '        unit_count_pattern: {6}\n')
 
+
 delete_period_proto = ('---\n'
 'actions:\n'
 '  1:\n'
