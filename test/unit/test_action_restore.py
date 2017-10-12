@@ -125,6 +125,18 @@ class TestActionRestore(TestCase):
         self.assertIsNone(ro.do_action())
     def test_do_action_snap_in_progress(self):
         client = Mock()
+        client.info.return_value = testvars.es_release_version
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        client.snapshot.status.return_value = testvars.snap_running
+        client.snapshot.verify_repository.return_value = testvars.verified_nodes
+        client.indices.get_settings.return_value = testvars.settings_named
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        ro = curator.Restore(slo)
+        self.assertRaises(curator.SnapshotInProgress, ro.do_action)
+    def test_do_action_snap_in_progress_aws(self):
+        client = Mock()
+        client.info.return_value = testvars.aws_release_version
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.status.return_value = testvars.snap_running
@@ -135,6 +147,18 @@ class TestActionRestore(TestCase):
         self.assertRaises(curator.SnapshotInProgress, ro.do_action)
     def test_do_action_success_no_wfc(self):
         client = Mock()
+        client.info.return_value = testvars.es_release_version
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        client.snapshot.status.return_value = testvars.nosnap_running
+        client.snapshot.verify_repository.return_value = testvars.verified_nodes
+        client.indices.get_settings.return_value = testvars.settings_named
+        slo = curator.SnapshotList(client, repository=testvars.repo_name)
+        ro = curator.Restore(slo, wait_for_completion=False)
+        self.assertIsNone(ro.do_action())
+    def test_do_action_success_no_wfc_aws(self):
+        client = Mock()
+        client.info.return_value = testvars.aws_release_version
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.status.return_value = testvars.nosnap_running
