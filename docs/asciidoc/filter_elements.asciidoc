@@ -415,6 +415,43 @@ will be raised, and execution will halt.
 
 
 
+[[fe_pattern]]
+== pattern
+
+NOTE: This setting is only used with the <<filtertype_count,count>> filtertype
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 1
+  pattern: '^(.*)-\d{6}$'
+  reverse: true
+-------------
+
+This particular example will match indices following the basic rollover pattern
+of `indexname-######`, and keep the highest numbered index for each group.
+
+For example, given indices `a-000001`, `a-000002`, `a-000003` and `b-000006`,
+and `b-000007`, the indices will would be matched are `a-000003` and `b-000007`.
+Indices that do not match the regular expression in `pattern` will be
+automatically excluded.
+
+This is particularly useful with indices created and managed using the
+{ref}/indices-rollover-index.html[Rollover API], as you can select only the
+active indices with the above example (<<fe_exclude,`exclude`>> defaults to `False`).
+Setting <<fe_exclude,`exclude`>> to `True` with the above example will _remove_
+the active rollover indices, leaving only those which have been rolled-over.
+
+While this is perhaps most useful for the aforementioned scenario, it can
+also be used with age-based indices as well.
+
+Items will remain in the actionable list depending on the value of
+<<fe_exclude,exclude>>, and <<fe_reverse,reverse>>.
+
+There is no default value. The value must include a capture group, defined by
+parenthesis, or left empty.  If a value is provided, and there is no capture
+group, and exception will be raised and execution will halt.
+
 [[fe_range_from]]
 == range_from
 

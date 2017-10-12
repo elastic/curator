@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime, date
 import time
 import re
+import itertools
 import logging
 import elasticsearch
 from .defaults import settings
@@ -766,7 +767,7 @@ class IndexList(object):
                 self.__excludify(condition, exclude, index, msg)
 
     def filter_by_count(
-        self, count=None, reverse=True, use_age=False,
+        self, count=None, reverse=True, use_age=False, pattern=None,
         source='creation_date', timestring=None, field=None,
         stats_result='min_value', exclude=True):
         """
@@ -791,6 +792,16 @@ class IndexList(object):
         :arg reverse: The filtering direction. (default: `True`).
         :arg use_age: Sort indices by age.  ``source`` is required in this
             case.
+        :arg pattern: Select indices to count from a regular expression 
+            pattern.  This pattern must have one and only one capture group.
+            This can allow a single ``count`` filter instance to operate against
+            any number of matching patterns, and keep ``count`` of each index
+            in that group.  For example, given a ``pattern`` of ``'^(.*)-\d{6}$'``,
+            it will match both ``rollover-000001`` and ``index-999990``, but not 
+            ``logstash-2017.10.12``.  Following the same example, if my cluster
+            also had ``rollover-000002`` through ``rollover-000010`` and
+            ``index-888888`` through ``index-999999``, it will process both
+            groups of indices, and include or exclude the ``count`` of each.
         :arg source: Source of index age. Can be one of ``name``,
             ``creation_date``, or ``field_stats``. Default: ``creation_date``
         :arg timestring: An strftime string to match the datestamp in an index
@@ -811,35 +822,72 @@ class IndexList(object):
 
         # Create a copy-by-value working list
         working_list = self.working_list()
-
-        if use_age:
-            if source != 'name':
-                self.loggit.warn(
-                    'Cannot get age information from closed indices unless '
-                    'source="name".  Omitting any closed indices.'
-                )
-                self.filter_closed()
-            self._calculate_ages(
-                source=source, timestring=timestring, field=field,
-                stats_result=stats_result
-            )
-            # Using default value of reverse=True in self._sort_by_age()
-            sorted_indices = self._sort_by_age(working_list, reverse=reverse)
-
+        if pattern:
+            try:
+                r = re.compile(pattern)
+                if r.groups < 1:
+                    raise ConfigurationError('No regular expression group found in {0}'.format(pattern))
+                elif r.groups > 1:
+                    raise ConfigurationError('More than 1 regular expression group found in {0}'.format(pattern))
+                # Prune indices not matching the regular expression the object (and filtered_indices)
+                # We do not want to act on them by accident.
+                prune_these = list(filter(lambda x: r.match(x) is None, working_list))
+                filtered_indices = working_list
+                for index in prune_these:
+                    msg = (
+                        '{0} does not match regular expression {1}.'.format(
+                            index, pattern
+                        )
+                    )
+                    condition = True
+                    exclude = True
+                    self.__excludify(condition, exclude, index, msg)
+                    # also remove it from filtered_indices
+                    filtered_indices.remove(index)
+                # Presort these filtered_indices using the lambda
+                presorted = sorted(filtered_indices, key=lambda x: r.match(x).group(1))
+            except Exception as e:
+                raise ActionError('Unable to process pattern: "{0}". Error: {1}'.format(pattern, e))
+            # Initialize groups here
+            groups = []
+            # We have to pull keys k this way, but we don't need to keep them
+            # We only need g for groups
+            for k, g in itertools.groupby(presorted, key=lambda x: r.match(x).group(1)):
+                groups.append(list(g))
         else:
-            # Default to sorting by index name
-            sorted_indices = sorted(working_list, reverse=reverse)
-
-        idx = 1
-        for index in sorted_indices:
-            msg = (
-                '{0} is {1} of specified count of {2}.'.format(
-                    index, idx, count
+            # Since pattern will create a list of lists, and we iterate over that,
+            # we need to put our single list inside a list
+            groups = [ working_list ]
+        for group in groups:
+            if use_age:
+                if source != 'name':
+                    self.loggit.warn(
+                        'Cannot get age information from closed indices unless '
+                        'source="name".  Omitting any closed indices.'
+                    )
+                    self.filter_closed()
+                self._calculate_ages(
+                    source=source, timestring=timestring, field=field,
+                    stats_result=stats_result
                 )
-            )
-            condition = True if idx <= count else False
-            self.__excludify(condition, exclude, index, msg)
-            idx += 1
+                # Using default value of reverse=True in self._sort_by_age()
+                sorted_indices = self._sort_by_age(group, reverse=reverse)
+
+            else:
+                # Default to sorting by index name
+                sorted_indices = sorted(group, reverse=reverse)
+
+            
+            idx = 1
+            for index in sorted_indices:
+                msg = (
+                    '{0} is {1} of specified count of {2}.'.format(
+                        index, idx, count
+                    )
+                )
+                condition = True if idx <= count else False
+                self.__excludify(condition, exclude, index, msg)
+                idx += 1
 
     def filter_period(
         self, source='name', range_from=None, range_to=None, timestring=None,

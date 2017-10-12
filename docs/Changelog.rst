@@ -14,6 +14,8 @@ Changelog
     Requested in #1045. (untergeek)
   * Add a ``restore`` function to ``curator_cli`` singleton. Mentioned in
     #851 (alexef)
+  * Add ``pattern`` to the ``count`` filter.  This is particularly useful
+    when working with rollover indices.  Requested in #1044 (untergeek)
 
 **Bug Fixes**
 

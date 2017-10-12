@@ -111,6 +111,7 @@ def structural_filter_elements():
         Optional('key'): Any(str, unicode),
         Optional('kind'): Any(str, unicode),
         Optional('max_num_segments'): Coerce(int),
+        Optional('pattern'): Any(str, unicode),
         Optional('reverse'): Any(int, str, unicode, bool, None),
         Optional('range_from'): Coerce(int),
         Optional('range_to'): Coerce(int),

@@ -305,6 +305,33 @@ All of the age-related settings from the <<filtertype_age,`age`>> filter are
 supported, and the same restrictions apply with regard to filtering indices vs.
 snapshots.
 
+=== Pattern-based sorting
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 1
+  pattern: '^(.*)-\d{6}$'
+  reverse: true
+-------------
+
+This particular example will match indices following the basic rollover pattern
+of `indexname-######`, and keep the highest numbered index for each group.
+
+For example, given indices `a-000001`, `a-000002`, `a-000003` and `b-000006`,
+and `b-000007`, the indices will would be matched are `a-000003` and `b-000007`.
+Indices that do not match the regular expression in `pattern` will be
+automatically excluded.
+
+This is particularly useful with indices created and managed using the
+{ref}/indices-rollover-index.html[Rollover API], as you can select only the
+active indices with the above example (<<fe_exclude,`exclude`>> defaults to `False`).
+Setting <<fe_exclude,`exclude`>> to `True` with the above example will _remove_
+the active rollover indices, leaving only those which have been rolled-over.
+
+While this is perhaps most useful for the aforementioned scenario, it can
+also be used with age-based indices as well.
+
 === Reversing sorting
 
 Using the default configuration, <<fe_reverse,`reverse`>> is `True`.  Given
@@ -398,6 +425,7 @@ removed from the actionable list, leaving `index-2017.03.03`,
 
 * <<fe_reverse,reverse>>
 * <<fe_use_age,use_age>>
+* <<fe_pattern,pattern>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_exclude,exclude>> (default is `False`)

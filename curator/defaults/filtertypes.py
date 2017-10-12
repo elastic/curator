@@ -71,6 +71,7 @@ def count(action, config):
     retval = [
         filter_elements.count(),
         filter_elements.use_age(),
+        filter_elements.pattern(),
         filter_elements.reverse(),
         filter_elements.exclude(exclude=True),
     ]
