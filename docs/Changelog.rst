@@ -16,12 +16,17 @@ Changelog
     #851 (alexef)
   * Add ``pattern`` to the ``count`` filter.  This is particularly useful
     when working with rollover indices.  Requested in #1044 (untergeek)
+  * Add ``threshold_behavior`` to ``disk_space`` filter.  This is to make
+    it easier to select indices within a disk space threshold for the
+    shrink action.  #1067 (dustin-decker)
 
 **Bug Fixes**
 
   * Delete the target index (if it exists) in the event that a shrink fails.
     Requested in #1058 (untergeek)
   * Fixed an integration test that could fail in the waning days of a month.
+  * Check to see if all shards are on the target node before re-allocating
+    them (shrink action only). Requested in #1077 (untergeek)
 
 5.2.0 (1 September 2017)
 ------------------------
