@@ -1999,16 +1999,20 @@ class Shrink(object):
             )
             self.__log_action(error_msg, dry_run)
 
-    def _check_all_shards(self, idx):
+
+    def _all_shards_on_box(self, idx):
         shards = self.client.cluster.state(index=idx)['routing_table']['indices'][idx]['shards']
         found = []
         for shardnum in shards:
             for shard_idx in range(0, len(shards[shardnum])):
                 if shards[shardnum][shard_idx]['node'] == self.shrink_node_id:
                     found.append({'shard': shardnum, 'primary': shards[shardnum][shard_idx]['primary']})
-        if len(shards) != len(found):
-            self.loggit.debug('Found these shards on node "{0}": {1}'.format(self.shrink_node_name, found))
-            raise ActionError('Unable to shrink index "{0}" as not all shards were found on the designated shrink node ({1}): {2}'.format(idx, self.shrink_node_name, found))
+        self.loggit.debug('Found these shards on node "{0}": {1}'.format(self.shrink_node_name, found))
+        return len(shards) == len(found)
+
+    def _check_all_shards(self, idx):
+        if not self._all_shards_on_box(idx):
+            raise ActionError('Unable to shrink index "{0}" as not all shards were found on the designated shrink node ({1}). See DEBUG logs for more information.'.format(idx, self.shrink_node_name))
 
     def pre_shrink_check(self, idx, dry_run=False):
         self.loggit.debug('BEGIN PRE_SHRINK_CHECK')
@@ -2059,11 +2063,13 @@ class Shrink(object):
                     self.loggit.info('Source index: {0} -- Target index: {1}'.format(idx, target))
                     # Pre-check ensures disk space available for each pass of the loop
                     self.pre_shrink_check(idx)
-                    # Route the index to the shrink node
-                    self.loggit.info('Moving shards to shrink node: "{0}"'.format(self.shrink_node_name))
-                    self.route_index(idx, 'require', '_name', self.shrink_node_name)
-                    # Ensure a copy of each shard is present
-                    self._check_all_shards(idx)
+                    # If a subsequent attempt, all shards may already be present.  Check before re-allocating.
+                    if not self._all_shards_on_box(idx):
+                        # Route the index to the shrink node
+                        self.loggit.info('Moving shards to shrink node: "{0}"'.format(self.shrink_node_name))
+                        self.route_index(idx, 'require', '_name', self.shrink_node_name)
+                        # Ensure a copy of each shard is present
+                        self._check_all_shards(idx)
                     # Block writes on index
                     self._block_writes(idx)
                     # Do final health check
