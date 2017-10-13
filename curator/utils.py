@@ -751,35 +751,47 @@ def get_client(**kwargs):
                     import certifi
                     kwargs['verify_certs'] = True
                     kwargs['ca_certs'] = certifi.where()
-    try:
-        from requests_aws4auth import AWS4Auth
-        kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
-            else kwargs['aws_sign_request']
-        if kwargs['aws_sign_request']:
-            try:
-                from boto3 import session
-            except ImportError as e:
-                logger.debug('Failed to import the "boto3" module.')
-                exit(e)
+    kwargs['aws_key'] = False if not 'aws_key' in kwargs \
+        else kwargs['aws_key']
+    kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
+        else kwargs['aws_secret_key']
+    kwargs['aws_token='] = '' if not 'aws_token' in kwargs \
+        else kwargs['aws_token']
+    kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
+        else kwargs['aws_sign_request']
+    kwargs['aws_region'] = False if not 'aws_region' in kwargs \
+        else kwargs['aws_region']
+    if not kwargs['aws_region']:
+        raise MissingArgument(
+            'Missing "aws_region".'
+        )
+    if kwargs['aws_sign_request']:
+        try:
+            from boto3 import session
+            from botocore import exceptions
+        # We cannot get credentials without the boto3 library, so we cannot continue
+        except ImportError as e:
+            logger.debug('Failed to import a module: %s' % e)
+            exit('Failed to import a module: %s' % e)
+        try:
             session = session.Session()
             credentials = session.get_credentials()
             kwargs['aws_key'] = credentials.access_key
             kwargs['aws_secret_key'] = credentials.secret_key
             kwargs['aws_token'] = credentials.token
-        else:
-            kwargs['aws_key'] = False if not 'aws_key' in kwargs \
-                else kwargs['aws_key']
-            kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
-                else kwargs['aws_secret_key']
-            kwargs['aws_token='] = '' if not 'aws_token' in kwargs \
-                else kwargs['aws_token']
+        # If an attribute doesn't exist, we were not able to retrieve credentials as expected so we can't continue
+        except AttributeError:
+            logger.debug('Unable to locate AWS credentials')
+            exit('Unable to locate AWS credentials')
+    try:
+        from requests_aws4auth import AWS4Auth
         if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
             if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
-                     and kwargs['aws_region']:
+                    and kwargs['aws_region']:
                 raise MissingArgument(
                     'Missing one or more of "aws_key", "aws_secret_key", '
                     'or "aws_region".'
-                    )
+                )
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
