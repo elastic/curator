@@ -1085,6 +1085,7 @@ def create_repository(client, **kwargs):
         Defaults to value of ``cloud.aws.access_key``.
     :arg secret_key: `S3 only.` The secret key to use for authentication.
         Defaults to value of ``cloud.aws.secret_key``.
+    :arg skip_repo_fs_check: Skip verifying the repo after creation.
 
     :returns: A boolean value indicating success or failure.
     :rtype: bool
@@ -1093,6 +1094,8 @@ def create_repository(client, **kwargs):
         raise MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
+    skip_repo_fs_check = kwargs.pop('skip_repo_fs_check', False)
+    params = {'verify': 'false' if skip_repo_fs_check else 'true'}
 
     try:
         body = create_repo_body(**kwargs)
@@ -1107,7 +1110,7 @@ def create_repository(client, **kwargs):
                     repository
                 )
             )
-            client.snapshot.create_repository(repository=repository, body=body)
+            client.snapshot.create_repository(repository=repository, body=body, params=params)
         else:
             raise FailedExecution(
                 'Unable to create repository {0}.  A repository with that name '
