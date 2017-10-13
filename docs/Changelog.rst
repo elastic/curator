@@ -16,17 +16,14 @@ Changelog
     #851 (alexef)
   * Add ``pattern`` to the ``count`` filter.  This is particularly useful
     when working with rollover indices.  Requested in #1044 (untergeek)
+  * The ``es_repo_mgr create`` command now can take ``skip_repo_fs_check`` as
+    an argument (default is False) #1072 (alexef)
 
 **Bug Fixes**
 
   * Delete the target index (if it exists) in the event that a shrink fails.
     Requested in #1058 (untergeek)
   * Fixed an integration test that could fail in the waning days of a month.
-
-**General**
-
-  * The ``es_repo_mgr create`` command now can take ``skip_repo_fs_check`` as an
-    argument (default is False).
 
 5.2.0 (1 September 2017)
 ------------------------
