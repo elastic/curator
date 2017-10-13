@@ -1085,6 +1085,7 @@ def create_repository(client, **kwargs):
         Defaults to value of ``cloud.aws.access_key``.
     :arg secret_key: `S3 only.` The secret key to use for authentication.
         Defaults to value of ``cloud.aws.secret_key``.
+    :arg skip_repo_fs_check: Skip verifying the repo after creation.
 
     :returns: A boolean value indicating success or failure.
     :rtype: bool
