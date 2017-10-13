@@ -259,6 +259,49 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     )
         self.assertEqual(0, result.exit_code)
         self.assertEquals(5, len(curator.get_indices(self.client)))
+    def test_delete_in_period_absolute_date(self):
+        delete_period_abs = ('---\n'
+        'actions:\n'
+        '  1:\n'
+        '    description: "Delete indices as filtered"\n'
+        '    action: delete_indices\n'
+        '    options:\n'
+        '      continue_if_exception: False\n'
+        '      disable_action: False\n'
+        '    filters:\n'
+        '    - filtertype: {0}\n'
+        '      period_type: absolute\n'
+        '      source: {1}\n'
+        '      date_from: {2}\n'
+        '      date_to: {3}\n'
+        '      timestring: {4}\n'
+        '      unit: {5}\n'
+        '      date_from_format: {6}\n'
+        '      date_to_format: {7}\n')
+        expected = 'index-2017.02.02'
+        self.create_index('index-2017.01.02')
+        self.create_index('index-2017.01.03')
+        self.create_index(expected)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            delete_period_abs.format(
+                'period', 'name', '2017.01.01', '2017.01.10', "'%Y.%m.%d'", 'days',
+                "'%Y.%m.%d'", "'%Y.%m.%d'"
+            )
+        )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        indices = curator.get_indices(self.client)
+        self.assertEqual(0, result.exit_code)
+        self.assertEqual(1, len(indices))
+        self.assertEqual(expected, indices[0])
     def test_delete_in_period_intersect(self):
         # filtertype: {0}
         # source: {1}

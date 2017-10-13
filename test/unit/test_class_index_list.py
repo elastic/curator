@@ -644,6 +644,19 @@ class TestIndexListFilterBySpace(TestCase):
             disk_space=1.5, use_age=True
         )
         self.assertEqual(['index-2016.03.03'], sorted(il_c.indices))
+    def test_filter_bad_threshold_behavior(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        # less than
+        il = curator.IndexList(client)
+        self.assertRaises(
+            ValueError,
+            il.filter_by_space, disk_space=1.5, threshold_behavior='invalid'
+        )
     def test_filter_result_by_date_field_stats_raise(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -1151,3 +1164,47 @@ class TestIndexListPeriodFilterName(TestCase):
         il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
             source='creation_date', epoch=epoch)
         self.assertEqual(expected, il.indices)
+    def test_non_integer_range_value(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertRaises(curator.ConfigurationError, il.filter_period, range_from='invalid')
+
+class TestPeriodFilterAbsolute(TestCase):
+    def test_bad_period_type(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertRaises(ValueError, il.filter_period, period_type='invalid')
+    def test_none_value_raises(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertRaises(
+            curator.ConfigurationError, il.filter_period, period_type='absolute', date_from=None)
+    def test_fail_on_bad_date(self):
+        unit = 'months'
+        date_from =  '2016.17'
+        date_from_format = '%Y.%m'
+        date_to = '2017.01'
+        date_to_format = '%Y.%m'
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertRaises(
+            curator.FailedExecution,
+            il.filter_period, unit=unit, source='creation_date', period_type='absolute', date_from=date_from,
+            date_to=date_to, date_from_format=date_from_format, date_to_format=date_to_format
+        )

@@ -15,6 +15,22 @@ def count(**kwargs):
     # This setting is only used with the count filtertype and is required
     return { Required('count'): All(Coerce(int), Range(min=1)) }
 
+def date_from(**kwargs):
+    # This setting is only used with the period filtertype.
+    return { Optional('date_from'): Any(str, unicode) }
+
+def date_from_format(**kwargs):
+    # This setting is only used with the period filtertype.
+    return { Optional('date_from_format'): Any(str, unicode) }
+
+def date_to(**kwargs):
+    # This setting is only used with the period filtertype.
+    return { Optional('date_to'): Any(str, unicode) }
+
+def date_to_format(**kwargs):
+    # This setting is only used with the period filtertype.
+    return { Optional('date_to_format'): Any(str, unicode) }
+
 def direction(**kwargs):
     # This setting is only used with the age filtertype.
     return { Required('direction'): Any('older', 'younger') }
@@ -66,11 +82,15 @@ def pattern(**kwargs):
         Optional('pattern'): Any(str, unicode)
     }
 
+def period_type(**kwargs):
+    # This setting is only used with the period filtertype.
+    return { Optional('period_type', default='relative'): Any('relative', 'absolute') }
+
 def range_from(**kwargs):
-    return { Required('range_from'): Coerce(int) }
+    return { Optional('range_from'): Coerce(int) }
 
 def range_to(**kwargs):
-    return { Required('range_to'): Coerce(int) }
+    return { Optional('range_to'): Coerce(int) }
 
 def reverse(**kwargs):
     # Only used with space filtertype
@@ -117,18 +137,11 @@ def threshold_behavior(**kwargs):
 def unit(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype if use_age is set to True.
-    if 'period' in kwargs and kwargs['period']:
-        return {
-            Required('unit'): Any(
-                'hours', 'days', 'weeks', 'months', 'years'
-            )
-        }    
-    else:
-        return {
-            Required('unit'): Any(
-                'seconds','minutes', 'hours', 'days', 'weeks', 'months', 'years'
-            )
-        }
+    return {
+        Required('unit'): Any(
+            'seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years'
+        )
+    }
 
 def unit_count(**kwargs):
     # This setting is only used with the age filtertype, or with the space

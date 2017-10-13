@@ -7,6 +7,10 @@
 * <<fe_aliases,aliases>>
 * <<fe_allocation_type,allocation_type>>
 * <<fe_count,count>>
+* <<fe_date_from,date_from>>
+* <<fe_date_from_format,date_from_format>>
+* <<fe_date_to,date_to>>
+* <<fe_date_to_format,date_to_format>>
 * <<fe_direction,direction>>
 * <<fe_disk_space,disk_space>>
 * <<fe_epoch,epoch>>
@@ -16,6 +20,8 @@
 * <<fe_key,key>>
 * <<fe_kind,kind>>
 * <<fe_max_num_segments,max_num_segments>>
+* <<fe_pattern,pattern>>
+* <<fe_period_type,period_type>>
 * <<fe_range_from,range_from>>
 * <<fe_range_to,range_to>>
 * <<fe_reverse,reverse>>
@@ -129,6 +135,102 @@ Items will remain in the actionable list depending on the value of
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+
+[[fe_date_from]]
+== date_from
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be a date which can be easily parsed
+using the strftime string in <<fe_date_from_format,`date_from_format`>>:
+
+include::inc_strftime_table.asciidoc[]
+
+[[fe_date_from_format]]
+== date_from_format
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be an strftime string which corresponds to
+the date in <<fe_date_from,`date_from`>>:
+
+include::inc_strftime_table.asciidoc[]
+
+[[fe_date_to]]
+== date_to
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be a date which can be easily parsed
+using the strftime string in <<fe_date_to_format,`date_to_format`>>:
+
+include::inc_strftime_table.asciidoc[]
+
+[[fe_date_to_format]]
+== date_to_format
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be an strftime string which corresponds to
+the date in <<fe_date_to,`date_to`>>:
+
+include::inc_strftime_table.asciidoc[]
 
 
 [[fe_direction]]
@@ -452,6 +554,29 @@ Items will remain in the actionable list depending on the value of
 There is no default value. The value must include a capture group, defined by
 parenthesis, or left empty.  If a value is provided, and there is no capture
 group, and exception will be raised and execution will halt.
+
+
+[[fe_period_type]]
+== period_type
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting must be either `relative` or `absolute`. The default
+value is `relative`.
+
 
 [[fe_range_from]]
 == range_from
@@ -862,7 +987,8 @@ TIP: There are context-specific examples using `value` in the <<fe_kind,kind>>
 [[fe_week_starts_on]]
 == week_starts_on
 
-NOTE: This setting is only used with the <<filtertype_period,period>> filtertype.
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `relative`.
 
 [source,yaml]
 -------------

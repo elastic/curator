@@ -18,6 +18,13 @@ Changelog
     when working with rollover indices.  Requested in #1044 (untergeek)
   * The ``es_repo_mgr create`` command now can take ``skip_repo_fs_check`` as
     an argument (default is False) #1072 (alexef)
+  * Add ``pattern_type`` feature expansion to the ``period`` filter.  The
+    default behavior is ``pattern_type='relative'``, which preserves existing
+    behaviors so users with existing configurations can continue to use them
+    without interruption.  The new ``pattern_type`` is ``absolute``, which
+    allows you to specify hard dates for ``date_from`` and ``date_to``, while
+    ``date_from_format`` and ``date_to_format`` are strftime strings to
+    interpret the from and to dates. Requested in #1047 (untergeek)
 
 **Bug Fixes**
 
