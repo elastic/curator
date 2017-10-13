@@ -624,18 +624,26 @@ class TestIndexListFilterBySpace(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_space(
+        # less than
+        il_a = curator.IndexList(client)
+        il_a.filter_by_space(
             disk_space=1.5, use_age=True,
             threshold_behavior='less_than'
         )
-        self.assertEqual(['index-2016.03.04'], sorted(il.indices))
+        self.assertEqual(['index-2016.03.04'], sorted(il_a.indices))
+        # greater than
         il_b = curator.IndexList(client)
         il_b.filter_by_space(
             disk_space=1.5, use_age=True,
             threshold_behavior='greater_than'
         )
         self.assertEqual(['index-2016.03.03'], sorted(il_b.indices))
+        # default case
+        il_c = curator.IndexList(client)
+        il_c.filter_by_space(
+            disk_space=1.5, use_age=True
+        )
+        self.assertEqual(['index-2016.03.03'], sorted(il_c.indices))
     def test_filter_result_by_date_field_stats_raise(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
