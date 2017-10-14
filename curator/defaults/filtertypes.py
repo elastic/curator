@@ -109,6 +109,11 @@ def period(action, config):
         filter_elements.epoch(),
         filter_elements.exclude(),
         filter_elements.intersect(),
+        filter_elements.period_type(),
+        filter_elements.date_from(),
+        filter_elements.date_from_format(),
+        filter_elements.date_to(),
+        filter_elements.date_to_format(),
     ]
     retval += _age_elements(action, config)
     return retval

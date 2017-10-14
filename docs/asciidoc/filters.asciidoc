@@ -567,6 +567,7 @@ of <<fe_exclude,exclude>>.
 [source,yaml]
 -------------
  - filtertype: period
+   period_type: relative
    source: name
    range_from: -1
    range_to: -1
@@ -579,23 +580,23 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it may generate an error.
 
-=== Periods, or Date Ranges
-
-For the purposes of this filter, a <<fe_unit,unit>> can be one of `hours`,
-`days`, `weeks`, `months`, or `years`.  Unless an <<fe_epoch,epoch>> timestamp
-is provided, reckoning will be centered on execution time.  Reckoning is
-truncated to the most recent whole unit.  For example, if I selected `hours` as
-my `unit`, and I began execution at 02:35, then the point of reckoning would be
-02:00. This is relatively easy with `days`, `months`, and `years`, but slightly
-more complicated with `weeks`. Some users may wish to reckon weeks by the ISO
-standard, which starts weeks on Monday. Others may wish to use Sunday as the
-first day of the week.  Both are acceptable options with the `period` filter.
-The default behavior for `weeks` is to have Sunday be the start of the week.
-This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
+=== Relative Periods
+A relative period will be reckoned relative to execution time, unless an
+<<fe_epoch,epoch>> timestamp is provided.  Reckoning is truncated to the most
+recent whole unit, where a <<fe_unit,unit>> can be one of `seconds`, `minutes`,
+`hours`, `days`, `weeks`, `months`, or `years`.  For example, if I selected
+`hours` as my `unit`, and I began execution at 02:35, then the point of reckoning
+would be 02:00. This is relatively easy with `days`, `months`, and `years`, but
+slightly more complicated with `weeks`. Some users may wish to reckon weeks by
+the ISO standard, which starts weeks on Monday. Others may wish to use Sunday
+as the first day of the week.  Both are acceptable options with the `period`
+filter. The default behavior for `weeks` is to have Sunday be the start of the
+week. This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
 
 [source,yaml]
 -------------
  - filtertype: period
+   period_type: relative
    source: name
    range_from: -1
    range_to: -1
@@ -634,6 +635,7 @@ timestring found in the index name from last month might look like this:
 [source,yaml]
 -------------
  - filtertype: period
+   period_type: relative
    source: name
    range_from: -1
    range_to: -1
@@ -644,15 +646,83 @@ timestring found in the index name from last month might look like this:
 Having `range_from` and `range_to` both be the same value will mean that only
 that whole unit will be selected, in this case, a month.
 
+IMPORTANT: `range_from` and `range_to` are required for the `relative` pattern type.
+
+=== Absolute Periods
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+In addition to relative periods, you can define absolute periods.  These
+are defined as the period between the <<fe_date_from,`date_from`>> and the
+<<fe_date_to,`date_to`>>.  For example, if `date_from` and `date_to` are
+both `2017.01`, and <<fe_unit,`unit`>> is `months`, all indices with a
+`name`, `creation_date`, or `stats_result` (depending on the value of
+<<fe_source,`source`>>) within the month of January 2017 will match.
+
+The `date_from` is used to establish the beginning of the time period, regardless
+of whether `date_from_format` is in hours, and the indices you are trying to filter
+are in weeks or months.  The format and date of `date_from` will simply set the
+beginning of the time period.
+
+The `date_to`, `date_to_format`, and `unit` work in conjunction to select the
+end date.  For example, if my `date_to` were `2017.04`, and `date_to_format`
+is `%Y.%m` to properly parse that date, it would follow that `unit` would be
+`months`.
+
+[IMPORTANT]
+=====================================
+The period filter is smart enough to calculate `months` and `years`
+properly.  **If `unit` is not `months` or `years`,** then your date range will be `unit`
+seconds more than the beginning of the `date_from` date, minus 1 second,
+according to this table:
+
+include::inc_unit_table.asciidoc[]
+=====================================
+
+Specific date ranges can be captured with up to whole second resolution:
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d.%H'
+   unit: seconds
+   date_from: 2017-01-01T00:00:00
+   date_from_format: '%Y-%m-%dT%H:%M:%S'
+   date_to: 2017-01-01T12:34:56
+   date_to_format: '%Y-%m-%dT%H:%M:%S'
+-------------
+
+This example will capture indices with an hourly timestamp in their name that fit
+between the `date_from` and `date_to` timestamps.
+
+include::inc_strftime_table.asciidoc[]
+
 === Required settings
 
 * <<fe_source,source>>
-* <<fe_range_from,range_from>>
-* <<fe_range_to,range_to>>
 * <<fe_unit,unit>>
 
 === Dependent settings
 
+* <<fe_range_from,range_from>>
+* <<fe_range_to,range_to>>
+* <<fe_date_from,date_from>>
+* <<fe_date_to,date_to>>
+* <<fe_date_from_format,date_from_format>>
+* <<fe_date_to_format,date_to_format>>
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`) [Indices only]
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`) [Indices only]

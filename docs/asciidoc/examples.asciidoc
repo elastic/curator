@@ -53,6 +53,7 @@ actions:
         value: logstash-
         exclude:
       - filtertype: period
+        period_type: relative
         source: name
         range_from: -1
         range_to: -1
@@ -65,6 +66,7 @@ actions:
         kind: prefix
         value: logstash-
       - filtertype: period
+        period_type: relative
         source: name
         range_from: -2
         range_to: -2

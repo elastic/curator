@@ -907,17 +907,30 @@ class IndexList(object):
                 idx += 1
 
     def filter_period(
-        self, source='name', range_from=None, range_to=None, timestring=None,
-        unit=None, field=None, stats_result='min_value', intersect=False,
-        week_starts_on='sunday', epoch=None, exclude=False,
+        self, period_type='relative', source='name', range_from=None, range_to=None,
+        date_from=None, date_to=None, date_from_format=None, date_to_format=None,
+        timestring=None, unit=None, field=None, stats_result='min_value',
+        intersect=False, week_starts_on='sunday', epoch=None, exclude=False,
         ):
         """
         Match `indices` within ages within a given period.
 
+        :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
+            ``relative``.  ``date_from`` and ``date_to`` are required when using
+            ``period_type='absolute'`. ``range_from`` and ``range_to`` are
+            required with ``period_type='relative'`.
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
         :arg range_from: How many ``unit`` (s) in the past/future is the origin?
         :arg range_to: How many ``unit`` (s) in the past/future is the end point?
+        :arg date_from: The simplified date for the start of the range
+        :arg date_to: The simplified date for the end of the range.  If this value
+            is the same as ``date_from``, the full value of ``unit`` will be
+            extrapolated for the range.  For example, if ``unit`` is ``months``,
+            and ``date_from`` and ``date_to`` are both ``2017.01``, then the entire
+            month of January 2017 will be the absolute date range.
+        :arg date_from_format: The strftime string used to parse ``date_from``
+        :arg date_to_format: The strftime string used to parse ``date_to``
         :arg timestring: An strftime string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
@@ -944,10 +957,30 @@ class IndexList(object):
         """
 
         self.loggit.debug('Filtering indices by age')
-        try:
-            start, end = date_range(
-                unit, range_from, range_to, epoch, week_starts_on=week_starts_on
+        if period_type not in ['absolute', 'relative']:
+            raise ValueError(
+                'Unacceptable value: {0} -- "period_type" must be either "absolute" or '
+                '"relative".'.format(period_type)
             )
+        if period_type == 'relative':
+            func = date_range
+            args = [unit, range_from, range_to, epoch]
+            kwgs = { 'week_starts_on': week_starts_on }
+            if type(range_from) != type(int()) or type(range_to) != type(int()):
+                raise ConfigurationError(
+                    '"range_from" and "range_to" must be integer values')
+        else:
+            func = absolute_date_range
+            args = [unit, date_from, date_to]
+            kwgs = { 'date_from_format': date_from_format, 'date_to_format': date_to_format }
+            for reqd in [date_from, date_to, date_from_format, date_to_format]:
+                if not reqd:
+                    raise ConfigurationError(
+                        'Must provide "date_from", "date_to", "date_from_format", and '
+                        '"date_to_format" with absolute period_type'
+                    )
+        try:
+            start, end = func(*args, **kwgs)
         except Exception as e:
             report_failure(e)
 
