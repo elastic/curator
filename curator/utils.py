@@ -772,7 +772,7 @@ def get_client(**kwargs):
         # We cannot get credentials without the boto3 library, so we cannot continue
         except ImportError as e:
             logger.debug('Failed to import a module: %s' % e)
-            exit('Failed to import a module: %s' % e)
+            raise ImportError('Failed to import a module: %s' % e)
         try:
             session = session.Session()
             credentials = session.get_credentials()
@@ -782,7 +782,7 @@ def get_client(**kwargs):
         # If an attribute doesn't exist, we were not able to retrieve credentials as expected so we can't continue
         except AttributeError:
             logger.debug('Unable to locate AWS credentials')
-            exit('Unable to locate AWS credentials')
+            raise exceptions.NoCredentialsError
     try:
         from requests_aws4auth import AWS4Auth
         if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
