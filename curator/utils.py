@@ -761,14 +761,20 @@ def get_client(**kwargs):
         else kwargs['aws_sign_request']
     kwargs['aws_region'] = False if not 'aws_region' in kwargs \
         else kwargs['aws_region']
-    if not kwargs['aws_region']:
-        raise MissingArgument(
-            'Missing "aws_region".'
-        )
+    if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_sign_request']:
+        if not kwargs['aws_region']:
+            raise MissingArgument(
+                'Missing "aws_region".'
+            )
+        if kwargs['aws_key'] or kwargs['aws_secret_key']:
+            if not (kwargs['aws_key'] and kwargs['aws_secret_key']):
+                raise MissingArgument(
+                    'Missing AWS Access Key or AWS Secret Key'
+                )
     if kwargs['aws_sign_request']:
         try:
             from boto3 import session
-            from botocore import exceptions
+            from botocore import exceptions as botoex
         # We cannot get credentials without the boto3 library, so we cannot continue
         except ImportError as e:
             logger.debug('Failed to import a module: %s' % e)
@@ -782,16 +788,10 @@ def get_client(**kwargs):
         # If an attribute doesn't exist, we were not able to retrieve credentials as expected so we can't continue
         except AttributeError:
             logger.debug('Unable to locate AWS credentials')
-            raise exceptions.NoCredentialsError
+            raise botoex.NoCredentialsError
     try:
         from requests_aws4auth import AWS4Auth
-        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
-            if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
-                    and kwargs['aws_region']:
-                raise MissingArgument(
-                    'Missing one or more of "aws_key", "aws_secret_key", '
-                    'or "aws_region".'
-                )
+        if kwargs['aws_key']:
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
