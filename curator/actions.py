@@ -1901,7 +1901,7 @@ class Shrink(object):
         mvn_id = None
         nodes = self.client.nodes.stats()['nodes']
         for node_id in nodes:
-            name = self.client.nodes.stats()['nodes'][node_id]['name']
+            name = nodes[node_id]['name']
             if self._exclude_node(name):
                 self.loggit.debug('Node "{0}" excluded by node filters'.format(name))
                 continue
