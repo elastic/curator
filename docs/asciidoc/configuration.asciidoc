@@ -382,6 +382,9 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
     It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
     name due to the different connection module used.
 
+IMPORTANT: This feature may be deprecated in a future release. You should consider
+    using <<aws_sign_request,aws_sign_request>> instead.
+
 [[aws_secret_key]]
 === aws_secret_key
 
@@ -401,6 +404,9 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
     It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
     name due to the different connection module used.
 
+IMPORTANT: This feature may be deprecated in a future release. You should consider
+    using <<aws_sign_request,aws_sign_request>> instead.
+
 [[aws_region]]
 === aws_region
 
@@ -419,6 +425,37 @@ aws_region:
 IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
     It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
     name due to the different connection module used.
+
+[[aws_sign_request]]
+=== aws_sign_request
+
+WARNING: This feature has not been fully tested and should be considered BETA.
+
+WARNING: This setting will not work unless the `requests-aws4auth` and `boto3` Python
+    modules have been manually installed first.
+
+WARNING: Credentials found in your environment will replace the data specified in
+    <<aws_key,aws_key>> and <<aws_secret_key,aws_secret_key>>
+
+This should be `True` if you want your requests to be signed with credentials retrieved
+    from your environment. The order in which credentials will be searched for is:
+
+    . Environment variables
+    . Shared credential file (~/.aws/credentials)
+    . AWS config file (~/.aws/config)
+    . Boto2 config file (/etc/boto.cfg and ~/.boto)
+    . Instance metadata service on an Amazon EC2 instance that has an IAM role configured.
+
+[source,sh]
+-----------
+aws_sign_request:
+-----------
+
+IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
+    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
+    name due to the different connection module used.
+
+
 
 [[ssl_no_validate]]
 === ssl_no_validate
