@@ -7,14 +7,21 @@
 * <<fe_aliases,aliases>>
 * <<fe_allocation_type,allocation_type>>
 * <<fe_count,count>>
+* <<fe_date_from,date_from>>
+* <<fe_date_from_format,date_from_format>>
+* <<fe_date_to,date_to>>
+* <<fe_date_to_format,date_to_format>>
 * <<fe_direction,direction>>
 * <<fe_disk_space,disk_space>>
 * <<fe_epoch,epoch>>
 * <<fe_exclude,exclude>>
 * <<fe_field,field>>
+* <<fe_intersect,intersect>>
 * <<fe_key,key>>
 * <<fe_kind,kind>>
 * <<fe_max_num_segments,max_num_segments>>
+* <<fe_pattern,pattern>>
+* <<fe_period_type,period_type>>
 * <<fe_range_from,range_from>>
 * <<fe_range_to,range_to>>
 * <<fe_reverse,reverse>>
@@ -22,6 +29,7 @@
 * <<fe_state,state>>
 * <<fe_stats_result,stats_result>>
 * <<fe_timestring,timestring>>
+* <<fe_threshold_behavior,threshold_behavior>>
 * <<fe_unit,unit>>
 * <<fe_unit_count,unit_count>>
 * <<fe_unit_count_pattern,unit_count_pattern>>
@@ -127,6 +135,102 @@ Items will remain in the actionable list depending on the value of
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+
+[[fe_date_from]]
+== date_from
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be a date which can be easily parsed
+using the strftime string in <<fe_date_from_format,`date_from_format`>>:
+
+include::inc_strftime_table.asciidoc[]
+
+[[fe_date_from_format]]
+== date_from_format
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be an strftime string which corresponds to
+the date in <<fe_date_from,`date_from`>>:
+
+include::inc_strftime_table.asciidoc[]
+
+[[fe_date_to]]
+== date_to
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be a date which can be easily parsed
+using the strftime string in <<fe_date_to_format,`date_to_format`>>:
+
+include::inc_strftime_table.asciidoc[]
+
+[[fe_date_to_format]]
+== date_to_format
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `absolute`.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting should be an strftime string which corresponds to
+the date in <<fe_date_to,`date_to`>>:
+
+include::inc_strftime_table.asciidoc[]
 
 
 [[fe_direction]]
@@ -281,6 +385,41 @@ The default value for this setting is `@timestamp`.
 
 
 
+[[fe_intersect]]
+== intersect
+
+NOTE: This setting is only available in the <<filtertype_age,period>> filtertype.
+   This setting is strictly optional.
+
+[source,yaml]
+-------------
+ - filtertype: period
+   source: field_stats
+   direction: older
+   intersect: true
+   unit: weeks
+   range_from: -1
+   range_to: -1
+   field: '@timestamp'
+   stats_result: min_value
+-------------
+
+The value of this setting must be `True` or `False`.
+
+`field_stats` uses the {ref}/search-field-stats.html[Field Stats API] to
+calculate either the `min_value` and the `max_value` of the <<fe_field,`field`>>
+as the <<fe_stats_result,`stats_result`>>.  If `intersect` is `True`, then
+only indices where the `min_value` _and_ the `max_value` are within the `range_from`
+and `range_to` (relative to `unit`) will match.  This means that either `min_value`
+or `max_value` can be used for <<fe_stats_result,`stats_result`>> when `intersect`
+is `True` with identical results.
+
+This setting is only used when <<fe_source,source>> is `field_stats`.
+
+The default value for this setting is `False`.
+
+
+
 [[fe_key]]
 == key
 
@@ -377,6 +516,66 @@ the <<filtertype_forcemerged,forcemerged>> filter type.
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
 
+
+
+[[fe_pattern]]
+== pattern
+
+NOTE: This setting is only used with the <<filtertype_count,count>> filtertype
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 1
+  pattern: '^(.*)-\d{6}$'
+  reverse: true
+-------------
+
+This particular example will match indices following the basic rollover pattern
+of `indexname-######`, and keep the highest numbered index for each group.
+
+For example, given indices `a-000001`, `a-000002`, `a-000003` and `b-000006`,
+and `b-000007`, the indices will would be matched are `a-000003` and `b-000007`.
+Indices that do not match the regular expression in `pattern` will be
+automatically excluded.
+
+This is particularly useful with indices created and managed using the
+{ref}/indices-rollover-index.html[Rollover API], as you can select only the
+active indices with the above example (<<fe_exclude,`exclude`>> defaults to `False`).
+Setting <<fe_exclude,`exclude`>> to `True` with the above example will _remove_
+the active rollover indices, leaving only those which have been rolled-over.
+
+While this is perhaps most useful for the aforementioned scenario, it can
+also be used with age-based indices as well.
+
+Items will remain in the actionable list depending on the value of
+<<fe_exclude,exclude>>, and <<fe_reverse,reverse>>.
+
+There is no default value. The value must include a capture group, defined by
+parenthesis, or left empty.  If a value is provided, and there is no capture
+group, and exception will be raised and execution will halt.
+
+
+[[fe_period_type]]
+== period_type
+
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+The value for this setting must be either `relative` or `absolute`. The default
+value is `relative`.
 
 
 [[fe_range_from]]
@@ -536,6 +735,26 @@ When <<fe_source,source>> is `name`, this setting must be set by the user or an
 exception will be raised, and execution will halt. There is no default value.
 
 include::inc_timestring_regex.asciidoc[]
+
+
+
+[[fe_threshold_behavior]]
+== threshold_behavior
+
+NOTE: This setting is only available in the <<filtertype_space,space>> filtertype.
+  This setting is optional, and defaults to `greater_than` to preserve backwards compatability.
+
+[source,yaml]
+-------------
+- filtertype: space
+  disk_space: 5
+  threshold_behavior: less_than
+-------------
+
+The value for this setting is `greater_than` (default) or `less_than`.
+
+When set to `less_than`, indices in less than `disk_space` gigabytes will be matched.
+When set to `greater_than` (default), indices larger than `disk_space` will be matched.
 
 
 
@@ -768,7 +987,8 @@ TIP: There are context-specific examples using `value` in the <<fe_kind,kind>>
 [[fe_week_starts_on]]
 == week_starts_on
 
-NOTE: This setting is only used with the <<filtertype_period,period>> filtertype.
+NOTE: This setting is only used with the <<filtertype_period,period>> filtertype +
+    when <<fe_period_type,period_type>> is `relative`.
 
 [source,yaml]
 -------------

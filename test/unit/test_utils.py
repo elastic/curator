@@ -1066,6 +1066,150 @@ class TestDateRange(TestCase):
         self.assertEqual((start,end), 
             curator.date_range(unit, range_from, range_to, epoch=epoch))
 
+class TestAbsoluteDateRange(TestCase):
+    def test_bad_unit(self):
+        unit = 'invalid'
+        date_from = '2017.01'
+        date_from_format = '%Y.%m'
+        date_to = '2017.01'
+        date_to_format = '%Y.%m'
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.absolute_date_range, unit, date_from, date_to, date_from_format, date_to_format
+        )
+    def test_bad_formats(self):
+        unit = 'days'
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.absolute_date_range, unit, 'meh', 'meh', None, 'meh'
+        )
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.absolute_date_range, unit, 'meh', 'meh', 'meh', None
+        )
+    def test_bad_dates(self):
+        unit = 'weeks'
+        date_from_format = '%Y.%m'
+        date_to_format = '%Y.%m'
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.absolute_date_range, unit, 'meh', '2017.01', date_from_format, date_to_format
+        )
+        self.assertRaises(
+            curator.ConfigurationError,
+            curator.absolute_date_range, unit, '2017.01', 'meh', date_from_format, date_to_format
+        )
+    def test_single_month(self):
+        unit = 'months'
+        date_from = '2017.01'
+        date_from_format = '%Y.%m'
+        date_to = '2017.01'
+        date_to_format = '%Y.%m'
+        start = curator.datetime_to_epoch(datetime(2017,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  1, 31, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_multiple_month(self):
+        unit = 'months'
+        date_from = '2016.11'
+        date_from_format = '%Y.%m'
+        date_to = '2016.12'
+        date_to_format = '%Y.%m'
+        start = curator.datetime_to_epoch(datetime(2016, 11,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2016, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_single_year(self):
+        unit = 'years'
+        date_from = '2017'
+        date_from_format = '%Y'
+        date_to = '2017'
+        date_to_format = '%Y'
+        start = curator.datetime_to_epoch(datetime(2017,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_multiple_year(self):
+        unit = 'years'
+        date_from = '2016'
+        date_from_format = '%Y'
+        date_to = '2017'
+        date_to_format = '%Y'
+        start = curator.datetime_to_epoch(datetime(2016,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017, 12, 31, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_single_week_UW(self):
+        unit = 'weeks'
+        date_from = '2017-01'
+        date_from_format = '%Y-%U'
+        date_to = '2017-01'
+        date_to_format = '%Y-%U'
+        start = curator.datetime_to_epoch(datetime(2017,  1,  2,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  1,  8, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_multiple_weeks_UW(self):
+        unit = 'weeks'
+        date_from = '2017-01'
+        date_from_format = '%Y-%U'
+        date_to = '2017-04'
+        date_to_format = '%Y-%U'
+        start = curator.datetime_to_epoch(datetime(2017,  1,   2,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  1,  29, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_single_week_ISO(self):
+        unit = 'weeks'
+        date_from = '2014-01'
+        date_from_format = '%G-%V'
+        date_to = '2014-01'
+        date_to_format = '%G-%V'
+        start = curator.datetime_to_epoch(datetime(2013, 12, 30,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2014,  1,  5, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_multiple_weeks_ISO(self):
+        unit = 'weeks'
+        date_from = '2014-01'
+        date_from_format = '%G-%V'
+        date_to = '2014-04'
+        date_to_format = '%G-%V'
+        start = curator.datetime_to_epoch(datetime(2013, 12, 30,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2014,  1, 26, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_single_day(self):
+        unit = 'days'
+        date_from = '2017.01.01'
+        date_from_format = '%Y.%m.%d'
+        date_to = '2017.01.01'
+        date_to_format = '%Y.%m.%d'
+        start = curator.datetime_to_epoch(datetime(2017,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  1,  1, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_multiple_days(self):
+        unit = 'days'
+        date_from = '2016.12.31'
+        date_from_format = '%Y.%m.%d'
+        date_to = '2017.01.01'
+        date_to_format = '%Y.%m.%d'
+        start = curator.datetime_to_epoch(datetime(2016, 12, 31,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  1,  1, 23, 59, 59))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+    def test_ISO8601(self):
+        unit = 'seconds'
+        date_from = '2017-01-01T00:00:00'
+        date_from_format = '%Y-%m-%dT%H:%M:%S'
+        date_to = '2017-01-01T12:34:56'
+        date_to_format = '%Y-%m-%dT%H:%M:%S'
+        start = curator.datetime_to_epoch(datetime(2017,  1,  1,  0,  0,  0))
+        end   = curator.datetime_to_epoch(datetime(2017,  1,  1, 12, 34, 56))
+        self.assertEqual((start,end),
+            curator.absolute_date_range(unit, date_from, date_to, date_from_format, date_to_format))
+
 class TestNodeRoles(TestCase):
     def test_node_roles(self):
         node_id = u'my_node'

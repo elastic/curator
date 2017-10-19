@@ -465,6 +465,77 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         datetime.utcfromtimestamp(end_epoch).isoformat()))
     return (start_epoch, end_epoch)
 
+def absolute_date_range(
+        unit, date_from, date_to, 
+        date_from_format=None, date_to_format=None
+    ):
+    """
+    Get the epoch start time and end time of a range of ``unit``s, reckoning the
+    start of the week (if that's the selected unit) based on ``week_starts_on``,
+    which can be either ``sunday`` or ``monday``.
+
+    :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
+    :arg date_from: The simplified date for the start of the range
+    :arg date_to: The simplified date for the end of the range.  If this value
+        is the same as ``date_from``, the full value of ``unit`` will be
+        extrapolated for the range.  For example, if ``unit`` is ``months``,
+        and ``date_from`` and ``date_to`` are both ``2017.01``, then the entire
+        month of January 2017 will be the absolute date range.
+    :arg date_from_format: The strftime string used to parse ``date_from``
+    :arg date_to_format: The strftime string used to parse ``date_to``
+    :rtype: tuple
+    """
+    acceptable_units = ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years']
+    if unit not in acceptable_units:
+        raise ConfigurationError(
+            '"unit" must be one of: {0}'.format(acceptable_units))
+    if not date_from_format or not date_to_format:
+        raise ConfigurationError('Must provide "date_from_format" and "date_to_format"')
+    try:
+        start_epoch = datetime_to_epoch(get_datetime(date_from, date_from_format))
+        logger.debug('Start ISO8601 = {0}'.format(datetime.utcfromtimestamp(start_epoch).isoformat()))
+    except Exception as e:
+        raise ConfigurationError(
+            'Unable to parse "date_from" {0} and "date_from_format" {1}. '
+            'Error: {2}'.format(date_from, date_from_format, e)
+        )
+    try:
+        end_date = get_datetime(date_to, date_to_format)
+    except Exception as e:
+        raise ConfigurationError(
+            'Unable to parse "date_to" {0} and "date_to_format" {1}. '
+            'Error: {2}'.format(date_to, date_to_format, e)
+        )
+    # We have to iterate to one more month, and then subtract a second to get
+    # the last day of the correct month
+    if unit == 'months':
+        month = end_date.month
+        year = end_date.year
+        if month == 12:
+            year += 1
+            month = 1
+        else:
+            month += 1
+        new_end_date = datetime(year, month, 1, 0, 0, 0)
+        end_epoch = datetime_to_epoch(new_end_date) - 1
+    # Similarly, with years, we need to get the last moment of the year
+    elif unit == 'years':
+        new_end_date = datetime(end_date.year + 1, 1, 1, 0, 0, 0)
+        end_epoch = datetime_to_epoch(new_end_date) - 1
+    # It's not months or years, which have inconsistent reckoning...
+    else:
+        # This lets us use an existing method to simply add 1 more unit's worth
+        # of seconds to get hours, days, or weeks, as they don't change
+        # We use -1 as point of reference normally subtracts from the epoch
+        # and we need to add to it, so we'll make it subtract a negative value.
+        # Then, as before, subtract 1 to get the end of the period
+        end_epoch = get_point_of_reference(
+            unit, -1, epoch=datetime_to_epoch(end_date)) -1
+
+    logger.debug('End ISO8601 = {0}'.format(
+        datetime.utcfromtimestamp(end_epoch).isoformat()))
+    return (start_epoch, end_epoch)
+
 def byte_size(num, suffix='B'):
     """
     Return a formatted string indicating the size in bytes, with the proper
@@ -1085,6 +1156,7 @@ def create_repository(client, **kwargs):
         Defaults to value of ``cloud.aws.access_key``.
     :arg secret_key: `S3 only.` The secret key to use for authentication.
         Defaults to value of ``cloud.aws.secret_key``.
+    :arg skip_repo_fs_check: Skip verifying the repo after creation.
 
     :returns: A boolean value indicating success or failure.
     :rtype: bool
@@ -1093,6 +1165,8 @@ def create_repository(client, **kwargs):
         raise MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
+    skip_repo_fs_check = kwargs.pop('skip_repo_fs_check', False)
+    params = {'verify': 'false' if skip_repo_fs_check else 'true'}
 
     try:
         body = create_repo_body(**kwargs)
@@ -1107,7 +1181,7 @@ def create_repository(client, **kwargs):
                     repository
                 )
             )
-            client.snapshot.create_repository(repository=repository, body=body)
+            client.snapshot.create_repository(repository=repository, body=body, params=params)
         else:
             raise FailedExecution(
                 'Unable to create repository {0}.  A repository with that name '
