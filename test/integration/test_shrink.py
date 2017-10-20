@@ -205,7 +205,7 @@ class TestCLIShrink(CuratorTestCase):
         self.assertTrue(settings[self.target]['settings']['index']['routing']['allocation'][allocation_type][key] == value)
         self.assertTrue(settings[self.idx]['settings']['index']['routing']['allocation']['require']['_name'] == '')
         self.assertEqual(settings[self.target]['settings']['index']['codec'], 'best_compression')
-        self.assertTrue(self.client.indices.exists_alias(index=self.target, name='my_alias')
+        self.assertTrue(self.client.indices.exists_alias(index=self.target, name='my_alias'))
     def test_shrink_with_copy_alias(self):
         suffix = '-shrunken'
         self.builder(

@@ -25,7 +25,11 @@ Changelog
     allows you to specify hard dates for ``date_from`` and ``date_to``, while
     ``date_from_format`` and ``date_to_format`` are strftime strings to
     interpret the from and to dates. Requested in #1047 (untergeek)
-
+  * Add ``copy_aliases`` option to the ``shrink`` action. So this option is
+    only set in the ``shrink`` action. The default value of the option is
+    ``copy_aliases: 'False'`` and it does nothing. If you set to
+    ``copy_aliases: 'True'``, you could copy the aliases from the source index
+    to the target index. Requested in #1060 (monkey3199)
 **Bug Fixes**
 
   * Delete the target index (if it exists) in the event that a shrink fails.
