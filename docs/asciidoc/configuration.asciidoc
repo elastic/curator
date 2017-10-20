@@ -431,8 +431,8 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 
 WARNING: This feature has not been fully tested and should be considered BETA.
 
-WARNING: This setting will not work unless the `requests-aws4auth` and `boto3` Python
-    modules have been manually installed first.
+WARNING: If installing via `pip`, this setting will not work unless the `requests-aws4auth`
+    and `boto3` Python modules have been manually installed first.
 
 WARNING: Credentials found in your environment will replace the data specified in
     <<aws_key,aws_key>> and <<aws_secret_key,aws_secret_key>>
@@ -446,9 +446,11 @@ This should be `True` if you want your requests to be signed with credentials re
     . Boto2 config file (/etc/boto.cfg and ~/.boto)
     . Instance metadata service on an Amazon EC2 instance that has an IAM role configured.
 
+The default value is `False`.
+
 [source,sh]
 -----------
-aws_sign_request:
+aws_sign_request: True
 -----------
 
 IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
