@@ -12,6 +12,11 @@ Changelog
     satisfy this.  Reported in #989 (untergeek)
   * Re-use cached response for nodes in most_available_node function. #1086 (tschroeder-zendesk)
 
+**New Features**
+
+  * IAM Credentials can now be retrieved from the environment using the Boto3
+    Credentials provider. #1084 (kobuskc)
+
 5.1.1 (8 June 2017)
 
 **Bug Fixes**

@@ -141,6 +141,7 @@ tar zxf ${FILE}
 
 ${PIPBIN} install -U --user setuptools
 ${PIPBIN} install -U --user requests_aws4auth
+${PIPBIN} install -U --user boto3
 if [ "${CX_VER}" != "$(${PIPBIN} list | grep cx | awk '{print $2}' | tr -d '()')" ]; then
   cd ${WORKDIR}
   rm -rf ${CX_PATH}
