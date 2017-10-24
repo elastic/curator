@@ -79,6 +79,26 @@ with_extra_settings = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
+copy_aliases = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Act on indices as filtered"\n'
+'    action: shrink\n'
+'    options:\n'
+'      shrink_node: {0}\n'
+'      node_filters:\n'
+'          {1}: {2}\n'
+'      number_of_shards: {3}\n'
+'      number_of_replicas: {4}\n'
+'      shrink_prefix: {5}\n'
+'      shrink_suffix: {6}\n'
+'      copy_aliases: {7}\n'
+'      delete_after: {8}\n'
+'    filters:\n'
+'      - filtertype: pattern\n'
+'        kind: prefix\n'
+'        value: my\n')
+
 class TestCLIShrink(CuratorTestCase):
     def builder(self, action_args):
         self.idx = 'my_index'
@@ -86,6 +106,12 @@ class TestCLIShrink(CuratorTestCase):
         self.target = '{0}{1}'.format(self.idx, suffix)
         self.create_index(self.idx, shards=2)
         self.add_docs(self.idx)
+        # add alias in the source index
+        self.alias = 'my_alias'
+        alias_actions = []
+        alias_actions.append(
+            {'add': {'index': self.idx, 'alias': self.alias}})
+        self.client.indices.update_aliases({'actions': alias_actions})
         self.write_config(self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'], action_args)
         test = clicktest.CliRunner()
@@ -180,3 +206,22 @@ class TestCLIShrink(CuratorTestCase):
         self.assertTrue(settings[self.idx]['settings']['index']['routing']['allocation']['require']['_name'] == '')
         self.assertEqual(settings[self.target]['settings']['index']['codec'], 'best_compression')
         self.assertTrue(self.client.indices.exists_alias(index=self.target, name='my_alias'))
+    def test_shrink_with_copy_alias(self):
+        suffix = '-shrunken'
+        self.builder(
+            copy_aliases.format(
+                'DETERMINISTIC',
+                'permit_masters',
+                'True',
+                1,
+                0,
+                '',
+                suffix,
+                'True',
+                'True'
+            )
+        )
+        indices = curator.get_indices(self.client)
+        self.assertEqual(1, len(indices))  # Should have `my_index-shrunken`
+        self.assertEqual(indices[0], self.target)
+        self.assertTrue(self.client.indices.exists_alias(index=self.target, name=self.alias))

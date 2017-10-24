@@ -1749,6 +1749,7 @@ class Shrink(object):
     def __init__(self, ilo, shrink_node='DETERMINISTIC', node_filters={},
                 number_of_shards=1, number_of_replicas=1,
                 shrink_prefix='', shrink_suffix='-shrink',
+                copy_aliases=False,
                 delete_after=True, post_allocation={},
                 wait_for_active_shards=1,
                 extra_settings={}, wait_for_completion=True, wait_interval=9,
@@ -1766,6 +1767,9 @@ class Shrink(object):
         :arg number_of_replicas: The number of replicas for the shrunk index
         :arg shrink_prefix: Prepend the shrunk index with this value
         :arg shrink_suffix: Append the value to the shrunk index (default: `-shrink`)
+        :arg copy_aliases: Whether to copy each source index aliases to target index after shrinking.
+            the aliases will be added to target index and deleted from source index at the same time(default: `False`)
+        :type copy_aliases: bool
         :arg delete_after: Whether to delete each index after shrinking. (default: `True`)
         :type delete_after: bool
         :arg post_allocation: If populated, the `allocation_type`, `key`, and 
@@ -1800,6 +1804,8 @@ class Shrink(object):
         self.shrink_prefix    = shrink_prefix
         #: Instance variable. Internal reference to `shrink_suffix`
         self.shrink_suffix    = shrink_suffix
+        #: Instance variable. Internal reference to `copy_aliases`
+        self.copy_aliases = copy_aliases
         #: Instance variable. Internal reference to `delete_after`
         self.delete_after     = delete_after
         #: Instance variable. Internal reference to `post_allocation`
@@ -2027,6 +2033,19 @@ class Shrink(object):
         self._check_space(idx, dry_run)
         self.loggit.debug('FINISH PRE_SHRINK_CHECK')
 
+    def do_copy_aliases(self, source_idx, target_idx):
+        alias_actions = []
+        aliases = self.client.indices.get_alias(index=source_idx)
+        for alias in aliases[source_idx]['aliases']:
+            self.loggit.debug('alias: {0}'.format(alias))
+            alias_actions.append(
+                {'remove': {'index': source_idx, 'alias': alias}})
+            alias_actions.append(
+                {'add': {'index': target_idx, 'alias': alias}})
+        if alias_actions:
+            self.loggit.info('Copy alias actions: {0}'.format(alias_actions))
+            self.client.indices.update_aliases({ 'actions' : alias_actions })
+
     def do_dry_run(self):
         """
         Show what a regular run would do, but don't actually do it.
@@ -2043,6 +2062,9 @@ class Shrink(object):
                     self.loggit.info('DRY-RUN: Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
                     if self.post_allocation:
                         self.loggit.info('DRY-RUN: Applying post-shrink allocation rule "{0}" to index "{1}"'.format('index.routing.allocation.{0}.{1}:{2}'.format(self.post_allocation['allocation_type'], self.post_allocation['key'], self.post_allocation['value']), target))
+                    if self.copy_aliases:
+                        self.loggit.info('DRY-RUN: Copy source index aliases "{0}"'.format(self.client.indices.get_alias(idx)))
+                        #self.do_copy_aliases(idx, target)
                     if self.delete_after:
                         self.loggit.info('DRY-RUN: Deleting source index "{0}"'.format(idx))
         except Exception as e:
@@ -2090,6 +2112,10 @@ class Shrink(object):
                     if self.post_allocation:
                         self.loggit.info('Applying post-shrink allocation rule "{0}" to index "{1}"'.format('index.routing.allocation.{0}.{1}:{2}'.format(self.post_allocation['allocation_type'], self.post_allocation['key'], self.post_allocation['value']), target))
                         self.route_index(target, self.post_allocation['allocation_type'], self.post_allocation['key'], self.post_allocation['value'])
+                    ## Copy aliases, if flagged
+                    if self.copy_aliases:
+                        self.loggit.info('Copy source index aliases "{0}"'.format(idx))
+                        self.do_copy_aliases(idx, target)
                     ## Delete, if flagged
                     if self.delete_after:
                         self.loggit.info('Deleting source index "{0}"'.format(idx))
