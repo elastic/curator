@@ -30,11 +30,18 @@ Changelog
     ``copy_aliases: 'False'`` and it does nothing. If you set to
     ``copy_aliases: 'True'``, you could copy the aliases from the source index
     to the target index. Requested in #1060 (monkey3199)
+  * IAM Credentials can now be retrieved from the environment using the Boto3 
+    Credentials provider. #1084 (kobuskc)
+
 **Bug Fixes**
 
   * Delete the target index (if it exists) in the event that a shrink fails.
     Requested in #1058 (untergeek)
   * Fixed an integration test that could fail in the waning days of a month.
+
+**Documentation**
+
+  * Set repository access to be https by default.
 
 5.2.0 (1 September 2017)
 ------------------------
