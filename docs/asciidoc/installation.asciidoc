@@ -134,14 +134,14 @@ for example `curator.list`
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
-deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian stable main
+deb [arch=amd64] https://packages.elastic.co/curator/{curator_major}/debian stable main
 --------------------------------------------------
 
 or
 
 ["source","sh",subs="attributes,callouts"]
 --------------------------------------------------
-deb [arch=amd64] http://packages.elastic.co/curator/{curator_major}/debian9 stable main
+deb [arch=amd64] https://packages.elastic.co/curator/{curator_major}/debian9 stable main
 --------------------------------------------------
 
 After running `sudo apt-get update`, the repository is ready for use.
@@ -220,9 +220,9 @@ RHEL/CentOS 6:
 --------------------------------------------------
 [curator-{curator_major}]
 name=CentOS/RHEL 6 repository for Elasticsearch Curator {curator_major}.x packages
-baseurl=http://packages.elastic.co/curator/{curator_major}/centos/6
+baseurl=https://packages.elastic.co/curator/{curator_major}/centos/6
 gpgcheck=1
-gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
+gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
 enabled=1
 --------------------------------------------------
 
@@ -231,9 +231,9 @@ RHEL/CentOS 7:
 --------------------------------------------------
 [curator-{curator_major}]
 name=CentOS/RHEL 7 repository for Elasticsearch Curator {curator_major}.x packages
-baseurl=http://packages.elastic.co/curator/{curator_major}/centos/7
+baseurl=https://packages.elastic.co/curator/{curator_major}/centos/7
 gpgcheck=1
-gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
+gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
 enabled=1
 --------------------------------------------------
 =========================================
