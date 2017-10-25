@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime, date
 import time
 import re
+import itertools
 import logging
 import elasticsearch
 from .defaults import settings
@@ -487,7 +488,7 @@ class IndexList(object):
     def filter_by_space(
         self, disk_space=None, reverse=True, use_age=False,
         source='creation_date', timestring=None, field=None,
-        stats_result='min_value', exclude=False):
+        stats_result='min_value', exclude=False, threshold_behavior='greater_than'):
         """
         Remove indices from the actionable list based on space
         consumed, sorted reverse-alphabetically by default.  If you set
@@ -506,7 +507,13 @@ class IndexList(object):
         ``max_value``, or ``min_value``.  The ``name`` `source` requires the
         timestring argument.
 
+        `threshold_behavior`, when set to `greater_than` (default), includes if it the index
+        tests to be larger than `disk_space`. When set to `less_than`, it includes if
+        the index is smaller than `disk_space`
+
         :arg disk_space: Filter indices over *n* gigabytes
+        :arg threshold_behavior: Size to filter, either ``greater_than`` or ``less_than``. Defaults
+            to ``greater_than`` to preserve backwards compatability.
         :arg reverse: The filtering direction. (default: `True`).  Ignored if
             `use_age` is `True`
         :arg use_age: Sort indices by age.  ``source`` is required in this
@@ -529,6 +536,12 @@ class IndexList(object):
         # Ensure that disk_space is a float
         if not disk_space:
             raise MissingArgument('No value for "disk_space" provided')
+
+        if threshold_behavior not in ['greater_than', 'less_than']:
+            raise ValueError(
+                'Invalid value for "threshold_behavior": {0}'.format(
+                    threshold_behavior)
+            )
 
         disk_space = float(disk_space)
 
@@ -564,7 +577,12 @@ class IndexList(object):
                     index, byte_size(disk_usage), byte_size(disk_limit)
                 )
             )
-            self.__excludify((disk_usage > disk_limit), exclude, index, msg)
+            if threshold_behavior == 'greater_than':
+                self.__excludify((disk_usage > disk_limit),
+                                 exclude, index, msg)
+            elif threshold_behavior == 'less_than':
+                self.__excludify((disk_usage < disk_limit),
+                                 exclude, index, msg)
 
     def filter_kibana(self, exclude=True):
         """
@@ -766,7 +784,7 @@ class IndexList(object):
                 self.__excludify(condition, exclude, index, msg)
 
     def filter_by_count(
-        self, count=None, reverse=True, use_age=False,
+        self, count=None, reverse=True, use_age=False, pattern=None,
         source='creation_date', timestring=None, field=None,
         stats_result='min_value', exclude=True):
         """
@@ -791,6 +809,16 @@ class IndexList(object):
         :arg reverse: The filtering direction. (default: `True`).
         :arg use_age: Sort indices by age.  ``source`` is required in this
             case.
+        :arg pattern: Select indices to count from a regular expression 
+            pattern.  This pattern must have one and only one capture group.
+            This can allow a single ``count`` filter instance to operate against
+            any number of matching patterns, and keep ``count`` of each index
+            in that group.  For example, given a ``pattern`` of ``'^(.*)-\d{6}$'``,
+            it will match both ``rollover-000001`` and ``index-999990``, but not 
+            ``logstash-2017.10.12``.  Following the same example, if my cluster
+            also had ``rollover-000002`` through ``rollover-000010`` and
+            ``index-888888`` through ``index-999999``, it will process both
+            groups of indices, and include or exclude the ``count`` of each.
         :arg source: Source of index age. Can be one of ``name``,
             ``creation_date``, or ``field_stats``. Default: ``creation_date``
         :arg timestring: An strftime string to match the datestamp in an index
@@ -811,48 +839,98 @@ class IndexList(object):
 
         # Create a copy-by-value working list
         working_list = self.working_list()
-
-        if use_age:
-            if source != 'name':
-                self.loggit.warn(
-                    'Cannot get age information from closed indices unless '
-                    'source="name".  Omitting any closed indices.'
-                )
-                self.filter_closed()
-            self._calculate_ages(
-                source=source, timestring=timestring, field=field,
-                stats_result=stats_result
-            )
-            # Using default value of reverse=True in self._sort_by_age()
-            sorted_indices = self._sort_by_age(working_list, reverse=reverse)
-
+        if pattern:
+            try:
+                r = re.compile(pattern)
+                if r.groups < 1:
+                    raise ConfigurationError('No regular expression group found in {0}'.format(pattern))
+                elif r.groups > 1:
+                    raise ConfigurationError('More than 1 regular expression group found in {0}'.format(pattern))
+                # Prune indices not matching the regular expression the object (and filtered_indices)
+                # We do not want to act on them by accident.
+                prune_these = list(filter(lambda x: r.match(x) is None, working_list))
+                filtered_indices = working_list
+                for index in prune_these:
+                    msg = (
+                        '{0} does not match regular expression {1}.'.format(
+                            index, pattern
+                        )
+                    )
+                    condition = True
+                    exclude = True
+                    self.__excludify(condition, exclude, index, msg)
+                    # also remove it from filtered_indices
+                    filtered_indices.remove(index)
+                # Presort these filtered_indices using the lambda
+                presorted = sorted(filtered_indices, key=lambda x: r.match(x).group(1))
+            except Exception as e:
+                raise ActionError('Unable to process pattern: "{0}". Error: {1}'.format(pattern, e))
+            # Initialize groups here
+            groups = []
+            # We have to pull keys k this way, but we don't need to keep them
+            # We only need g for groups
+            for k, g in itertools.groupby(presorted, key=lambda x: r.match(x).group(1)):
+                groups.append(list(g))
         else:
-            # Default to sorting by index name
-            sorted_indices = sorted(working_list, reverse=reverse)
-
-        idx = 1
-        for index in sorted_indices:
-            msg = (
-                '{0} is {1} of specified count of {2}.'.format(
-                    index, idx, count
+            # Since pattern will create a list of lists, and we iterate over that,
+            # we need to put our single list inside a list
+            groups = [ working_list ]
+        for group in groups:
+            if use_age:
+                if source != 'name':
+                    self.loggit.warn(
+                        'Cannot get age information from closed indices unless '
+                        'source="name".  Omitting any closed indices.'
+                    )
+                    self.filter_closed()
+                self._calculate_ages(
+                    source=source, timestring=timestring, field=field,
+                    stats_result=stats_result
                 )
-            )
-            condition = True if idx <= count else False
-            self.__excludify(condition, exclude, index, msg)
-            idx += 1
+                # Using default value of reverse=True in self._sort_by_age()
+                sorted_indices = self._sort_by_age(group, reverse=reverse)
+
+            else:
+                # Default to sorting by index name
+                sorted_indices = sorted(group, reverse=reverse)
+
+            
+            idx = 1
+            for index in sorted_indices:
+                msg = (
+                    '{0} is {1} of specified count of {2}.'.format(
+                        index, idx, count
+                    )
+                )
+                condition = True if idx <= count else False
+                self.__excludify(condition, exclude, index, msg)
+                idx += 1
 
     def filter_period(
-        self, source='name', range_from=None, range_to=None, timestring=None,
-        unit=None, field=None, stats_result='min_value', 
-        week_starts_on='sunday', epoch=None, exclude=False,
+        self, period_type='relative', source='name', range_from=None, range_to=None,
+        date_from=None, date_to=None, date_from_format=None, date_to_format=None,
+        timestring=None, unit=None, field=None, stats_result='min_value',
+        intersect=False, week_starts_on='sunday', epoch=None, exclude=False,
         ):
         """
         Match `indices` within ages within a given period.
 
+        :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
+            ``relative``.  ``date_from`` and ``date_to`` are required when using
+            ``period_type='absolute'`. ``range_from`` and ``range_to`` are
+            required with ``period_type='relative'`.
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
         :arg range_from: How many ``unit`` (s) in the past/future is the origin?
         :arg range_to: How many ``unit`` (s) in the past/future is the end point?
+        :arg date_from: The simplified date for the start of the range
+        :arg date_to: The simplified date for the end of the range.  If this value
+            is the same as ``date_from``, the full value of ``unit`` will be
+            extrapolated for the range.  For example, if ``unit`` is ``months``,
+            and ``date_from`` and ``date_to`` are both ``2017.01``, then the entire
+            month of January 2017 will be the absolute date range.
+        :arg date_from_format: The strftime string used to parse ``date_from``
+        :arg date_to_format: The strftime string used to parse ``date_to``
         :arg timestring: An strftime string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
@@ -862,8 +940,12 @@ class IndexList(object):
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
-            conjunction with `source`=``field_stats`` to choose whether to
+            conjunction with ``source``=``field_stats`` to choose whether to
             reference the minimum or maximum result value.
+        :arg intersect: Only used when ``source``=``field_stats``.
+            If `True`, only indices where both `min_value` and `max_value` are
+            within the period will be selected. If `False`, it will use whichever
+            you specified.  Default is `False` to preserve expected behavior.
         :arg week_starts_on: Either ``sunday`` or ``monday``. Default is 
             ``sunday``
         :arg epoch: An epoch timestamp used to establish a point of reference 
@@ -875,10 +957,30 @@ class IndexList(object):
         """
 
         self.loggit.debug('Filtering indices by age')
-        try:
-            start, end = date_range(
-                unit, range_from, range_to, epoch, week_starts_on=week_starts_on
+        if period_type not in ['absolute', 'relative']:
+            raise ValueError(
+                'Unacceptable value: {0} -- "period_type" must be either "absolute" or '
+                '"relative".'.format(period_type)
             )
+        if period_type == 'relative':
+            func = date_range
+            args = [unit, range_from, range_to, epoch]
+            kwgs = { 'week_starts_on': week_starts_on }
+            if type(range_from) != type(int()) or type(range_to) != type(int()):
+                raise ConfigurationError(
+                    '"range_from" and "range_to" must be integer values')
+        else:
+            func = absolute_date_range
+            args = [unit, date_from, date_to]
+            kwgs = { 'date_from_format': date_from_format, 'date_to_format': date_to_format }
+            for reqd in [date_from, date_to, date_from_format, date_to_format]:
+                if not reqd:
+                    raise ConfigurationError(
+                        'Must provide "date_from", "date_to", "date_from_format", and '
+                        '"date_to_format" with absolute period_type'
+                    )
+        try:
+            start, end = func(*args, **kwgs)
         except Exception as e:
             report_failure(e)
 
@@ -888,19 +990,38 @@ class IndexList(object):
         )
         for index in self.working_list():
             try:
-                age = int(self.index_info[index]['age'][self.age_keyfield])
-                msg = (
-                    'Index "{0}" age ({1}), period start: "{2}", period '
-                    'end, "{3}"'.format(
-                        index,
-                        age,
-                        start,
-                        end
+                if source == 'field_stats' and intersect:
+                    min_age = int(self.index_info[index]['age']['min_value'])
+                    max_age = int(self.index_info[index]['age']['max_value'])
+                    msg = (
+                        'Index "{0}", timestamp field "{1}", min_value ({2}), '
+                        'max_value ({3}), period start: "{4}", period '
+                        'end, "{5}"'.format(
+                            index,
+                            field,
+                            min_age,
+                            max_age,
+                            start,
+                            end
+                        )
                     )
-                )
-                # Because time adds to epoch, smaller numbers are actually older
-                # timestamps.
-                inrange = ((age >= start) and (age <= end))
+                    # Because time adds to epoch, smaller numbers are actually older
+                    # timestamps.
+                    inrange = ((min_age >= start) and (max_age <= end))
+                else:
+                    age = int(self.index_info[index]['age'][self.age_keyfield])
+                    msg = (
+                        'Index "{0}" age ({1}), period start: "{2}", period '
+                        'end, "{3}"'.format(
+                            index,
+                            age,
+                            start,
+                            end
+                        )
+                    )
+                    # Because time adds to epoch, smaller numbers are actually older
+                    # timestamps.
+                    inrange = ((age >= start) and (age <= end))
                 self.__excludify(inrange, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(

@@ -621,6 +621,86 @@ def show_snapshots_singleton(
         click.secho('{0}'.format(idx))
 
 
+@click.command(name='restore')
+@click.option(
+    '--repository', type=str, required=True, help='Snapshot repository')
+@click.option(
+    '--name', type=str, help='Snapshot name', required=False, default=None,
+)
+@click.option(
+    '--rename_pattern', type=str, help='Rename pattern', required=False, default=None,
+)
+@click.option(
+    '--rename_replacement', type=str, help='Rename replacement', required=False, default=None,
+)
+@click.option(
+    '--ignore_unavailable', is_flag=True, show_default=True,
+    help='Ignore unavailable shards/indices.'
+)
+@click.option(
+    '--include_global_state', type=bool, show_default=True,
+    default=True, expose_value=True,
+    help='Store cluster global state with snapshot.'
+)
+@click.option(
+    '--partial', is_flag=True, show_default=True,
+    help='Do not fail if primary shard is unavailable.'
+)
+@click.option(
+    '--wait_for_completion',
+    type=bool, show_default=True, default=True,
+    help='Wait for operation to complete'
+)
+@click.option(
+    '--skip_repo_fs_check', is_flag=True, expose_value=True,
+    help='Skip repository filesystem access validation.'
+)
+@click.option(
+    '--ignore_empty_list', is_flag=True,
+    help='Do not raise exception if there are no actionable indices'
+)
+@click.option(
+    '--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}',
+    help='JSON string representing an array of filters.'
+)
+@click.pass_context
+def restore_singleton(
+    ctx, repository, name, rename_pattern, rename_replacement, ignore_unavailable,
+    include_global_state, partial, wait_for_completion, skip_repo_fs_check,
+    ignore_empty_list, filter_list):
+    """
+    Restore a snapshot
+    """
+    action = 'restore'
+    action_class = CLASS_MAP[action]
+    c_args = ctx.obj['config']['client']
+    client = get_client(**c_args)
+    logger = logging.getLogger(__name__)
+    raw_options = {
+        'repository': repository,
+        'name': name,
+        'rename_pattern': rename_pattern,
+        'rename_replacement': rename_replacement,
+        'ignore_unavailable': ignore_unavailable,
+        'include_global_state': include_global_state,
+        'partial': partial,
+        'skip_repo_fs_check': skip_repo_fs_check,
+        'wait_for_completion': wait_for_completion,
+    }
+    logger.debug('Validating provided options: {0}'.format(raw_options))
+    mykwargs = option_schema_check(action, raw_options)
+    mykwargs.pop('repository')
+    logger.debug('Validating provided filters: {0}'.format(filter_list))
+    clean_filters = {
+        'filters': filter_schema_check(action, filter_list)
+    }
+    slo = SnapshotList(client, repository=repository)
+    _do_filters(slo, clean_filters, ignore_empty_list)
+    action_obj = action_class(slo, **mykwargs)
+    ### Do the action
+    _actionator(action, action_obj, dry_run=ctx.parent.params['dry_run'])
+
+
 @click.group()
 @click.option(
     '--config',
@@ -681,5 +761,6 @@ cli.add_command(forcemerge_singleton)
 cli.add_command(open_singleton)
 cli.add_command(replicas_singleton)
 cli.add_command(snapshot_singleton)
+cli.add_command(restore_singleton)
 cli.add_command(show_indices_singleton)
 cli.add_command(show_snapshots_singleton)

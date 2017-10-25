@@ -115,6 +115,7 @@ def action_specific(action):
             option_defaults.number_of_replicas(),
             option_defaults.shrink_prefix(),
             option_defaults.shrink_suffix(),
+            option_defaults.copy_aliases(),
             option_defaults.delete_after(),
             option_defaults.post_allocation(),
             option_defaults.wait_for_active_shards(action),

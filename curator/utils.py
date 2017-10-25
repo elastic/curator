@@ -465,6 +465,77 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         datetime.utcfromtimestamp(end_epoch).isoformat()))
     return (start_epoch, end_epoch)
 
+def absolute_date_range(
+        unit, date_from, date_to, 
+        date_from_format=None, date_to_format=None
+    ):
+    """
+    Get the epoch start time and end time of a range of ``unit``s, reckoning the
+    start of the week (if that's the selected unit) based on ``week_starts_on``,
+    which can be either ``sunday`` or ``monday``.
+
+    :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
+    :arg date_from: The simplified date for the start of the range
+    :arg date_to: The simplified date for the end of the range.  If this value
+        is the same as ``date_from``, the full value of ``unit`` will be
+        extrapolated for the range.  For example, if ``unit`` is ``months``,
+        and ``date_from`` and ``date_to`` are both ``2017.01``, then the entire
+        month of January 2017 will be the absolute date range.
+    :arg date_from_format: The strftime string used to parse ``date_from``
+    :arg date_to_format: The strftime string used to parse ``date_to``
+    :rtype: tuple
+    """
+    acceptable_units = ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years']
+    if unit not in acceptable_units:
+        raise ConfigurationError(
+            '"unit" must be one of: {0}'.format(acceptable_units))
+    if not date_from_format or not date_to_format:
+        raise ConfigurationError('Must provide "date_from_format" and "date_to_format"')
+    try:
+        start_epoch = datetime_to_epoch(get_datetime(date_from, date_from_format))
+        logger.debug('Start ISO8601 = {0}'.format(datetime.utcfromtimestamp(start_epoch).isoformat()))
+    except Exception as e:
+        raise ConfigurationError(
+            'Unable to parse "date_from" {0} and "date_from_format" {1}. '
+            'Error: {2}'.format(date_from, date_from_format, e)
+        )
+    try:
+        end_date = get_datetime(date_to, date_to_format)
+    except Exception as e:
+        raise ConfigurationError(
+            'Unable to parse "date_to" {0} and "date_to_format" {1}. '
+            'Error: {2}'.format(date_to, date_to_format, e)
+        )
+    # We have to iterate to one more month, and then subtract a second to get
+    # the last day of the correct month
+    if unit == 'months':
+        month = end_date.month
+        year = end_date.year
+        if month == 12:
+            year += 1
+            month = 1
+        else:
+            month += 1
+        new_end_date = datetime(year, month, 1, 0, 0, 0)
+        end_epoch = datetime_to_epoch(new_end_date) - 1
+    # Similarly, with years, we need to get the last moment of the year
+    elif unit == 'years':
+        new_end_date = datetime(end_date.year + 1, 1, 1, 0, 0, 0)
+        end_epoch = datetime_to_epoch(new_end_date) - 1
+    # It's not months or years, which have inconsistent reckoning...
+    else:
+        # This lets us use an existing method to simply add 1 more unit's worth
+        # of seconds to get hours, days, or weeks, as they don't change
+        # We use -1 as point of reference normally subtracts from the epoch
+        # and we need to add to it, so we'll make it subtract a negative value.
+        # Then, as before, subtract 1 to get the end of the period
+        end_epoch = get_point_of_reference(
+            unit, -1, epoch=datetime_to_epoch(end_date)) -1
+
+    logger.debug('End ISO8601 = {0}'.format(
+        datetime.utcfromtimestamp(end_epoch).isoformat()))
+    return (start_epoch, end_epoch)
+
 def byte_size(num, suffix='B'):
     """
     Return a formatted string indicating the size in bytes, with the proper
@@ -647,11 +718,13 @@ def check_master(client, master_only=False):
 
 def get_client(**kwargs):
     """
-    NOTE: AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
-    provided for future compatibility, should AWS ES support the
-    ``/_cluster/state/metadata`` endpoint.  So long as this endpoint does not
-    function in AWS ES, the client will not be able to use
-    :class:`curator.indexlist.IndexList`, which is the backbone of Curator 4
+    NOTE: AWS IAM parameters `aws_sign_request` and `aws_region` are
+     provided to facilitate request signing. The credentials will be
+     fetched from the local environment as per the AWS documentation:
+     http://amzn.to/2fRCGCt
+
+    AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
+    provided for users that still have their keys included in the Curator config file.
 
     Return an :class:`elasticsearch.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
@@ -677,6 +750,10 @@ def get_client(**kwargs):
         :mod:`requests-aws4auth` python module is installed)
     :arg aws_region: AWS Region (Only used if the :mod:`requests-aws4auth`
         python module is installed)
+    :arg aws_sign_request: Sign request to AWS (Only used if the :mod:`requests-aws4auth`
+         and :mod:`boto3` python modules are installed)
+     :arg aws_region: AWS Region where the cluster exists (Only used if the :mod:`requests-aws4auth`
+         and :mod:`boto3` python modules are installed)
     :arg ssl_no_validate: If `True`, do not validate the certificate
         chain.  This is an insecure option and you will see warnings in the
         log output.
@@ -745,22 +822,47 @@ def get_client(**kwargs):
                     import certifi
                     kwargs['verify_certs'] = True
                     kwargs['ca_certs'] = certifi.where()
-
+    kwargs['aws_key'] = False if not 'aws_key' in kwargs \
+        else kwargs['aws_key']
+    kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
+        else kwargs['aws_secret_key']
+    kwargs['aws_token='] = '' if not 'aws_token' in kwargs \
+        else kwargs['aws_token']
+    kwargs['aws_sign_request'] = False if not 'aws_sign_request' in kwargs \
+        else kwargs['aws_sign_request']
+    kwargs['aws_region'] = False if not 'aws_region' in kwargs \
+        else kwargs['aws_region']
+    if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_sign_request']:
+        if not kwargs['aws_region']:
+            raise MissingArgument(
+                'Missing "aws_region".'
+            )
+        if kwargs['aws_key'] or kwargs['aws_secret_key']:
+            if not (kwargs['aws_key'] and kwargs['aws_secret_key']):
+                raise MissingArgument(
+                    'Missing AWS Access Key or AWS Secret Key'
+                )
+    if kwargs['aws_sign_request']:
+        try:
+            from boto3 import session
+            from botocore import exceptions as botoex
+        # We cannot get credentials without the boto3 library, so we cannot continue
+        except ImportError as e:
+            logger.debug('Failed to import a module: %s' % e)
+            raise ImportError('Failed to import a module: %s' % e)
+        try:
+            session = session.Session()
+            credentials = session.get_credentials()
+            kwargs['aws_key'] = credentials.access_key
+            kwargs['aws_secret_key'] = credentials.secret_key
+            kwargs['aws_token'] = credentials.token
+        # If an attribute doesn't exist, we were not able to retrieve credentials as expected so we can't continue
+        except AttributeError:
+            logger.debug('Unable to locate AWS credentials')
+            raise botoex.NoCredentialsError
     try:
         from requests_aws4auth import AWS4Auth
-        kwargs['aws_key'] = False if not 'aws_key' in kwargs \
-            else kwargs['aws_key']
-        kwargs['aws_secret_key'] = False if not 'aws_secret_key' in kwargs \
-            else kwargs['aws_secret_key']
-        kwargs['aws_region'] = False if not 'aws_region' in kwargs \
-            else kwargs['aws_region']
-        if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_region']:
-            if not kwargs['aws_key'] and kwargs['aws_secret_key'] \
-                    and kwargs['aws_region']:
-                raise MissingArgument(
-                    'Missing one or more of "aws_key", "aws_secret_key", '
-                    'or "aws_region".'
-                )
+        if kwargs['aws_key']:
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
@@ -768,13 +870,12 @@ def get_client(**kwargs):
             kwargs['http_auth'] = (
                 AWS4Auth(
                     kwargs['aws_key'], kwargs['aws_secret_key'],
-                    kwargs['aws_region'], 'es')
+                    kwargs['aws_region'], 'es', session_token=kwargs['aws_token'])
             )
         else:
             logger.debug('"requests_aws4auth" module present, but not used.')
     except ImportError:
         logger.debug('Not using "requests_aws4auth" python module to connect.')
-
     if master_only:
         if len(kwargs['hosts']) > 1:
             raise ConfigurationError(
@@ -1085,6 +1186,7 @@ def create_repository(client, **kwargs):
         Defaults to value of ``cloud.aws.access_key``.
     :arg secret_key: `S3 only.` The secret key to use for authentication.
         Defaults to value of ``cloud.aws.secret_key``.
+    :arg skip_repo_fs_check: Skip verifying the repo after creation.
 
     :returns: A boolean value indicating success or failure.
     :rtype: bool
@@ -1093,6 +1195,8 @@ def create_repository(client, **kwargs):
         raise MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
+    skip_repo_fs_check = kwargs.pop('skip_repo_fs_check', False)
+    params = {'verify': 'false' if skip_repo_fs_check else 'true'}
 
     try:
         body = create_repo_body(**kwargs)
@@ -1107,7 +1211,7 @@ def create_repository(client, **kwargs):
                     repository
                 )
             )
-            client.snapshot.create_repository(repository=repository, body=body)
+            client.snapshot.create_repository(repository=repository, body=body, params=params)
         else:
             raise FailedExecution(
                 'Unable to create repository {0}.  A repository with that name '

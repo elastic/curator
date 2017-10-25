@@ -305,6 +305,33 @@ All of the age-related settings from the <<filtertype_age,`age`>> filter are
 supported, and the same restrictions apply with regard to filtering indices vs.
 snapshots.
 
+=== Pattern-based sorting
+
+[source,yaml]
+-------------
+- filtertype: count
+  count: 1
+  pattern: '^(.*)-\d{6}$'
+  reverse: true
+-------------
+
+This particular example will match indices following the basic rollover pattern
+of `indexname-######`, and keep the highest numbered index for each group.
+
+For example, given indices `a-000001`, `a-000002`, `a-000003` and `b-000006`,
+and `b-000007`, the indices will would be matched are `a-000003` and `b-000007`.
+Indices that do not match the regular expression in `pattern` will be
+automatically excluded.
+
+This is particularly useful with indices created and managed using the
+{ref}/indices-rollover-index.html[Rollover API], as you can select only the
+active indices with the above example (<<fe_exclude,`exclude`>> defaults to `False`).
+Setting <<fe_exclude,`exclude`>> to `True` with the above example will _remove_
+the active rollover indices, leaving only those which have been rolled-over.
+
+While this is perhaps most useful for the aforementioned scenario, it can
+also be used with age-based indices as well.
+
 === Reversing sorting
 
 Using the default configuration, <<fe_reverse,`reverse`>> is `True`.  Given
@@ -398,6 +425,7 @@ removed from the actionable list, leaving `index-2017.03.03`,
 
 * <<fe_reverse,reverse>>
 * <<fe_use_age,use_age>>
+* <<fe_pattern,pattern>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_exclude,exclude>> (default is `False`)
@@ -539,6 +567,7 @@ of <<fe_exclude,exclude>>.
 [source,yaml]
 -------------
  - filtertype: period
+   period_type: relative
    source: name
    range_from: -1
    range_to: -1
@@ -551,23 +580,23 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     being selected.  If a setting is set, but not used by a given
     <<filtertype,filtertype>>, it may generate an error.
 
-=== Periods, or Date Ranges
-
-For the purposes of this filter, a <<fe_unit,unit>> can be one of `hours`,
-`days`, `weeks`, `months`, or `years`.  Unless an <<fe_epoch,epoch>> timestamp
-is provided, reckoning will be centered on execution time.  Reckoning is
-truncated to the most recent whole unit.  For example, if I selected `hours` as
-my `unit`, and I began execution at 02:35, then the point of reckoning would be
-02:00. This is relatively easy with `days`, `months`, and `years`, but slightly
-more complicated with `weeks`. Some users may wish to reckon weeks by the ISO
-standard, which starts weeks on Monday. Others may wish to use Sunday as the
-first day of the week.  Both are acceptable options with the `period` filter.
-The default behavior for `weeks` is to have Sunday be the start of the week.
-This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
+=== Relative Periods
+A relative period will be reckoned relative to execution time, unless an
+<<fe_epoch,epoch>> timestamp is provided.  Reckoning is truncated to the most
+recent whole unit, where a <<fe_unit,unit>> can be one of `seconds`, `minutes`,
+`hours`, `days`, `weeks`, `months`, or `years`.  For example, if I selected
+`hours` as my `unit`, and I began execution at 02:35, then the point of reckoning
+would be 02:00. This is relatively easy with `days`, `months`, and `years`, but
+slightly more complicated with `weeks`. Some users may wish to reckon weeks by
+the ISO standard, which starts weeks on Monday. Others may wish to use Sunday
+as the first day of the week.  Both are acceptable options with the `period`
+filter. The default behavior for `weeks` is to have Sunday be the start of the
+week. This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
 
 [source,yaml]
 -------------
  - filtertype: period
+   period_type: relative
    source: name
    range_from: -1
    range_to: -1
@@ -606,6 +635,7 @@ timestring found in the index name from last month might look like this:
 [source,yaml]
 -------------
  - filtertype: period
+   period_type: relative
    source: name
    range_from: -1
    range_to: -1
@@ -616,18 +646,87 @@ timestring found in the index name from last month might look like this:
 Having `range_from` and `range_to` both be the same value will mean that only
 that whole unit will be selected, in this case, a month.
 
+IMPORTANT: `range_from` and `range_to` are required for the `relative` pattern type.
+
+=== Absolute Periods
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d'
+   unit: months
+   date_from: 2017.01
+   date_from_format: '%Y.%m'
+   date_to: 2017.01
+   date_to_format: '%Y.%m'
+-------------
+
+In addition to relative periods, you can define absolute periods.  These
+are defined as the period between the <<fe_date_from,`date_from`>> and the
+<<fe_date_to,`date_to`>>.  For example, if `date_from` and `date_to` are
+both `2017.01`, and <<fe_unit,`unit`>> is `months`, all indices with a
+`name`, `creation_date`, or `stats_result` (depending on the value of
+<<fe_source,`source`>>) within the month of January 2017 will match.
+
+The `date_from` is used to establish the beginning of the time period, regardless
+of whether `date_from_format` is in hours, and the indices you are trying to filter
+are in weeks or months.  The format and date of `date_from` will simply set the
+beginning of the time period.
+
+The `date_to`, `date_to_format`, and `unit` work in conjunction to select the
+end date.  For example, if my `date_to` were `2017.04`, and `date_to_format`
+is `%Y.%m` to properly parse that date, it would follow that `unit` would be
+`months`.
+
+[IMPORTANT]
+=====================================
+The period filter is smart enough to calculate `months` and `years`
+properly.  **If `unit` is not `months` or `years`,** then your date range will be `unit`
+seconds more than the beginning of the `date_from` date, minus 1 second,
+according to this table:
+
+include::inc_unit_table.asciidoc[]
+=====================================
+
+Specific date ranges can be captured with up to whole second resolution:
+
+[source,yaml]
+-------------
+ - filtertype: period
+   period_type: absolute
+   source: name
+   timestring: '%Y.%m.%d.%H'
+   unit: seconds
+   date_from: 2017-01-01T00:00:00
+   date_from_format: '%Y-%m-%dT%H:%M:%S'
+   date_to: 2017-01-01T12:34:56
+   date_to_format: '%Y-%m-%dT%H:%M:%S'
+-------------
+
+This example will capture indices with an hourly timestamp in their name that fit
+between the `date_from` and `date_to` timestamps.
+
+include::inc_strftime_table.asciidoc[]
+
 === Required settings
 
 * <<fe_source,source>>
-* <<fe_range_from,range_from>>
-* <<fe_range_to,range_to>>
 * <<fe_unit,unit>>
 
 === Dependent settings
 
+* <<fe_range_from,range_from>>
+* <<fe_range_to,range_to>>
+* <<fe_date_from,date_from>>
+* <<fe_date_to,date_to>>
+* <<fe_date_from_format,date_from_format>>
+* <<fe_date_to_format,date_to_format>>
 * <<fe_timestring,timestring>> (required if `source` is `name`)
 * <<fe_field,field>> (required if `source` is `field_stats`) [Indices only]
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`) [Indices only]
+* <<fe_intersect,intersect>> (optional if `source` is `field_stats`) [Indices only]
 
 === Optional settings
 
@@ -641,7 +740,7 @@ that whole unit will be selected, in this case, a month.
 == space
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices when their cumulative disk consumption exceeds
+indices when their cumulative disk consumption is `greater_than` (default) or `less_than` than
 <<fe_disk_space,disk_space>> gigabytes.  They are first ordered by age,
 or by alphabet, so as to guarantee the oldest indices are deleted first. They
 will remain in, or be removed from the actionable list based on the value of
@@ -801,6 +900,7 @@ messages like these in the output:
 * <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
+* <<fe_threshold_behavior,fe_threshold_behavior>> (default is `greater_than`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 * <<fe_exclude,exclude>> (default is `False`)

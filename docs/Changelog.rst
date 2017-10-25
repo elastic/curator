@@ -3,6 +3,46 @@
 Changelog
 =========
 
+5.3.0.alpha1 (25 October 2017)
+------------------------------
+
+**New Features**
+
+  * With the period filter and field_stats, it is useful to match indices
+    that fit `within` the period, rather than just their start dates.  This
+    is now possible with ``intersect``.  See more in the documentation.
+    Requested in #1045. (untergeek)
+  * Add a ``restore`` function to ``curator_cli`` singleton. Mentioned in
+    #851 (alexef)
+  * Add ``pattern`` to the ``count`` filter.  This is particularly useful
+    when working with rollover indices.  Requested in #1044 (untergeek)
+  * The ``es_repo_mgr create`` command now can take ``skip_repo_fs_check`` as
+    an argument (default is False) #1072 (alexef)
+  * Add ``pattern_type`` feature expansion to the ``period`` filter.  The
+    default behavior is ``pattern_type='relative'``, which preserves existing
+    behaviors so users with existing configurations can continue to use them
+    without interruption.  The new ``pattern_type`` is ``absolute``, which
+    allows you to specify hard dates for ``date_from`` and ``date_to``, while
+    ``date_from_format`` and ``date_to_format`` are strftime strings to
+    interpret the from and to dates. Requested in #1047 (untergeek)
+  * Add ``copy_aliases`` option to the ``shrink`` action. So this option is
+    only set in the ``shrink`` action. The default value of the option is
+    ``copy_aliases: 'False'`` and it does nothing. If you set to
+    ``copy_aliases: 'True'``, you could copy the aliases from the source index
+    to the target index. Requested in #1060 (monkey3199)
+  * IAM Credentials can now be retrieved from the environment using the Boto3 
+    Credentials provider. #1084 (kobuskc)
+
+**Bug Fixes**
+
+  * Delete the target index (if it exists) in the event that a shrink fails.
+    Requested in #1058 (untergeek)
+  * Fixed an integration test that could fail in the waning days of a month.
+
+**Documentation**
+
+  * Set repository access to be https by default.
+
 5.2.0 (1 September 2017)
 ------------------------
 
