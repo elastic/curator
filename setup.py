@@ -39,13 +39,10 @@ try:
         cert_file = ''
     # Dependencies are automatically detected, but it might need
     # fine tuning.
-    buildOptions = dict(
-        packages = [],
-        excludes = [],
-        include_files = [cert_file],
-    )
+
 
     base = 'Console'
+    msvcrt = ''
 
     icon = None
     if os.path.exists('Elastic.ico'):
@@ -86,6 +83,14 @@ try:
             targetName = "es_repo_mgr.exe",
             icon = icon
         )
+        msvcrt = 'vcruntime140.dll'
+
+    buildOptions = dict(
+        packages = [],
+        excludes = [],
+        include_files = [cert_file, msvcrt],
+        include_msvcr = True, 
+    )
     setup(
         name = "elasticsearch-curator",
         version = get_version(),
