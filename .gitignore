@@ -17,6 +17,8 @@ index.html
 docs/asciidoc/html_docs
 wheelhouse
 Elastic.ico
+vcruntime140.dll
+msi_guid.txt
 Vagrant/centos/6/.vagrant
 Vagrant/centos/7/.vagrant
 Vagrant/ubuntu/14.04/.vagrant
