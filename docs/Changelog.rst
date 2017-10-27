@@ -3,7 +3,7 @@
 Changelog
 =========
 
-5.3.0b1 (26 October 2017)
+5.3.0b2 (26 October 2017)
 -------------------------
 
 **New Features**
