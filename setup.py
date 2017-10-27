@@ -42,7 +42,6 @@ try:
 
 
     base = 'Console'
-    msvcrt = ''
 
     icon = None
     if os.path.exists('Elastic.ico'):
@@ -62,6 +61,11 @@ try:
         "run_es_repo_mgr.py",
         base=base,
         targetName = "es_repo_mgr",
+    )
+    buildOptions = dict(
+        packages = [],
+        excludes = [],
+        include_files = [cert_file],
     )
 
     if sys.platform == "win32":
@@ -83,14 +87,15 @@ try:
             targetName = "es_repo_mgr.exe",
             icon = icon
         )
-        msvcrt = 'vcruntime140.dll'
 
-    buildOptions = dict(
-        packages = [],
-        excludes = [],
-        include_files = [cert_file, msvcrt],
-        include_msvcr = True, 
-    )
+        msvcrt = 'vcruntime140.dll'
+        buildOptions = dict(
+            packages = [],
+            excludes = [],
+            include_files = [cert_file, msvcrt],
+            include_msvcr = True, 
+        )
+
     setup(
         name = "elasticsearch-curator",
         version = get_version(),
