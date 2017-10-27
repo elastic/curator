@@ -3,8 +3,8 @@
 Changelog
 =========
 
-5.3.0.alpha1 (25 October 2017)
-------------------------------
+5.3.0b1 (26 October 2017)
+-------------------------
 
 **New Features**
 
@@ -38,6 +38,7 @@ Changelog
   * Delete the target index (if it exists) in the event that a shrink fails.
     Requested in #1058 (untergeek)
   * Fixed an integration test that could fail in the waning days of a month.
+  * Fix build system anomalies for both unix and windows.
 
 **Documentation**
 
