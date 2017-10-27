@@ -3,11 +3,8 @@
 BASEPATH=$(pwd)
 PKG_TARGET=/curator_packages
 WORKDIR=/tmp/curator
-CX_VER="5.0.1"
-CX_FILE="/curator_source/unix_packages/cx_freeze-${CX_VER}.dev.tar.gz"
-CX_PATH="anthony_tuininga-cx_freeze-0e565139e6a3"
 PYVER=3.6
-MINOR=2
+MINOR=3
 INPUT_TYPE=python
 CATEGORY=python
 VENDOR=Elastic
@@ -78,7 +75,7 @@ if [ "${1}x" == "x" ]; then
   echo "Must provide version number (can be arbitrary)"
   exit 1
 else
-  cd ..
+  cd $(dirname $0)/..
   SOURCE_DIR=$(pwd)
 fi
 
@@ -139,14 +136,7 @@ fi
 ${PIPBIN} install -U --user setuptools
 ${PIPBIN} install -U --user requests_aws4auth
 ${PIPBIN} install -U --user boto3
-if [ "${CX_VER}" != "$(${PIPBIN} list | grep cx | awk '{print $2}' | tr -d '()')" ]; then
-  cd ${WORKDIR}
-  rm -rf ${CX_PATH}
-  tar zxf ${CX_FILE}
-  cd ${CX_PATH}
-  ${PIPBIN} install -U --user .
-  cd ${WORKDIR}
-fi
+${PIPBIN} install -U --user cx_freeze
 
 cd $SOURCE_DIR
 
