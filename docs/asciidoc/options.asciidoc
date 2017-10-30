@@ -123,6 +123,29 @@ log but ignore the exception that was raised.
 
 The default value for this setting is `False`
 
+
+[[option_copy_aliases]]
+== copy_aliases
+
+NOTE: This setting is only used by the <<shrink,shrink>> action.
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Reimplement source index aliases on target index after successful shrink.
+options:
+  shrink_node: DETERMINISTIC
+  copy_aliases: True
+filters:
+  - filtertype: ...
+-------------
+
+The default value of this setting is `False`.  If `True`, after an index has been successfully
+shrunk, any aliases associated with the source index will be copied to the target index.
+
+
 [[option_count]]
 == count
 
@@ -1051,13 +1074,13 @@ The current sub-options are as follows:
 === permit_masters
 
 This option indicates whether the shrink action can select master eligible nodes when using
-`DETERMINISTIC` as the value for <<option_shrink_node,shrink_node>>. The default value is 
+`DETERMINISTIC` as the value for <<option_shrink_node,shrink_node>>. The default value is
 `False`. Please note that this will exclude the elected master, as well as other
 master-eligible nodes.
 
 [IMPORTANT]
 =====================================
-If you have a small cluster with only master/data nodes, you must set `permit_masters` to 
+If you have a small cluster with only master/data nodes, you must set `permit_masters` to
 `True` in order to select one of those nodes as a potential <<option_shrink_node,shrink_node>>.
 =====================================
 
