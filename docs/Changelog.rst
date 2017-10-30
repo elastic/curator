@@ -3,7 +3,7 @@
 Changelog
 =========
 
-5.3.0b2 (26 October 2017)
+5.3.0b3 (30 October 2017)
 -------------------------
 
 **New Features**
@@ -43,6 +43,7 @@ Changelog
 **Documentation**
 
   * Set repository access to be https by default.
+  * Add documentation for ``copy_aliases`` option.
 
 5.2.0 (1 September 2017)
 ------------------------

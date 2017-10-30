@@ -1082,6 +1082,7 @@ as needed.
 
 * <<option_continue,continue_if_exception>>
 * <<option_ignore_empty,ignore_empty_list>>
+* <<option_copy_aliases,copy_aliases>>
 * <<option_delete_after,delete_after>>
 * <<option_disable,disable_action>>
 * <<option_extra_settings,extra_settings>>
