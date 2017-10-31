@@ -28,29 +28,6 @@ port = int(port) if port else 9200
 global_client = elasticsearch.Elasticsearch(host=host, port=port)
 
 class TestCLIDeleteIndices(CuratorTestCase):
-    def test_retention_from_name_months(self):
-        # Test extraction of unit_count from index name
-        # Create indices for 10 months with retention time of 2 months in index name
-        # Expected: 8 oldest indices are deleted, 2 remain
-        self.args['prefix'] = 'logstash_2_'
-        self.args['time_unit'] = 'months'
-        self.create_indices(10)
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-                          testvars.delete_pattern_proto.format(
-                              'age', 'name', 'older', '\'%Y.%m\'', 'months', -1, '_([0-9]+)_', ' ', ' ', ' '
-                          )
-                          )
-        test = clicktest.CliRunner()
-        result = test.invoke(
-            curator.cli,
-            [
-                '--config', self.args['configfile'],
-                self.args['actionfile']
-            ],
-        )
-        self.assertEquals(2, len(curator.get_indices(self.client)))
     def test_retention_from_name_days(self):
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
