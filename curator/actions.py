@@ -604,7 +604,7 @@ class IndexSettings(object):
         """
         verify_index_list(ilo)
         if not index_settings:
-            raise ConfigurationError('Missing value for "index_settings"')
+            raise MissingArgument('Missing value for "index_settings"')
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client     = ilo.client
