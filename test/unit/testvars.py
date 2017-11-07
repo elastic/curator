@@ -582,6 +582,18 @@ fieldstats_four = {
     }
 }
 
+fieldstats_query = {
+    u'aggregations': {
+        u'min' : {
+            u'value_as_string': u'2016-03-03T00:00:06.189Z',
+            u'value': 1456963206189,
+        },
+        u'max' : {
+            u'value': 1457049599152,
+            u'value_as_string': u'2016-03-03T23:59:59.152Z',
+        }
+    }
+}
 
 shards         = { 'indices': { named_index: { 'shards': {
         '0': [ { 'num_search_segments' : 15 }, { 'num_search_segments' : 21 } ],

@@ -96,27 +96,13 @@ class TestIndexListAgeFilterName(TestCase):
         )
 
 class TestIndexListAgeFilterStatsAPI(TestCase):
-    def test_get_field_stats_dates_success(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        il = curator.IndexList(client)
-        client.field_stats.return_value = testvars.fieldstats_two
-        il._get_field_stats_dates(field='timestamp')
-        self.assertEqual(
-            curator.fix_epoch(
-                testvars.fieldstats_two['indices']['index-2016.03.04']['fields']['timestamp']['min_value']
-            ),
-            il.index_info['index-2016.03.04']['age']['min_value']
-        )
     def test_get_field_stats_dates_negative(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
+        client.search.return_value = testvars.fieldstats_query
         il = curator.IndexList(client)
         client.field_stats.return_value = testvars.fieldstats_two
         il._get_field_stats_dates(field='timestamp')
@@ -127,7 +113,7 @@ class TestIndexListAgeFilterStatsAPI(TestCase):
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
+        client.search.return_value = {u'aggregations': {u'foo':u'bar'}}
         il = curator.IndexList(client)
         self.assertRaises(
             curator.ActionError, il._get_field_stats_dates, field='not_in_index')
@@ -426,108 +412,6 @@ class TestIndexListFilterByAge(TestCase):
         self.assertRaises(ValueError, il.filter_by_age,
             source='invalid', direction='older', unit='days', unit_count=1
         )
-    def test_field_stats_older_than_now(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='older',
-            field='timestamp', unit='days', unit_count=1
-        )
-        self.assertEqual(
-            ['index-2016.03.03','index-2016.03.04'], sorted(il.indices)
-        )
-    def test_field_stats_younger_than_now(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='younger',
-            field='timestamp', unit='days', unit_count=1
-        )
-        self.assertEqual([], sorted(il.indices))
-    def test_field_stats_younger_than_past_date(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='younger',
-            field='timestamp', unit='seconds', unit_count=0, epoch=1457049599
-        )
-        self.assertEqual(['index-2016.03.04'], sorted(il.indices))
-    def test_field_stats_older_than_past_date(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='older',
-            field='timestamp', unit='seconds', unit_count=0, epoch=1456963207
-        )
-        self.assertEqual(['index-2016.03.03'], sorted(il.indices))
-    def test_field_stats_older_than_now_max(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='older',
-            field='timestamp', stats_result='max_value', unit='days', unit_count=0
-        )
-        self.assertEqual(
-            ['index-2016.03.03','index-2016.03.04'], sorted(il.indices)
-        )
-    def test_field_stats_younger_than_now_max(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='younger',
-            field='timestamp', stats_result='max_value', unit='days', unit_count=0
-        )
-        self.assertEqual([], sorted(il.indices))
-    def test_field_stats_younger_than_past_date_max(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='younger',
-            field='timestamp', stats_result='max_value', unit='seconds',
-            unit_count=0, epoch=1457135998
-        )
-        self.assertEqual(['index-2016.03.04'], sorted(il.indices))
-    def test_field_stats_older_than_past_date_max(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
-        client.indices.stats.return_value = testvars.stats_two
-        client.field_stats.return_value = testvars.fieldstats_two
-        il = curator.IndexList(client)
-        il.filter_by_age(source='field_stats', direction='older',
-            field='timestamp', stats_result='max_value', unit='seconds',
-            unit_count=0, epoch=1457049600
-        )
-        self.assertEqual(['index-2016.03.03'], sorted(il.indices))
 
 class TestIndexListFilterBySpace(TestCase):
     def test_missing_disk_space_value(self):
@@ -663,7 +547,7 @@ class TestIndexListFilterBySpace(TestCase):
         client.indices.get_settings.return_value = testvars.settings_four
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
-        client.field_stats.return_value = testvars.fieldstats_four
+        client.search.return_value = testvars.fieldstats_query
         il = curator.IndexList(client)
         self.assertRaises(ValueError,
             il.filter_by_space, disk_space=2.1, use_age=True,
@@ -693,19 +577,6 @@ class TestIndexListFilterBySpace(TestCase):
             il.filter_by_space, disk_space=2.1, use_age=True,
             source='field_stats', field='timestamp', stats_result='invalid'
         )
-    def test_filter_result_by_date_field_stats(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.field_stats.return_value = testvars.fieldstats_four
-        il = curator.IndexList(client)
-        il.filter_by_space(
-            disk_space=2.1, use_age=True,
-            source='field_stats', field='timestamp'
-        )
-        self.assertEqual(['a-2016.03.03'], il.indices)
     def test_filter_result_by_creation_date(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
