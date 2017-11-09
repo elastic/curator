@@ -64,7 +64,7 @@ echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9201"]' >> $RC/elasticsearch
 
 
 MAJORVER=$(echo $ES_VERSION | awk -F\. '{print $1}')
-if [ "$MAJORVER" == "6" ]; then
+if [[ $MAJORVER -lt 6 ]]; then
   start_es $java_home "-d -Epath.conf=$LC" 9200 "local"
   start_es $java_home "-d -Epath.conf=$RC" 9201 "remote"
 else
