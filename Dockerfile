@@ -6,5 +6,6 @@ MAINTAINER Christian R. Vozar <christian@rogueethic.com>
 RUN pip install --quiet elasticsearch-curator
 
 ADD ./run_continuously.sh /run_continuously.sh
+RUN chmod +x /run_continuously.sh
 
 ENTRYPOINT [ "/run_continuously.sh" ]
