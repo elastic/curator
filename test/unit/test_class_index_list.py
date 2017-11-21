@@ -770,7 +770,7 @@ class TestIterateFiltersIndex(TestCase):
         client.cluster.state.return_value = testvars.clu_state_four
         client.indices.stats.return_value = testvars.stats_four
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.pattern_ft)['actions'][1]
+        config = yaml.safe_load(testvars.pattern_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(['a-2016.03.03'], ilo.indices)
     def test_age_filtertype(self):
@@ -780,7 +780,7 @@ class TestIterateFiltersIndex(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.age_ft)['actions'][1]
+        config = yaml.safe_load(testvars.age_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(['index-2016.03.03'], ilo.indices)
     def test_space_filtertype(self):
@@ -791,7 +791,7 @@ class TestIterateFiltersIndex(TestCase):
         client.indices.stats.return_value = testvars.stats_four
         client.field_stats.return_value = testvars.fieldstats_four
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.space_ft)['actions'][1]
+        config = yaml.safe_load(testvars.space_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(['a-2016.03.03'], ilo.indices)
     def test_forcemerge_filtertype(self):
@@ -802,7 +802,7 @@ class TestIterateFiltersIndex(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.indices.segments.return_value = testvars.shards
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.forcemerge_ft)['actions'][1]
+        config = yaml.safe_load(testvars.forcemerge_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual([testvars.named_index], ilo.indices)
     def test_allocated_filtertype(self):
@@ -812,7 +812,7 @@ class TestIterateFiltersIndex(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.allocated_ft)['actions'][1]
+        config = yaml.safe_load(testvars.allocated_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(['index-2016.03.04'], ilo.indices)
     def test_kibana_filtertype(self):
@@ -828,7 +828,7 @@ class TestIterateFiltersIndex(TestCase):
             '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data',
             'dummy'
         ]
-        config = yaml.load(testvars.kibana_ft)['actions'][1]
+        config = yaml.safe_load(testvars.kibana_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(['dummy'], ilo.indices)
     def test_opened_filtertype(self):
@@ -839,7 +839,7 @@ class TestIterateFiltersIndex(TestCase):
         client.indices.stats.return_value = testvars.stats_four
         client.field_stats.return_value = testvars.fieldstats_four
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.opened_ft)['actions'][1]
+        config = yaml.safe_load(testvars.opened_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(['c-2016.03.05'], ilo.indices)
     def test_closed_filtertype(self):
@@ -850,7 +850,7 @@ class TestIterateFiltersIndex(TestCase):
         client.indices.stats.return_value = testvars.stats_four
         client.field_stats.return_value = testvars.fieldstats_four
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.closed_ft)['actions'][1]
+        config = yaml.safe_load(testvars.closed_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(
             ['a-2016.03.03','b-2016.03.04','d-2016.03.06'], sorted(ilo.indices))
@@ -861,7 +861,7 @@ class TestIterateFiltersIndex(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.none_ft)['actions'][1]
+        config = yaml.safe_load(testvars.none_ft)['actions'][1]
         ilo.iterate_filters(config)
         self.assertEqual(
             ['index-2016.03.03', 'index-2016.03.04'], sorted(ilo.indices))
@@ -872,7 +872,7 @@ class TestIterateFiltersIndex(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         ilo = curator.IndexList(client)
-        config = yaml.load(testvars.invalid_ft)['actions'][1]
+        config = yaml.safe_load(testvars.invalid_ft)['actions'][1]
         self.assertRaises(
             curator.ConfigurationError,
             ilo.iterate_filters, config

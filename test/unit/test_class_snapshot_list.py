@@ -304,7 +304,7 @@ class TestIterateFiltersSnaps(TestCase):
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
-        config = yaml.load(testvars.invalid_ft)['actions'][1]
+        config = yaml.safe_load(testvars.invalid_ft)['actions'][1]
         self.assertRaises(
             curator.ConfigurationError,
             slo.iterate_filters, config
@@ -314,7 +314,7 @@ class TestIterateFiltersSnaps(TestCase):
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
-        config = yaml.load(testvars.snap_age_ft)['actions'][1]
+        config = yaml.safe_load(testvars.snap_age_ft)['actions'][1]
         slo.iterate_filters(config)
         self.assertEqual(
             ['snap_name', 'snapshot-2015.03.01'], sorted(slo.snapshots))
@@ -323,7 +323,7 @@ class TestIterateFiltersSnaps(TestCase):
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
-        config = yaml.load(testvars.snap_pattern_ft)['actions'][1]
+        config = yaml.safe_load(testvars.snap_pattern_ft)['actions'][1]
         slo.iterate_filters(config)
         self.assertEqual(
             ['snap_name', 'snapshot-2015.03.01'], sorted(slo.snapshots))
@@ -332,7 +332,7 @@ class TestIterateFiltersSnaps(TestCase):
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
-        config = yaml.load(testvars.snap_none_ft)['actions'][1]
+        config = yaml.safe_load(testvars.snap_none_ft)['actions'][1]
         slo.iterate_filters(config)
         self.assertEqual(
             ['snap_name', 'snapshot-2015.03.01'], sorted(slo.snapshots))
