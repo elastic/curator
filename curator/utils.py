@@ -50,7 +50,7 @@ def get_yaml(path):
 
     raw = read_file(path)
     try:
-        cfg = yaml.safe_load(raw)
+        cfg = yaml.load(raw)
     except yaml.scanner.ScannerError as e:
         raise ConfigurationError(
             'Unable to parse YAML file. Error: {0}'.format(e))
