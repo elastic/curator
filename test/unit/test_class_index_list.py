@@ -730,6 +730,18 @@ class TestIndexListFilterKibana(TestCase):
         il.indices = ['.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data', 'dummy']
         il.filter_kibana()
         self.assertEqual(['dummy'], il.indices)
+    def test_filter_kibana_positive_include(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        # Establish the object per requirements, then overwrite
+        il.indices = ['.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data', 'dummy']
+        il.filter_kibana(exclude=False)
+        self.assertEqual(['.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'], il.indices)        
     def test_filter_kibana_positive_exclude(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
