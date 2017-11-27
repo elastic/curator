@@ -935,8 +935,6 @@ class IndexList(object):
             name. Only used for index filtering by ``name``.
         :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
             ``years``.
-        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
-            be calculated out to the relative number of seconds.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
