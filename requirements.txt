@@ -1,5 +1,5 @@
 urllib3>=1.20
-elasticsearch>=5.4.0,<6.0.0
+elasticsearch>=5.4.0,<7.0.0
 click>=6.7
 pyyaml>=3.10
 voluptuous>=0.9.3

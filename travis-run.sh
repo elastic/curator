@@ -23,6 +23,19 @@ start_es() {
   # curl http://127.0.0.1:$es_port && echo "ES is up!" || cat /tmp/$es_cluster.log ./elasticsearch/logs/$es_cluster.log
 }
 
+start_es6() {
+  jhome=$1
+  es_args=$2
+  path_env=$3
+  es_port=$4
+  es_cluster=$5
+  export JAVA_HOME=$jhome
+  ES_PATH_CONF=$path_env elasticsearch/bin/elasticsearch $es_args > /tmp/$es_cluster.log &
+  sleep 20
+  curl http://127.0.0.1:$es_port && echo "$es_cluster Elasticsearch is up!" || cat /tmp/$es_cluster.log ./elasticsearch/logs/$es_cluster.log
+  # curl http://127.0.0.1:$es_port && echo "ES is up!" || cat /tmp/$es_cluster.log ./elasticsearch/logs/$es_cluster.log
+}
+
 setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
 
 java_home='/usr/lib/jvm/java-8-oracle'
@@ -50,8 +63,14 @@ echo 'node.max_local_storage_nodes: 2' >> $RC/elasticsearch.yml
 echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9201"]' >> $RC/elasticsearch.yml
 
 
-start_es $java_home "-d -Epath.conf=$LC" 9200 "local"
-start_es $java_home "-d -Epath.conf=$RC" 9201 "remote"
+MAJORVER=$(echo $ES_VERSION | awk -F\. '{print $1}')
+if [[ $MAJORVER -lt 6 ]]; then
+  start_es $java_home "-d -Epath.conf=$LC" 9200 "local"
+  start_es $java_home "-d -Epath.conf=$RC" 9201 "remote"
+else
+  start_es6 $java_home "-d" "$LC" 9200 "local"
+  start_es6 $java_home "-d" "$RC" 9201 "remote"
+fi
 
 python setup.py test
 result=$(head -1 nosetests.xml | awk '{print $6 " " $7 " " $8}' | awk -F\> '{print $1}' | tr -d '"')

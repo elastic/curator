@@ -222,28 +222,20 @@ This fix originally appeared https://github.com/elastic/curator/issues/56#issuec
 === A: Because Curator requires access to the `/_cluster/state/metadata` endpoint.
 
 NOTE: AWS ES 5.3 officially supports Curator for index managment operations. AWS ES
-5.3 does not yet expose the `/_snapshot/_status` endpoint Curator uses, and therefore
-does not yet support snapshot operations.  Older versions of AWS ES are not supported
+5.5 exposes the `/_snapshot/_status` endpoint Curator uses, and therefore only AWS ES
+5.5 supports full snapshot operations.  Older versions of AWS ES are not supported
 by Curator versions 4 or 5.
 
 There is some confusion because Curator 3 supported AWS ES, but Curator 4 & 5 do
-not.  There are even some IAM credentials listed as options for client
-connections.  These are currently available, but not able to be used.  This may
-change at some point, so they remain at the ready until then.
-
-Curator 4 & 5 require access to the `/_cluster/state/metadata` endpoint in order
+not.  Curator 4 & 5 require access to the `/_cluster/state/metadata` endpoint in order
 to pull metadata at IndexList initialization time for _all_ indices.  This
 metadata is used to determine index routing information, index sizing, index
 state (either `open` or `close`), aliases, and more.  Curator 4 switched to
 doing this in order to reduce the number of repetitive client calls that were
 made in the previous versions. Curator 5 uses the same method.
 
-AWS currently has a 5.3 version of Elasticsearch, which officially supports
-Curator _for index management operations only._ AWS ES does not yet expose the
-`/_snapshot/status` endpoint, which is required by Curator for snapshot management.
-Additionally, AWS ES versions 5.1 and older do not fully support the
-`/_cluster/state/metadata` endpoint, which means that Curator cannot be used to
-manage indices in AWS if your cluster is version 5.1 or older.
+This endpoint was not fully available in AWS ES until version 5.3.  The `/_snapshot/_status`
+endpoint was made available in AWS ES 5.5.
 
 
 '''''

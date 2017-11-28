@@ -236,37 +236,44 @@ class IndexList(object):
 
     def _get_field_stats_dates(self, field='@timestamp'):
         """
-        Add indices to `index_info` based on the value the stats api returns,
-        as determined by `field`
+        Add indices to `index_info` based on the values the queries return,
+        as determined by the min and max aggregated values of `field`
 
         :arg field: The field with the date value.  The field must be mapped in
             elasticsearch as a date datatype.  Default: ``@timestamp``
         """
-        self.loggit.debug('Getting index date from field_stats API')
         self.loggit.debug(
-            'Cannot use field_stats on closed indices.  '
-            'Omitting any closed indices.'
+            'Getting index date by querying indices for min & max value of '
+            '{0} field'.format(field)
+        )
+        self.loggit.debug(
+            'Cannot use query closed indices. Omitting any closed indices.'
         )
         self.filter_closed()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = self.client.field_stats(
-                index=to_csv(l), fields=field, level='indices'
-                )['indices']
-            if working_list:
-                for index in list(working_list.keys()):
+            for index in l:
+                body = {
+                    'aggs' : {
+                        'min' : { 'min' : { 'field' : field } },
+                        'max' : { 'max' : { 'field' : field } }
+                    }
+                }
+                response = self.client.search(index=index, size=0, body=body)
+                self.loggit.debug('RESPONSE: {0}'.format(response))
+                if response:
                     try:
+                        r = response['aggregations']
+                        self.loggit.debug('r: {0}'.format(r))
                         s = self.index_info[index]['age']
-                        wl = working_list[index]['fields'][field]
-                        # Use these new references to keep these lines more
-                        # readable
-                        s['min_value'] = fix_epoch(wl['min_value'])
-                        s['max_value'] = fix_epoch(wl['max_value'])
+                        s['min_value'] = fix_epoch(r['min']['value'])
+                        s['max_value'] = fix_epoch(r['max']['value'])
+                        self.loggit.debug('s: {0}'.format(s))
                     except KeyError as e:
                         raise ActionError(
                             'Field "{0}" not found in index '
                             '"{1}"'.format(field, index)
-                        )
+                            )
 
     def _calculate_ages(self, source=None, timestring=None, field=None,
             stats_result=None

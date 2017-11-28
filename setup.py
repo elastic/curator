@@ -22,7 +22,7 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=5.4.0,<6.0.0' ]
+    res = ['elasticsearch>=5.4.0,<7.0.0' ]
     res.append('click>=6.7')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
@@ -63,6 +63,11 @@ try:
         base=base,
         targetName = "es_repo_mgr",
     )
+    buildOptions = dict(
+        packages = [],
+        excludes = [],
+        include_files = [cert_file],
+    )
 
     if sys.platform == "win32":
         curator_exe = Executable(
@@ -83,14 +88,15 @@ try:
             targetName = "es_repo_mgr.exe",
             icon = icon
         )
-        msvcrt = 'vcruntime140.dll'
 
-    buildOptions = dict(
-        packages = [],
-        excludes = [],
-        include_files = [cert_file, msvcrt],
-        include_msvcr = True, 
-    )
+        msvcrt = 'vcruntime140.dll'
+        buildOptions = dict(
+            packages = [],
+            excludes = [],
+            include_files = [cert_file, msvcrt],
+            include_msvcr = True, 
+        )
+ 
     setup(
         name = "elasticsearch-curator",
         version = get_version(),

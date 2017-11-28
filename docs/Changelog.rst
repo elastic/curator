@@ -3,8 +3,26 @@
 Changelog
 =========
 
-5.3.0b1 (26 October 2017)
--------------------------
+5.4.0 (13 November 2017)
+------------------------
+
+**Announcement**
+
+  * Support for Elasticsearch 6.0!!! Yes! 
+
+**New Features**
+
+  * The ``field_stats`` API may be gone from Elasticsearch, but its utility
+    cannot be denied.  And so, Curator has replaced the ``field_stats`` API
+    call with a small aggregation query.  This will be perhaps a bit more 
+    costly in performance terms, as this small aggregation query must be made
+    to each index in sequence, rather than as a one-shot call, like the 
+    ``field_stats`` API call.  But the benefit will remain available, and 
+    it's the only major API that did not persevere between Elasticsearch 5.x 
+    and 6.x that was needed by Curator.
+
+5.3.0 (31 October 2017)
+-----------------------
 
 **New Features**
 
@@ -43,6 +61,7 @@ Changelog
 **Documentation**
 
   * Set repository access to be https by default.
+  * Add documentation for ``copy_aliases`` option.
 
 5.2.0 (1 September 2017)
 ------------------------
@@ -124,7 +143,6 @@ Changelog
   * Fix/improve rST API documentation.
   * Thanks to many users who not only found and reported documentation issues,
     but also submitted corrections.
-
 
 5.1.1 (8 June 2017)
 -------------------
