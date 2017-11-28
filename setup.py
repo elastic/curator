@@ -42,7 +42,6 @@ try:
 
 
     base = 'Console'
-    msvcrt = ''
 
     icon = None
     if os.path.exists('Elastic.ico'):
@@ -96,7 +95,7 @@ try:
             include_files = [cert_file, msvcrt],
             include_msvcr = True, 
         )
- 
+
     setup(
         name = "elasticsearch-curator",
         version = get_version(),
