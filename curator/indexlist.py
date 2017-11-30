@@ -601,6 +601,8 @@ class IndexList(object):
                     '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'
                 ]:
                 self.__excludify(True, exclude, index)
+            else:
+                self.__excludify(False, exclude, index)
 
     def filter_forceMerged(self, max_num_segments=None, exclude=True):
         """
