@@ -143,10 +143,6 @@ Changelog
   * Fix/improve rST API documentation.
   * Thanks to many users who not only found and reported documentation issues,
     but also submitted corrections.
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 
 5.1.1 (8 June 2017)
 -------------------
