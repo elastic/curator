@@ -63,6 +63,7 @@ To match all indices _except_ those with a Year.month.day pattern, like
 - filtertype: pattern
  kind: timestring
  value: '%Y.%m.%d'
+ exclude: True
 -------------
 
 include::inc_timestring_regex.asciidoc[]
