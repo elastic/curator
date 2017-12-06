@@ -3,6 +3,32 @@
 Changelog
 =========
 
+5.4.1 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Improve Dockerfile to build from source and produce slimmer image 
+    #1111 (mikn)
+  * Fix ``filter_kibana`` to correctly use ``exclude`` argument 
+    #1116 (cjuroz)
+  * Fix `ssl_no_validate` behavior within AWS ES #1118 (igalarzab)
+  * Improve command-line exception management #1119 (4383)
+  * Make ``alias`` action always process ``remove`` before ``add``
+    to prevent undesired alias removals. #1120 (untergeek)
+
+**General**
+
+  * Bump ES versions in Travis CI
+
+**Documentation**
+
+  * Remove ``unit_count`` parameter doc for parameter that no longer 
+    exists #1107 (dashford)
+  * Add missing ``exclude: True`` in ``timestring`` docs #1117 (GregMefford)
+
+
+
 5.4.0 (13 November 2017)
 ------------------------
 

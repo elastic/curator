@@ -286,3 +286,43 @@ class TestCLIAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(-1, result.exit_code)
+    def test_add_and_remove_sorted(self):
+        alias = 'testalias'
+        alias_add_remove = (
+            '---\n'
+            'actions:\n'
+            '  1:\n'
+            '    description: "Add/remove specified indices from designated alias"\n'
+            '    action: alias\n'
+            '    options:\n'
+            '      name: {0}\n'
+            '      continue_if_exception: False\n'
+            '      disable_action: False\n'
+            '    add:\n'
+            '      filters:\n'
+            '        - filtertype: none\n'
+            '    remove:\n'
+            '      filters:\n'
+            '        - filtertype: pattern\n'
+            '          kind: prefix\n'
+            '          value: my\n'
+            
+        )
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'], alias_add_remove.format(alias))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='my_index', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {alias: {}}}},
+            self.client.indices.get_alias(name=alias)
+        )
