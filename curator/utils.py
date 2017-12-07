@@ -866,6 +866,8 @@ def get_client(**kwargs):
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
+            if kwargs['ssl_no_validate']:
+                kwargs['verify_certs'] = False
             kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
             kwargs['http_auth'] = (
                 AWS4Auth(
