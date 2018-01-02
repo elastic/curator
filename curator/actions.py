@@ -1,3 +1,4 @@
+from .cache import cache
 import logging
 import re
 import time
@@ -1881,6 +1882,7 @@ class Shrink(object):
             except Exception as e:
                 raise exceptions.ConfigurationError('Unable to apply extra settings "{0}" to shrink body. Exception: {1}'.format(extra_settings, e))
 
+    @cache.cache('_data_node', expire=86400)
     def _data_node(self, node_id):
         roles = utils.node_roles(self.client, node_id)
         name = utils.node_id_to_name(self.client, node_id)

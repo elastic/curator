@@ -4,6 +4,7 @@ import logging
 import yaml, os, random, re, string, sys
 from datetime import timedelta, datetime, date
 from voluptuous import Schema
+from .cache import cache
 from curator import exceptions
 from curator.defaults import settings
 from curator.validators import SchemaCheck, actions, filters, options
@@ -1793,6 +1794,7 @@ def node_roles(client, node_id):
 def index_size(client, idx):
     return client.indices.stats(index=idx)['indices'][idx]['total']['store']['size_in_bytes']
 
+@cache.cache('single_data_path', expire=3600)
 def single_data_path(client, node_id):
     """
     In order for a shrink to work, it should be on a single filesystem, as
