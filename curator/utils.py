@@ -155,7 +155,7 @@ def verify_snapshot_list(test):
     """
     # It breaks if this import isn't local to this function
     from .snapshotlist import SnapshotList
-    if not isinstance(test, SnapshotList):    
+    if not isinstance(test, SnapshotList):
         raise TypeError(
             'Not an SnapshotList object. Type: {0}.'.format(type(test))
         )
@@ -363,14 +363,14 @@ def get_unit_count_from_name(index_name, pattern):
 
 def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     """
-    Get the epoch start time and end time of a range of ``unit``s, reckoning the 
-    start of the week (if that's the selected unit) based on ``week_starts_on``, 
+    Get the epoch start time and end time of a range of ``unit``s, reckoning the
+    start of the week (if that's the selected unit) based on ``week_starts_on``,
     which can be either ``sunday`` or ``monday``.
 
     :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
     :arg range_from: How many ``unit`` (s) in the past/future is the origin?
     :arg range_to: How many ``unit`` (s) in the past/future is the end point?
-    :arg epoch: An epoch timestamp used to establish a point of reference for 
+    :arg epoch: An epoch timestamp used to establish a point of reference for
         calculations.
     :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
     :rtype: tuple
@@ -390,7 +390,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     # Reverse the polarity, because -1 as last week makes sense when read by
     # humans, but datetime timedelta math makes -1 in the future.
     origin = range_from * -1
-    # These if statements help get the start date or start_delta 
+    # These if statements help get the start date or start_delta
     if unit == 'hours':
         PoR = datetime(rawPoR.year, rawPoR.month, rawPoR.day, rawPoR.hour, 0, 0)
         start_delta = timedelta(hours=origin)
@@ -425,7 +425,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
                     year += 1
                     month = 1
                 else:
-                    month += 1         
+                    month += 1
         start_date = datetime(year, month, 1, 0, 0, 0)
     if unit == 'years':
         PoR = datetime(rawPoR.year, 1, 1, 0, 0, 0)
@@ -438,7 +438,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         datetime.utcfromtimestamp(start_epoch).isoformat()))
     # This is the number of units we need to consider.
     count = (range_to - range_from) + 1
-    # We have to iterate to one more month, and then subtract a second to get 
+    # We have to iterate to one more month, and then subtract a second to get
     # the last day of the correct month
     if unit == 'months':
         month = start_date.month
@@ -466,7 +466,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     return (start_epoch, end_epoch)
 
 def absolute_date_range(
-        unit, date_from, date_to, 
+        unit, date_from, date_to,
         date_from_format=None, date_to_format=None
     ):
     """
@@ -767,7 +767,7 @@ def get_client(**kwargs):
         not work if `hosts` has more than one value.**  It will raise an
         Exception in that case.
     :type master_only: bool
-    :arg skip_version_test: If `True`, skip the version check as part of the 
+    :arg skip_version_test: If `True`, skip the version check as part of the
         client connection.
     :rtype: :class:`elasticsearch.Elasticsearch`
     """
@@ -942,7 +942,7 @@ def get_repository(client, repository=''):
             'Check Elasticsearch logs for more information.'.format(
                 repository, e.status_code, e.error
             )
-        )        
+        )
 
 def get_snapshot(client, repository=None, snapshot=''):
     """
@@ -1478,16 +1478,16 @@ def validate_actions(data):
                 clean_config[action_id]['options'].update(
                     { 'remote_filters' : clean_remote_filters }
                 )
-                
+
     # if we've gotten this far without any Exceptions raised, it's valid!
     return { 'actions' : clean_config }
 
 def health_check(client, **kwargs):
     """
     This function calls client.cluster.health and, based on the args provided,
-    will return `True` or `False` depending on whether that particular keyword 
+    will return `True` or `False` depending on whether that particular keyword
     appears in the output, and has the expected value.
-    If multiple keys are provided, all must match for a `True` response. 
+    If multiple keys are provided, all must match for a `True` response.
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     """
@@ -1497,7 +1497,7 @@ def health_check(client, **kwargs):
         raise MissingArgument('Must provide at least one keyword argument')
     hc_data = client.cluster.health()
     response = True
-    
+
     for k in klist:
         # First, verify that all kwargs are in the list
         if not k in list(hc_data.keys()):
@@ -1514,14 +1514,14 @@ def health_check(client, **kwargs):
                 '{1}'.format(kwargs[k], hc_data[k])
             )
     if response:
-        logger.info('Health Check for all provided keys passed.')   
+        logger.info('Health Check for all provided keys passed.')
     return response
 
 def snapshot_check(client, snapshot=None, repository=None):
     """
-    This function calls `client.snapshot.get` and tests to see whether the 
+    This function calls `client.snapshot.get` and tests to see whether the
     snapshot is complete, and if so, with what status.  It will log errors
-    according to the result. If the snapshot is still `IN_PROGRESS`, it will 
+    according to the result. If the snapshot is still `IN_PROGRESS`, it will
     return `False`.  `SUCCESS` will be an `INFO` level message, `PARTIAL` nets
     a `WARNING` message, `FAILED` is an `ERROR`, message, and all others will be
     a `WARNING` level message.
@@ -1559,14 +1559,14 @@ def snapshot_check(client, snapshot=None, repository=None):
 
 def restore_check(client, index_list):
     """
-    This function calls client.indices.recovery with the list of indices to 
-    check for complete recovery.  It will return `True` if recovery of those 
+    This function calls client.indices.recovery with the list of indices to
+    check for complete recovery.  It will return `True` if recovery of those
     indices is complete, and `False` otherwise.  It is designed to fail fast:
     if a single shard is encountered that is still recovering (not in `DONE`
     stage), it will immediately return `False`, rather than complete iterating
     over the rest of the response.
 
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object 
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg index_list: The list of indices to verify having been restored.
     """
     try:
@@ -1602,11 +1602,11 @@ def restore_check(client, index_list):
 def task_check(client, task_id=None):
     """
     This function calls client.tasks.get with the provided `task_id`.  If the
-    task data contains ``'completed': True``, then it will return `True` 
+    task data contains ``'completed': True``, then it will return `True`
     If the task is not completed, it will log some information about the task
     and return `False`
 
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object    
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg task_id: A task_id which ostensibly matches a task searchable in the
         tasks API.
     """
@@ -1654,7 +1654,7 @@ def wait_for_it(
     :arg repository: The Elasticsearch snapshot repository to use
     :arg wait_interval: How frequently the specified "wait" behavior will be
         polled to check for completion.
-    :arg max_wait: Number of seconds will the "wait" behavior persist 
+    :arg max_wait: Number of seconds will the "wait" behavior persist
         before giving up and raising an Exception.  The default is -1, meaning
         it will try forever.
     """
@@ -1769,14 +1769,14 @@ def index_size(client, idx):
 
 def single_data_path(client, node_id):
     """
-    In order for a shrink to work, it should be on a single filesystem, as 
+    In order for a shrink to work, it should be on a single filesystem, as
     shards cannot span filesystems.  Return `True` if the node has a single
     filesystem, and `False` otherwise.
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
-    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1 
+    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1
 
 
 def name_to_node_id(client, name):

@@ -100,7 +100,7 @@ def new_index():
     return { Optional('new_index', default=None): Any(str, unicode) }
 
 def node_filters():
-    return { 
+    return {
         Optional('node_filters', default={}): {
           Optional('permit_masters', default=False): Any(bool, All(Any(str, unicode), Boolean())),
           Optional('exclude_nodes', default=[]): Any(list, None)
@@ -117,7 +117,7 @@ def partial():
     return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def post_allocation():
-    return { 
+    return {
         Optional('post_allocation', default={}): {
           Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
           Required('key'): Any(str, unicode),
