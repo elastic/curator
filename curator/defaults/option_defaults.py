@@ -296,6 +296,9 @@ def wait_for_completion(action):
         value = False
     return { Optional('wait_for_completion', default=value): Any(bool, All(Any(str, unicode), Boolean())) }
 
+def wait_for_rebalance():
+    return { Optional('wait_for_rebalance', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
+
 def wait_interval(action):
     minval = 1
     maxval = 30

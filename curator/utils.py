@@ -1556,6 +1556,24 @@ def snapshot_check(client, snapshot=None, repository=None):
             'Snapshot {0} completed with state: {0}'.format(snapshot))
     return True
 
+def relocate_check(client, index):
+    """
+    This function calls client.cluster.state with a given index to check if
+    all of the shards for that index are in the STARTED state. It will
+    return `True` if all shards both primary and replica are in the STARTED
+    state, and it will return `False` if any primary or replica shard is in
+    a different state.
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg index: The index to check the index shards state.
+    """
+    shard_state_data = client.cluster.state(index=index)['routing_table']['indices'][index]['shards']
+
+    finished_state = all(all(shard['state']=="STARTED" for shard in shards) for shards in shard_state_data.values())
+    if finished_state:
+        logger.info('Relocate Check for index: "{0}" has passed.'.format(index))
+    return finished_state
+
 
 def restore_check(client, index_list):
     """
@@ -1641,7 +1659,7 @@ def task_check(client, task_id=None):
 
 def wait_for_it(
         client, action, task_id=None, snapshot=None, repository=None,
-        index_list=None, wait_interval=9, max_wait=-1
+        index=None, index_list=None, wait_interval=9, max_wait=-1
     ):
     """
     This function becomes one place to do all wait_for_completion type behaviors
@@ -1686,6 +1704,10 @@ def wait_for_it(
         'shrink':{
             'function': health_check,
             'args': {'status':'green'},
+        },
+        'relocate':{
+            'function': relocate_check,
+            'args': {'index':index}
         },
     }
     wait_actions = list(action_map.keys())

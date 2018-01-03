@@ -1751,7 +1751,7 @@ class Shrink(object):
                 shrink_prefix='', shrink_suffix='-shrink',
                 copy_aliases=False,
                 delete_after=True, post_allocation={},
-                wait_for_active_shards=1,
+                wait_for_active_shards=1, wait_for_rebalance=True,
                 extra_settings={}, wait_for_completion=True, wait_interval=9,
                 max_wait=-1):
         """
@@ -1779,6 +1779,8 @@ class Shrink(object):
         :arg extra_settings:  Permitted root keys are `settings` and `aliases`.
             See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shrink-index.html
         :type extra_settings: dict
+        :arg wait_for_rebalance: Wait for rebalance. (default: `True`)
+        :type wait_for_rebalance: bool
         :arg wait_for_active_shards: Wait for active shards before returning.
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  You should not normally change this,
@@ -1810,6 +1812,8 @@ class Shrink(object):
         self.delete_after     = delete_after
         #: Instance variable. Internal reference to `post_allocation`
         self.post_allocation  = post_allocation
+        #: Instance variable. Internal reference to `wait_for_rebalance`
+        self.wait_for_rebalance = wait_for_rebalance
         #: Instance variable. Internal reference to `wait_for_completion`
         self.wfc              = wait_for_completion
         #: Instance variable. How many seconds to wait between checks for completion.
@@ -1933,7 +1937,10 @@ class Shrink(object):
         routing = { bkey : value }
         try:
             self.client.indices.put_settings(index=idx, body=routing)
-            wait_for_it(self.client, 'allocation', wait_interval=self.wait_interval, max_wait=self.max_wait)
+            if self.wait_for_rebalance:
+                wait_for_it(self.client, 'allocation', wait_interval=self.wait_interval, max_wait=self.max_wait)
+            else:
+                wait_for_it(self.client, 'relocate', index=idx, wait_interval=self.wait_interval, max_wait=self.max_wait)
         except Exception as e:
             report_failure(e)
 
@@ -2098,7 +2105,10 @@ class Shrink(object):
                         # Wait for it to complete
                         if self.wfc:
                             self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
-                            wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                            if self.wait_for_rebalance:
+                                wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                            else:
+                                wait_for_it(self.client, 'relocate', index=target, wait_interval=self.wait_interval, max_wait=self.max_wait)
                     except Exception as e:
                         if self.client.indices.exists(index=target):
                             self.loggit.error('Deleting target index "{0}" due to failure to complete shrink'.format(target))
