@@ -134,10 +134,11 @@ class IndexList(object):
         if working_list:
             index_lists = chunk_index_list(working_list)
             for l in index_lists:
-                iterate_over_stats(
-                    self.client.indices.stats(index=to_csv(l),
-                    metric='store,docs')
-                )
+                stats_result = {}
+                for item in l:
+                    stats_result.update(self.client.indices.stats(index=item,
+                    metric='store,docs'))
+                iterate_over_stats(stats_result)
 
     def _get_metadata(self):
         """
@@ -148,11 +149,12 @@ class IndexList(object):
         self.empty_list_check()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = (
-                self.client.cluster.state(
-                    index=to_csv(l),metric='metadata'
-                )['metadata']['indices']
-            )
+            working_list = {}
+            for item in l:
+                working_list.update(self.client.cluster.state(
+                        index=item,metric='metadata'
+                   )['metadata']['indices'].copy())
+
             if working_list:
                 for index in list(working_list.keys()):
                     s = self.index_info[index]
@@ -203,9 +205,10 @@ class IndexList(object):
         self.empty_list_check()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = (
-                self.client.indices.segments(index=to_csv(l))['indices']
-            )
+            working_list = {}
+            for item in l:
+                working_list.update(self.client.indices.segments(index=item)['indices'].copy())
+
             if working_list:
                 for index in list(working_list.keys()):
                     shards = working_list[index]['shards']
@@ -736,19 +739,19 @@ class IndexList(object):
 
     def filter_by_alias(self, aliases=None, exclude=False):
         """
-        Match indices which are associated with the alias or list of aliases 
+        Match indices which are associated with the alias or list of aliases
         identified by `aliases`.
 
-        An update to Elasticsearch 5.5.0 changes the behavior of this from 
+        An update to Elasticsearch 5.5.0 changes the behavior of this from
         previous 5.x versions:
         https://www.elastic.co/guide/en/elasticsearch/reference/5.5/breaking-changes-5.5.html#breaking_55_rest_changes
 
         What this means is that indices must appear in all aliases in list
-        `aliases` or a 404 error will result, leading to no indices being 
-        matched.  In older versions, if the index was associated with even one 
+        `aliases` or a 404 error will result, leading to no indices being
+        matched.  In older versions, if the index was associated with even one
         of the aliases in `aliases`, it would result in a match.
 
-        It is unknown if this behavior affects anyone.  At the time this was 
+        It is unknown if this behavior affects anyone.  At the time this was
         written, no users have been bit by this.  The code could be adapted
         to manually loop if the previous behavior is desired.  But if no users
         complain, this will become the accepted/expected behavior.
@@ -818,12 +821,12 @@ class IndexList(object):
         :arg reverse: The filtering direction. (default: `True`).
         :arg use_age: Sort indices by age.  ``source`` is required in this
             case.
-        :arg pattern: Select indices to count from a regular expression 
+        :arg pattern: Select indices to count from a regular expression
             pattern.  This pattern must have one and only one capture group.
             This can allow a single ``count`` filter instance to operate against
             any number of matching patterns, and keep ``count`` of each index
             in that group.  For example, given a ``pattern`` of ``'^(.*)-\d{6}$'``,
-            it will match both ``rollover-000001`` and ``index-999990``, but not 
+            it will match both ``rollover-000001`` and ``index-999990``, but not
             ``logstash-2017.10.12``.  Following the same example, if my cluster
             also had ``rollover-000002`` through ``rollover-000010`` and
             ``index-888888`` through ``index-999999``, it will process both
@@ -903,7 +906,7 @@ class IndexList(object):
                 # Default to sorting by index name
                 sorted_indices = sorted(group, reverse=reverse)
 
-            
+
             idx = 1
             for index in sorted_indices:
                 msg = (
@@ -942,7 +945,7 @@ class IndexList(object):
         :arg date_to_format: The strftime string used to parse ``date_to``
         :arg timestring: An strftime string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
-        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
+        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or
             ``years``.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
@@ -953,9 +956,9 @@ class IndexList(object):
             If `True`, only indices where both `min_value` and `max_value` are
             within the period will be selected. If `False`, it will use whichever
             you specified.  Default is `False` to preserve expected behavior.
-        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is 
+        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is
             ``sunday``
-        :arg epoch: An epoch timestamp used to establish a point of reference 
+        :arg epoch: An epoch timestamp used to establish a point of reference
             for calculations. If not provided, the current time will be used.
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
