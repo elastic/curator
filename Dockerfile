@@ -11,6 +11,14 @@ RUN python3 setup.py build_exe
 
 FROM alpine:3.6
 RUN apk --no-cache upgrade && apk --no-cache add ca-certificates
-COPY --from=builder build/exe.linux-x86_64-3.6 /curator/
+COPY --from=builder build/exe.linux-x86_64-3.6 /curator-bin/
+RUN apk --no-cache add python py-setuptools py-pip gcc libffi py-cffi python-dev libffi-dev py-openssl musl-dev linux-headers openssl-dev libssl1.0 && \
+    pip install boto3==1.4.8 && \
+    pip install requests-aws4auth==0.9 && \
+    pip install cryptography==2.1.3 && \
+    apk del py-pip gcc python-dev libffi-dev musl-dev linux-headers openssl-dev
+COPY curator-entrypoint /usr/bin/curator
+RUN chmod 755 /usr/bin/curator
+RUN chmod 755 /curator-bin/curator
 USER nobody:nobody
-ENTRYPOINT ["/curator/curator"]
+ENTRYPOINT ["/usr/bin/curator"]
