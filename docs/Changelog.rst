@@ -3,14 +3,25 @@
 Changelog
 =========
 
+
+5.4.2 (16 January 2018)
+-----------------------
+**New Features**
+  * Add ``wait_for_rebalance`` as an option for ``shrink`` action. By default
+    the behavior remains unchanged. You can now set this to False though to
+    allow the shrink action to only check that the index being shrunk has
+    finished being relocated and it will not wait for the cluster to rebalance.
+
+
+
 5.4.1 (6 December 2017)
 -----------------------
 
 **Bug Fixes**
 
-  * Improve Dockerfile to build from source and produce slimmer image 
+  * Improve Dockerfile to build from source and produce slimmer image
     #1111 (mikn)
-  * Fix ``filter_kibana`` to correctly use ``exclude`` argument 
+  * Fix ``filter_kibana`` to correctly use ``exclude`` argument
     #1116 (cjuroz)
   * Fix `ssl_no_validate` behavior within AWS ES #1118 (igalarzab)
   * Improve command-line exception management #1119 (4383)
@@ -23,7 +34,7 @@ Changelog
 
 **Documentation**
 
-  * Remove ``unit_count`` parameter doc for parameter that no longer 
+  * Remove ``unit_count`` parameter doc for parameter that no longer
     exists #1107 (dashford)
   * Add missing ``exclude: True`` in ``timestring`` docs #1117 (GregMefford)
 
@@ -34,17 +45,17 @@ Changelog
 
 **Announcement**
 
-  * Support for Elasticsearch 6.0!!! Yes! 
+  * Support for Elasticsearch 6.0!!! Yes!
 
 **New Features**
 
   * The ``field_stats`` API may be gone from Elasticsearch, but its utility
     cannot be denied.  And so, Curator has replaced the ``field_stats`` API
-    call with a small aggregation query.  This will be perhaps a bit more 
+    call with a small aggregation query.  This will be perhaps a bit more
     costly in performance terms, as this small aggregation query must be made
-    to each index in sequence, rather than as a one-shot call, like the 
-    ``field_stats`` API call.  But the benefit will remain available, and 
-    it's the only major API that did not persevere between Elasticsearch 5.x 
+    to each index in sequence, rather than as a one-shot call, like the
+    ``field_stats`` API call.  But the benefit will remain available, and
+    it's the only major API that did not persevere between Elasticsearch 5.x
     and 6.x that was needed by Curator.
 
 5.3.0 (31 October 2017)
@@ -76,10 +87,6 @@ Changelog
     to the target index. Requested in #1060 (monkey3199)
   * IAM Credentials can now be retrieved from the environment using the Boto3
     Credentials provider. #1084 (kobuskc)
-  * Add ``wait_for_rebalace`` as an option for ``shrink`` action. By default
-    the behavior remains unchanged. You can now set this to False though to
-    allow the shrink action to only check that the index being shrunk has
-    finished being relocated and it wont wait for the cluster to rebalance.
 
 **Bug Fixes**
 
