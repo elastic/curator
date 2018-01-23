@@ -45,6 +45,12 @@ The current version of Curator is {curator_version}
 |&emsp14; &#10060;
 |&emsp14; &#10060;
 |&emsp14; &#9989;
+|&emsp14; &#10060;
+
+|&emsp14; &emsp14; &emsp14; &emsp14; &emsp14; 5.4+
+|&emsp14; &#10060;
+|&emsp14; &#10060;
+|&emsp14; &#9989;
 |&emsp14; &#9989;
 |===
 
