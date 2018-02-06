@@ -135,9 +135,17 @@ class IndexList(object):
             index_lists = chunk_index_list(working_list)
             for l in index_lists:
                 stats_result = {}
-                for item in l:
-                    stats_result.update(self.client.indices.stats(index=item,
+                slice_number=10
+                loop_number = round(len(l)/slice_number)
+                for num in range(0, loop_number):
+                    if num == (loop_number-1):
+                        data = l[num*slice_number:]
+                    else:
+                        data = l[num*slice_number:(num+1)*slice_number]
+
+                    stats_result.update(self.client.indices.stats(index=to_csv(data),
                     metric='store,docs'))
+
                 iterate_over_stats(stats_result)
 
     def _get_metadata(self):
@@ -150,9 +158,15 @@ class IndexList(object):
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             working_list = {}
-            for item in l:
+            slice_number=10
+            loop_number = round(len(l)/slice_number)
+            for num in range(0, loop_number):
+                if num == (loop_number-1):
+                    data = l[num*slice_number:]
+                else:
+                    data = l[num*slice_number:(num+1)*slice_number]
                 working_list.update(self.client.cluster.state(
-                        index=item,metric='metadata'
+                        index=to_csv(data),metric='metadata'
                    )['metadata']['indices'].copy())
 
             if working_list:
@@ -206,8 +220,15 @@ class IndexList(object):
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             working_list = {}
-            for item in l:
-                working_list.update(self.client.indices.segments(index=item)['indices'].copy())
+            slice_number=10
+            loop_number = round(len(l)/slice_number)
+            for num in range(0, loop_number):
+                if num == (loop_number-1):
+                    data = l[num*slice_number:]
+                else:
+                    data = l[num*slice_number:(num+1)*slice_number]
+
+                working_list.update(self.client.indices.segments(index=to_csv(data))['indices'].copy())
 
             if working_list:
                 for index in list(working_list.keys()):
