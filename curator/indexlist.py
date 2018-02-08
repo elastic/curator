@@ -135,18 +135,38 @@ class IndexList(object):
             index_lists = chunk_index_list(working_list)
             for l in index_lists:
                 stats_result = {}
-                slice_number=10
-                loop_number = round(len(l)/slice_number)
-                for num in range(0, loop_number):
-                    if num == (loop_number-1):
-                        data = l[num*slice_number:]
-                    else:
-                        data = l[num*slice_number:(num+1)*slice_number]
 
-                    stats_result.update(self.client.indices.stats(index=to_csv(data),
-                    metric='store,docs'))
+                try:
+                    stats_result.update(self.get_indices_stats(l))
+                except elasticsearch.ElasticsearchException as err:
+                    if err.status_code == 413:
+                        self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                        stats_result = {}
+                        stats_result.update(self.bulk_queries(l, self.get_indices_stats))
+                        pass
 
                 iterate_over_stats(stats_result)
+
+    def get_indices_stats(self, data):
+        return self.client.indices.stats(index=to_csv(data), metric='store,docs')
+
+    def bulk_queries(self, data, exec_func):
+        slice_number = 10
+        query_result = {}
+        loop_number = round(len(data)/slice_number) if round(len(data)/slice_number) > 0 else 1
+        self.loggit.debug("Bulk Queries - number requests created: {0}".format(loop_number))
+
+        for num in range(0, loop_number):
+            if num == (loop_number-1):
+                data_sliced = data[num*slice_number:]
+            else:
+                data_sliced = data[num*slice_number:(num+1)*slice_number]
+            query_result.update(exec_func(data_sliced))
+
+        return query_result
+
+    def get_cluster_state(self, data):
+        return self.client.cluster.state(index=to_csv(data),metric='metadata')['metadata']['indices']
 
     def _get_metadata(self):
         """
@@ -158,16 +178,14 @@ class IndexList(object):
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             working_list = {}
-            slice_number=10
-            loop_number = round(len(l)/slice_number)
-            for num in range(0, loop_number):
-                if num == (loop_number-1):
-                    data = l[num*slice_number:]
-                else:
-                    data = l[num*slice_number:(num+1)*slice_number]
-                working_list.update(self.client.cluster.state(
-                        index=to_csv(data),metric='metadata'
-                   )['metadata']['indices'].copy())
+            try:
+                working_list.update(self.get_cluster_state(l))
+            except elasticsearch.ElasticsearchException as err:
+                if err.status_code == 413:
+                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    working_list = {}
+                    working_list.update(self.bulk_queries(l, self.get_cluster_state))
+                    pass
 
             if working_list:
                 for index in list(working_list.keys()):
@@ -211,6 +229,9 @@ class IndexList(object):
         self.loggit.debug('Generating working list of indices')
         return self.indices[:]
 
+    def get_indices_segments(self, data):
+        return self.client.indices.segments(index=to_csv(data))['indices'].copy()
+
     def _get_segmentcounts(self):
         """
         Populate `index_info` with segment information for each index.
@@ -220,15 +241,14 @@ class IndexList(object):
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             working_list = {}
-            slice_number=10
-            loop_number = round(len(l)/slice_number)
-            for num in range(0, loop_number):
-                if num == (loop_number-1):
-                    data = l[num*slice_number:]
-                else:
-                    data = l[num*slice_number:(num+1)*slice_number]
-
-                working_list.update(self.client.indices.segments(index=to_csv(data))['indices'].copy())
+            try:
+                working_list.update(self.get_indices_segments(l))
+            except elasticsearch.ElasticsearchException as err:
+                if err.status_code == 413:
+                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    working_list = {}
+                    working_list.update(self.bulk_queries(l, self.get_indices_segments))
+                    pass
 
             if working_list:
                 for index in list(working_list.keys()):
