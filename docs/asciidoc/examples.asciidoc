@@ -577,7 +577,37 @@ actions:
     - filtertype: none
 -------------
 
+=== Manually selected reindex of a single index with query
 
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          query:
+            range:
+              timestamp:
+                gte: "now-1h"
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
 
 [[ex_replicas]]
 == replicas
