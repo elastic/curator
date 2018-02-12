@@ -23,7 +23,7 @@ class TestCLIforceMerge(CuratorTestCase):
         self.create_index(idx)
         self.add_docs(idx)
         ilo1 = curator.IndexList(self.client)
-        ilo1._get_segmentcounts()
+        ilo1._get_segment_counts()
         self.assertEqual(3, ilo1.index_info[idx]['segments'])
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -38,7 +38,7 @@ class TestCLIforceMerge(CuratorTestCase):
                     ],
                     )
         ilo2 = curator.IndexList(self.client)
-        ilo2._get_segmentcounts()
+        ilo2._get_segment_counts()
         self.assertEqual(count, ilo2.index_info[idx]['segments'])
     def test_extra_option(self):
         self.write_config(
