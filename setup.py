@@ -23,12 +23,12 @@ def get_version():
 
 def get_install_requires():
     return [
+        'voluptuous>=0.9.3',
         'urllib3>=1.20',
-        'elasticsearch>=5.4.0,<7.0.0',
+        'elasticsearch==5.5.2',
         'click>=6.7',
         'pyyaml>=3.10',
-        'voluptuous>=0.9.3',
-        'certifi>=2017.7.17.1',
+        'certifi>=2018.1.18',
     ]
 
 try:
