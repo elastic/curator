@@ -134,10 +134,39 @@ class IndexList(object):
         if working_list:
             index_lists = chunk_index_list(working_list)
             for l in index_lists:
-                iterate_over_stats(
-                    self.client.indices.stats(index=to_csv(l),
-                    metric='store,docs')
-                )
+                stats_result = {}
+
+                try:
+                    stats_result.update(self._get_indices_stats(l))
+                except elasticsearch.ElasticsearchException as err:
+                    if err.status_code == 413:
+                        self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                        stats_result = {}
+                        stats_result.update(self._bulk_queries(l, self._get_indices_stats))
+                        pass
+
+                iterate_over_stats(stats_result)
+
+    def _get_indices_stats(self, data):
+        return self.client.indices.stats(index=to_csv(data), metric='store,docs')
+
+    def _bulk_queries(self, data, exec_func):
+        slice_number = 10
+        query_result = {}
+        loop_number = round(len(data)/slice_number) if round(len(data)/slice_number) > 0 else 1
+        self.loggit.debug("Bulk Queries - number requests created: {0}".format(loop_number))
+
+        for num in range(0, loop_number):
+            if num == (loop_number-1):
+                data_sliced = data[num*slice_number:]
+            else:
+                data_sliced = data[num*slice_number:(num+1)*slice_number]
+            query_result.update(exec_func(data_sliced))
+
+        return query_result
+
+    def _get_cluster_state(self, data):
+        return self.client.cluster.state(index=to_csv(data), metric='metadata')['metadata']['indices']
 
     def _get_metadata(self):
         """
@@ -148,11 +177,16 @@ class IndexList(object):
         self.empty_list_check()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = (
-                self.client.cluster.state(
-                    index=to_csv(l),metric='metadata'
-                )['metadata']['indices']
-            )
+            working_list = {}
+            try:
+                working_list.update(self._get_cluster_state(l))
+            except elasticsearch.ElasticsearchException as err:
+                if err.status_code == 413:
+                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    working_list = {}
+                    working_list.update(self._bulk_queries(l, self._get_cluster_state))
+                    pass
+
             if working_list:
                 for index in list(working_list.keys()):
                     s = self.index_info[index]
@@ -195,7 +229,10 @@ class IndexList(object):
         self.loggit.debug('Generating working list of indices')
         return self.indices[:]
 
-    def _get_segmentcounts(self):
+    def _get_indices_segments(self, data):
+        return self.client.indices.segments(index=to_csv(data))['indices'].copy()
+
+    def _get_segment_counts(self):
         """
         Populate `index_info` with segment information for each index.
         """
@@ -203,9 +240,16 @@ class IndexList(object):
         self.empty_list_check()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = (
-                self.client.indices.segments(index=to_csv(l))['indices']
-            )
+            working_list = {}
+            try:
+                working_list.update(self._get_indices_segments(l))
+            except elasticsearch.ElasticsearchException as err:
+                if err.status_code == 413:
+                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    working_list = {}
+                    working_list.update(self._bulk_queries(l, self._get_indices_segments))
+                    pass
+
             if working_list:
                 for index in list(working_list.keys()):
                     shards = working_list[index]['shards']
@@ -630,7 +674,7 @@ class IndexList(object):
             'Omitting any closed indices.'
         )
         self.filter_closed()
-        self._get_segmentcounts()
+        self._get_segment_counts()
         for index in self.working_list():
             # Do this to reduce long lines and make it more readable...
             shards = int(self.index_info[index]['number_of_shards'])

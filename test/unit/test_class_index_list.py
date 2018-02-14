@@ -67,7 +67,7 @@ class TestIndexListOtherMethods(TestCase):
         client.indices.stats.return_value = testvars.stats_one
         client.indices.segments.return_value = testvars.shards
         il = curator.IndexList(client)
-        il._get_segmentcounts()
+        il._get_segment_counts()
         self.assertEqual(71, il.index_info[testvars.named_index]['segments'])
 
 class TestIndexListAgeFilterName(TestCase):
