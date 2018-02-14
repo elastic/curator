@@ -29,6 +29,7 @@ shrink = ('---\n'
 '      shrink_prefix: {5}\n'
 '      shrink_suffix: {6}\n'
 '      delete_after: {7}\n'
+'      wait_for_rebalance: {8}\n'
 '    filters:\n'
 '      - filtertype: pattern\n'
 '        kind: prefix\n'
@@ -133,6 +134,7 @@ class TestCLIShrink(CuratorTestCase):
                 0,
                 '',
                 suffix,
+                'True',
                 'True'
             )
         )
@@ -170,6 +172,7 @@ class TestCLIShrink(CuratorTestCase):
                 0,
                 '',
                 suffix,
+                'True',
                 'True'
             )
         )
@@ -181,7 +184,7 @@ class TestCLIShrink(CuratorTestCase):
         allocation_type = 'exclude'
         key = '_name'
         value = 'not_this_node'
-        self.builder( 
+        self.builder(
             with_extra_settings.format(
                 'DETERMINISTIC',
                 'permit_masters',
@@ -225,3 +228,21 @@ class TestCLIShrink(CuratorTestCase):
         self.assertEqual(1, len(indices))  # Should have `my_index-shrunken`
         self.assertEqual(indices[0], self.target)
         self.assertTrue(self.client.indices.exists_alias(index=self.target, name=self.alias))
+    def test_shrink_without_rebalance(self):
+        suffix = '-shrunken'
+        self.builder(
+            shrink.format(
+                'DETERMINISTIC',
+                'permit_masters',
+                'True',
+                1,
+                0,
+                '',
+                suffix,
+                'True',
+                'False'
+            )
+        )
+        indices = curator.get_indices(self.client)
+        self.assertEqual(1, len(indices)) # Should only have `my_index-shrunken`
+        self.assertEqual(indices[0], self.target)

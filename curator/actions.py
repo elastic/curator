@@ -596,9 +596,9 @@ class IndexSettings(object):
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg index_settings: A dictionary structure with one or more index
             settings to change.
-        :arg ignore_unavailable: Whether specified concrete indices should be 
+        :arg ignore_unavailable: Whether specified concrete indices should be
             ignored when unavailable (missing or closed)
-        :arg preserve_existing: Whether to update existing settings. If set to 
+        :arg preserve_existing: Whether to update existing settings. If set to
             ``True`` existing settings on an index remain unchanged. The default
             is ``False``
         """
@@ -705,7 +705,7 @@ class IndexSettings(object):
             index_lists = chunk_index_list(self.index_list.indices)
             for l in index_lists:
                 response = self.client.indices.put_settings(
-                    index=to_csv(l), body=self.body, 
+                    index=to_csv(l), body=self.body,
                     ignore_unavailable=self.ignore_unavailable,
                     preserve_existing=self.preserve_existing
                 )
@@ -989,7 +989,7 @@ class Reindex(object):
         remote_url_prefix=None, remote_ssl_no_validate=None,
         remote_certificate=None, remote_client_cert=None,
         remote_client_key=None, remote_aws_key=None, remote_aws_secret_key=None,
-        remote_aws_region=None, remote_filters={}, migration_prefix='', 
+        remote_aws_region=None, remote_filters={}, migration_prefix='',
         migration_suffix=''):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
@@ -1037,9 +1037,9 @@ class Reindex(object):
             :mod:`requests-aws4auth` python module is installed)
         :arg remote_filters: Apply these filters to the remote client for
             remote index selection.
-        :arg migration_prefix: When migrating, prepend this value to the index 
+        :arg migration_prefix: When migrating, prepend this value to the index
             name.
-        :arg migration_suffix: When migrating, append this value to the index 
+        :arg migration_suffix: When migrating, append this value to the index
             name.
         """
         self.loggit = logging.getLogger('curator.actions.reindex')
@@ -1106,7 +1106,7 @@ class Reindex(object):
                     'MIGRATION can only be used locally with one or both of '
                     'migration_prefix or migration_suffix.'
                 )
-            
+
         # REINDEX_SELECTION is the designated token.  If you use this for the
         # source "index," it will be replaced with the list of indices from the
         # provided 'ilo' (index list object).
@@ -1151,7 +1151,7 @@ class Reindex(object):
             # Let's set a decent remote timeout for initially reading
             # the indices on the other side, and collecting their metadata
             remote_timeout = 180
-            
+
             # The rest only applies if using filters for remote indices
             if self.body['source']['index'] == 'REINDEX_SELECTION':
                 self.loggit.debug('Filtering indices from remote')
@@ -1238,9 +1238,9 @@ class Reindex(object):
         # thing if wait_for_completion is set to True. Report the task_id
         # either way.
         reindex_args = {
-            'body':self._get_request_body(source, dest), 'refresh':self.refresh, 
+            'body':self._get_request_body(source, dest), 'refresh':self.refresh,
             'requests_per_second': self.requests_per_second,
-            'timeout': self.timeout, 
+            'timeout': self.timeout,
             'wait_for_active_shards': self.wait_for_active_shards,
             'wait_for_completion': False,
             'slices': self.slices
@@ -1751,7 +1751,7 @@ class Shrink(object):
                 shrink_prefix='', shrink_suffix='-shrink',
                 copy_aliases=False,
                 delete_after=True, post_allocation={},
-                wait_for_active_shards=1,
+                wait_for_active_shards=1, wait_for_rebalance=True,
                 extra_settings={}, wait_for_completion=True, wait_interval=9,
                 max_wait=-1):
         """
@@ -1759,8 +1759,8 @@ class Shrink(object):
         :arg shrink_node: The node name to use as the shrink target, or
             ``DETERMINISTIC``, which will use the values in ``node_filters`` to
             determine which node will be the shrink node.
-        :arg node_filters: If the value of ``shrink_node`` is ``DETERMINISTIC``, 
-            the values in ``node_filters`` will be used while determining which 
+        :arg node_filters: If the value of ``shrink_node`` is ``DETERMINISTIC``,
+            the values in ``node_filters`` will be used while determining which
             node to allocate the shards on before performing the shrink.
         :type node_filters: dict, representing the filters
         :arg number_of_shards: The number of shards the shrunk index should have
@@ -1772,13 +1772,15 @@ class Shrink(object):
         :type copy_aliases: bool
         :arg delete_after: Whether to delete each index after shrinking. (default: `True`)
         :type delete_after: bool
-        :arg post_allocation: If populated, the `allocation_type`, `key`, and 
+        :arg post_allocation: If populated, the `allocation_type`, `key`, and
             `value` will be applied to the shrunk index to re-route it.
         :type post_allocation: dict, with keys `allocation_type`, `key`, and `value`
         :arg wait_for_active_shards: The number of shards expected to be active before returning.
-        :arg extra_settings:  Permitted root keys are `settings` and `aliases`.  
+        :arg extra_settings:  Permitted root keys are `settings` and `aliases`.
             See https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shrink-index.html
         :type extra_settings: dict
+        :arg wait_for_rebalance: Wait for rebalance. (default: `True`)
+        :type wait_for_rebalance: bool
         :arg wait_for_active_shards: Wait for active shards before returning.
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  You should not normally change this,
@@ -1810,6 +1812,8 @@ class Shrink(object):
         self.delete_after     = delete_after
         #: Instance variable. Internal reference to `post_allocation`
         self.post_allocation  = post_allocation
+        #: Instance variable. Internal reference to `wait_for_rebalance`
+        self.wait_for_rebalance = wait_for_rebalance
         #: Instance variable. Internal reference to `wait_for_completion`
         self.wfc              = wait_for_completion
         #: Instance variable. How many seconds to wait between checks for completion.
@@ -1839,7 +1843,7 @@ class Shrink(object):
         if 'settings' in extra_settings:
             settings = extra_settings.pop('settings')
             try:
-                self.body['settings'].update(settings) 
+                self.body['settings'].update(settings)
             except Exception as e:
                 raise ConfigurationError('Unable to apply extra settings "{0}" to shrink body'.format({'settings':settings}))
         if extra_settings:
@@ -1896,7 +1900,7 @@ class Shrink(object):
 
     def most_available_node(self):
         """
-        Determine which data node name has the most available free space, and 
+        Determine which data node name has the most available free space, and
         meets the other node filters settings.
 
         :arg client: An :class:`elasticsearch.Elasticsearch` client object
@@ -1930,10 +1934,13 @@ class Shrink(object):
 
     def route_index(self, idx, allocation_type, key, value):
         bkey = 'index.routing.allocation.{0}.{1}'.format(allocation_type, key)
-        routing = { bkey : value } 
+        routing = { bkey : value }
         try:
             self.client.indices.put_settings(index=idx, body=routing)
-            wait_for_it(self.client, 'allocation', wait_interval=self.wait_interval, max_wait=self.max_wait)
+            if self.wait_for_rebalance:
+                wait_for_it(self.client, 'allocation', wait_interval=self.wait_interval, max_wait=self.max_wait)
+            else:
+                wait_for_it(self.client, 'relocate', index=idx, wait_interval=self.wait_interval, max_wait=self.max_wait)
         except Exception as e:
             report_failure(e)
 
@@ -1968,7 +1975,7 @@ class Shrink(object):
                 self.qualify_single_node()
         else:
             self.most_available_node()
-        # At this point, we should have the three shrink-node identifying 
+        # At this point, we should have the three shrink-node identifying
         # instance variables:
         # - self.shrink_node_name
         # - self.shrink_node_id
@@ -2098,7 +2105,10 @@ class Shrink(object):
                         # Wait for it to complete
                         if self.wfc:
                             self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
-                            wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                            if self.wait_for_rebalance:
+                                wait_for_it(self.client, 'shrink', wait_interval=self.wait_interval, max_wait=self.max_wait)
+                            else:
+                                wait_for_it(self.client, 'relocate', index=target, wait_interval=self.wait_interval, max_wait=self.max_wait)
                     except Exception as e:
                         if self.client.indices.exists(index=target):
                             self.loggit.error('Deleting target index "{0}" due to failure to complete shrink'.format(target))
@@ -2128,4 +2138,4 @@ class Shrink(object):
             # Just in case it fails after attempting to meet this condition
             self._unblock_writes(idx)
             report_failure(e)
-        
+

@@ -100,7 +100,7 @@ def new_index():
     return { Optional('new_index', default=None): Any(str, unicode) }
 
 def node_filters():
-    return { 
+    return {
         Optional('node_filters', default={}): {
           Optional('permit_masters', default=False): Any(bool, All(Any(str, unicode), Boolean())),
           Optional('exclude_nodes', default=[]): Any(list, None)
@@ -117,7 +117,7 @@ def partial():
     return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def post_allocation():
-    return { 
+    return {
         Optional('post_allocation', default={}): {
           Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
           Required('key'): Any(str, unicode),
@@ -295,6 +295,9 @@ def wait_for_completion(action):
     if action in ['allocation', 'cluster_routing', 'replicas']:
         value = False
     return { Optional('wait_for_completion', default=value): Any(bool, All(Any(str, unicode), Boolean())) }
+
+def wait_for_rebalance():
+    return { Optional('wait_for_rebalance', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def wait_interval(action):
     minval = 1

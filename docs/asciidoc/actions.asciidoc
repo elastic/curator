@@ -1019,6 +1019,7 @@ options:
     settings:
       index.codec: best_compression
   wait_for_completion: True
+  wait_for_rebalance: True
   wait_interval: 9
   max_wait: -1
 filters:
@@ -1095,6 +1096,7 @@ as needed.
 * <<option_timeout_override,timeout_override>>
 * <<option_wait_for_active_shards,wait_for_active_shards>>
 * <<option_wfc,wait_for_completion>>
+* <<option_wait_for_rebalance,wait_for_rebalance>>
 * <<option_max_wait,max_wait>>
 * <<option_wait_interval,wait_interval>>
 

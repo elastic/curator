@@ -165,7 +165,7 @@ def value(**kwargs):
     return { Required('value'): Any(str, unicode) }
 
 def week_starts_on(**kwargs):
-    return { 
+    return {
         Optional('week_starts_on', default='sunday'): Any(
             'Sunday', 'sunday', 'SUNDAY', 'Monday', 'monday', 'MONDAY', None
         )

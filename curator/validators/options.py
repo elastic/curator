@@ -121,6 +121,7 @@ def action_specific(action):
             option_defaults.wait_for_active_shards(action),
             option_defaults.extra_settings(),
             option_defaults.wait_for_completion(action),
+            option_defaults.wait_for_rebalance(),
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
