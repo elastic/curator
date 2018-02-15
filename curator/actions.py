@@ -1919,7 +1919,9 @@ class Shrink(object):
                 self.loggit.debug('Node "{0}" is not a data node'.format(name))
                 continue
             if not single_data_path(self.client, node_id):
-                self.loggit.info('Node "{0}" has multiple data paths and will not be used for shrink operations.')
+                self.loggit.info(
+                    'Node "{0}" has multiple data paths and will not be used for '
+                    'shrink operations.'.format(name))
                 continue
             value = nodes[node_id]['fs']['total']['available_in_bytes']
             if value > mvn_avail:

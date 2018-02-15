@@ -4,14 +4,21 @@ Changelog
 =========
 
 
-5.4.2 (16 January 2018)
------------------------
+5.4.2 (? ? ?)
+-------------
+
 **New Features**
+
   * Add ``wait_for_rebalance`` as an option for ``shrink`` action. By default
     the behavior remains unchanged. You can now set this to False though to
     allow the shrink action to only check that the index being shrunk has
-    finished being relocated and it will not wait for the cluster to rebalance.
+    finished being relocated and it will not wait for the cluster to 
+    rebalance. #1129 (tschroeder-zendesk)
+  * Work around for extremely large cluster states. #1142 (rewiko)
 
+**Bug Fixes**
+
+  * Fix missing node information in log line. #1142 (untergeek)
 
 
 5.4.1 (6 December 2017)
