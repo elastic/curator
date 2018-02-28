@@ -191,8 +191,9 @@ class IndexList(object):
                     wl = working_list[index]
 
                     if 'settings' not in wl:
+                        # Used by AWS ES <= 5.1
                         # We can try to get the same info from index/_settings.
-                        # To work around https://github.com/elastic/curator/issues/880
+                        # workaround for https://github.com/elastic/curator/issues/880
                         alt_wl = self.client.indices.get(index, feature='_settings')[index]
                         wl['settings'] = alt_wl['settings']
 
