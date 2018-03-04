@@ -15,11 +15,17 @@ Changelog
     finished being relocated and it will not wait for the cluster to 
     rebalance. #1129 (tschroeder-zendesk)
   * Work around for extremely large cluster states. #1142 (rewiko)
+  * Add CI tests for Elasticsearch versions 6.1 and 6.2 (untergeek)
 
 **Bug Fixes**
 
   * Fix missing node information in log line. #1142 (untergeek)
+  * Fix default options in code that were causing schema validation errors
+    after ``voluptuous`` upgrade to 0.11.1. Reported in #1149, fixed in #1156 (untergeek) 
 
+**General**
+
+  * Deprecate testing for Python 3.4.  It is no longer being supported by Python.
 
 5.4.1 (6 December 2017)
 -----------------------
