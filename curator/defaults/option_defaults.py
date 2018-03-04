@@ -97,7 +97,7 @@ def name(action):
         return { Optional('name'): Any(str, unicode) }
 
 def new_index():
-    return { Optional('new_index', default=None): Any(str, unicode) }
+    return { Optional('new_index', default=None): Any(str, unicode, None) }
 
 def node_filters():
     return {
@@ -118,11 +118,17 @@ def partial():
 
 def post_allocation():
     return {
-        Optional('post_allocation', default={}): {
-          Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
-          Required('key'): Any(str, unicode),
-          Required('value', default=None): Any(str, unicode, None)
-        }
+        Optional('post_allocation', default={}): 
+            Any(
+                {}, 
+                All(
+                    {
+                      Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
+                      Required('key'): Any(str, unicode),
+                      Required('value', default=None): Any(str, unicode, None)
+                    }
+                )
+            )
     }
 
 def preserve_existing():
