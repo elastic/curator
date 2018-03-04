@@ -44,6 +44,7 @@ java_home='/usr/lib/jvm/java-8-oracle'
 LC=elasticsearch/localcluster
 mkdir -p $LC
 cp elasticsearch/config/log4j2.properties $LC
+cp elasticsearch/config/jvm.options $LC
 echo 'network.host: 127.0.0.1' > $LC/elasticsearch.yml
 echo 'http.port: 9200' >> $LC/elasticsearch.yml
 echo 'cluster.name: local' >> $LC/elasticsearch.yml
@@ -56,6 +57,7 @@ echo 'reindex.remote.whitelist: localhost:9201' >> $LC/elasticsearch.yml
 RC=elasticsearch/remotecluster
 mkdir -p $RC
 cp elasticsearch/config/log4j2.properties $RC
+cp elasticsearch/config/jvm.options $RC
 echo 'network.host: 127.0.0.1' > $RC/elasticsearch.yml
 echo 'http.port: 9201' >> $RC/elasticsearch.yml
 echo 'cluster.name: remote' >> $RC/elasticsearch.yml
