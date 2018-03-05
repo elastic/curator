@@ -172,3 +172,16 @@ class TestActionReindex(TestCase):
         urllib3 = Mock()
         urllib3.util.retry.side_effect = testvars.fake_fail
         self.assertRaises(Exception, curator.Reindex, ilo, badval)
+    def test_init_raise_empty_source_list(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_one
+        client.cluster.state.return_value = testvars.clu_state_one
+        client.indices.stats.return_value = testvars.stats_one
+        ilo = curator.IndexList(client)
+        badval = { 
+            'source': { 'index': [] }, 
+            'dest': { 'index': 'other_index' } 
+        }
+        ro = curator.Reindex(ilo, badval)
+        self.assertRaises(curator.FailedExecution, ro.do_action)
