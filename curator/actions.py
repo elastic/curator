@@ -1283,13 +1283,19 @@ class Reindex(object):
     def sources(self):
         # Generator for sources & dests
         dest = self.body['dest']['index']
-
+        source_list = ensure_list(self.body['source']['index'])
+        self.loggit.debug('source_list: {0}'.format(source_list))
+        if source_list == []: # Empty list
+            raise ConfigurationError(
+                'Source index must be list of actual indices. '
+                'It must not be an empty list.'
+            )
         if not self.migration:
             yield self.body['source']['index'], dest
 
         # Loop over all sources (default will only be one)
         else:
-            for source in ensure_list(self.body['source']['index']):
+            for source in source_list:
                 if self.migration:
                     dest = self.mpfx + source + self.msfx
                 yield source, dest

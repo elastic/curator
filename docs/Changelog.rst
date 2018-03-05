@@ -23,6 +23,8 @@ Changelog
   * Fix missing node information in log line. #1142 (untergeek)
   * Fix default options in code that were causing schema validation errors
     after ``voluptuous`` upgrade to 0.11.1. Reported in #1149, fixed in #1156 (untergeek) 
+  * Disallow empty lists as reindex source.  Raise exception if that happens.
+    Reported in #1139 (untergeek)
 
 **General**
 
