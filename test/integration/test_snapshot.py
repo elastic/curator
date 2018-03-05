@@ -5,6 +5,7 @@ import json
 import string, random, tempfile
 from click import testing as clicktest
 from mock import patch, Mock
+from datetime import datetime, timedelta
 
 from . import CuratorTestCase
 from . import testvars as testvars
@@ -37,6 +38,28 @@ class TestCLISnapshot(CuratorTestCase):
                    )
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
+    def test_snapshot_datemath(self):
+        self.create_indices(5)
+        self.create_repository()
+        snap_name = '<snapshot-{now-1d/d}>'
+        snap_name_parsed = u'snapshot-{0}'.format((datetime.utcnow()-timedelta(days=1)).strftime('%Y.%m.%d'))
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.snapshot_test.format(self.args['repository'], snap_name, 1, 30))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        snapshot = curator.get_snapshot(
+                    self.client, self.args['repository'], '_all'
+                   )
+        self.assertEqual(1, len(snapshot['snapshots']))
+        self.assertEqual(snap_name_parsed, snapshot['snapshots'][0]['snapshot'])
     def test_snapshot_ignore_empty_list(self):
         self.create_indices(5)
         self.create_repository()

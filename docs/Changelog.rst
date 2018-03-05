@@ -16,6 +16,7 @@ Changelog
     rebalance. #1129 (tschroeder-zendesk)
   * Work around for extremely large cluster states. #1142 (rewiko)
   * Add CI tests for Elasticsearch versions 6.1 and 6.2 (untergeek)
+  * Add Elasticsearch datemath support for snapshot names #1078 (untergeek)
 
 **Bug Fixes**
 
