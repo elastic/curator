@@ -2,7 +2,7 @@ from datetime import timedelta, datetime, date
 import elasticsearch
 import time
 import logging
-import yaml, os, re, sys
+import yaml, os, random, re, string, sys
 from voluptuous import Schema
 from .exceptions import *
 from .defaults import settings
@@ -1831,3 +1831,76 @@ def node_id_to_name(client, node_id):
         logger.error('No node_id found matching: "{0}"'.format(node_id))
     logger.debug('Name associated with node_id "{0}": {1}'.format(node_id, name))
     return name
+
+def get_datemath(client, datemath, random_element=None):
+    """
+    Return the parsed index name from ``datemath``
+    """
+    if random_element is None:
+        randomPrefix = (
+            'curator_get_datemath_function_' + 
+            ''.join(random.choice(string.ascii_lowercase) for _ in range(32))
+        )
+    else:
+        randomPrefix = 'curator_get_datemath_function_' + random_element
+    datemath_dummy = '<{0}-{1}>'.format(randomPrefix, datemath)
+    # We both want and expect a 404 here (NotFoundError), since we have
+    # created a 32 character random string to definitely be an unknown
+    # index name.
+    logger.debug('Random datemath string for extraction: {0}'.format(datemath_dummy))
+    try:
+        client.indices.get(index=datemath_dummy)
+    except elasticsearch.exceptions.NotFoundError as e:
+        # This is the magic.  Elasticsearch still gave us the formatted
+        # index name in the error results.
+        fauxIndex = e.info['error']['index']
+    logger.debug('Response index name for extraction: {0}'.format(fauxIndex))
+    # Now we strip the random index prefix back out again
+    pattern = r'^{0}-(.*)$'.format(randomPrefix)
+    r = re.compile(pattern)
+    try:
+        # And return only the now-parsed date string
+        return r.match(fauxIndex).group(1)
+    except AttributeError:
+        raise ConfigurationError(
+            'The rendered index "{0}" does not contain a valid date pattern '
+            'or has invalid index name characters.'.format(fauxIndex)
+        )
+
+def isdatemath(data):
+    initial_check = r'^(.).*(.)$'
+    r = re.compile(initial_check)
+    opener = r.match(data).group(1)
+    closer = r.match(data).group(2)
+    logger.debug('opener =  {0}, closer = {1}'.format(opener, closer))
+    if (opener == '<' and closer != '>') or (opener != '<' and closer == '>'):
+        raise ConfigurationError('Incomplete datemath encapsulation in "< >"')
+    elif (opener != '<' and closer != '>'):
+        return False
+    return True
+
+def parse_datemath(client, value):
+    """
+    Check if ``value`` is datemath.  
+    Parse it if it is.  
+    Return the bare value otherwise.
+    """
+    if not isdatemath(value):
+        return value
+    else:
+        logger.debug('Properly encapsulated, proceeding to next evaluation...')
+    # Our pattern has 4 capture groups.
+    # 1. Everything after the initial '<' up to the first '{', which we call ``prefix``
+    # 2. Everything between the outermost '{' and '}', which we call ``datemath``
+    # 3. An optional inner '{' and '}' containing a date formatter and potentially a timezone.  Not captured.
+    # 4. Everything after the last '}' up to the closing '>'
+    pattern = r'^<([^\{\}]*)?(\{.*(\{.*\})?\})([^\{\}]*)?>$'
+    r = re.compile(pattern)
+    try:
+        prefix = r.match(value).group(1) or ''
+        datemath = r.match(value).group(2)
+        # formatter = r.match(value).group(3) or '' (not captured, but counted)
+        suffix = r.match(value).group(4) or ''
+    except AttributeError:
+        raise ConfigurationError('Value "{0}" does not contain a valid datemath pattern.'.format(value))
+    return '{0}{1}{2}'.format(prefix, get_datemath(client, datemath), suffix)

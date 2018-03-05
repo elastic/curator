@@ -44,6 +44,7 @@ class Alias(object):
         verify_index_list(ilo)
         if not self.client:
             self.client = ilo.client
+        self.name = parse_datemath(self.client, self.name)
         try:
             ilo.empty_list_check()
         except NoIndices:
@@ -76,6 +77,7 @@ class Alias(object):
         verify_index_list(ilo)
         if not self.client:
             self.client = ilo.client
+        self.name = parse_datemath(self.client, self.name)
         try:
             ilo.empty_list_check()
         except NoIndices:
@@ -1398,11 +1400,11 @@ class Snapshot(object):
         if not name:
             raise MissingArgument('No value for "name" provided.')
         #: Instance variable.
-        #: The parsed version of `name`
-        self.name = parse_date_pattern(name)
-        #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client              = ilo.client
+        #: Instance variable.
+        #: The parsed version of `name`
+        self.name = parse_datemath(self.client, parse_date_pattern(name))
         #: Instance variable.
         #: Internal reference to `ilo`
         self.index_list = ilo
