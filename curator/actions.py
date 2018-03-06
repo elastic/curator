@@ -859,7 +859,7 @@ class Rollover(object):
         self.client     = client
         #: Instance variable.
         #: Internal reference to `conditions`
-        self.conditions = conditions
+        self.conditions = self._check_max_size(conditions)
         #: Instance variable.
         #: Internal reference to `extra_settings`
         self.settings   = extra_settings
@@ -879,6 +879,24 @@ class Rollover(object):
                     'Unable to perform index rollover with alias '
                     '"{0}". See previous logs for more details.'.format(name)
                 )
+
+    def _check_max_size(self, data):
+        """
+        Ensure that if ``max_size`` is specified, that ``self.client``
+        is running 6.1 or higher.
+        """
+        try:
+            if 'max_size' in data['conditions']:
+                version = get_version(self.client)
+                if version < (6,1,0):
+                    raise ConfigurationError(
+                        'Your version of elasticsearch ({0}) does not support '
+                        'the max_size rollover condition. It is only supported '
+                        'in versions 6.1.0 and up.'.format(version)
+                    )
+        except KeyError:
+            self.loggit.debug('data does not contain dict key "conditions"')
+        return data
 
     def body(self):
         """

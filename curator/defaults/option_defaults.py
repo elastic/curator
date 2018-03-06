@@ -10,7 +10,8 @@ def conditions():
     return {
         Optional('conditions'): {
             Optional('max_age'): Any(str, unicode),
-            Optional('max_docs'): Coerce(int)
+            Optional('max_docs'): Coerce(int),
+            Optional('max_size'): Any(str, unicode)
         }
     }
 

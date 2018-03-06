@@ -4,7 +4,7 @@ Changelog
 =========
 
 
-5.4.2 (? ? ?)
+5.5.0 (? ? ?)
 -------------
 
 **New Features**
@@ -17,6 +17,8 @@ Changelog
   * Work around for extremely large cluster states. #1142 (rewiko)
   * Add CI tests for Elasticsearch versions 6.1 and 6.2 (untergeek)
   * Add Elasticsearch datemath support for snapshot names #1078 (untergeek)
+  * Support ``max_size`` as a rollover condition for Elasticsearch versions
+    6.1.0 and up. #1140 (untergeek)
 
 **Bug Fixes**
 
@@ -29,6 +31,10 @@ Changelog
 **General**
 
   * Deprecate testing for Python 3.4.  It is no longer being supported by Python.
+
+**Documentation**
+
+  * Correct a misunderstanding about the nature of rollover conditions. #1144 (untergeek)
 
 5.4.1 (6 December 2017)
 -----------------------

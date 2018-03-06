@@ -914,28 +914,30 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
   conditions:
     max_age: 1d
     max_docs: 1000000
+    max_size: 5gb
 -------------
 
 This action uses the
 {ref}/indices-rollover-index.html[Elasticsearch Rollover API] to create a new
-index, if the described conditions are met.
+index, if any of the described conditions are met.
 
-IMPORTANT: When choosing `conditions`, **either** one of
-<<option_max_age,max_age>> or <<option_max_docs,max_docs>>, **or both** may be
-used. If both are used, then both conditions must be matched for the rollover to
-occur.
+IMPORTANT: When choosing `conditions`, **any** one of
+<<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>>, **or any combination of the three** may be used.
+If multiple are used, then the specified condition for any one of them must be
+matched for the rollover to occur.
 
-WARNING: If either or both of the <<option_max_age,max_age>> or
-<<option_max_docs,max_docs>> options are present, they must each have a value.
-Because there is no default value, neither of these options can be left empty,
-or Curator will generate an error.
+WARNING: If one or more of the <<option_max_age,max_age>>,
+<<option_max_docs,max_docs>>, or <<option_max_size,max_size>> options are
+present, they must each have a value. Because there are no default values,
+none of these conditions can be left empty, or Curator will generate an error.
 
 === Extra settings
 
@@ -947,7 +949,7 @@ might be:
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -973,6 +975,11 @@ options:
   index before triggering a rollover.  This _must_ be nested under
   `conditions:`. There is no default value.  If this condition is specified, it
   must have a value, or Curator will generate an error.
+* <<option_max_size,max_size>> **Only supported in Elasticsearch 6.1.0 and up.**
+  The maximum size the index can be before a rollover is triggered.  This _must_
+  be nested under `conditions:`. There is no default value.  If this condition
+  is specified, it must have a value, or Curator will generate an error.
+
 
 === Optional settings
 

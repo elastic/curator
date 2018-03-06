@@ -21,6 +21,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_key,key>>
 * <<option_max_age,max_age>>
 * <<option_max_docs,max_docs>>
+* <<option_max_size,max_size>>
 * <<option_mns,max_num_segments>>
 * <<option_max_wait,max_wait>>
 * <<option_migration_prefix,migration_prefix>>
@@ -680,7 +681,7 @@ will be raised, and execution will halt.
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -688,12 +689,13 @@ options:
     max_age: 1d
 -------------
 
-NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
-are required as `conditions:` for the <<rollover,Rollover>> action.
+NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>> or any combinations of the three are required as
+`conditions:` for the <<rollover,Rollover>> action.
 
-The maximum age that is allowed before triggering a rollover. _Must be nested
-under `conditions:`_ There is no default value. If this condition is specified,
-it must have a value, or Curator will generate an error.
+The maximum age that is allowed before triggering a rollover. It _must_ be
+nested under `conditions:` There is no default value.  If this condition is
+specified, it must have a value, or Curator will generate an error.
 
 Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 
@@ -704,7 +706,7 @@ Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -712,13 +714,39 @@ options:
     max_docs: 1000000
 -------------
 
-NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
-are required as `conditions:` for the <<rollover,Rollover>> action.
+NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>> or any combinations of the three are required as
+`conditions:` for the <<rollover,Rollover>> action.
 
 The maximum number of documents allowed in an index before triggering a
-rollover.  _Must be nested under `conditions:`_ There is no default value.  If
-this condition is specified, it must have a value, or Curator will generate an
-error.
+rollover.  It _must_ be nested under `conditions:` There is no default value.
+If this condition is specified, it must have a value, or Curator will generate
+an error.
+
+[[option_max_size]]
+== max_size
+
+[source,yaml]
+-------------
+action: rollover
+description: >-
+  Rollover the index associated with alias 'aliasname', which should be in the
+  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+options:
+  name: aliasname
+  conditions:
+    max_size: 5gb
+-------------
+
+NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>> or any combinations of the three are required as
+`conditions:` for the <<rollover,Rollover>> action.
+
+The maximum approximate size an index is allowed to be before triggering a
+rollover.  Sizes must use Elasticsearch approved
+{ref}/common-options.html#byte-units[byte units]. It _must_ be nested under
+`conditions:` There is no default value.  If this condition is specified, it
+must have a value, or Curator will generate an error.
 
 
 [[option_mns]]
