@@ -493,6 +493,11 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 This action performs a forceMerge on the selected indices, merging them to
 <<option_mns,max_num_segments>> per shard.
 
+WARNING: A {ref}/indices-forcemerge.html#indices-forcemerge[`forcemerge`] should
+    never be executed on an index that is actively receiving data.  It should
+    only ever be performed on indices where no more documents are ever
+    anticipated to be added in the future.
+
 You can optionally pause between each merge for <<option_delay,delay>> seconds
 to allow the cluster to quiesce:
 
