@@ -33,10 +33,13 @@ include::inc_timestring_regex.asciidoc[]
 
 NOTE: `source` can only be `field_stats` when filtering indices.
 
-`field_stats` uses the {ref}/search-field-stats.html[Field Stats API] to
-calculate either the `min_value` or the `max_value` of the <<fe_field,`field`>>
+In Curator 5.3 and older, source `field_stats` uses the
+http://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-field-stats.html[Field Stats API]
+to calculate either the `min_value` or the `max_value` of the <<fe_field,`field`>>
 as the <<fe_stats_result,`stats_result`>>, and then use that value for age
-comparisons.
+comparisons.  In 5.4 and above, even though it is still called `field_stats`, it
+uses an aggregation to calculate the same values, as the `field_stats` API is
+no longer used in Elasticsearch 6.x and up.
 
 <<fe_field,`field`>> must be of type `date` in Elasticsearch.
 

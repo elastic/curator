@@ -35,6 +35,8 @@ Changelog
 **Documentation**
 
   * Correct a misunderstanding about the nature of rollover conditions. #1144 (untergeek)
+  * Correct links to the field_stats API, as it is non-existent in Elasticsearch
+    6.x. (untergeek)
 
 5.4.1 (6 December 2017)
 -----------------------
