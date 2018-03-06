@@ -277,6 +277,8 @@ def timeout_override(action):
         value = 21600
     elif action == 'close':
         value = 180
+    elif action == 'delete_snapshots':
+        value = 300
     else:
         value = None
 
