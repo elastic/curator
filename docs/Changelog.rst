@@ -41,6 +41,7 @@ Changelog
   * Correct links to the field_stats API, as it is non-existent in Elasticsearch
     6.x. (untergeek)
   * Add a warning about using forcemerge on active indices. #1153 (untergeek)
+  * Fix select URLs in pip installation from source to not be 404 #1133 (untergeek)
 
 5.4.1 (6 December 2017)
 -----------------------
