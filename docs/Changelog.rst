@@ -27,6 +27,9 @@ Changelog
     after ``voluptuous`` upgrade to 0.11.1. Reported in #1149, fixed in #1156 (untergeek) 
   * Disallow empty lists as reindex source.  Raise exception if that happens.
     Reported in #1139 (untergeek)
+  * Set a ``timeout_override`` for ``delete_snapshots`` to catch cases where
+    slower repository network and/or disk access can cause a snapshot delete
+    to take longer than the default 30 second client timeout. #1133 (untergeek)
 
 **General**
 

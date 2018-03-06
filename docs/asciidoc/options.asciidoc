@@ -2552,18 +2552,16 @@ filters:
 - filtertype: ...
 -------------
 
-Actions <<snapshot,snapshot>>, <<restore,restore>>, and
-    <<forcemerge,forcemerge>> will override this value to `21600` if
-    `timeout_override` is unset.  The <<close,close>> action will override the
-    value to 180 if unset.
+If `timeout_override` is unset in your configuration, some actions will
+try to set a sane default value.
 
-Some actions have a default value for `timeout_override`. The following table
-shows these default values:
+The following table shows these default values:
 
 [cols="m,", options="header"]
 |===
 |Action Name |Default `timeout_override` Value
 |close |180
+|delete_snapshots |300
 |forcemerge |21600
 |restore |21600
 |snapshot |21600
