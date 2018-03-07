@@ -19,6 +19,8 @@ Changelog
   * Add Elasticsearch datemath support for snapshot names #1078 (untergeek)
   * Support ``max_size`` as a rollover condition for Elasticsearch versions
     6.1.0 and up. #1140 (untergeek)
+  * Skip indices with a document count of 0 when using ``source: field_stats``
+    to do ``age`` or ``period`` type filtering. #1130 (untergeek)
 
 **Bug Fixes**
 
