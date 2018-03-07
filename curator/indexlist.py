@@ -143,7 +143,6 @@ class IndexList(object):
                         self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                         stats_result = {}
                         stats_result.update(self._bulk_queries(l, self._get_indices_stats))
-                        pass
 
                 iterate_over_stats(stats_result)
 
@@ -185,7 +184,6 @@ class IndexList(object):
                     self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                     working_list = {}
                     working_list.update(self._bulk_queries(l, self._get_cluster_state))
-                    pass
 
             if working_list:
                 for index in list(working_list.keys()):
@@ -247,8 +245,7 @@ class IndexList(object):
                 if err.status_code == 413:
                     self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                     working_list = {}
-                    working_list.update(self._bulk_queries(l, self._get_indices_segments))
-                    pass
+                    working_list.update(self._bulk_queries(l, self._get_indices_segments))  
 
             if working_list:
                 for index in list(working_list.keys()):
@@ -287,13 +284,17 @@ class IndexList(object):
             elasticsearch as a date datatype.  Default: ``@timestamp``
         """
         self.loggit.debug(
+            'Cannot query closed indices. Omitting any closed indices.'
+        )
+        self.filter_closed()
+        self.loggit.debug(
+            'Cannot use field_stats with empty indices. Omitting any empty indices.'
+        )
+        self.filter_empty()
+        self.loggit.debug(
             'Getting index date by querying indices for min & max value of '
             '{0} field'.format(field)
         )
-        self.loggit.debug(
-            'Cannot use query closed indices. Omitting any closed indices.'
-        )
-        self.filter_closed()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             for index in l:
@@ -705,6 +706,25 @@ class IndexList(object):
             condition = self.index_info[index]['state'] == 'close'
             self.loggit.debug('Index {0} state: {1}'.format(
                     index, self.index_info[index]['state']
+                )
+            )
+            self.__excludify(condition, exclude, index)
+
+    def filter_empty(self, exclude=True):
+        """
+        Filter indices with a document count of zero
+
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
+        """
+        self.loggit.debug('Filtering empty indices')
+        self.empty_list_check()
+        for index in self.working_list():
+            condition = self.index_info[index]['docs'] == 0
+            self.loggit.debug('Index {0} doc count: {1}'.format(
+                    index, self.index_info[index]['docs']
                 )
             )
             self.__excludify(condition, exclude, index)
