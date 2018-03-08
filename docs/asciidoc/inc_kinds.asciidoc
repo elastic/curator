@@ -82,7 +82,7 @@ To match all indices starting with `a-`, `b-`, or `c-`:
  value: '^a-|^b-|^c-'
 -------------
 
-To match all indices _except_ those ending with `a-`, `b-`, or `c-`:
+To match all indices _except_ those starting with `a-`, `b-`, or `c-`:
 
 [source,yaml]
 -------------
