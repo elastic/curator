@@ -6,6 +6,7 @@ import string, random, tempfile
 import click
 from click import testing as clicktest
 from mock import patch, Mock
+from datetime import datetime, timedelta
 
 from . import CuratorTestCase
 from . import testvars as testvars
@@ -130,6 +131,28 @@ class TestCLIAlias(CuratorTestCase):
         self.assertEqual(
             {u'my_index': {u'aliases': {alias: {}}}},
             self.client.indices.get_alias(name=alias)
+        )
+    def test_add_and_remove_datemath(self):
+        alias = '<testalias-{now-1d/d}>'
+        alias_parsed = u'testalias-{0}'.format((datetime.utcnow()-timedelta(days=1)).strftime('%Y.%m.%d'))
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.alias_add_remove.format(alias))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='dummy', name=alias_parsed)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {u'my_index': {u'aliases': {alias_parsed: {}}}},
+            self.client.indices.get_alias(name=alias_parsed)
         )
     def test_add_with_empty_remove(self):
         alias = 'testalias'
@@ -286,3 +309,43 @@ class TestCLIAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(-1, result.exit_code)
+    def test_add_and_remove_sorted(self):
+        alias = 'testalias'
+        alias_add_remove = (
+            '---\n'
+            'actions:\n'
+            '  1:\n'
+            '    description: "Add/remove specified indices from designated alias"\n'
+            '    action: alias\n'
+            '    options:\n'
+            '      name: {0}\n'
+            '      continue_if_exception: False\n'
+            '      disable_action: False\n'
+            '    add:\n'
+            '      filters:\n'
+            '        - filtertype: none\n'
+            '    remove:\n'
+            '      filters:\n'
+            '        - filtertype: pattern\n'
+            '          kind: prefix\n'
+            '          value: my\n'
+            
+        )
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'], alias_add_remove.format(alias))
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.client.indices.put_alias(index='my_index', name=alias)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(
+            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {alias: {}}}},
+            self.client.indices.get_alias(name=alias)
+        )

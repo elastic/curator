@@ -56,7 +56,7 @@ def process_action(client, config, **kwargs):
     if action == 'delete_indices':
         mykwargs['master_timeout'] = (
             kwargs['master_timeout'] if 'master_timeout' in kwargs else 30)
- 
+
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(opts))
     logger.debug('Action kwargs: {0}'.format(mykwargs))
@@ -66,18 +66,18 @@ def process_action(client, config, **kwargs):
         # Special behavior for this action, as it has 2 index lists
         logger.debug('Running "{0}" action'.format(action.upper()))
         action_obj = action_class(**mykwargs)
-        if 'add' in config:
-            logger.debug('Adding indices to alias "{0}"'.format(opts['name']))
-            adds = IndexList(client)
-            adds.iterate_filters(config['add'])
-            action_obj.add(adds, warn_if_no_indices=opts['warn_if_no_indices'])
+        removes = IndexList(client)
+        adds = IndexList(client)
         if 'remove' in config:
             logger.debug(
                 'Removing indices from alias "{0}"'.format(opts['name']))
-            removes = IndexList(client)
             removes.iterate_filters(config['remove'])
             action_obj.remove(
                 removes, warn_if_no_indices= opts['warn_if_no_indices'])
+        if 'add' in config:
+            logger.debug('Adding indices to alias "{0}"'.format(opts['name']))
+            adds.iterate_filters(config['add'])
+            action_obj.add(adds, warn_if_no_indices=opts['warn_if_no_indices'])
     elif action in [ 'cluster_routing', 'create_index', 'rollover']:
         action_obj = action_class(client, **mykwargs)
     elif action == 'delete_snapshots' or action == 'restore':

@@ -10,7 +10,8 @@ def conditions():
     return {
         Optional('conditions'): {
             Optional('max_age'): Any(str, unicode),
-            Optional('max_docs'): Coerce(int)
+            Optional('max_docs'): Coerce(int),
+            Optional('max_size'): Any(str, unicode)
         }
     }
 
@@ -97,10 +98,10 @@ def name(action):
         return { Optional('name'): Any(str, unicode) }
 
 def new_index():
-    return { Optional('new_index', default=None): Any(str, unicode) }
+    return { Optional('new_index', default=None): Any(str, unicode, None) }
 
 def node_filters():
-    return { 
+    return {
         Optional('node_filters', default={}): {
           Optional('permit_masters', default=False): Any(bool, All(Any(str, unicode), Boolean())),
           Optional('exclude_nodes', default=[]): Any(list, None)
@@ -117,12 +118,18 @@ def partial():
     return { Optional('partial', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def post_allocation():
-    return { 
-        Optional('post_allocation', default={}): {
-          Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
-          Required('key'): Any(str, unicode),
-          Required('value', default=None): Any(str, unicode, None)
-        }
+    return {
+        Optional('post_allocation', default={}): 
+            Any(
+                {}, 
+                All(
+                    {
+                      Required('allocation_type', default='require'): All(Any(str, unicode), Any('require', 'include', 'exclude')),
+                      Required('key'): Any(str, unicode),
+                      Required('value', default=None): Any(str, unicode, None)
+                    }
+                )
+            )
     }
 
 def preserve_existing():
@@ -270,6 +277,8 @@ def timeout_override(action):
         value = 21600
     elif action == 'close':
         value = 180
+    elif action == 'delete_snapshots':
+        value = 300
     else:
         value = None
 
@@ -295,6 +304,9 @@ def wait_for_completion(action):
     if action in ['allocation', 'cluster_routing', 'replicas']:
         value = False
     return { Optional('wait_for_completion', default=value): Any(bool, All(Any(str, unicode), Boolean())) }
+
+def wait_for_rebalance():
+    return { Optional('wait_for_rebalance', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
 
 def wait_interval(action):
     minval = 1

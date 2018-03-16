@@ -3,8 +3,94 @@
 Changelog
 =========
 
-5.3.0b1 (26 October 2017)
--------------------------
+
+5.5.0 (? ? ?)
+-------------
+
+**New Features**
+
+  * Add ``wait_for_rebalance`` as an option for ``shrink`` action. By default
+    the behavior remains unchanged. You can now set this to False though to
+    allow the shrink action to only check that the index being shrunk has
+    finished being relocated and it will not wait for the cluster to 
+    rebalance. #1129 (tschroeder-zendesk)
+  * Work around for extremely large cluster states. #1142 (rewiko)
+  * Add CI tests for Elasticsearch versions 6.1 and 6.2 (untergeek)
+  * Add Elasticsearch datemath support for snapshot names #1078 (untergeek)
+  * Support ``max_size`` as a rollover condition for Elasticsearch versions
+    6.1.0 and up. #1140 (untergeek)
+  * Skip indices with a document count of 0 when using ``source: field_stats``
+    to do ``age`` or ``period`` type filtering. #1130 (untergeek)
+
+**Bug Fixes**
+
+  * Fix missing node information in log line. #1142 (untergeek)
+  * Fix default options in code that were causing schema validation errors
+    after ``voluptuous`` upgrade to 0.11.1. Reported in #1149, fixed in #1156 (untergeek) 
+  * Disallow empty lists as reindex source.  Raise exception if that happens.
+    Reported in #1139 (untergeek)
+  * Set a ``timeout_override`` for ``delete_snapshots`` to catch cases where
+    slower repository network and/or disk access can cause a snapshot delete
+    to take longer than the default 30 second client timeout. #1133 (untergeek)
+
+**General**
+
+  * Deprecate testing for Python 3.4.  It is no longer being supported by Python.
+
+**Documentation**
+
+  * Correct a misunderstanding about the nature of rollover conditions. #1144 (untergeek)
+  * Correct links to the field_stats API, as it is non-existent in Elasticsearch
+    6.x. (untergeek)
+  * Add a warning about using forcemerge on active indices. #1153 (untergeek)
+  * Fix select URLs in pip installation from source to not be 404 #1133 (untergeek)
+
+5.4.1 (6 December 2017)
+-----------------------
+
+**Bug Fixes**
+
+  * Improve Dockerfile to build from source and produce slimmer image
+    #1111 (mikn)
+  * Fix ``filter_kibana`` to correctly use ``exclude`` argument
+    #1116 (cjuroz)
+  * Fix `ssl_no_validate` behavior within AWS ES #1118 (igalarzab)
+  * Improve command-line exception management #1119 (4383)
+  * Make ``alias`` action always process ``remove`` before ``add``
+    to prevent undesired alias removals. #1120 (untergeek)
+
+**General**
+
+  * Bump ES versions in Travis CI
+
+**Documentation**
+
+  * Remove ``unit_count`` parameter doc for parameter that no longer
+    exists #1107 (dashford)
+  * Add missing ``exclude: True`` in ``timestring`` docs #1117 (GregMefford)
+
+
+
+5.4.0 (13 November 2017)
+------------------------
+
+**Announcement**
+
+  * Support for Elasticsearch 6.0!!! Yes!
+
+**New Features**
+
+  * The ``field_stats`` API may be gone from Elasticsearch, but its utility
+    cannot be denied.  And so, Curator has replaced the ``field_stats`` API
+    call with a small aggregation query.  This will be perhaps a bit more
+    costly in performance terms, as this small aggregation query must be made
+    to each index in sequence, rather than as a one-shot call, like the
+    ``field_stats`` API call.  But the benefit will remain available, and
+    it's the only major API that did not persevere between Elasticsearch 5.x
+    and 6.x that was needed by Curator.
+
+5.3.0 (31 October 2017)
+-----------------------
 
 **New Features**
 
@@ -30,7 +116,7 @@ Changelog
     ``copy_aliases: 'False'`` and it does nothing. If you set to
     ``copy_aliases: 'True'``, you could copy the aliases from the source index
     to the target index. Requested in #1060 (monkey3199)
-  * IAM Credentials can now be retrieved from the environment using the Boto3 
+  * IAM Credentials can now be retrieved from the environment using the Boto3
     Credentials provider. #1084 (kobuskc)
 
 **Bug Fixes**
@@ -43,34 +129,35 @@ Changelog
 **Documentation**
 
   * Set repository access to be https by default.
+  * Add documentation for ``copy_aliases`` option.
 
 5.2.0 (1 September 2017)
 ------------------------
 
 **New Features**
 
-  * Shrink action! Apologies to all who have patiently waited for this 
-    feature.  It's been a long time coming, but it is hopefully worth the 
+  * Shrink action! Apologies to all who have patiently waited for this
+    feature.  It's been a long time coming, but it is hopefully worth the
     wait.  There are a lot of checks and tests associated with this action,
     as there are many conditions that have to be met in order for a shrink
     to take place.  Curator will try its best to ensure that all of these
     conditions are met so you can comfortably rest assured that shrink will
     work properly unattended.  See the documentation for more information.
-  * The ``cli`` function has been split into ``cli`` and ``run`` functions.  
+  * The ``cli`` function has been split into ``cli`` and ``run`` functions.
     The behavior of ``cli`` will be indistinguishable from previous releases,
     preserving API integrity.  The new ``run`` function allows lambda and other
     users to `run` Curator from the API with only a client configuration file
     and action file as arguments.  Requested in #1031 (untergeek)
   * Allow use of time/date string interpolation for Rollover index naming.
     Added in #1010 (tschroeder-zendesk)
-  * New ``unit_count_pattern`` allows you to derive the ``unit_count`` from 
+  * New ``unit_count_pattern`` allows you to derive the ``unit_count`` from
     the index name itself.  This involves regular expressions, so be sure to
     do lots of testing in ``--dry-run`` mode before deploying to production.
     Added by (soenkeliebau) in #997
 
 **Bug Fixes**
 
-  * Reindex ``request_body`` allows for 2 different ``size`` options.  One 
+  * Reindex ``request_body`` allows for 2 different ``size`` options.  One
     limits the number of documents reindexed.  The other is for batch sizing.
     The batch sizing option was missing from the schema validator.  This has
     been corrected.  Reported in #1038 (untergeek)
@@ -81,19 +168,19 @@ Changelog
 
 **Errata**
 
-  * An update to Elasticsearch 5.5.0 changes the behavior of 
+  * An update to Elasticsearch 5.5.0 changes the behavior of
     ``filter_by_aliases``, differing from previous 5.x versions.
 
-    If a list of aliases is provided, indices must appear in _all_ listed 
-    aliases or a 404 error will result, leading to no indices being matched.  
-    In older versions, if the index was associated with even one of the 
+    If a list of aliases is provided, indices must appear in _all_ listed
+    aliases or a 404 error will result, leading to no indices being matched.
+    In older versions, if the index was associated with even one of the
     aliases in aliases, it would result in a match.
 
     Tests and documentation have been updated to address these changes.
 
-  * Debian 9 changed SSL versions, which means that the pre-built debian 
-    packages no longer work in Debian 9.  In the short term, this requires 
-    a new repository.  In the long term, I will try to get a better 
+  * Debian 9 changed SSL versions, which means that the pre-built debian
+    packages no longer work in Debian 9.  In the short term, this requires
+    a new repository.  In the long term, I will try to get a better
     repository system working for these so they all work together, better.
     Requested in #998 (untergeek)
 
@@ -110,10 +197,10 @@ Changelog
     additional test for snapshot activity in the tasks API has been added to
     cover this scenario.  Reported in #999 (untergeek)
   * The ``restore_check`` function did not work properly with wildcard index
-    patterns.  This has been rectified, and an integration test added to 
+    patterns.  This has been rectified, and an integration test added to
     satisfy this.  Reported in #989 (untergeek)
-  * Make Curator report the Curator version, and not just reiterate the 
-    elasticsearch version when reporting version incompatibilities. Reported 
+  * Make Curator report the Curator version, and not just reiterate the
+    elasticsearch version when reporting version incompatibilities. Reported
     in #992. (untergeek)
   * Fix repository/snapshot name logging issue. #1005 (jpcarey)
   * Fix Windows build issue #1014 (untergeek)
@@ -125,7 +212,6 @@ Changelog
   * Thanks to many users who not only found and reported documentation issues,
     but also submitted corrections.
 
-
 5.1.1 (8 June 2017)
 -------------------
 
@@ -133,13 +219,13 @@ Changelog
 
   * Mock and cx_Freeze don't play well together.  Packages weren't working, so
     I reverted the string-based comparison as before.
-    
+
 5.1.0 (8 June 2017)
 -------------------
 
 **New Features**
 
-  * Index Settings are here! First requested as far back as #160, it's been 
+  * Index Settings are here! First requested as far back as #160, it's been
     requested in various forms culminating in #656.  The official documentation
     addresses the usage. (untergeek)
   * Remote reindex now adds the ability to migrate from one cluster to another,
@@ -147,12 +233,12 @@ Changelog
     The official documentation shows you how. (untergeek)
   * Added support for naming rollover indices. #970 (jurajseffer)
   * Testing against ES 5.4.1, 5.3.3
-  
+
 **Bug Fixes**
 
-  * Since Curator no longer supports old versions of python, convert tests to 
+  * Since Curator no longer supports old versions of python, convert tests to
     use ``isinstance``. #973 (untergeek)
-  * Fix stray instance of ``is not`` comparison instead of ``!=`` #972 
+  * Fix stray instance of ``is not`` comparison instead of ``!=`` #972
     (untergeek)
   * Increase remote client timeout to 180 seconds for remote reindex. #930
     (untergeek)
@@ -179,7 +265,7 @@ Changelog
 **Bug Fixes**
 
   * Restoring a snapshot on an exceptionally fast cluster/node can create a race
-    race condition where a ``_recovery`` check returns an empty dictionary 
+    race condition where a ``_recovery`` check returns an empty dictionary
     ``{}``, which causes Curator to fail.  Added test and code to correct this.
     Reported in #962. (untergeek)
 
@@ -209,7 +295,7 @@ Changelog
 
 **Bug Fixes**
 
-  * Fixed default values for ``include_global_state`` on the restore 
+  * Fixed default values for ``include_global_state`` on the restore
     action to be in line with defaults in Elasticsearch 5.3
 
 **Documentation**
@@ -225,23 +311,23 @@ The full feature set of 5.0 (including alpha releases) is included here.
 
 **New Features**
 
-  * Reindex is here! The new reindex action has a ton of flexibility. You 
+  * Reindex is here! The new reindex action has a ton of flexibility. You
     can even reindex from remote locations, so long as the remote cluster is
     Elasticsearch 1.4 or newer.
-  * Added the ``period`` filter (#733). This allows you to select indices 
-    or snapshots, based on whether they fit within a period of hours, days, 
+  * Added the ``period`` filter (#733). This allows you to select indices
+    or snapshots, based on whether they fit within a period of hours, days,
     weeks, months, or years.
   * Add dedicated "wait for completion" functionality. This supports health
     checks, recovery (restore) checks, snapshot checks, and operations which
-    support the new tasks API.  All actions which can use this have been 
+    support the new tasks API.  All actions which can use this have been
     refactored to take advantage of this.  The benefit of this new feature is
     that client timeouts will be less likely to happen when performing long
     operations, like snapshot and restore.
 
-    NOTE: There is one caveat: forceMerge does not support this, per the 
+    NOTE: There is one caveat: forceMerge does not support this, per the
     Elasticsearch API. A forceMerge call will hold the client until complete, or
     the client times out.  There is no clean way around this that I can discern.
-  * Elasticsearch date math naming is supported and documented for the 
+  * Elasticsearch date math naming is supported and documented for the
     ``create_index`` action.  An integration test is included for validation.
   * Allow allocation action to unset a key/value pair by using an empty value.
     Requested in #906. (untergeek)
@@ -275,7 +361,7 @@ The full feature set of 5.0 (including alpha releases) is included here.
   * Add missing repository arg to auto-gen API docs. Reported in #888
     (untergeek)
   * Add all new documentation and clean up for v5 specific.
-  
+
 **Breaking Changes**
 
   * IndexList no longer checks to see if there are indices on initialization.
@@ -284,7 +370,7 @@ The full feature set of 5.0 (including alpha releases) is included here.
 5.0.0a1 (23 March 2017)
 -----------------------
 
-This is the first alpha release of Curator 5.  This should not be used for 
+This is the first alpha release of Curator 5.  This should not be used for
 production! There `will` be many more changes before 5.0.0 is released.
 
 **New Features**

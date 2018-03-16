@@ -35,6 +35,7 @@ actions:
         settings:
           index.codec: best_compression
       wait_for_completion: True
+      wait_for_rebalance: True
       wait_interval: 9
       max_wait: -1
     filters:

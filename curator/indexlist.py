@@ -134,10 +134,38 @@ class IndexList(object):
         if working_list:
             index_lists = chunk_index_list(working_list)
             for l in index_lists:
-                iterate_over_stats(
-                    self.client.indices.stats(index=to_csv(l),
-                    metric='store,docs')
-                )
+                stats_result = {}
+
+                try:
+                    stats_result.update(self._get_indices_stats(l))
+                except elasticsearch.ElasticsearchException as err:
+                    if err.status_code == 413:
+                        self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                        stats_result = {}
+                        stats_result.update(self._bulk_queries(l, self._get_indices_stats))
+
+                iterate_over_stats(stats_result)
+
+    def _get_indices_stats(self, data):
+        return self.client.indices.stats(index=to_csv(data), metric='store,docs')
+
+    def _bulk_queries(self, data, exec_func):
+        slice_number = 10
+        query_result = {}
+        loop_number = round(len(data)/slice_number) if round(len(data)/slice_number) > 0 else 1
+        self.loggit.debug("Bulk Queries - number requests created: {0}".format(loop_number))
+
+        for num in range(0, loop_number):
+            if num == (loop_number-1):
+                data_sliced = data[num*slice_number:]
+            else:
+                data_sliced = data[num*slice_number:(num+1)*slice_number]
+            query_result.update(exec_func(data_sliced))
+
+        return query_result
+
+    def _get_cluster_state(self, data):
+        return self.client.cluster.state(index=to_csv(data), metric='metadata')['metadata']['indices']
 
     def _get_metadata(self):
         """
@@ -148,16 +176,28 @@ class IndexList(object):
         self.empty_list_check()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = (
-                self.client.cluster.state(
-                    index=to_csv(l),metric='metadata'
-                )['metadata']['indices']
-            )
+            working_list = {}
+            try:
+                working_list.update(self._get_cluster_state(l))
+            except elasticsearch.ElasticsearchException as err:
+                if err.status_code == 413:
+                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    working_list = {}
+                    working_list.update(self._bulk_queries(l, self._get_cluster_state))
+
             if working_list:
                 for index in list(working_list.keys()):
                     s = self.index_info[index]
                     wl = working_list[index]
-                    if not 'creation_date' in wl['settings']['index']:
+
+                    if 'settings' not in wl:
+                        # Used by AWS ES <= 5.1
+                        # We can try to get the same info from index/_settings.
+                        # workaround for https://github.com/elastic/curator/issues/880
+                        alt_wl = self.client.indices.get(index, feature='_settings')[index]
+                        wl['settings'] = alt_wl['settings']
+
+                    if 'creation_date' not in wl['settings']['index']:
                         self.loggit.warn(
                             'Index: {0} has no "creation_date"! This implies '
                             'that the index predates Elasticsearch v1.4. For '
@@ -195,7 +235,10 @@ class IndexList(object):
         self.loggit.debug('Generating working list of indices')
         return self.indices[:]
 
-    def _get_segmentcounts(self):
+    def _get_indices_segments(self, data):
+        return self.client.indices.segments(index=to_csv(data))['indices'].copy()
+
+    def _get_segment_counts(self):
         """
         Populate `index_info` with segment information for each index.
         """
@@ -203,9 +246,15 @@ class IndexList(object):
         self.empty_list_check()
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = (
-                self.client.indices.segments(index=to_csv(l))['indices']
-            )
+            working_list = {}
+            try:
+                working_list.update(self._get_indices_segments(l))
+            except elasticsearch.ElasticsearchException as err:
+                if err.status_code == 413:
+                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    working_list = {}
+                    working_list.update(self._bulk_queries(l, self._get_indices_segments))  
+
             if working_list:
                 for index in list(working_list.keys()):
                     shards = working_list[index]['shards']
@@ -236,37 +285,48 @@ class IndexList(object):
 
     def _get_field_stats_dates(self, field='@timestamp'):
         """
-        Add indices to `index_info` based on the value the stats api returns,
-        as determined by `field`
+        Add indices to `index_info` based on the values the queries return,
+        as determined by the min and max aggregated values of `field`
 
         :arg field: The field with the date value.  The field must be mapped in
             elasticsearch as a date datatype.  Default: ``@timestamp``
         """
-        self.loggit.debug('Getting index date from field_stats API')
         self.loggit.debug(
-            'Cannot use field_stats on closed indices.  '
-            'Omitting any closed indices.'
+            'Cannot query closed indices. Omitting any closed indices.'
         )
         self.filter_closed()
+        self.loggit.debug(
+            'Cannot use field_stats with empty indices. Omitting any empty indices.'
+        )
+        self.filter_empty()
+        self.loggit.debug(
+            'Getting index date by querying indices for min & max value of '
+            '{0} field'.format(field)
+        )
         index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = self.client.field_stats(
-                index=to_csv(l), fields=field, level='indices'
-                )['indices']
-            if working_list:
-                for index in list(working_list.keys()):
+            for index in l:
+                body = {
+                    'aggs' : {
+                        'min' : { 'min' : { 'field' : field } },
+                        'max' : { 'max' : { 'field' : field } }
+                    }
+                }
+                response = self.client.search(index=index, size=0, body=body)
+                self.loggit.debug('RESPONSE: {0}'.format(response))
+                if response:
                     try:
+                        r = response['aggregations']
+                        self.loggit.debug('r: {0}'.format(r))
                         s = self.index_info[index]['age']
-                        wl = working_list[index]['fields'][field]
-                        # Use these new references to keep these lines more
-                        # readable
-                        s['min_value'] = fix_epoch(wl['min_value'])
-                        s['max_value'] = fix_epoch(wl['max_value'])
+                        s['min_value'] = fix_epoch(r['min']['value'])
+                        s['max_value'] = fix_epoch(r['max']['value'])
+                        self.loggit.debug('s: {0}'.format(s))
                     except KeyError as e:
                         raise ActionError(
                             'Field "{0}" not found in index '
                             '"{1}"'.format(field, index)
-                        )
+                            )
 
     def _calculate_ages(self, source=None, timestring=None, field=None,
             stats_result=None
@@ -601,6 +661,8 @@ class IndexList(object):
                     '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'
                 ]:
                 self.__excludify(True, exclude, index)
+            else:
+                self.__excludify(False, exclude, index)
 
     def filter_forceMerged(self, max_num_segments=None, exclude=True):
         """
@@ -621,7 +683,7 @@ class IndexList(object):
             'Omitting any closed indices.'
         )
         self.filter_closed()
-        self._get_segmentcounts()
+        self._get_segment_counts()
         for index in self.working_list():
             # Do this to reduce long lines and make it more readable...
             shards = int(self.index_info[index]['number_of_shards'])
@@ -652,6 +714,25 @@ class IndexList(object):
             condition = self.index_info[index]['state'] == 'close'
             self.loggit.debug('Index {0} state: {1}'.format(
                     index, self.index_info[index]['state']
+                )
+            )
+            self.__excludify(condition, exclude, index)
+
+    def filter_empty(self, exclude=True):
+        """
+        Filter indices with a document count of zero
+
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
+        """
+        self.loggit.debug('Filtering empty indices')
+        self.empty_list_check()
+        for index in self.working_list():
+            condition = self.index_info[index]['docs'] == 0
+            self.loggit.debug('Index {0} doc count: {1}'.format(
+                    index, self.index_info[index]['docs']
                 )
             )
             self.__excludify(condition, exclude, index)
@@ -727,19 +808,19 @@ class IndexList(object):
 
     def filter_by_alias(self, aliases=None, exclude=False):
         """
-        Match indices which are associated with the alias or list of aliases 
+        Match indices which are associated with the alias or list of aliases
         identified by `aliases`.
 
-        An update to Elasticsearch 5.5.0 changes the behavior of this from 
+        An update to Elasticsearch 5.5.0 changes the behavior of this from
         previous 5.x versions:
         https://www.elastic.co/guide/en/elasticsearch/reference/5.5/breaking-changes-5.5.html#breaking_55_rest_changes
 
         What this means is that indices must appear in all aliases in list
-        `aliases` or a 404 error will result, leading to no indices being 
-        matched.  In older versions, if the index was associated with even one 
+        `aliases` or a 404 error will result, leading to no indices being
+        matched.  In older versions, if the index was associated with even one
         of the aliases in `aliases`, it would result in a match.
 
-        It is unknown if this behavior affects anyone.  At the time this was 
+        It is unknown if this behavior affects anyone.  At the time this was
         written, no users have been bit by this.  The code could be adapted
         to manually loop if the previous behavior is desired.  But if no users
         complain, this will become the accepted/expected behavior.
@@ -809,12 +890,12 @@ class IndexList(object):
         :arg reverse: The filtering direction. (default: `True`).
         :arg use_age: Sort indices by age.  ``source`` is required in this
             case.
-        :arg pattern: Select indices to count from a regular expression 
+        :arg pattern: Select indices to count from a regular expression
             pattern.  This pattern must have one and only one capture group.
             This can allow a single ``count`` filter instance to operate against
             any number of matching patterns, and keep ``count`` of each index
             in that group.  For example, given a ``pattern`` of ``'^(.*)-\d{6}$'``,
-            it will match both ``rollover-000001`` and ``index-999990``, but not 
+            it will match both ``rollover-000001`` and ``index-999990``, but not
             ``logstash-2017.10.12``.  Following the same example, if my cluster
             also had ``rollover-000002`` through ``rollover-000010`` and
             ``index-888888`` through ``index-999999``, it will process both
@@ -894,7 +975,7 @@ class IndexList(object):
                 # Default to sorting by index name
                 sorted_indices = sorted(group, reverse=reverse)
 
-            
+
             idx = 1
             for index in sorted_indices:
                 msg = (
@@ -933,10 +1014,8 @@ class IndexList(object):
         :arg date_to_format: The strftime string used to parse ``date_to``
         :arg timestring: An strftime string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
-        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or 
+        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or
             ``years``.
-        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
-            be calculated out to the relative number of seconds.
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
@@ -946,9 +1025,9 @@ class IndexList(object):
             If `True`, only indices where both `min_value` and `max_value` are
             within the period will be selected. If `False`, it will use whichever
             you specified.  Default is `False` to preserve expected behavior.
-        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is 
+        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is
             ``sunday``
-        :arg epoch: An epoch timestamp used to establish a point of reference 
+        :arg epoch: An epoch timestamp used to establish a point of reference
             for calculations. If not provided, the current time will be used.
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching

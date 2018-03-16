@@ -35,3 +35,12 @@ class TestActionRollover(TestCase):
         ro = curator.Rollover(
             client, testvars.named_alias, testvars.rollover_conditions)
         self.assertIsNone(ro.do_dry_run())
+    def test_init_raise_max_size(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_alias.return_value = testvars.rollable_alias
+        conditions = { 'conditions': { 'max_age': '1s', 'max_size': '1g' } }
+        self.assertRaises(
+            curator.ConfigurationError, curator.Rollover, client, 
+            testvars.named_alias, conditions
+        )

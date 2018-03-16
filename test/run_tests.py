@@ -14,7 +14,7 @@ def run_all(argv=None):
         argv = [
             'nosetests', '--with-xunit',
             '--logging-format=%(levelname)s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s',
-            '--with-xcoverage', '--cover-package=curator', '--cover-erase',
+            '--with-coverage', '--cover-package=curator', '--cover-erase', '--cover-html',
             '--verbose',
         ]
 
