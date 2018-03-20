@@ -108,13 +108,15 @@ def period(action, config):
         filter_elements.week_starts_on(),
         filter_elements.epoch(),
         filter_elements.exclude(),
-        filter_elements.intersect(),
         filter_elements.period_type(),
         filter_elements.date_from(),
         filter_elements.date_from_format(),
         filter_elements.date_to(),
         filter_elements.date_to_format(),
     ]
+    # Only add intersect() to index actions.
+    if action in settings.index_actions():
+        retval.append(filter_elements.intersect())
     retval += _age_elements(action, config)
     return retval
 
