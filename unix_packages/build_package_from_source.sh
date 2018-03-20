@@ -4,7 +4,7 @@ BASEPATH=$(pwd)
 PKG_TARGET=/curator_packages
 WORKDIR=/tmp/curator
 PYVER=3.6
-MINOR=3
+MINOR=4
 INPUT_TYPE=python
 CATEGORY=python
 VENDOR=Elastic
@@ -175,8 +175,6 @@ fpm \
  --conflicts python-elasticsearch-curator \
  --conflicts python3-elasticsearch-curator \
 /opt/elasticsearch-curator
-
-echo "DEPENDS => $DEPENDS"
 
 mv ${WORKDIR}/*.${PKGTYPE} ${PACKAGEDIR}
 
