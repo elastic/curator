@@ -40,6 +40,8 @@ Changelog
 **General**
 
   * Deprecate testing for Python 3.4.  It is no longer being supported by Python.
+  * Increase logging to show error when ``master_only`` is true and there are 
+    multiple hosts.
 
 **Documentation**
 

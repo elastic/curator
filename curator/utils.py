@@ -880,8 +880,12 @@ def get_client(**kwargs):
         logger.debug('Not using "requests_aws4auth" python module to connect.')
     if master_only:
         if len(kwargs['hosts']) > 1:
+            logger.error(
+                '"master_only" cannot be true if more than one host is '
+                'specified. Hosts = {0}'.format(kwargs['hosts'])
+            )
             raise ConfigurationError(
-                '"master_only" cannot be True if more than one host is '
+                '"master_only" cannot be true if more than one host is '
                 'specified. Hosts = {0}'.format(kwargs['hosts'])
             )
     try:
