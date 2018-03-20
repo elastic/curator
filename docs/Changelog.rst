@@ -36,6 +36,8 @@ Changelog
   * Add missing ``period`` filter arguments for ``delete_snapshots``. Reported in 
     #1173 (untergeek)
   * Fix kibana filtertype to catch newer index names. Reported in #1171 (untergeek)
+  * Re-order the closed indices filter for the Replicas action to take place
+    `before` the empty list check. Reported in #1180 by ``@agomerz`` (untergeek)
 
 **General**
 
