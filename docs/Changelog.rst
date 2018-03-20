@@ -32,6 +32,9 @@ Changelog
   * Set a ``timeout_override`` for ``delete_snapshots`` to catch cases where
     slower repository network and/or disk access can cause a snapshot delete
     to take longer than the default 30 second client timeout. #1133 (untergeek)
+  * Add AWS ES 5.1 support. #1172 (wanix)
+  * Add missing ``period`` filter arguments for ``delete_snapshots``. Reported in 
+    #1173 (untergeek)
 
 **General**
 
@@ -44,6 +47,7 @@ Changelog
     6.x. (untergeek)
   * Add a warning about using forcemerge on active indices. #1153 (untergeek)
   * Fix select URLs in pip installation from source to not be 404 #1133 (untergeek)
+  * Fix an error in regex filter documentation #1138 (arne-cl)
 
 5.4.1 (6 December 2017)
 -----------------------

@@ -994,7 +994,7 @@ class IndexList(object):
         intersect=False, week_starts_on='sunday', epoch=None, exclude=False,
         ):
         """
-        Match `indices` within ages within a given period.
+        Match `indices` with ages within a given period.
 
         :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
             ``relative``.  ``date_from`` and ``date_to`` are required when using
@@ -1035,7 +1035,7 @@ class IndexList(object):
             Default is `False`
         """
 
-        self.loggit.debug('Filtering indices by age')
+        self.loggit.debug('Filtering indices by period')
         if period_type not in ['absolute', 'relative']:
             raise ValueError(
                 'Unacceptable value: {0} -- "period_type" must be either "absolute" or '
