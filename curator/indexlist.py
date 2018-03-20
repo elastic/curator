@@ -646,8 +646,8 @@ class IndexList(object):
 
     def filter_kibana(self, exclude=True):
         """
-        Match any index named ``.kibana``, ``kibana-int``, ``.marvel-kibana``,
-        or ``.marvel-es-data`` in `indices`.
+        Match any index named ``.kibana``, ``.kibana-5``, or ``.kibana-6``
+        in `indices`. Older releases addressed index names that no longer exist.
 
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
@@ -658,7 +658,7 @@ class IndexList(object):
         self.empty_list_check()
         for index in self.working_list():
             if index in [
-                    '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'
+                    '.kibana', '.kibana-5', '.kibana-6'
                 ]:
                 self.__excludify(True, exclude, index)
             else:
