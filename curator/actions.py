@@ -570,9 +570,10 @@ class ForceMerge(object):
         """
         forcemerge indices in `index_list.indices`
         """
-        self.index_list.empty_list_check()
+        self.index_list.filter_closed()
         self.index_list.filter_forceMerged(
             max_num_segments=self.max_num_segments)
+        self.index_list.empty_list_check()
         self.loggit.info('forceMerging selected indices')
         try:
             for index_name in self.index_list.indices:
@@ -800,12 +801,12 @@ class Replicas(object):
         """
         Update the replica count of indices in `index_list.indices`
         """
-        self.index_list.empty_list_check()
         self.loggit.debug(
             'Cannot get update replica count of closed indices.  '
             'Omitting any closed indices.'
         )
         self.index_list.filter_closed()
+        self.index_list.empty_list_check()
         self.loggit.info(
             'Setting the replica count to {0} for indices: '
             '{1}'.format(self.count, self.index_list.indices)
