@@ -598,7 +598,7 @@ class TestIndexListFilterKibana(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         # Establish the object per requirements, then overwrite
-        il.indices = ['.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data', 'dummy']
+        il.indices = ['.kibana', '.kibana-5', '.kibana-6', 'dummy']
         il.filter_kibana()
         self.assertEqual(['dummy'], il.indices)
     def test_filter_kibana_positive_include(self):
@@ -610,9 +610,9 @@ class TestIndexListFilterKibana(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         # Establish the object per requirements, then overwrite
-        il.indices = ['.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data', 'dummy']
+        il.indices = ['.kibana', '.kibana-5', '.kibana-6', 'dummy']
         il.filter_kibana(exclude=False)
-        self.assertEqual(['.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data'], il.indices)    
+        self.assertEqual(['.kibana', '.kibana-5', '.kibana-6'], il.indices)    
     def test_filter_kibana_positive_exclude(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -622,8 +622,7 @@ class TestIndexListFilterKibana(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         # Establish the object per requirements, then overwrite
-        kibana_indices = [
-            '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data']
+        kibana_indices = ['.kibana', '.kibana-5', '.kibana-6']
         il.indices = kibana_indices
         il.indices.append('dummy')
         il.filter_kibana(exclude=True)
@@ -837,8 +836,7 @@ class TestIterateFiltersIndex(TestCase):
         ilo = curator.IndexList(client)
         # Establish the object per requirements, then overwrite
         ilo.indices = [
-            '.kibana', '.marvel-kibana', 'kibana-int', '.marvel-es-data',
-            'dummy'
+            '.kibana', '.kibana-5', '.kibana-6', 'dummy'
         ]
         config = yaml.load(testvars.kibana_ft)['actions'][1]
         ilo.iterate_filters(config)

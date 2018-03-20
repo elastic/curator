@@ -35,6 +35,7 @@ Changelog
   * Add AWS ES 5.1 support. #1172 (wanix)
   * Add missing ``period`` filter arguments for ``delete_snapshots``. Reported in 
     #1173 (untergeek)
+  * Fix kibana filtertype to catch newer index names. Reported in #1171 (untergeek)
 
 **General**
 
