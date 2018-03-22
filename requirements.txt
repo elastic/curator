@@ -1,5 +1,4 @@
 voluptuous>=0.9.3
-urllib3>=1.20
 elasticsearch==5.5.2
 click>=6.7
 pyyaml>=3.10
