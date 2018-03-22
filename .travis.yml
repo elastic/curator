@@ -25,12 +25,6 @@ cache:
 jdk:
   - oraclejdk8
 
-before_install:
-  - cp requirements.txt ..
-  - cd ..
-  - pip install -r requirements.txt
-  - cd -
-
 install:
   - pip install -U setuptools
   - pip install -r requirements.txt

@@ -3,6 +3,11 @@
 Changelog
 =========
 
+5.5.1 (22 March 2018)
+
+**Bug Fixes**
+
+  * Fix ``pip`` installation issues for older versions of Python #1183 (untergeek)
 
 5.5.0 (21 March 2018)
 ---------------------
