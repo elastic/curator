@@ -22,14 +22,12 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    return [
-        'voluptuous>=0.9.3',
-        'urllib3>=1.20',
-        'elasticsearch==5.5.2',
-        'click>=6.7',
-        'pyyaml>=3.10',
-        'certifi>=2018.1.18',
-    ]
+    res = ['elasticsearch==5.5.2' ]
+    res.append('click>=6.7')
+    res.append('pyyaml>=3.10')
+    res.append('voluptuous>=0.9.3')
+    res.append('certifi>=2018.1.18')
+    return res
 
 try:
     ### cx_Freeze ###
@@ -137,5 +135,36 @@ try:
     ### end cx_Freeze ###
 except ImportError:
     setup(
+        name = "elasticsearch-curator",
+        version = get_version(),
+        author = "Elastic",
+        author_email = "info@elastic.co",
+        description = "Tending your Elasticsearch indices",
+        long_description=fread('README.rst'),
+        url = "http://github.com/elastic/curator",
+        download_url = "https://github.com/elastic/curator/tarball/v" + get_version(),
+        license = "Apache License, Version 2.0",
+        install_requires = get_install_requires(),
+        keywords = "elasticsearch time-series indexed index-expiry",
+        packages = ["curator"],
+        include_package_data=True,
+        entry_points = {
+            "console_scripts" : [
+                "curator = curator.cli:cli",
+                "curator_cli = curator.curator_cli:main",
+                "es_repo_mgr = curator.repomgrcli:repo_mgr_cli",
+            ]
+        },
+        classifiers=[
+            "Intended Audience :: Developers",
+            "Intended Audience :: System Administrators",
+            "License :: OSI Approved :: Apache Software License",
+            "Operating System :: OS Independent",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 2.7",
+            "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: 3.6",
+        ],
         test_suite = "test.run_tests.run_all",
+        tests_require = ["mock", "nose", "coverage", "nosexcover"]
     )
