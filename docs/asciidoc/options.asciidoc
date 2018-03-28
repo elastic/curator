@@ -2109,8 +2109,8 @@ to treat this reindex differently.
 [IMPORTANT]
 =============================
 **If it is a _local_ reindex,** you _must_ set either
-<<option_migration_prefix,option_migration_prefix>>, or
-<<option_migration_suffix,option_migration_suffix>>, or both.  This prevents
+<<option_migration_prefix,migration_prefix>>, or
+<<option_migration_suffix,migration_suffix>>, or both.  This prevents
 collisions and other bad things from happening.  By assigning a prefix or a
 suffix (or both), you can reindex any local indices to new versions of
 themselves, but named differently.
