@@ -502,6 +502,7 @@ class IndexList(object):
                 unit_count_matcher = None
         for index in self.working_list():
             try:
+                removeThisIndex = False
                 age = int(self.index_info[index]['age'][self.age_keyfield])
                 msg = (
                     'Index "{0}" age ({1}), direction: "{2}", point of '
@@ -520,12 +521,13 @@ class IndexList(object):
                     if unit_count_from_index:
                         self.loggit.debug('Pattern matched, applying unit_count of  "{0}"'.format(unit_count_from_index))
                         adjustedPoR = get_point_of_reference(unit, unit_count_from_index, epoch)
+                        self.loggit.debug('Adjusting point of reference from {0} to {1} based on unit_count of {2} from index name'.format(PoR, adjustedPoR, unit_count_from_index))
                         test = 0
                     elif unit_count == -1:
                         # Unable to match pattern and unit_count is -1, meaning no fallback, so this
                         # index is removed from the list
                         self.loggit.debug('Unable to match pattern and no fallback value set. Removing index "{0}" from actionable list'.format(index))
-                        exclude = True
+                        removeThisIndex = True
                         adjustedPoR = PoR # necessary to avoid exception if the first index is excluded
                     else:
                         # Unable to match the pattern and unit_count is set, so fall back to using unit_count
@@ -538,7 +540,7 @@ class IndexList(object):
                     agetest = age < adjustedPoR
                 else:
                     agetest = age > adjustedPoR
-                self.__excludify(agetest, exclude, index, msg)
+                self.__excludify(agetest and not removeThisIndex, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(
                     'Index "{0}" does not meet provided criteria. '

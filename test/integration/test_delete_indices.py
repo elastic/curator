@@ -75,6 +75,42 @@ class TestCLIDeleteIndices(CuratorTestCase):
             ],
         )
         self.assertEquals(15, len(curator.get_indices(self.client)))
+    def test_retention_from_name_days_keep_exclude_false_after_failed_match(self):
+        # Test extraction of unit_count from index name and confirm correct
+        # behavior after a failed regex match with no fallback time - see gh issue 1206
+        # Create indices for 30 days with retention time of 5 days in index name
+        #
+        # Create indices for 10 days with no retention time in index name
+        # that alphabetically sort before the 10 with retention time
+        #
+        # Create indices for 10 days with no retention time in index name
+        # that sort after the 10 with retention time
+
+        # Expected: 45 oldest matching indices are deleted, 5 matching indices remain
+        # 20 indices without retention time are ignored and remain
+        # overall 25 indices should remain
+        self.args['prefix'] = 'logstash-aanomatch-'
+        self.create_indices(10)
+        self.args['prefix'] = 'logstash-match-5-'
+        self.create_indices(30)
+        self.args['prefix'] = 'logstash-zznomatch-'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', -1, 'logstash-\w+-([0-9]+)-[0-9]{4}\.[0-9]{2}\.[0-9]{2}', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        result = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(25, len(curator.get_indices(self.client)))
     def test_retention_from_name_days_failed_match_with_fallback(self):
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
