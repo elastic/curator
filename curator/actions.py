@@ -146,12 +146,19 @@ class Alias(object):
         """
         Run the API call `update_aliases` with the results of `body()`
         """
-        self.loggit.info('Updating aliases...')
-        self.loggit.info('Alias actions: {0}'.format(self.body()))
         try:
+            self.loggit.info('Updating aliases...')
+            self.loggit.info('Alias actions: {0}'.format(self.body()))
             self.client.indices.update_aliases(body=self.body())
+        except ActionError as e:
+            # TODO ignore_empty_list should be in options
+            if self.extra_settings.get('ignore_empty_list', False):
+                pass
+            else:
+                report_failure(e)
         except Exception as e:
             report_failure(e)
+
 
 class Allocation(object):
     def __init__(self, ilo, key=None, value=None, allocation_type='require',
