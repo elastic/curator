@@ -143,7 +143,7 @@ class Alias(object):
                     )
                 )
         except ActionError as e:
-            if opts['ignore_empty_list']:
+            if opts['ignore_empty_list'] or opts['warn_if_no_indices']:
                 self.loggit.info('DRY-RUN: alias: No changes to be made. `ignore_empty_list` is true, skipping.')
             else:
                 report_failure(e)
@@ -157,7 +157,7 @@ class Alias(object):
             self.loggit.info('Alias actions: {0}'.format(self.body()))
             self.client.indices.update_aliases(body=self.body())
         except ActionError as e:
-            if opts['ignore_empty_list']:
+            if opts['ignore_empty_list'] or opts['warn_if_no_indices']:
                 pass
             else:
                 report_failure(e)
