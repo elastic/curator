@@ -21,6 +21,9 @@ Changelog
   * Fix reference to unset variable name in log output at
     https://github.com/elastic/curator/blob/v5.5.1/curator/actions.py#L2145
     It should be `idx` instead of `index`. (untergeek).
+  * Alias action should raise `NoIndices` exception if `warn_if_no_indices` is
+    `True`, and no `add` or `remove` sub-actions are found, rather than raising
+    an `ActionError`
 
 **Documentation**
 
