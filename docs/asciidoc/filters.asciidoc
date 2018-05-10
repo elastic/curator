@@ -229,7 +229,8 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 This <<filtertype,filtertype>> will iterate over the actionable list and match
 indices based on their shard routing allocation settings.  They will remain in,
 or be removed from the actionable list based on the value of
-<<fe_exclude,exclude>>.
+<<fe_exclude,exclude>>. By default, this will act as an exclude, to use as an include
+filter, you need to specifically set exclude to False
 
 === Required settings
 
