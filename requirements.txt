@@ -1,5 +1,5 @@
 voluptuous>=0.9.3
-elasticsearch==5.5.2
+elasticsearch>=5.5.2,!=6.0.0,<7.0.0
 click>=6.7
 pyyaml>=3.10
-certifi>=2018.1.18
+certifi>=2018.4.16

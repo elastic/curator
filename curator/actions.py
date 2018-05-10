@@ -857,13 +857,13 @@ class Rollover(object):
                 '"extra_settings" must be a dictionary or None')
         #: Instance variable.
         #: The Elasticsearch Client object
-        self.client     = client
+        self.client = client
         #: Instance variable.
         #: Internal reference to `conditions`
         self.conditions = self._check_max_size(conditions)
         #: Instance variable.
         #: Internal reference to `extra_settings`
-        self.settings   = extra_settings
+        self.settings = extra_settings
         #: Instance variable.
         #: Internal reference to `new_index`
         self.new_index = parse_date_pattern(new_index) if new_index else new_index
@@ -881,23 +881,20 @@ class Rollover(object):
                     '"{0}". See previous logs for more details.'.format(name)
                 )
 
-    def _check_max_size(self, data):
+    def _check_max_size(self, conditions):
         """
         Ensure that if ``max_size`` is specified, that ``self.client``
         is running 6.1 or higher.
         """
-        try:
-            if 'max_size' in data['conditions']:
-                version = get_version(self.client)
-                if version < (6,1,0):
-                    raise ConfigurationError(
-                        'Your version of elasticsearch ({0}) does not support '
-                        'the max_size rollover condition. It is only supported '
-                        'in versions 6.1.0 and up.'.format(version)
-                    )
-        except KeyError:
-            self.loggit.debug('data does not contain dict key "conditions"')
-        return data
+        if 'max_size' in conditions:
+            version = get_version(self.client)
+            if version < (6,1,0):
+                raise ConfigurationError(
+                    'Your version of elasticsearch ({0}) does not support '
+                    'the max_size rollover condition. It is only supported '
+                    'in versions 6.1.0 and up.'.format(version)
+                )
+        return conditions
 
     def body(self):
         """
@@ -1872,12 +1869,12 @@ class Shrink(object):
             try:
                 self.body['settings'].update(settings)
             except Exception as e:
-                raise ConfigurationError('Unable to apply extra settings "{0}" to shrink body'.format({'settings':settings}))
+                raise ConfigurationError('Unable to apply extra settings "{0}" to shrink body. Exception: {1}'.format({'settings':settings}, e))
         if extra_settings:
             try: # Apply any remaining keys, should there be any.
                 self.body.update(extra_settings)
             except Exception as e:
-                raise ConfigurationError('Unable to apply extra settings "{0}" to shrink body'.format(extra_settings))
+                raise ConfigurationError('Unable to apply extra settings "{0}" to shrink body. Exception: {1}'.format(extra_settings, e))
 
     def _data_node(self, node_id):
         roles = node_roles(self.client, node_id)
@@ -1990,7 +1987,6 @@ class Shrink(object):
     def _check_space(self, idx, dry_run=False):
         # Disk watermark calculation is already baked into `available_in_bytes`
         size = index_size(self.client, idx)
-        avail = self.shrink_node_avail
         padded = (size * 2) + (32 * 1024)
         if padded < self.shrink_node_avail:
             self.loggit.debug('Sufficient space available for 2x the size of index "{0}".  Required: {1}, available: {2}'.format(idx, padded, self.shrink_node_avail))
@@ -2142,7 +2138,7 @@ class Shrink(object):
                         if self.client.indices.exists(index=target):
                             self.loggit.error('Deleting target index "{0}" due to failure to complete shrink'.format(target))
                             self.client.indices.delete(index=target)
-                        raise ActionError('Unable to shrink index "{0}" -- Error: {1}'.format(index, e))
+                        raise ActionError('Unable to shrink index "{0}" -- Error: {1}'.format(idx, e))
                     self.loggit.info('Index "{0}" successfully shrunk to "{1}"'.format(idx, target))
                     # Do post-shrink steps
                     # Unblock writes on index (just in case)

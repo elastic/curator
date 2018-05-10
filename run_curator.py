@@ -25,6 +25,8 @@ from curator.cli import cli
 
 if __name__ == '__main__':
     try:
+        # This is because click uses decorators, and pylint doesn't catch that
+        # pylint: disable=no-value-for-parameter
         cli()
     except RuntimeError as e:
         import sys

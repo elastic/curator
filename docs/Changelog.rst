@@ -3,6 +3,30 @@
 Changelog
 =========
 
+5.5.2 (11 May 2018)
+-------------------
+
+**Bug Fixes**
+
+  * Allow elasticsearch-py (Python module, not Elasticsearch) versions greater
+    than 5.5.2 and less than 7.0, but exclude 6.0.0, as it had breaking SSL
+    context changes. (untergeek)
+  * Start of pylint cleanup, and use of `six` `string_types`. (untergeek)
+  * `unit_count_pattern` setting can cause indices to mistakenly be included
+    in an index filter. Fixed in #1206 (soenkeliebau)
+  * Fix rollover _check_max_size() call. Reported in #1202 by @diranged
+    (untergeek).
+  * Update tested versions of Elasticsearch. (untergeek).
+  * Update setup.cfg to install dependencies during source install. (untergeek)
+  * Fix reference to unset variable name in log output at
+    https://github.com/elastic/curator/blob/v5.5.1/curator/actions.py#L2145
+    It should be `idx` instead of `index`. (untergeek).
+
+**Documentation**
+
+  * Clarify inclusive filtering for allocated filter. Fixed in #1203 (geekpete)
+  * Fix Kibana filter description. #1199 (quartett-opa)
+
 5.5.1 (22 March 2018)
 ---------------------
 
