@@ -158,7 +158,7 @@ class Alias(object):
             self.client.indices.update_aliases(body=self.body())
         except ActionError as e:
             if opts['warn_if_no_indices']:
-                self.loggit.warn('Alias: No changes to be made. `warn_if_no_indices` is true, skipping.')
+                raise NoIndices()
             else:
                 report_failure(e)
         except Exception as e:
