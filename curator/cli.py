@@ -94,10 +94,10 @@ def process_action(client, config, **kwargs):
         action_obj = action_class(ilo, **mykwargs)
     ### Do the action
     if 'dry_run' in kwargs and kwargs['dry_run'] == True:
-        action_obj.do_dry_run()
+        action_obj.do_dry_run(opts)
     else:
         logger.debug('Doing the action here.')
-        action_obj.do_action()
+        action_obj.do_action(opts)
 
 def run(config, action_file, dry_run=False):
     """

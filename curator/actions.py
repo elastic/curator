@@ -129,37 +129,49 @@ class Alias(object):
 
         return { 'actions' : self.actions }
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
-        for item in self.body()['actions']:
-            job = list(item.keys())[0]
-            index = item[job]['index']
-            alias = item[job]['alias']
-            # We want our log to look clever, so if job is "remove", strip the
-            # 'e' so "remove" can become "removing".  "adding" works already.
-            self.loggit.info(
-                'DRY-RUN: alias: {0}ing index "{1}" {2} alias '
-                '"{3}"'.format(
-                    job.rstrip('e'),
-                    index,
-                    'to' if job is 'add' else 'from',
-                    alias
+        try:
+            for item in self.body()['actions']:
+                job = list(item.keys())[0]
+                index = item[job]['index']
+                alias = item[job]['alias']
+                # We want our log to look clever, so if job is "remove", strip the
+                # 'e' so "remove" can become "removing".  "adding" works already.
+                self.loggit.info(
+                    'DRY-RUN: alias: {0}ing index "{1}" {2} alias '
+                    '"{3}"'.format(
+                        job.rstrip('e'),
+                        index,
+                        'to' if job is 'add' else 'from',
+                        alias
+                    )
                 )
-            )
+        except ActionError as e:
+            if opts['warn_if_no_indices']:
+                self.loggit.warn('DRY-RUN: alias: No changes to be made. `warn_if_no_indices` is true, skipping.')
+            else:
+                report_failure(e)
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Run the API call `update_aliases` with the results of `body()`
         """
-        self.loggit.info('Updating aliases...')
-        self.loggit.info('Alias actions: {0}'.format(self.body()))
         try:
+            self.loggit.info('Updating aliases...')
+            self.loggit.info('Alias actions: {0}'.format(self.body()))
             self.client.indices.update_aliases(body=self.body())
+        except ActionError as e:
+            if opts['warn_if_no_indices']:
+                raise NoIndices()
+            else:
+                report_failure(e)
         except Exception as e:
             report_failure(e)
+
 
 class Allocation(object):
     def __init__(self, ilo, key=None, value=None, allocation_type='require',
@@ -216,13 +228,13 @@ class Allocation(object):
         #: exception. A value of -1 means wait forever.
         self.max_wait   = max_wait
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         show_dry_run(self.index_list, 'allocation', body=self.body)
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Change allocation settings for indices in `index_list.indices` with the
         settings in `body`.
@@ -274,14 +286,14 @@ class Close(object):
         self.loggit     = logging.getLogger('curator.actions.close')
 
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         show_dry_run(
             self.index_list, 'close', **{'delete_aliases':self.delete_aliases})
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Close open indices in `index_list.indices`
         """
@@ -375,7 +387,7 @@ class ClusterRouting(object):
         bkey = 'cluster.routing.{0}.{1}'.format(routing_type,setting)
         self.body = { 'transient' : { bkey : value } }
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -385,7 +397,7 @@ class ClusterRouting(object):
             '{0}'.format(self.body)
         )
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Change cluster routing settings with the settings in `body`.
         """
@@ -429,7 +441,7 @@ class CreateIndex(object):
         self.client     = client
         self.loggit     = logging.getLogger('curator.actions.create_index')
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -439,7 +451,7 @@ class CreateIndex(object):
             '{1}'.format(self.name, self.body)
         )
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Create index identified by `name` with settings in `body`
         """
@@ -520,13 +532,13 @@ class DeleteIndices(object):
             '{0}'.format(result)
         )
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         show_dry_run(self.index_list, 'delete_indices')
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Delete indices in `index_list.indices`
         """
@@ -564,7 +576,7 @@ class ForceMerge(object):
         self.delay = delay
         self.loggit = logging.getLogger('curator.actions.forcemerge')
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -574,7 +586,7 @@ class ForceMerge(object):
             delay=self.delay,
         )
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         forcemerge indices in `index_list.indices`
         """
@@ -697,13 +709,13 @@ class IndexSettings(object):
                     'not work.'.format(k)
                 )
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         show_dry_run(self.index_list, 'indexsettings', **self.body)
 
-    def do_action(self):
+    def do_action(self, **opts):
         self._settings_check()
         # Ensure that the open indices filter applied in _settings_check()
         # didn't result in an empty list (or otherwise empty)
@@ -739,13 +751,13 @@ class Open(object):
         self.index_list = ilo
         self.loggit     = logging.getLogger('curator.actions.open')
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         show_dry_run(self.index_list, 'open')
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Open closed indices in `index_list.indices`
         """
@@ -799,13 +811,13 @@ class Replicas(object):
         self.max_wait   = max_wait
         self.loggit     = logging.getLogger('curator.actions.replicas')
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
         show_dry_run(self.index_list, 'replicas', count=self.count)
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Update the replica count of indices in `index_list.indices`
         """
@@ -927,7 +939,7 @@ class Rollover(object):
             wait_for_active_shards=self.wait_for_active_shards,
         )
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -936,7 +948,7 @@ class Rollover(object):
         logger.info('DRY-RUN: rollover: {0} result: '
             '{1}'.format(self.name, result))
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Rollover the index referenced by alias `name`
         """
@@ -972,7 +984,7 @@ class DeleteSnapshots(object):
         self.repository     = slo.repository
         self.loggit = logging.getLogger('curator.actions.delete_snapshots')
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -986,7 +998,7 @@ class DeleteSnapshots(object):
             logger.info('DRY-RUN: delete_snapshot: {0} with arguments: '
                 '{1}'.format(snap, mykwargs))
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Delete snapshots in `slo`
         Retry up to `retry_count` times, pausing `retry_interval`
@@ -1346,7 +1358,7 @@ class Reindex(object):
             )
         )
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -1356,7 +1368,7 @@ class Reindex(object):
                 'DRY-RUN: REINDEX: {0}'.format(self.show_run_args(source, dest))
             )
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Execute :py:meth:`elasticsearch.Elasticsearch.reindex` operation with the
         provided request_body and arguments.
@@ -1497,7 +1509,7 @@ class Snapshot(object):
             self.loggit.warn(
                 'Snapshot {0} completed with state: {0}'.format(self.state))
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -1507,7 +1519,7 @@ class Snapshot(object):
             '{2}'.format(self.name, self.repository, self.body)
         )
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Snapshot indices in `index_list.indices`, with options passed.
         """
@@ -1714,7 +1726,7 @@ class Restore(object):
                 'Missing: {0}'.format(missing)
             )
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Log what the output would be, but take no action.
         """
@@ -1743,7 +1755,7 @@ class Restore(object):
             )
 
 
-    def do_action(self):
+    def do_action(self, **opts):
         """
         Restore indices with options passed.
         """
@@ -2086,7 +2098,7 @@ class Shrink(object):
             self.loggit.info('Copy alias actions: {0}'.format(alias_actions))
             self.client.indices.update_aliases({ 'actions' : alias_actions })
 
-    def do_dry_run(self):
+    def do_dry_run(self, **opts):
         """
         Show what a regular run would do, but don't actually do it.
         """
@@ -2110,7 +2122,7 @@ class Shrink(object):
         except Exception as e:
             report_failure(e)
 
-    def do_action(self):
+    def do_action(self, **opts):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         try:
