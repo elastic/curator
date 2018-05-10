@@ -32,6 +32,9 @@ class Alias(object):
         #: Any extra things to add to the alias, like filters, or routing.
         self.extra_settings = extra_settings
         self.loggit  = logging.getLogger('curator.actions.alias')
+        #: Instance variable.
+        #: Preset default value to `False`.
+        self.warn_if_no_indices = False
 
     def add(self, ilo, warn_if_no_indices=False):
         """
@@ -50,6 +53,7 @@ class Alias(object):
         except NoIndices:
             # Add a warning if there are no indices to add, if so set in options
             if warn_if_no_indices:
+                self.warn_if_no_indices = True
                 self.loggit.warn(
                     'No indices found after processing filters. '
                     'Nothing to add to {0}'.format(self.name)
@@ -83,6 +87,7 @@ class Alias(object):
         except NoIndices:
             # Add a warning if there are no indices to add, if so set in options
             if warn_if_no_indices:
+                self.warn_if_no_indices = True
                 self.loggit.warn(
                     'No indices found after processing filters. '
                     'Nothing to remove from {0}'.format(self.name)
@@ -116,7 +121,10 @@ class Alias(object):
         call.
         """
         if not self.actions:
-            raise ActionError('No "add" or "remove" operations')
+            if not self.warn_if_no_indices:
+                raise ActionError('No "add" or "remove" operations')
+            else:
+                raise NoIndices('No "adds" or "removes" found.  Taking no action')
         self.loggit.debug('Alias actions: {0}'.format(self.actions))
 
         return { 'actions' : self.actions }
