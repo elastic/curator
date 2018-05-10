@@ -102,7 +102,7 @@ class TestCLIDeleteRepository(CuratorTestCase):
             testvars.client_conf_logfile.format(host, port, os.devnull)
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.repo_mgr_cli,
                     [
                         '--config', self.args['configfile'],
