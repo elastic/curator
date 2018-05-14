@@ -17,7 +17,7 @@ host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
 
-class TestCLIAllocation(CuratorTestCase):
+class TestActionFileAllocation(CuratorTestCase):
     def test_include(self):
         key = 'tag'
         value = 'value'
@@ -29,7 +29,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -51,7 +51,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -73,7 +73,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -103,7 +103,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.assertEquals('bar',
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -134,9 +134,6 @@ class TestCLIAllocation(CuratorTestCase):
                     )
         self.assertEqual(-1, result.exit_code)
     def test_extra_option(self):
-        key = 'tag'
-        value = 'value'
-        at = 'invalid'
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -164,7 +161,7 @@ class TestCLIAllocation(CuratorTestCase):
         self.client.indices.close(index='my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -186,13 +183,36 @@ class TestCLIAllocation(CuratorTestCase):
         self.create_index('my_index')
         self.create_index('not_my_index')
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
                         self.args['actionfile']
                     ],
                     )
+        self.assertEquals(value,
+            self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
+        self.assertNotIn('routing',
+            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+
+class TestCLIAllocation(CuratorTestCase):
+    def test_include(self):
+        key = 'tag'
+        value = 'value'
+        at = 'include'
+        self.create_index('my_index')
+        self.create_index('not_my_index')
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'allocation',
+            '--key', key,
+            '--value', value,
+            '--allocation_type', at,
+            '--wait_for_completion',
+            '--filter_list', '{"filtertype":"pattern","kind":"prefix","value":"my"}',
+        ]
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIAllocation.test_include'))
         self.assertEquals(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         self.assertNotIn('routing',

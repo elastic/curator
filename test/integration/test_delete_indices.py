@@ -1,11 +1,8 @@
 import elasticsearch
 import curator
 import os
-import json
-import string, random, tempfile
 import time
 from click import testing as clicktest
-from mock import patch, Mock
 import unittest
 from . import CuratorTestCase
 from . import testvars as testvars
@@ -27,7 +24,7 @@ port = int(port) if port else 9200
 
 global_client = elasticsearch.Elasticsearch(host=host, port=port)
 
-class TestCLIDeleteIndices(CuratorTestCase):
+class TestActionFileDeleteIndices(CuratorTestCase):
     def test_retention_from_name_days(self):
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
@@ -42,7 +39,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
                           )
                           )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -67,7 +64,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
                           )
                           )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -75,6 +72,42 @@ class TestCLIDeleteIndices(CuratorTestCase):
             ],
         )
         self.assertEquals(15, len(curator.get_indices(self.client)))
+    def test_retention_from_name_days_keep_exclude_false_after_failed_match(self):
+        # Test extraction of unit_count from index name and confirm correct
+        # behavior after a failed regex match with no fallback time - see gh issue 1206
+        # Create indices for 30 days with retention time of 5 days in index name
+        #
+        # Create indices for 10 days with no retention time in index name
+        # that alphabetically sort before the 10 with retention time
+        #
+        # Create indices for 10 days with no retention time in index name
+        # that sort after the 10 with retention time
+
+        # Expected: 45 oldest matching indices are deleted, 5 matching indices remain
+        # 20 indices without retention time are ignored and remain
+        # overall 25 indices should remain
+        self.args['prefix'] = 'logstash-aanomatch-'
+        self.create_indices(10)
+        self.args['prefix'] = 'logstash-match-5-'
+        self.create_indices(30)
+        self.args['prefix'] = 'logstash-zznomatch-'
+        self.create_indices(10)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.delete_pattern_proto.format(
+                              'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', -1, r'logstash-\w+-([0-9]+)-[0-9]{4}\.[0-9]{2}\.[0-9]{2}', ' ', ' ', ' '
+                          )
+                          )
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        self.assertEquals(25, len(curator.get_indices(self.client)))
     def test_retention_from_name_days_failed_match_with_fallback(self):
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
@@ -92,7 +125,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
                           )
                           )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -115,7 +148,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
                           )
                           )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -138,7 +171,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
                           )
                           )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -160,7 +193,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
                           )
                           )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -178,7 +211,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -197,7 +230,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -300,6 +333,8 @@ class TestCLIDeleteIndices(CuratorTestCase):
         self.client.index(index='intersecting', doc_type='log', id='2', body={'@timestamp': '2017-09-29T01:00:00Z', 'doc' :'Latest'})
         self.client.index(index='notintersecting', doc_type='log', id='1', body={'@timestamp': '2017-09-01T01:00:00Z', 'doc' :'Earliest'})
         self.client.index(index='notintersecting', doc_type='log', id='2', body={'@timestamp': '2017-09-29T01:00:00Z', 'doc' :'Latest'})
+        # Decorators cause this pylint error
+        # pylint: disable=E1123 
         self.client.indices.flush(index='_all', force=True)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -399,7 +434,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -417,7 +452,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -425,3 +460,15 @@ class TestCLIDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEquals(0, len(curator.get_indices(self.client)))
+
+class TestCLIDeleteIndices(CuratorTestCase):
+    def test_name_older_than_now_cli(self):
+        self.create_indices(10)
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'delete_indices',
+            '--filter_list', '{"filtertype":"age","source":"name","direction":"older","timestring":"%Y.%m.%d","unit":"days","unit_count":5}',
+        ]
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIDeleteIndices.test_name_older_than_now_cli'))
+        self.assertEquals(5, len(curator.get_indices(self.client)))

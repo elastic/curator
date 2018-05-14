@@ -19,7 +19,7 @@ rhost, rport = os.environ.get('REMOTE_ES_SERVER', 'localhost:9201').split(':')
 port  = int(port)  if port  else 9200
 rport = int(rport) if rport else 9201
 
-class TestCLIReindex(CuratorTestCase):
+class TestActionFileReindex(CuratorTestCase):
     def test_reindex_manual(self):
         wait_interval = 1
         max_wait = 3
@@ -34,7 +34,7 @@ class TestCLIReindex(CuratorTestCase):
         self.write_config(self.args['actionfile'],
             testvars.reindex.format(wait_interval, max_wait, source, dest))
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -56,7 +56,7 @@ class TestCLIReindex(CuratorTestCase):
         self.write_config(self.args['actionfile'],
             testvars.reindex.format(wait_interval, max_wait, 'REINDEX_SELECTION', dest))
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -76,7 +76,7 @@ class TestCLIReindex(CuratorTestCase):
         self.write_config(self.args['actionfile'],
             testvars.reindex.format(wait_interval, max_wait, source, dest))
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -100,13 +100,15 @@ class TestCLIReindex(CuratorTestCase):
                 index=source2, doc_type='log', id=i,
                 body={"doc" + i :'TEST DOCUMENT'},
             )
+            # Decorators make this pylint exception necessary
+            # pylint: disable=E1123
             self.client.indices.flush(index=source2, force=True)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.reindex.format(wait_interval, max_wait, 'REINDEX_SELECTION', dest))
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -141,6 +143,8 @@ class TestCLIReindex(CuratorTestCase):
                     body={"doc" + str(counter+i) :'TEST DOCUMENT'},
                 )
                 counter += 1
+                # Decorators make this pylint exception necessary
+                # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -155,7 +159,7 @@ class TestCLIReindex(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -193,6 +197,8 @@ class TestCLIReindex(CuratorTestCase):
                     body={"doc" + str(counter+i) :'TEST DOCUMENT'},
                 )
                 counter += 1
+                # Decorators make this pylint exception necessary
+                # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -207,7 +213,7 @@ class TestCLIReindex(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -251,6 +257,8 @@ class TestCLIReindex(CuratorTestCase):
                     body={"doc" + str(counter+i) :'TEST DOCUMENT'},
                 )
                 counter += 1
+                # Decorators make this pylint exception necessary
+                # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -267,7 +275,7 @@ class TestCLIReindex(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -300,14 +308,14 @@ class TestCLIReindex(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(expected, result.exit_code)
+        self.assertEqual(expected, _.exit_code)
     def test_reindex_from_remote_no_indices(self):
         wait_interval = 1
         max_wait = 3
@@ -335,6 +343,8 @@ class TestCLIReindex(CuratorTestCase):
                     body={"doc" + str(counter+i) :'TEST DOCUMENT'},
                 )
                 counter += 1
+                # Decorators make this pylint exception necessary
+                # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)        
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -349,7 +359,7 @@ class TestCLIReindex(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -358,7 +368,7 @@ class TestCLIReindex(CuratorTestCase):
                     )
         # Do our own cleanup here.
         rclient.indices.delete(index='{0},{1}'.format(source1, source2))
-        self.assertEqual(expected, result.exit_code)
+        self.assertEqual(expected, _.exit_code)
     def test_reindex_into_alias(self):
         wait_interval = 1
         max_wait = 3
@@ -373,7 +383,7 @@ class TestCLIReindex(CuratorTestCase):
         self.write_config(self.args['actionfile'],
             testvars.reindex.format(wait_interval, max_wait, source, dest))
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -395,7 +405,7 @@ class TestCLIReindex(CuratorTestCase):
         self.write_config(self.args['actionfile'],
             testvars.reindex.format(wait_interval, max_wait, source, dest))
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],

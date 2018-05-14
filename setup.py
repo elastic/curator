@@ -22,11 +22,12 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch==5.5.2' ]
+    res = ['elasticsearch>=5.5.2,!=6.0.0,<7.0.0' ]
     res.append('click>=6.7')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
-    res.append('certifi>=2018.1.18')
+    res.append('certifi>=2018.4.16')
+    res.append('six>=1.11.0')
     return res
 
 try:
@@ -107,6 +108,7 @@ try:
         download_url = "https://github.com/elastic/curator/tarball/v" + get_version(),
         license = "Apache License, Version 2.0",
         install_requires = get_install_requires(),
+        setup_requires = get_install_requires(),
         keywords = "elasticsearch time-series indexed index-expiry",
         packages = ["curator"],
         include_package_data=True,

@@ -3,33 +3,33 @@ import yaml
 import logging
 import click
 from voluptuous import Schema
-from .defaults import settings
-from .validators import SchemaCheck
-from .config_utils import process_config
-from .exceptions import *
-from .utils import *
-from .indexlist import IndexList
-from .snapshotlist import SnapshotList
-from .actions import *
-from ._version import __version__
+from curator import actions
+from curator.config_utils import process_config
+from curator.defaults import settings
+from curator.exceptions import NoIndices, NoSnapshots
+from curator.indexlist import IndexList
+from curator.snapshotlist import SnapshotList
+from curator.utils import get_client, get_yaml, prune_nones, validate_actions
+from curator.validators import SchemaCheck
+from curator._version import __version__
 
 CLASS_MAP = {
-    'alias' :  Alias,
-    'allocation' : Allocation,
-    'close' : Close,
-    'cluster_routing' : ClusterRouting,
-    'create_index' : CreateIndex,
-    'delete_indices' : DeleteIndices,
-    'delete_snapshots' : DeleteSnapshots,
-    'forcemerge' : ForceMerge,
-    'index_settings' : IndexSettings,
-    'open' : Open,
-    'reindex' : Reindex,
-    'replicas' : Replicas,
-    'restore' : Restore,
-    'rollover' : Rollover,
-    'snapshot' : Snapshot,
-    'shrink' : Shrink,
+    'alias' : actions.Alias,
+    'allocation' : actions.Allocation,
+    'close' : actions.Close,
+    'cluster_routing' : actions.ClusterRouting,
+    'create_index' : actions.CreateIndex,
+    'delete_indices' : actions.DeleteIndices,
+    'delete_snapshots' : actions.DeleteSnapshots,
+    'forcemerge' : actions.ForceMerge,
+    'index_settings' : actions.IndexSettings,
+    'open' : actions.Open,
+    'reindex' : actions.Reindex,
+    'replicas' : actions.Replicas,
+    'restore' : actions.Restore,
+    'rollover' : actions.Rollover,
+    'snapshot' : actions.Snapshot,
+    'shrink' : actions.Shrink,
 }
 
 def process_action(client, config, **kwargs):

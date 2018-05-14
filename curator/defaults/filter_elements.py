@@ -1,15 +1,16 @@
-from voluptuous import *
-from . import settings
+from curator.defaults import settings
+from six import string_types
+from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 ### Schema information ###
 
 def aliases(**kwargs):
     # This setting is used by the alias filtertype and is required
-    return { Required('aliases'): Any(str, [str], unicode, [unicode]) }
+    return { Required('aliases'): Any(list, *string_types) }
 
 def allocation_type(**kwargs):
     return { Optional('allocation_type', default='require'): All(
-        Any(str, unicode), Any('require', 'include', 'exclude')) }
+        Any(*string_types), Any('require', 'include', 'exclude')) }
 
 def count(**kwargs):
     # This setting is only used with the count filtertype and is required
@@ -17,19 +18,19 @@ def count(**kwargs):
 
 def date_from(**kwargs):
     # This setting is only used with the period filtertype.
-    return { Optional('date_from'): Any(str, unicode) }
+    return { Optional('date_from'): Any(*string_types) }
 
 def date_from_format(**kwargs):
     # This setting is only used with the period filtertype.
-    return { Optional('date_from_format'): Any(str, unicode) }
+    return { Optional('date_from_format'): Any(*string_types) }
 
 def date_to(**kwargs):
     # This setting is only used with the period filtertype.
-    return { Optional('date_to'): Any(str, unicode) }
+    return { Optional('date_to'): Any(*string_types) }
 
 def date_to_format(**kwargs):
     # This setting is only used with the period filtertype.
-    return { Optional('date_to_format'): Any(str, unicode) }
+    return { Optional('date_to_format'): Any(*string_types) }
 
 def direction(**kwargs):
     # This setting is only used with the age filtertype.
@@ -44,28 +45,30 @@ def epoch(**kwargs):
     return { Optional('epoch', default=None): Any(Coerce(int), None) }
 
 def exclude(**kwargs):
+    # pylint: disable=E1120
     # This setting is available in all filter types.
     if 'exclude' in kwargs and kwargs['exclude']:
         val = True
     else: # False by default
         val = False
-    return { Optional('exclude', default=val): Any(bool, All(Any(str, unicode), Boolean())) }
+    return { Optional('exclude', default=val): Any(bool, All(Any(*string_types), Boolean())) }
 
 def field(**kwargs):
     # This setting is only used with the age filtertype.
     if 'required' in kwargs and kwargs['required']:
-        return { Required('field'): Any(str, unicode) }
+        return { Required('field'): Any(*string_types) }
     else:
-        return { Optional('field'): Any(str, unicode) }
+        return { Optional('field'): Any(*string_types) }
 
 def intersect(**kwargs):
+    # pylint: disable=E1120
     # This setting is only used with the period filtertype when using field_stats
     # i.e. indices only.
-    return { Optional('intersect', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
+    return { Optional('intersect', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
 def key(**kwargs):
     # This setting is only used with the allocated filtertype.
-    return { Required('key'): Any(str, unicode) }
+    return { Required('key'): Any(*string_types) }
 
 def kind(**kwargs):
     # This setting is only used with the pattern filtertype and is required
@@ -80,7 +83,7 @@ def max_num_segments(**kwargs):
 
 def pattern(**kwargs):
     return {
-        Optional('pattern'): Any(str, unicode)
+        Optional('pattern'): Any(*string_types)
     }
 
 def period_type(**kwargs):
@@ -94,9 +97,10 @@ def range_to(**kwargs):
     return { Optional('range_to'): Coerce(int) }
 
 def reverse(**kwargs):
+    # pylint: disable=E1120
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
-    return { Optional('reverse', default=True): Any(bool, All(Any(str, unicode), Boolean())) }
+    return { Optional('reverse', default=True): Any(bool, All(Any(*string_types), Boolean())) }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space
@@ -127,9 +131,9 @@ def timestring(**kwargs):
     # This setting is only used with the age filtertype, or with the space
     # filtertype if use_age is set to True.
     if 'required' in kwargs and kwargs['required']:
-        return { Required('timestring'): Any(str, unicode) }
+        return { Required('timestring'): Any(*string_types) }
     else:
-        return { Optional('timestring', default=None): Any(str, unicode, None) }
+        return { Optional('timestring', default=None): Any(None, *string_types) }
 
 def threshold_behavior(**kwargs):
     # This setting is only used with the space filtertype and defaults to 'greater_than'.
@@ -153,17 +157,18 @@ def unit_count_pattern(**kwargs):
     # This setting is used with the age filtertype to define, whether
     # the unit_count value is taken from the configuration or read from
     # the index name via a regular expression
-    return { Optional('unit_count_pattern'): Any(str, unicode) }
+    return { Optional('unit_count_pattern'): Any(*string_types) }
 
 def use_age(**kwargs):
+    # pylint: disable=E1120
     # Use of this setting requires the additional setting, source.
-    return { Optional('use_age', default=False): Any(bool, All(Any(str, unicode), Boolean())) }
+    return { Optional('use_age', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
 def value(**kwargs):
     # This setting is only used with the pattern filtertype and is a required
     # setting. There is a separate value option associated with the allocation
     # action, and the allocated filtertype.
-    return { Required('value'): Any(str, unicode) }
+    return { Required('value'): Any(*string_types) }
 
 def week_starts_on(**kwargs):
     return {

@@ -1,7 +1,6 @@
-from voluptuous import *
-from . import settings
-from . import filter_elements
 import logging
+from curator.defaults import filter_elements, settings
+
 logger = logging.getLogger(__name__)
 
 ## Helpers ##

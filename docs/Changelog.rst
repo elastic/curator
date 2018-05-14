@@ -3,6 +3,44 @@
 Changelog
 =========
 
+5.5.2 (14 May 2018)
+-------------------
+
+**Changes**
+
+  * The ``alias``, ``restore``, ``rollover``, and ``shrink``  actions have been
+    added to ``curator_cli``, along with a revamped method to manage/add
+    actions in the future.
+  * Updated ``certifi`` dependency to ``2018.4.16``
+  * Added ``six`` dependency
+  * Permit the use of versions 6.1 and greater of the ``elasticsearch`` python
+    module.  There are issues with SSL contexts in the 6.0 release that prevent
+    Curator from being able to use this version.  Currently the requirement
+    version string is ``elasticsearch>=5.5.2,!=6.0.0,<7.0.0``
+  * Start of pylint cleanup, and use of `six` `string_types`. (untergeek)
+
+**Bug Fixes**
+
+  * `unit_count_pattern` setting can cause indices to mistakenly be included
+    in an index filter. Fixed in #1206 (soenkeliebau)
+  * Fix rollover _check_max_size() call. Reported in #1202 by @diranged
+    (untergeek).
+  * Update tested versions of Elasticsearch. (untergeek).
+  * Update setup.cfg to install dependencies during source install. (untergeek)
+  * Fix reference to unset variable name in log output at
+    https://github.com/elastic/curator/blob/v5.5.1/curator/actions.py#L2145
+    It should be `idx` instead of `index`. (untergeek).
+  * Alias action should raise `NoIndices` exception if `warn_if_no_indices` is
+    `True`, and no `add` or `remove` sub-actions are found, rather than raising
+    an `ActionError`. Reported in #1209 (untergeek).
+
+**Documentation**
+
+  * Clarify inclusive filtering for allocated filter. Fixed in #1203 (geekpete)
+  * Fix Kibana filter description. #1199 (quartett-opa)
+  * Add missing documentation about the ``new_name`` option for rollover.
+    Reported in #1197 (untergeek)
+
 5.5.1 (22 March 2018)
 ---------------------
 
