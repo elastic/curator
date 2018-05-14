@@ -3,4 +3,4 @@ elasticsearch>=5.5.2,!=6.0.0,<7.0.0
 click>=6.7
 pyyaml>=3.10
 certifi>=2018.4.16
-six==1.11.0
+six>=1.11.0
