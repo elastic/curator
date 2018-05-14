@@ -1,5 +1,5 @@
-from voluptuous import *
-from ..defaults import client_defaults
+from voluptuous import Optional, Schema
+from curator.defaults import client_defaults
 
 def client():
     return Schema(

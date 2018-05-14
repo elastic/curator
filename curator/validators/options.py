@@ -1,5 +1,5 @@
-from voluptuous import *
-from ..defaults import option_defaults
+from voluptuous import Schema
+from curator.defaults import option_defaults
 
 ## Methods for building the schema
 def action_specific(action):

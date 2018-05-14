@@ -1,7 +1,8 @@
 import elasticsearch
 import curator
-import os
+import os, sys
 import json
+import subprocess
 import string, random, tempfile
 from click import testing as clicktest
 from mock import patch, Mock
@@ -100,7 +101,7 @@ copy_aliases = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
-class TestCLIShrink(CuratorTestCase):
+class TestActionFileShrink(CuratorTestCase):
     def builder(self, action_args):
         self.idx = 'my_index'
         suffix = '-shrunken'
@@ -246,3 +247,41 @@ class TestCLIShrink(CuratorTestCase):
         indices = curator.get_indices(self.client)
         self.assertEqual(1, len(indices)) # Should only have `my_index-shrunken`
         self.assertEqual(indices[0], self.target)
+
+
+class TestCLIShrink(CuratorTestCase):
+    def builder(self):
+        logger = logging.getLogger('TestCLIShrink.builder')
+        self.idx = 'my_index'
+        self.suffix = '-shrunken'
+        self.target = '{0}{1}'.format(self.idx, self.suffix)
+        self.create_index(self.idx, shards=2)
+        self.add_docs(self.idx)
+        # add alias in the source index
+        self.alias = 'my_alias'
+        alias_actions = []
+        alias_actions.append(
+            {'add': {'index': self.idx, 'alias': self.alias}})
+        self.client.indices.update_aliases({'actions': alias_actions})
+        self.write_config(self.args['configfile'], testvars.client_config.format(host, port))
+        logger.debug('Test pre-execution build phase complete.')
+    def test_shrink(self):
+        self.builder()
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'shrink',
+            '--shrink_node', 'DETERMINISTIC',
+            '--node_filters', '{"permit_masters":"true"}',
+            '--number_of_shards', "1",
+            '--number_of_replicas', "0",
+            '--shrink_suffix', self.suffix,
+            '--delete_after',
+            '--wait_for_rebalance',
+            '--filter_list', '{"filtertype":"none"}',
+        ]
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIShrink.test_shrink'))
+        indices = curator.get_indices(self.client)
+        self.assertEqual(1, len(indices)) # Should only have `my_index-shrunken`
+        self.assertEqual(indices[0], self.target)
+        

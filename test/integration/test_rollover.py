@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
-class TestCLIRollover(CuratorTestCase):
+class TestActionFileRollover(CuratorTestCase):
     def test_max_age_true(self):
         oldindex  = 'rolltome-000001'
         newindex  = 'rolltome-000002'
@@ -329,4 +329,23 @@ class TestCLIRollover(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
+        self.assertEqual(expected, self.client.indices.get_alias(name=alias))
+
+class TestCLIRollover(CuratorTestCase):
+    def test_max_age_true(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        value     = '1s'
+        expected  = {newindex: {u'aliases': {alias: {}}}}
+        self.client.indices.create(index=oldindex, body={'aliases':{alias:{}}})
+        time.sleep(1)
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'rollover',
+            '--name', alias,
+            '--max_age', value
+        ]
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIRollover.test_max_age_true'))
         self.assertEqual(expected, self.client.indices.get_alias(name=alias))

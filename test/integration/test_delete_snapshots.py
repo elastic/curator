@@ -24,7 +24,7 @@ port = int(port) if port else 9200
 # '        unit_count: {6}\n'
 # '        epoch: {7}\n')
 
-class TestCLIDeleteSnapshots(CuratorTestCase):
+class TestActionFileDeleteSnapshots(CuratorTestCase):
     def test_deletesnapshot(self):
         ### Create snapshots to delete and verify them
         self.create_repository()
@@ -53,7 +53,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -96,3 +96,30 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
                     ],
                     )
         self.assertEqual(-1, result.exit_code)
+
+class TestCLIDeleteSnapshots(CuratorTestCase):
+    def test_deletesnapshot(self):
+        ### Create snapshots to delete and verify them
+        self.create_repository()
+        timestamps = []
+        for i in range(1,4):
+            self.add_docs('my_index{0}'.format(i))
+            ilo = curator.IndexList(self.client)
+            snap = curator.Snapshot(ilo, repository=self.args['repository'], name='curator-%Y%m%d%H%M%S', wait_interval=0.5)
+            snap.do_action()
+            snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
+            self.assertEqual(i, len(snapshot['snapshots']))
+            time.sleep(1.0)
+            timestamps.append(int(time.time()))
+            time.sleep(1.0)
+        ### Setup the actual delete
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'delete_snapshots',
+            '--repository', self.args['repository'],
+            '--filter_list', '{"filtertype":"age","source":"creation_date","direction":"older","unit":"seconds","unit_count":0,"epoch":' + str(timestamps[0]) + '}',
+        ]
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIDeleteSnapshots.test_deletesnapshot'))
+        snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
+        self.assertEqual(2, len(snapshot['snapshots']))
