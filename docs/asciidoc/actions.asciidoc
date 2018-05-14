@@ -992,6 +992,7 @@ options:
     acceptable index settings (not mappings) as nested YAML.  See the
     {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
+* <<option_new_index,new_index>> Specify a new index name.
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
 * <<option_disable,disable_action>>

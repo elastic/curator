@@ -30,7 +30,7 @@ port = int(port) if port else 9200
 # '      timeout_override: {12}\n'
 # '      wait_interval: {13}\n'
 # '      max_wait: {14}\n'
-class TestCLIRestore(CuratorTestCase):
+class TestActionFileRestore(CuratorTestCase):
     def test_restore(self):
         indices = []
         for i in range(1,4):
@@ -66,7 +66,7 @@ class TestCLIRestore(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -114,7 +114,7 @@ class TestCLIRestore(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -170,7 +170,7 @@ class TestCLIRestore(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -179,6 +179,40 @@ class TestCLIRestore(CuratorTestCase):
                     )
         restored_indices = sorted(curator.get_indices(self.client))
         self.assertEqual(my_indices, restored_indices)
+        # The test runs so fast that it tries to execute the cleanup step
+        # and delete the repository before Elasticsearch is actually ready
+        time.sleep(0.5)
+
+class TestCLIRestore(CuratorTestCase):
+    def test_restore(self):
+        indices = []
+        for i in range(1,4):
+            self.add_docs('my_index{0}'.format(i))
+            indices.append('my_index{0}'.format(i))
+        snap_name = 'snapshot1'
+        self.create_snapshot(snap_name, ','.join(indices))
+        snapshot = curator.get_snapshot(
+                    self.client, self.args['repository'], '_all'
+                   )
+        self.assertEqual(1, len(snapshot['snapshots']))
+        self.client.indices.delete(','.join(indices))
+        self.assertEqual([], curator.get_indices(self.client))
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'restore',
+            '--repository', self.args['repository'],
+            '--name', snap_name,
+            '--index', indices[0],
+            '--index', indices[1],
+            '--index', indices[2],
+            '--wait_interval', '1',
+            '--max_wait', '3',
+            '--filter_list', '{"filtertype":"none"}',
+        ]
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIRestore.test_restore'))
+        restored_indices = sorted(curator.get_indices(self.client))
+        self.assertEqual(indices, restored_indices)
         # The test runs so fast that it tries to execute the cleanup step
         # and delete the repository before Elasticsearch is actually ready
         time.sleep(0.5)
