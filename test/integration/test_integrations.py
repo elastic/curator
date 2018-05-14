@@ -27,7 +27,7 @@ class TestFilters(CuratorTestCase):
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -45,7 +45,7 @@ class TestFilters(CuratorTestCase):
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],
@@ -98,6 +98,8 @@ class TestFilters(CuratorTestCase):
                 body={"@timestamp":'2017-12-31T23:59:59.999Z'},
             )
         # Flush to ensure it's written
+        # Decorators make this pylint exception necessary
+        # pylint: disable=E1123
         self.client.indices.flush(index=idx, force=True) 
         # Create zero with no docs
         self.create_index(zero)
@@ -105,7 +107,7 @@ class TestFilters(CuratorTestCase):
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'], delete_field_stats)
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],

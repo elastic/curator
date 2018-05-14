@@ -3,8 +3,14 @@
 Changelog
 =========
 
-5.5.2 (11 May 2018)
+5.5.2 (14 May 2018)
 -------------------
+
+**Additions**
+
+  * The ``alias``, ``rollover``, and ``shrink``  actions have been added to
+    ``curator_cli``, along with a revamped method to manage/add actions in the
+    future.
 
 **Bug Fixes**
 

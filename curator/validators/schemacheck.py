@@ -1,5 +1,5 @@
-from voluptuous import *
-from ..exceptions import ConfigurationError
+from voluptuous import Schema
+from curator.exceptions import ConfigurationError
 import re
 import logging
 
@@ -35,7 +35,7 @@ class SchemaCheck(object):
         Report the error, and try to report the bad key or value as well.
         """
         def get_badvalue(data_string, data):
-            elements = re.sub('[\'\]]', '', data_string).split('[')
+            elements = re.sub(r'[\'\]]', '', data_string).split('[')
             elements.pop(0) # Get rid of data as the first element
             value = None
             for k in elements:
@@ -57,6 +57,7 @@ class SchemaCheck(object):
             return self.schema(self.config)
         except Exception as e:
             try:
+                # pylint: disable=E1101
                 self.error = e.errors[0]
             except:
                 self.error = '{0}'.format(e)

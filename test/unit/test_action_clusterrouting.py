@@ -7,7 +7,7 @@ from . import testvars as testvars
 
 class TestActionAllocation(TestCase):
     def test_bad_client(self):
-        self.assertRaises(TypeError, curator.ClusterRouting, 'invalid')
+        self.assertRaises(TypeError, curator.ClusterRouting, 'invalid', setting='enable')
     def test_bad_setting(self):
         client = Mock()
         self.assertRaises(

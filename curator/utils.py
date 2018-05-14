@@ -1,13 +1,13 @@
-from datetime import timedelta, datetime, date
 import elasticsearch
 import time
 import logging
 import yaml, os, random, re, string, sys
+from datetime import timedelta, datetime, date
 from voluptuous import Schema
-from .exceptions import *
-from .defaults import settings
-from .validators import SchemaCheck, actions, filters, options
-from ._version import __version__
+from curator import exceptions
+from curator.defaults import settings
+from curator.validators import SchemaCheck, actions, filters, options
+from curator._version import __version__
 logger = logging.getLogger(__name__)
 
 def read_file(myfile):
@@ -21,8 +21,8 @@ def read_file(myfile):
         with open(myfile, 'r') as f:
             data = f.read()
         return data
-    except IOError as e:
-        raise FailedExecution(
+    except IOError:
+        raise exceptions.FailedExecution(
             'Unable to read file {0}'.format(myfile)
         )
 
@@ -52,7 +52,7 @@ def get_yaml(path):
     try:
         cfg = yaml.load(raw)
     except yaml.scanner.ScannerError as e:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Unable to parse YAML file. Error: {0}'.format(e))
     return cfg
 
@@ -85,7 +85,7 @@ def rollable_alias(client, alias):
     """
     try:
         response = client.indices.get_alias(name=alias)
-    except elasticsearch.NotFoundError as e:
+    except elasticsearch.exceptions.NotFoundError:
         logger.error('alias "{0}" not found.'.format(alias))
         return False
     # Response should be like:
@@ -162,12 +162,12 @@ def verify_snapshot_list(test):
 
 def report_failure(exception):
     """
-    Raise a `FailedExecution` exception and include the original error message.
+    Raise a `exceptions.FailedExecution` exception and include the original error message.
 
     :arg exception: The upstream exception.
     :rtype: None
     """
-    raise FailedExecution(
+    raise exceptions.FailedExecution(
         'Exception encountered.  Rerun with loglevel DEBUG and/or check '
         'Elasticsearch logs for more information. '
         'Exception: {0}'.format(exception)
@@ -186,7 +186,7 @@ def get_date_regex(timestring):
         if curr == '%':
             pass
         elif curr in settings.date_regex() and prev == '%':
-            regex += '\d{' + settings.date_regex()[curr] + '}'
+            regex += r'\d{' + settings.date_regex()[curr] + '}'
         elif curr in ['.', '-']:
             regex += "\\" + curr
         else:
@@ -377,10 +377,10 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     """
     acceptable_units = ['hours', 'days', 'weeks', 'months', 'years']
     if unit not in acceptable_units:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"unit" must be one of: {0}'.format(acceptable_units))
     if not range_to >= range_from:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"range_to" must be greater than or equal to "range_from"')
     if not epoch:
         epoch = time.time()
@@ -413,14 +413,14 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         year = rawPoR.year
         month = rawPoR.month
         if origin > 0:
-            for m in range(0, origin):
+            for _ in range(0, origin):
                 if month == 1:
                     year -= 1
                     month = 12
                 else:
                     month -= 1
         else:
-            for m in range(origin, 0):
+            for _ in range(origin, 0):
                 if month == 12:
                     year += 1
                     month = 1
@@ -443,7 +443,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     if unit == 'months':
         month = start_date.month
         year = start_date.year
-        for m in range(0, count):
+        for _ in range(0, count):
             if month == 12:
                 year += 1
                 month = 1
@@ -487,22 +487,22 @@ def absolute_date_range(
     """
     acceptable_units = ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years']
     if unit not in acceptable_units:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"unit" must be one of: {0}'.format(acceptable_units))
     if not date_from_format or not date_to_format:
-        raise ConfigurationError('Must provide "date_from_format" and "date_to_format"')
+        raise exceptions.ConfigurationError('Must provide "date_from_format" and "date_to_format"')
     try:
         start_epoch = datetime_to_epoch(get_datetime(date_from, date_from_format))
         logger.debug('Start ISO8601 = {0}'.format(datetime.utcfromtimestamp(start_epoch).isoformat()))
     except Exception as e:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Unable to parse "date_from" {0} and "date_from_format" {1}. '
             'Error: {2}'.format(date_from, date_from_format, e)
         )
     try:
         end_date = get_datetime(date_to, date_to_format)
     except Exception as e:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Unable to parse "date_to" {0} and "date_to_format" {1}. '
             'Error: {2}'.format(date_to, date_to_format, e)
         )
@@ -587,9 +587,9 @@ def check_csv(value):
     """
     if isinstance(value, list):
         return True
-    string = False
     # Python3 hack because it doesn't recognize unicode as a type anymore
     if sys.version_info < (3, 0):
+        # pylint: disable=E0602
         if isinstance(value, unicode):
             value = str(value)
     if isinstance(value, str):
@@ -646,7 +646,7 @@ def get_indices(client):
         logger.debug("All indices: {0}".format(indices))
         return indices
     except Exception as e:
-        raise FailedExecution('Failed to get indices. Error: {0}'.format(e))
+        raise exceptions.FailedExecution('Failed to get indices. Error: {0}'.format(e))
 
 def get_version(client):
     """
@@ -695,7 +695,7 @@ def check_version(client):
             'with this version of Curator '
             '({1})'.format(".".join(map(str,version_number)), __version__)
         )
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Elasticsearch version {0} incompatible '
             'with this version of Curator '
             '({1})'.format(".".join(map(str,version_number)), __version__)
@@ -778,7 +778,7 @@ def get_client(**kwargs):
             ):
             kwargs['url_prefix'] = ''
     if 'host' in kwargs and 'hosts' in kwargs:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Both "host" and "hosts" are defined.  Pick only one.')
     elif 'host' in kwargs and not 'hosts' in kwargs:
         kwargs['hosts'] = kwargs['host']
@@ -834,12 +834,12 @@ def get_client(**kwargs):
         else kwargs['aws_region']
     if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_sign_request']:
         if not kwargs['aws_region']:
-            raise MissingArgument(
+            raise exceptions.MissingArgument(
                 'Missing "aws_region".'
             )
         if kwargs['aws_key'] or kwargs['aws_secret_key']:
             if not (kwargs['aws_key'] and kwargs['aws_secret_key']):
-                raise MissingArgument(
+                raise exceptions.MissingArgument(
                     'Missing AWS Access Key or AWS Secret Key'
                 )
     if kwargs['aws_sign_request']:
@@ -884,7 +884,7 @@ def get_client(**kwargs):
                 '"master_only" cannot be true if more than one host is '
                 'specified. Hosts = {0}'.format(kwargs['hosts'])
             )
-            raise ConfigurationError(
+            raise exceptions.ConfigurationError(
                 '"master_only" cannot be true if more than one host is '
                 'specified. Hosts = {0}'.format(kwargs['hosts'])
             )
@@ -941,7 +941,7 @@ def get_repository(client, repository=''):
     try:
         return client.snapshot.get_repository(repository=repository)
     except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to get repository {0}.  Response Code: {1}.  Error: {2}.'
             'Check Elasticsearch logs for more information.'.format(
                 repository, e.status_code, e.error
@@ -960,12 +960,12 @@ def get_snapshot(client, repository=None, snapshot=''):
     :rtype: dict
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     snapname = '_all' if snapshot == '' else snapshot
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
     except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        raise FailedExecution(
+        raise exceptions.FailedExecution(
             'Unable to get information about snapshot {0} from repository: '
             '{1}.  Error: {2}'.format(snapname, repository, e)
         )
@@ -979,12 +979,12 @@ def get_snapshot_data(client, repository=None):
     :rtype: list
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     try:
         return client.snapshot.get(
             repository=repository, snapshot="_all")['snapshots']
     except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        raise FailedExecution(
+        raise exceptions.FailedExecution(
             'Unable to get snapshot information from repository: {0}.  '
             'Error: {1}'.format(repository, e)
         )
@@ -1012,7 +1012,7 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
         elif len(inprogress) == 1:
             return inprogress[0]
         else: # This should not be possible
-            raise CuratorException(
+            raise exceptions.CuratorException(
                 'More than 1 snapshot in progress: {0}'.format(inprogress)
             )
 
@@ -1046,7 +1046,7 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     :rtype: bool
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     for count in range(1, retry_count+1):
         in_progress = snapshot_in_progress(
             client, repository=repository
@@ -1138,7 +1138,7 @@ def create_repo_body(repo_type=None,
     """
     # This shouldn't happen, but just in case...
     if not repo_type:
-        raise MissingArgument('Missing required parameter --repo_type')
+        raise exceptions.MissingArgument('Missing required parameter --repo_type')
 
     argdict = locals()
     body = {}
@@ -1198,7 +1198,7 @@ def create_repository(client, **kwargs):
     :rtype: bool
     """
     if not 'repository' in kwargs:
-        raise MissingArgument('Missing required parameter "repository"')
+        raise exceptions.MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
     skip_repo_fs_check = kwargs.pop('skip_repo_fs_check', False)
@@ -1219,12 +1219,12 @@ def create_repository(client, **kwargs):
             )
             client.snapshot.create_repository(repository=repository, body=body, params=params)
         else:
-            raise FailedExecution(
+            raise exceptions.FailedExecution(
                 'Unable to create repository {0}.  A repository with that name '
                 'already exists.'.format(repository)
             )
     except elasticsearch.TransportError as e:
-        raise FailedExecution(
+        raise exceptions.FailedExecution(
             """
             Unable to create repository {0}.  Response Code: {1}.  Error: {2}.
             Check curator and elasticsearch logs for more information.
@@ -1244,7 +1244,7 @@ def repository_exists(client, repository=None):
     :rtype: bool
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     try:
         test_result = get_repository(client, repository)
         if repository in test_result:
@@ -1287,7 +1287,7 @@ def test_repo_fs(client, repository=None):
                 )
         except AttributeError:
             msg = ('--- Error message: {0}'.format(e))
-        raise ActionError(
+        raise exceptions.ActionError(
             'Failed to verify all nodes have repository access: '
             '{0}'.format(msg)
         )
@@ -1374,7 +1374,7 @@ def validate_filters(action, filters):
         filtertypes = settings.index_filtertypes()
     for f in filters:
         if f['filtertype'] not in filtertypes:
-            raise ConfigurationError(
+            raise exceptions.ConfigurationError(
                 '"{0}" filtertype is not compatible with action "{1}"'.format(
                     f['filtertype'],
                     action
@@ -1433,8 +1433,8 @@ def validate_actions(data):
                     current_filters = SchemaCheck(
                         valid_structure[k]['filters'],
                         Schema(filters.Filters(current_action, location=loc)),
-                        '"{0}" filters',
-                        '{1}, "filters"'.format(k, loc)
+                        '"{0}" filters'.format(k),
+                        '{0}, "filters"'.format(loc)
                     ).result()
                     add_remove.update(
                         {
@@ -1498,14 +1498,14 @@ def health_check(client, **kwargs):
     logger.debug('KWARGS= "{0}"'.format(kwargs))
     klist = list(kwargs.keys())
     if len(klist) < 1:
-        raise MissingArgument('Must provide at least one keyword argument')
+        raise exceptions.MissingArgument('Must provide at least one keyword argument')
     hc_data = client.cluster.health()
     response = True
 
     for k in klist:
         # First, verify that all kwargs are in the list
         if not k in list(hc_data.keys()):
-            raise ConfigurationError('Key "{0}" not in cluster health output')
+            raise exceptions.ConfigurationError('Key "{0}" not in cluster health output')
         if not hc_data[k] == kwargs[k]:
             logger.debug(
                 'NO MATCH: Value for key "{0}", health check data: '
@@ -1538,7 +1538,7 @@ def snapshot_check(client, snapshot=None, repository=None):
         state = client.snapshot.get(
             repository=repository, snapshot=snapshot)['snapshots'][0]['state']
     except Exception as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to obtain information for snapshot "{0}" in repository '
             '"{1}". Error: {2}'.format(snapshot, repository, e)
         )
@@ -1594,7 +1594,7 @@ def restore_check(client, index_list):
     try:
         response = client.indices.recovery(index=to_csv(index_list), human=True)
     except Exception as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to obtain recovery information for specified indices. '
             'Error: {0}'.format(e)
         )
@@ -1635,7 +1635,7 @@ def task_check(client, task_id=None):
     try:
         task_data = client.tasks.get(task_id=task_id)
     except Exception as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to obtain task information for task_id "{0}". Exception '
             '{1}'.format(task_id, e)
         )
@@ -1717,29 +1717,29 @@ def wait_for_it(
     wait_actions = list(action_map.keys())
 
     if action not in wait_actions:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"action" must be one of {0}'.format(wait_actions)
         )
     if action == 'reindex' and task_id == None:
-        raise MissingArgument(
+        raise exceptions.MissingArgument(
             'A task_id must accompany "action" {0}'.format(action)
         )
     if action == 'snapshot' and ((snapshot == None) or (repository == None)):
-        raise MissingArgument(
+        raise exceptions.MissingArgument(
             'A snapshot and repository must accompany "action" {0}. snapshot: '
             '{1}, repository: {2}'.format(action, snapshot, repository)
         )
     if action == 'restore' and index_list == None:
-        raise MissingArgument(
+        raise exceptions.MissingArgument(
             'An index_list must accompany "action" {0}'.format(action)
         )
     elif action == 'reindex':
         try:
-            task_dict = client.tasks.get(task_id=task_id)
+            _ = client.tasks.get(task_id=task_id)
         except Exception as e:
             # This exception should only exist in API usage. It should never
             # occur in regular Curator usage.
-            raise CuratorException(
+            raise exceptions.CuratorException(
                 'Unable to find task_id {0}. Exception: {1}'.format(task_id, e)
             )
 
@@ -1776,7 +1776,7 @@ def wait_for_it(
 
     logger.debug('Result: {0}'.format(result))
     if result == False:
-        raise ActionTimeout(
+        raise exceptions.ActionTimeout(
             'Action "{0}" failed to complete in the max_wait period of '
             '{1} seconds'.format(action, max_wait)
         )
@@ -1866,7 +1866,7 @@ def get_datemath(client, datemath, random_element=None):
         # And return only the now-parsed date string
         return r.match(fauxIndex).group(1)
     except AttributeError:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'The rendered index "{0}" does not contain a valid date pattern '
             'or has invalid index name characters.'.format(fauxIndex)
         )
@@ -1878,7 +1878,7 @@ def isdatemath(data):
     closer = r.match(data).group(2)
     logger.debug('opener =  {0}, closer = {1}'.format(opener, closer))
     if (opener == '<' and closer != '>') or (opener != '<' and closer == '>'):
-        raise ConfigurationError('Incomplete datemath encapsulation in "< >"')
+        raise exceptions.ConfigurationError('Incomplete datemath encapsulation in "< >"')
     elif (opener != '<' and closer != '>'):
         return False
     return True
@@ -1906,5 +1906,5 @@ def parse_datemath(client, value):
         # formatter = r.match(value).group(3) or '' (not captured, but counted)
         suffix = r.match(value).group(4) or ''
     except AttributeError:
-        raise ConfigurationError('Value "{0}" does not contain a valid datemath pattern.'.format(value))
+        raise exceptions.ConfigurationError('Value "{0}" does not contain a valid datemath pattern.'.format(value))
     return '{0}{1}{2}'.format(prefix, get_datemath(client, datemath), suffix)
