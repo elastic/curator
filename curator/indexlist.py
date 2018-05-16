@@ -97,6 +97,7 @@ class IndexList(object):
             'closed': self.filter_closed,
             'count': self.filter_by_count,
             'forcemerged': self.filter_forceMerged,
+            'ilm': self.filter_ilm,
             'kibana': self.filter_kibana,
             'none': self.filter_none,
             'opened': self.filter_opened,
@@ -1108,6 +1109,29 @@ class IndexList(object):
                     'Index "{0}" does not meet provided criteria. '
                     'Removing from list.'.format(index))
                 self.indices.remove(index)
+
+    def filter_ilm(self, exclude=True):
+        """
+        Match indices that have the setting `index.lifecycle.name`
+
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `True`
+        """
+        self.loggit.debug('Filtering indices with index.lifecycle.name')
+        index_lists = utils.chunk_index_list(self.indices)
+        for l in index_lists:
+            working_list = self.client.indices.get_settings(index=utils.to_csv(l))
+            if working_list:
+                for index in list(working_list.keys()):
+                    try:
+                        has_ilm = 'name' in working_list[index]['settings']['index']['lifecycle']
+                        msg = '{0} has index.lifecycle.name {1}'.format(index, working_list[index]['settings']['index']['lifecycle']['name'])
+                    except KeyError:
+                        has_ilm = False
+                        msg = 'index.lifecycle.name is not set for index {0}'.format(index)
+                    self.__excludify(has_ilm, exclude, index, msg)
 
     def iterate_filters(self, filter_dict):
         """

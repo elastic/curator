@@ -10,8 +10,9 @@ from curator.cli_singletons.utils import get_width, json_to_dict, validate_filte
 @click.option('--extra_settings', type=str, help='JSON version of extra_settings (see documentation)', callback=json_to_dict)
 @click.option('--new_index', type=str, help='Optional new index name (see documentation)')
 @click.option('--wait_for_active_shards', type=int, default=1, show_default=True, help='Wait for number of shards to be active before returning')
+@click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', default=False, show_default=True)
 @click.pass_context
-def rollover(ctx, name, max_age, max_docs, max_size, extra_settings, new_index, wait_for_active_shards):
+def rollover(ctx, name, max_age, max_docs, max_size, extra_settings, new_index, wait_for_active_shards, allow_ilm_indices):
     """
     Rollover Index associated with Alias
     """
@@ -22,6 +23,7 @@ def rollover(ctx, name, max_age, max_docs, max_size, extra_settings, new_index, 
     manual_options = { 
         'name': name,
         'conditions': conditions,
+        'allow_ilm_indices': allow_ilm_indices,
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = cli_action(

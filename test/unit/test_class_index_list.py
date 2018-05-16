@@ -1,5 +1,6 @@
 from unittest import TestCase
 from mock import Mock, patch
+from copy import deepcopy
 import elasticsearch
 import yaml
 import curator
@@ -887,6 +888,30 @@ class TestIterateFiltersIndex(TestCase):
             curator.ConfigurationError,
             ilo.iterate_filters, config
         )
+    def test_ilm_filtertype_exclude(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '6.3.0'} }
+        # If we don't deepcopy, then it munges the settings for future references.
+        with_ilm = deepcopy(testvars.settings_two)
+        with_ilm['index-2016.03.03']['settings']['index']['lifecycle'] = {'name':'mypolicy'}
+        client.indices.get_settings.return_value = with_ilm
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        ilo = curator.IndexList(client)
+        config = {'filters': [{'filtertype':'ilm','exclude':True}]}
+        ilo.iterate_filters(config)
+        self.assertEqual(['index-2016.03.04'], ilo.indices)
+    def test_ilm_filtertype_no_setting(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '6.3.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        ilo = curator.IndexList(client)
+        config = {'filters': [{'filtertype':'ilm','exclude':True}]}
+        ilo.iterate_filters(config)
+        self.assertEqual(['index-2016.03.03','index-2016.03.04'], sorted(ilo.indices))
+
 class TestIndexListFilterAlias(TestCase):
     def test_raise(self):
         client = Mock()
@@ -976,7 +1001,7 @@ class TestIndexListFilterCount(TestCase):
     def test_pattern_multiple_regex_groups(self):
         self.builder()
         self.assertRaises(curator.ActionError, self.il.filter_by_count,
-            count=1, use_age=True, pattern='^(\ )foo(\ )$', source='name', timestring='%Y.%m.%d',
+            count=1, use_age=True, pattern=r'^(\ )foo(\ )$', source='name', timestring='%Y.%m.%d',
         )
 class TestIndexListPeriodFilterName(TestCase):
     def test_get_name_based_age_in_range(self):
@@ -1017,7 +1042,6 @@ class TestIndexListPeriodFilterName(TestCase):
         range_to = -3
         timestring = '%Y.%m.%d'
         epoch = 1456963201
-        expected = []
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
         client.indices.get_settings.return_value = testvars.settings_two

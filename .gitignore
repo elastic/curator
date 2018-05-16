@@ -7,6 +7,7 @@
 .coverage
 .eggs
 .idea
+.vscode
 Elastic.ico
 Vagrant/centos/6/.vagrant
 Vagrant/centos/7/.vagrant

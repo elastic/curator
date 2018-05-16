@@ -3,6 +3,16 @@
 Changelog
 =========
 
+5.6.0 (? ? ?)
+-------------
+
+**New**
+
+  * By default, filter out indices with ``index.lifecycle.name`` set.  This can
+    be overridden with the option ``allow_ilm_indices`` with the caveat that
+    you are on your own if there are conflicts. NOTE: The Index Lifecycle
+    Management feature will not appear in Elasticsearch until 6.4.0
+
 5.5.2 (14 May 2018)
 -------------------
 

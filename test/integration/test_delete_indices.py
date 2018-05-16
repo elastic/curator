@@ -460,6 +460,60 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEquals(0, len(curator.get_indices(self.client)))
+    def test_allow_ilm_indices_true(self):
+        # ILM will not be added until 6.4
+        if curator.get_version(self.client) < (6,4,0):
+            self.assertTrue(True)
+        else:
+            self.create_indices(10)
+            settings = {
+                'index': {
+                    'lifecycle': {
+                        'name': 'mypolicy'
+                    }
+                }
+            }
+            self.client.indices.put_settings(index='_all', body=settings)
+            self.write_config(
+                self.args['configfile'], testvars.client_config.format(host, port))
+            self.write_config(self.args['actionfile'],
+                testvars.ilm_delete_proto.format(
+                    'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 5, ' ', ' ', ' ', 'true'
+                )
+            )
+            test = clicktest.CliRunner()
+            _ = test.invoke(
+                curator.cli,
+                [ '--config', self.args['configfile'], self.args['actionfile'] ],
+            )
+            self.assertEquals(5, len(curator.get_indices(self.client)))
+    def test_allow_ilm_indices_false(self):
+        # ILM will not be added until 6.4
+        if curator.get_version(self.client) < (6,4,0):
+            self.assertTrue(True)
+        else:
+            self.create_indices(10)
+            settings = {
+                'index': {
+                    'lifecycle': {
+                        'name': 'mypolicy'
+                    }
+                }
+            }
+            self.client.indices.put_settings(index='_all', body=settings)
+            self.write_config(
+                self.args['configfile'], testvars.client_config.format(host, port))
+            self.write_config(self.args['actionfile'],
+                testvars.ilm_delete_proto.format(
+                    'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 5, ' ', ' ', ' ', 'false'
+                )
+            )
+            test = clicktest.CliRunner()
+            _ = test.invoke(
+                curator.cli,
+                [ '--config', self.args['configfile'], self.args['actionfile'] ],
+            )
+            self.assertEquals(10, len(curator.get_indices(self.client)))
 
 class TestCLIDeleteIndices(CuratorTestCase):
     def test_name_older_than_now_cli(self):

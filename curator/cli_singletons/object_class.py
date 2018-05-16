@@ -49,7 +49,9 @@ class cli_action():
                 self.action_class = CLASS_MAP[action]
             except KeyError:
                 self.logger.critical('Action must be one of {0}'.format(list(CLASS_MAP.keys())))
-            self.check_options(option_dict)
+        self.check_options(option_dict)
+        # Extract allow_ilm_indices so it can be handled separately.
+        self.allow_ilm = self.options.pop('allow_ilm_indices')
         if action == 'alias':
             self.alias = {
                 'name': option_dict['name'],
@@ -61,6 +63,8 @@ class cli_action():
                     self.alias[k] = {}
                     self.check_filters(kwargs[k], loc='alias singleton', key=k)
                     self.alias[k]['filters'] = self.filters
+                    if self.allow_ilm:
+                        self.alias[k]['filters'].append({'filtertype':'ilm'})
         elif action in [ 'cluster_routing', 'create_index', 'rollover']:
             self.action_kwargs = {}
             # No filters for these actions
@@ -119,6 +123,8 @@ class cli_action():
 
     def do_filters(self):
         self.logger.debug('Running filters and testing for empty list object')
+        if self.allow_ilm:
+            self.filters.append({'filtertype':'ilm','exclude':True})
         try:
             self.list_object.iterate_filters({'filters':self.filters})
             self.list_object.empty_list_check()
@@ -164,6 +170,7 @@ class cli_action():
             else:
                 self.get_list_object()
                 self.do_filters()
+                self.logger.debug('OPTIONS = {0}'.format(self.options))
                 action_obj = self.action_class(self.list_object, **self.options)
             try:
                 if dry_run:
