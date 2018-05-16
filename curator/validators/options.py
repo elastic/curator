@@ -133,6 +133,7 @@ def get_schema(action):
     # "Required" and "Optional" elements are hashes themselves.
     options = {}
     defaults = [
+        option_defaults.allow_ilm_indices(),
         option_defaults.continue_if_exception(),
         option_defaults.disable_action(),
         option_defaults.ignore_empty_list(),

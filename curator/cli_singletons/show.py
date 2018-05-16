@@ -10,14 +10,15 @@ from datetime import datetime
 @click.option('--header', help='Print header if --verbose', is_flag=True, show_default=True)
 @click.option('--epoch', help='Print time as epoch if --verbose', is_flag=True, show_default=True)
 @click.option('--ignore_empty_list', is_flag=True, help='Do not raise exception if there are no actionable indices')
+@click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', default=False, show_default=True)
 @click.option('--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}', help='JSON string representing an array of filters.')
 @click.pass_context
-def show_indices(ctx, verbose, header, epoch, ignore_empty_list, filter_list):
+def show_indices(ctx, verbose, header, epoch, ignore_empty_list, allow_ilm_indices, filter_list):
     """
     Show Indices
     """
     # ctx.info_name is the name of the function or name specified in @click.command decorator
-    action = cli_action(ctx.info_name, ctx.obj['config']['client'], {}, filter_list, ignore_empty_list)
+    action = cli_action(ctx.info_name, ctx.obj['config']['client'], {'allow_ilm_indices': allow_ilm_indices}, filter_list, ignore_empty_list)
     action.get_list_object()
     action.do_filters()
     indices = sorted(action.list_object.indices)

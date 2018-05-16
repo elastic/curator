@@ -8,6 +8,9 @@ def allocation_type():
     return { Optional('allocation_type', default='require'): All(
         Any(*string_types), Any('require', 'include', 'exclude')) }
 
+def allow_ilm_indices():
+    return { Optional('allow_ilm_indices', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
 def conditions():
     return {
         Optional('conditions'): {

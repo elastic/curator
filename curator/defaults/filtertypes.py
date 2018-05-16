@@ -83,6 +83,9 @@ def forcemerged(action, config):
         filter_elements.exclude(exclude=True),
     ]
 
+def ilm(action, config):
+    return [ filter_elements.exclude(exclude=True) ]
+
 def kibana(action, config):
     return [ filter_elements.exclude(exclude=True) ]
 
