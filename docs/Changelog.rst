@@ -12,6 +12,11 @@ Changelog
     be overridden with the option ``allow_ilm_indices`` with the caveat that
     you are on your own if there are conflicts. NOTE: The Index Lifecycle
     Management feature will not appear in Elasticsearch until 6.4.0
+  * Removed some unused files from the repository.
+
+**Bug Fixes**
+
+  * Fix an ambiguously designed Alias test (untergeek)
 
 5.5.2 (14 May 2018)
 -------------------
