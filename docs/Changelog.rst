@@ -22,6 +22,8 @@ raised in #1192
   * Fix an ambiguously designed Alias test (untergeek)
   * Snapshot action will now raise an exception if the snapshot does not
     complete with state ``SUCCESS``. Reported in #1192 (untergeek)
+  * The show_indices and show_snapshots singletons were not working within the
+    new framework. They've been fixed now.
 
 5.5.2 (14 May 2018)
 -------------------

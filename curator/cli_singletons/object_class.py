@@ -49,9 +49,14 @@ class cli_action():
                 self.action_class = CLASS_MAP[action]
             except KeyError:
                 self.logger.critical('Action must be one of {0}'.format(list(CLASS_MAP.keys())))
-        self.check_options(option_dict)
+            self.check_options(option_dict)
+        else:
+            self.options = option_dict
         # Extract allow_ilm_indices so it can be handled separately.
-        self.allow_ilm = self.options.pop('allow_ilm_indices')
+        if 'allow_ilm_indices' in self.options:
+            self.allow_ilm = self.options.pop('allow_ilm_indices')
+        else:
+            self.allow_ilm = False
         if action == 'alias':
             self.alias = {
                 'name': option_dict['name'],
@@ -138,7 +143,7 @@ class cli_action():
                 sys.exit(1)
     
     def get_list_object(self):
-        if self.action in snapshot_actions():
+        if self.action in snapshot_actions() or self.action == 'show_snapshots':
             self.list_object = SnapshotList(self.client, repository=self.repository)
         else:
             self.list_object = IndexList(self.client)
