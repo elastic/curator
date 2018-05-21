@@ -101,8 +101,7 @@ class TestActionSnapshot(TestCase):
         ilo = curator.IndexList(client)
         so = curator.Snapshot(ilo, repository=testvars.repo_name,
             name=testvars.snap_name)
-        so.report_state()
-        self.assertEqual('IN_PROGRESS', so.state)
+        self.assertRaises(curator.exceptions.FailedSnapshot, so.report_state)
     def test_do_dry_run(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
