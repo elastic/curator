@@ -3,10 +3,13 @@
 Changelog
 =========
 
-5.6.0 (? ? ?)
--------------
+5.5.3 (21 May 2018)
+-------------------
 
-**New**
+Short release cycle here specifically to address the Snapshot restore issue
+raised in #1192
+
+**Changes**
 
   * By default, filter out indices with ``index.lifecycle.name`` set.  This can
     be overridden with the option ``allow_ilm_indices`` with the caveat that
@@ -17,6 +20,8 @@ Changelog
 **Bug Fixes**
 
   * Fix an ambiguously designed Alias test (untergeek)
+  * Snapshot action will now raise an exception if the snapshot does not
+    complete with state ``SUCCESS``. Reported in #1192 (untergeek)
 
 5.5.2 (14 May 2018)
 -------------------

@@ -1486,15 +1486,16 @@ class Snapshot(object):
 
     def report_state(self):
         """
-        Log the state of the snapshot
+        Log the state of the snapshot and raise an exception if the state is
+        not ``SUCCESS``
         """
         self.get_state()
         if self.state == 'SUCCESS':
-            self.loggit.info(
-                'Snapshot {0} successfully completed.'.format(self.name))
+            self.loggit.info('Snapshot {0} successfully completed.'.format(self.name))
         else:
-            self.loggit.warn(
-                'Snapshot {0} completed with state: {0}'.format(self.state))
+            msg = 'Snapshot {0} completed with state: {0}'.format(self.state)
+            self.loggit.error(msg)
+            raise exceptions.FailedSnapshot(msg)
 
     def do_dry_run(self):
         """
@@ -1531,6 +1532,7 @@ class Snapshot(object):
                     repository=self.repository,
                     wait_interval=self.wait_interval, max_wait=self.max_wait
                 )
+                self.report_state()
             else:
                 self.loggit.warn(
                     '"wait_for_completion" set to {0}.'
@@ -1686,9 +1688,7 @@ class Restore(object):
                     index
                 )
             )
-            self.loggit.debug('index: {0} replacement: '
-                '{1}'.format(index, self.expected_output[-1])
-            )
+            self.loggit.debug('index: {0} replacement: {1}'.format(index, self.expected_output[-1]))
 
     def report_state(self):
         """
@@ -1708,10 +1708,9 @@ class Restore(object):
         if found_count == len(self.expected_output):
             self.loggit.info('All indices appear to have been restored.')
         else:
-            self.loggit.error(
-                'Some of the indices do not appear to have been restored. '
-                'Missing: {0}'.format(missing)
-            )
+            msg = 'Some of the indices do not appear to have been restored. Missing: {0}'.format(missing)
+            self.loggit.error(msg)
+            raise exceptions.FailedRestore(msg)
 
     def do_dry_run(self):
         """
@@ -1741,7 +1740,6 @@ class Restore(object):
                 'DRY-RUN: restore: Index {0} {1}'.format(index, replacement_msg)
             )
 
-
     def do_action(self):
         """
         Restore indices with options passed.
@@ -1749,8 +1747,7 @@ class Restore(object):
         if not self.skip_repo_fs_check:
             utils.test_repo_fs(self.client, self.repository)
         if utils.snapshot_running(self.client):
-            raise exceptions.SnapshotInProgress(
-                'Cannot restore while a snapshot is in progress.')
+            raise exceptions.SnapshotInProgress('Cannot restore while a snapshot is in progress.')
         try:
             self.loggit.info('Restoring indices "{0}" from snapshot: '
                 '{1}'.format(self.indices, self.name)
@@ -1767,6 +1764,7 @@ class Restore(object):
                     self.client, 'restore', index_list=self.expected_output,
                     wait_interval=self.wait_interval, max_wait=self.max_wait
                 )
+                self.report_state()
             else:
                 self.loggit.warn(
                     '"wait_for_completion" set to {0}. '
