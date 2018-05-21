@@ -73,6 +73,7 @@ def index_filtertypes():
         'closed',
         'count',
         'forcemerged',
+        'ilm',
         'kibana',
         'none',
         'opened',
@@ -89,6 +90,7 @@ def all_filtertypes():
 
 def default_options():
     return {
+        'allow_ilm_indices': False,
         'continue_if_exception': False,
         'disable_action': False,
         'ignore_empty_list': False,

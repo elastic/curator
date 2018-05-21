@@ -321,13 +321,14 @@ class TestActionFileAlias(CuratorTestCase):
             '      disable_action: False\n'
             '    add:\n'
             '      filters:\n'
-            '        - filtertype: none\n'
+            '        - filtertype: pattern\n'
+            '          kind: prefix\n'
+            '          value: dum\n'
             '    remove:\n'
             '      filters:\n'
             '        - filtertype: pattern\n'
             '          kind: prefix\n'
             '          value: my\n'
-            
         )
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -344,7 +345,7 @@ class TestActionFileAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {alias: {}}}},
+            {'dummy':{'aliases':{'testalias':{}}}},
             self.client.indices.get_alias(name=alias)
         )
 

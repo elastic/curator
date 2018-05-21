@@ -3,6 +3,28 @@
 Changelog
 =========
 
+5.5.3 (21 May 2018)
+-------------------
+
+Short release cycle here specifically to address the Snapshot restore issue
+raised in #1192
+
+**Changes**
+
+  * By default, filter out indices with ``index.lifecycle.name`` set.  This can
+    be overridden with the option ``allow_ilm_indices`` with the caveat that
+    you are on your own if there are conflicts. NOTE: The Index Lifecycle
+    Management feature will not appear in Elasticsearch until 6.4.0
+  * Removed some unused files from the repository.
+
+**Bug Fixes**
+
+  * Fix an ambiguously designed Alias test (untergeek)
+  * Snapshot action will now raise an exception if the snapshot does not
+    complete with state ``SUCCESS``. Reported in #1192 (untergeek)
+  * The show_indices and show_snapshots singletons were not working within the
+    new framework. They've been fixed now.
+
 5.5.2 (14 May 2018)
 -------------------
 

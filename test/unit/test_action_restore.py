@@ -110,7 +110,7 @@ class TestActionRestore(TestCase):
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
         ro = curator.Restore(
             slo, rename_pattern='(.+)', rename_replacement='new_$1')
-        self.assertIsNone(ro.report_state())
+        self.assertRaises(curator.exceptions.FailedRestore, ro.report_state)
     def test_do_action_success(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
