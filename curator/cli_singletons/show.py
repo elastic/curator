@@ -74,7 +74,7 @@ def show_indices(ctx, verbose, header, epoch, ignore_empty_list, allow_ilm_indic
 @click.option('--ignore_empty_list', is_flag=True, help='Do not raise exception if there are no actionable snapshots')
 @click.option('--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}', help='JSON string representing an array of filters.')
 @click.pass_context
-def show_snapshots(ctx, repository, retry_count, retry_interval, ignore_empty_list, filter_list):
+def show_snapshots(ctx, repository, ignore_empty_list, filter_list):
     """
     Show Snapshots
     """
