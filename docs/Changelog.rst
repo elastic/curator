@@ -3,6 +3,14 @@
 Changelog
 =========
 
+5.5.4 (23 May 2018)
+-------------------
+
+**Bug Fix**
+
+  * Extra args in show.py prevented show_snapshots from executing (untergeek)
+
+
 5.5.3 (21 May 2018)
 -------------------
 
