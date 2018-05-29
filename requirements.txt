@@ -4,3 +4,5 @@ click>=6.7
 pyyaml>=3.10
 voluptuous>=0.9.3
 certifi>=2017.7.27.1
+boto3>=1.7.28
+requests-aws4auth>=0.9
