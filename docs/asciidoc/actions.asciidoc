@@ -493,6 +493,11 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 This action performs a forceMerge on the selected indices, merging them to
 <<option_mns,max_num_segments>> per shard.
 
+WARNING: A {ref}/indices-forcemerge.html#indices-forcemerge[`forcemerge`] should
+    never be executed on an index that is actively receiving data.  It should
+    only ever be performed on indices where no more documents are ever
+    anticipated to be added in the future.
+
 You can optionally pause between each merge for <<option_delay,delay>> seconds
 to allow the cluster to quiesce:
 
@@ -914,28 +919,30 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
   conditions:
     max_age: 1d
     max_docs: 1000000
+    max_size: 5gb
 -------------
 
 This action uses the
 {ref}/indices-rollover-index.html[Elasticsearch Rollover API] to create a new
-index, if the described conditions are met.
+index, if any of the described conditions are met.
 
-IMPORTANT: When choosing `conditions`, **either** one of
-<<option_max_age,max_age>> or <<option_max_docs,max_docs>>, **or both** may be
-used. If both are used, then both conditions must be matched for the rollover to
-occur.
+IMPORTANT: When choosing `conditions`, **any** one of
+<<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>>, **or any combination of the three** may be used.
+If multiple are used, then the specified condition for any one of them must be
+matched for the rollover to occur.
 
-WARNING: If either or both of the <<option_max_age,max_age>> or
-<<option_max_docs,max_docs>> options are present, they must each have a value.
-Because there is no default value, neither of these options can be left empty,
-or Curator will generate an error.
+WARNING: If one or more of the <<option_max_age,max_age>>,
+<<option_max_docs,max_docs>>, or <<option_max_size,max_size>> options are
+present, they must each have a value. Because there are no default values,
+none of these conditions can be left empty, or Curator will generate an error.
 
 === Extra settings
 
@@ -947,7 +954,7 @@ might be:
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -973,6 +980,11 @@ options:
   index before triggering a rollover.  This _must_ be nested under
   `conditions:`. There is no default value.  If this condition is specified, it
   must have a value, or Curator will generate an error.
+* <<option_max_size,max_size>> **Only supported in Elasticsearch 6.1.0 and up.**
+  The maximum size the index can be before a rollover is triggered.  This _must_
+  be nested under `conditions:`. There is no default value.  If this condition
+  is specified, it must have a value, or Curator will generate an error.
+
 
 === Optional settings
 
@@ -980,6 +992,7 @@ options:
     acceptable index settings (not mappings) as nested YAML.  See the
     {ref}/indices-create-index.html[Elasticsearch Create Index API documentation]
     for more information.
+* <<option_new_index,new_index>> Specify a new index name.
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
 * <<option_disable,disable_action>>
@@ -1019,6 +1032,7 @@ options:
     settings:
       index.codec: best_compression
   wait_for_completion: True
+  wait_for_rebalance: True
   wait_interval: 9
   max_wait: -1
 filters:
@@ -1095,6 +1109,7 @@ as needed.
 * <<option_timeout_override,timeout_override>>
 * <<option_wait_for_active_shards,wait_for_active_shards>>
 * <<option_wfc,wait_for_completion>>
+* <<option_wait_for_rebalance,wait_for_rebalance>>
 * <<option_max_wait,max_wait>>
 * <<option_wait_interval,wait_interval>>
 

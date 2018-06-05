@@ -1,7 +1,7 @@
-from voluptuous import *
-from ..defaults import settings, filtertypes
-from ..exceptions import ConfigurationError
-from . import SchemaCheck
+from voluptuous import Any, In, Required, Schema
+from curator.defaults import settings, filtertypes
+from curator.exceptions import ConfigurationError
+from curator.validators import SchemaCheck
 import logging
 logger = logging.getLogger(__name__)
 

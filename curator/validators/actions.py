@@ -1,6 +1,7 @@
-from voluptuous import *
-from ..defaults import settings
-from . import SchemaCheck
+from voluptuous import All, Any, In, Schema, Optional, Required
+from curator.defaults import settings
+from curator.validators import SchemaCheck
+from six import string_types
 
 ### Schema information ###
 # Actions: root level
@@ -20,7 +21,7 @@ def valid_action():
 # Basic action structure
 def structure(data, location):
     # Validate the action type first, so we can use it for other tests
-    valid_action_type = SchemaCheck(
+    _ = SchemaCheck(
         data,
         Schema(valid_action(), extra=True),
         'action type',
@@ -31,7 +32,7 @@ def structure(data, location):
     retval.update(
         {
             Optional('description', default='No description given'): Any(
-                    str, unicode
+                    str, *string_types
                 )
         }
     )

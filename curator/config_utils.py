@@ -1,7 +1,8 @@
+import logging
 from voluptuous import Schema
-from .validators import SchemaCheck, config_file
-from .utils import *
-from .logtools import LogInfo, Whitelist, Blacklist
+from curator.validators import SchemaCheck, config_file
+from curator.utils import ensure_list, get_yaml, prune_nones, test_client_options
+from curator.logtools import LogInfo, Whitelist, Blacklist
 
 def test_config(config):
     # Get config from yaml file
@@ -19,23 +20,14 @@ def test_config(config):
         'Client Configuration', 'full configuration dictionary').result()
 
 def set_logging(log_opts):
-    try:
-        from logging import NullHandler
-    except ImportError:
-        from logging import Handler
-
-        class NullHandler(Handler):
-            def emit(self, record):
-                pass
-
     # Set up logging
     loginfo = LogInfo(log_opts)
     logging.root.addHandler(loginfo.handler)
     logging.root.setLevel(loginfo.numeric_log_level)
-    logger = logging.getLogger('curator.cli')
+    _ = logging.getLogger('curator.cli')
     # Set up NullHandler() to handle nested elasticsearch.trace Logger
     # instance in elasticsearch python client
-    logging.getLogger('elasticsearch.trace').addHandler(NullHandler())
+    logging.getLogger('elasticsearch.trace').addHandler(logging.NullHandler())
     if log_opts['blacklist']:
         for bl_entry in ensure_list(log_opts['blacklist']):
             for handler in logging.root.handlers:

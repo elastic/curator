@@ -4,7 +4,7 @@ BASEPATH=$(pwd)
 PKG_TARGET=/curator_packages
 WORKDIR=/tmp/curator
 PYVER=3.6
-MINOR=3
+MINOR=5
 INPUT_TYPE=python
 CATEGORY=python
 VENDOR=Elastic
@@ -107,6 +107,13 @@ case "$ID" in
   *) echo "unknown system type: ${ID}"; exit 1;;
 esac
 
+# Improve RPM dependency for RHEL/Centos 7
+if [ "$VERSION_ID" == "7" ] && [ "$PLATFORM" == "centos" ]; then
+  DEP1='openssl-libs >= 1:1.0.2k-8.el7'
+else
+  DEP1=''
+fi
+
 HAS_PY3=$(which python${PYVER})
 if [ "${HAS_PY3}x" == "x" ]; then
   build_python ${PYVER}.${MINOR}
@@ -147,6 +154,8 @@ sudo mv build/exe.linux-x86_64-${PYVER} /opt/elasticsearch-curator
 
 sudo chown -R root:root /opt/elasticsearch-curator
 cd $WORKDIR
+
+if [ "x${DEP1}" == "x" ]; then
 fpm \
  -s dir \
  -t ${PKGTYPE} \
@@ -166,6 +175,30 @@ fpm \
  --conflicts python-elasticsearch-curator \
  --conflicts python3-elasticsearch-curator \
 /opt/elasticsearch-curator
+
+else
+
+fpm \
+ -s dir \
+ -t ${PKGTYPE} \
+ -n elasticsearch-curator \
+ -v ${1} \
+ --vendor ${VENDOR} \
+ --maintainer "${MAINTAINER}" \
+ --license 'Apache-2.0' \
+ --category tools \
+ --depends "${DEP1}" \
+ --description 'Have indices in Elasticsearch? This is the tool for you!\n\nLike a museum curator manages the exhibits and collections on display, \nElasticsearch Curator helps you curate, or manage your indices.' \
+ --after-install ${C_POST_INSTALL} \
+ --before-remove ${C_PRE_REMOVE} \
+ --after-remove ${C_POST_REMOVE} \
+ --before-upgrade ${C_PRE_UPGRADE} \
+ --after-upgrade ${C_POST_UPGRADE} \
+ --provides elasticsearch-curator \
+ --conflicts python-elasticsearch-curator \
+ --conflicts python3-elasticsearch-curator \
+/opt/elasticsearch-curator
+fi
 
 mv ${WORKDIR}/*.${PKGTYPE} ${PACKAGEDIR}
 

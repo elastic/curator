@@ -21,11 +21,16 @@ Options are settings used by <<actions,actions>>.
 * <<option_key,key>>
 * <<option_max_age,max_age>>
 * <<option_max_docs,max_docs>>
+* <<option_max_size,max_size>>
 * <<option_mns,max_num_segments>>
 * <<option_max_wait,max_wait>>
 * <<option_migration_prefix,migration_prefix>>
 * <<option_migration_suffix,migration_suffix>>
 * <<option_name,name>>
+* <<option_new_index,new_index>>
+* <<option_node_filters,node_filters>>
+* <<option_number_of_replicas,number_of_replicas>>
+* <<option_number_of_shards,number_of_shards>>
 * <<option_partial,partial>>
 * <<option_refresh,refresh>>
 * <<option_remote_aws_key,remote_aws_key>>
@@ -54,6 +59,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_value,value>>
 * <<option_wait_for_active_shards,wait_for_active_shards>>
 * <<option_wfc,wait_for_completion>>
+* <<option_wait_for_rebalance,wait_for_rebalance>>
 * <<option_wait_interval,wait_interval>>
 * <<option_warn_if_no_indices,warn_if_no_indices>>
 
@@ -343,7 +349,7 @@ actions:
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'name', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -679,7 +685,7 @@ will be raised, and execution will halt.
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -687,12 +693,13 @@ options:
     max_age: 1d
 -------------
 
-NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
-are required as `conditions:` for the <<rollover,Rollover>> action.
+NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>> or any combinations of the three are required as
+`conditions:` for the <<rollover,Rollover>> action.
 
-The maximum age that is allowed before triggering a rollover. _Must be nested
-under `conditions:`_ There is no default value. If this condition is specified,
-it must have a value, or Curator will generate an error.
+The maximum age that is allowed before triggering a rollover. It _must_ be
+nested under `conditions:` There is no default value.  If this condition is
+specified, it must have a value, or Curator will generate an error.
 
 Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 
@@ -703,7 +710,7 @@ Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'aliasname', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -711,13 +718,39 @@ options:
     max_docs: 1000000
 -------------
 
-NOTE: Either <<option_max_age,max_age>> or <<option_max_docs,max_docs>>, or both
-are required as `conditions:` for the <<rollover,Rollover>> action.
+NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>> or any combinations of the three are required as
+`conditions:` for the <<rollover,Rollover>> action.
 
 The maximum number of documents allowed in an index before triggering a
-rollover.  _Must be nested under `conditions:`_ There is no default value.  If
-this condition is specified, it must have a value, or Curator will generate an
-error.
+rollover.  It _must_ be nested under `conditions:` There is no default value.
+If this condition is specified, it must have a value, or Curator will generate
+an error.
+
+[[option_max_size]]
+== max_size
+
+[source,yaml]
+-------------
+action: rollover
+description: >-
+  Rollover the index associated with alias 'aliasname', which should be in the
+  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+options:
+  name: aliasname
+  conditions:
+    max_size: 5gb
+-------------
+
+NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
+<<option_max_size,max_size>> or any combinations of the three are required as
+`conditions:` for the <<rollover,Rollover>> action.
+
+The maximum approximate size an index is allowed to be before triggering a
+rollover.  Sizes must use Elasticsearch approved
+{ref}/common-options.html#byte-units[byte units]. It _must_ be nested under
+`conditions:` There is no default value.  If this condition is specified, it
+must have a value, or Curator will generate an error.
 
 
 [[option_mns]]
@@ -955,7 +988,12 @@ NOTE: This setting is used by the <<alias,alias>>, <<create_index,create_index>>
 The value of this setting is the name of the alias, snapshot, or index,
 depending on which action makes use of `name`.
 
-This setting may contain a valid Python strftime string.  Curator will
+=== date math
+include::inc_datemath.asciidoc[]
+
+=== strftime
+
+This setting may alternately contain a valid Python strftime string.  Curator will
 extract the strftime identifiers and replace them with the corresponding values.
 
 The identifiers that Curator currently recognizes include:
@@ -1044,6 +1082,33 @@ filters:
 For the <<snapshot,snapshot>> action, the default value of this setting is
 `curator-%Y%m%d%H%M%S`
 
+[[option_new_index]]
+== new_index
+
+NOTE: This optional setting is only used by the <<rollover,rollover>> action.
+
+[source,yaml]
+-------------
+description: >-
+  Rollover the index associated with alias 'name'.  Specify new index name using
+  date math.
+options:
+  name: aliasname
+  new_index: "<prefix-{now/d}-1>" 
+  conditions:
+    max_age: 1d
+  wait_for_active_shards: 1
+-------------
+
+IMPORTANT: A new index name for rollover should still end with a dash followed by an 
+  incrementable number, e.g. `my_new_index-1`, or if using date math, `<prefix-{now/d}-1>`
+  or `<prefix-{now/d}-000001>`
+
+=== date_math
+
+include::inc_datemath.asciidoc[]
+
+There is no default value for `new_index`.
 
 [[option_node_filters]]
 == node_filters
@@ -1143,7 +1208,6 @@ The value for `number_of_shards` must meet the following criteria:
 * It must be lower than the number of primary shards in the source index.
 * It must be a factor of the number of primary shards in the source index.
 ===========================
-
 
 [[option_partial]]
 == partial
@@ -2048,8 +2112,8 @@ to treat this reindex differently.
 [IMPORTANT]
 =============================
 **If it is a _local_ reindex,** you _must_ set either
-<<option_migration_prefix,option_migration_prefix>>, or
-<<option_migration_suffix,option_migration_suffix>>, or both.  This prevents
+<<option_migration_prefix,migration_prefix>>, or
+<<option_migration_suffix,migration_suffix>>, or both.  This prevents
 collisions and other bad things from happening.  By assigning a prefix or a
 suffix (or both), you can reindex any local indices to new versions of
 themselves, but named differently.
@@ -2491,18 +2555,16 @@ filters:
 - filtertype: ...
 -------------
 
-Actions <<snapshot,snapshot>>, <<restore,restore>>, and
-    <<forcemerge,forcemerge>> will override this value to `21600` if
-    `timeout_override` is unset.  The <<close,close>> action will override the
-    value to 180 if unset.
+If `timeout_override` is unset in your configuration, some actions will
+try to set a sane default value.
 
-Some actions have a default value for `timeout_override`. The following table
-shows these default values:
+The following table shows these default values:
 
 [cols="m,", options="header"]
 |===
 |Action Name |Default `timeout_override` Value
 |close |180
+|delete_snapshots |300
 |forcemerge |21600
 |restore |21600
 |snapshot |21600
@@ -2653,7 +2715,7 @@ actions:
 -------------
 action: rollover
 description: >-
-  Rollover the index associated with index 'name', which should be in the
+  Rollover the index associated with alias 'name', which should be in the
   form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
 options:
   name: aliasname
@@ -2823,6 +2885,53 @@ TIP: During snapshot initialization, information about all previous snapshots is
     several seconds (or even minutes) for this command to return even if the
     `wait_for_completion` setting is set to `False`.
 
+
+[[option_wait_for_rebalance]]
+== wait_for_rebalance
+
+[source,yaml]
+-------------
+action: shrink
+description: >-
+  Shrink selected indices on the node with the most available space.
+  Delete source index after successful shrink, then reroute the shrunk
+  index with the provided parameters.
+options:
+  ignore_empty_list: True
+  shrink_node: DETERMINISTIC
+  node_filters:
+    permit_masters: False
+    exclude_nodes: ['not_this_node']
+  number_of_shards: 1
+  number_of_replicas: 1
+  shrink_prefix:
+  shrink_suffix: '-shrink'
+  delete_after: True
+  post_allocation:
+    allocation_type: include
+    key: node_tag
+    value: cold
+  wait_for_active_shards: 1
+  extra_settings:
+    settings:
+      index.codec: best_compression
+  wait_for_completion: True
+  wait_for_rebalance: True
+  wait_interval: 9
+  max_wait: -1
+filters:
+  - filtertype: ...
+-------------
+
+NOTE: This setting is used by the <<shrink,shrink>> action.
+
+This setting must be `true` or `false`.
+
+Setting this to `false` will result in the <<shrink,shrink>> action only
+checking that the index being shrunk has finished being relocated, and
+not continue to wait for the cluster to fully rebalance all shards.
+
+The default value for this setting is `false`.
 
 
 [[option_wait_interval]]

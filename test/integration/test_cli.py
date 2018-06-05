@@ -159,7 +159,7 @@ class TestCLIMethods(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
                     curator.cli,
                     [
                         '--config', self.args['configfile'],

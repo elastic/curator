@@ -231,6 +231,11 @@ indices based on their shard routing allocation settings.  They will remain in,
 or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
+
+By default the indices matched by the `allocated` filter will be excluded since the `exclude` setting defaults to `True`.
+
+To include matching indices rather than exclude, set the `exclude` setting to `False`.
+
 === Required settings
 
 * <<fe_key,key>>
@@ -475,11 +480,11 @@ remain in, or be removed from the actionable list based on the value of
   exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove indices `.kibana`, `.marvel-kibana`,
-`kibana-int`, and `.marvel-es-data` from the list of indices, if present.
+This <<filtertype,filtertype>> will remove indices `.kibana`, `.kibana-5`,
+and `.kibana-6` from the list of indices, if present.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices `.kibana`, `.marvel-kibana`, `kibana-int`, or `.marvel-es-data`. They
+indices `.kibana`, `.kibana-5`, or `.kibana-6`. They
 will remain in, or be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 

@@ -225,7 +225,7 @@ class TestCheckVersion(TestCase):
         self.assertRaises(curator.CuratorException, curator.check_version, client)
     def test_check_version_greater_than(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '6.0.1'} }
+        client.info.return_value = {'version': {'number': '7.0.1'} }
         self.assertRaises(curator.CuratorException, curator.check_version, client)
 
 class TestCheckMaster(TestCase):
@@ -1249,3 +1249,34 @@ class TestNodeIdToName(TestCase):
         client = Mock()
         client.nodes.stats.return_value = {u'nodes':{'my_node_id':{u'name':'my_node_name'}}}
         self.assertIsNone(curator.node_id_to_name(client, 'not_my_node_id'))
+
+class TestIsDateMath(TestCase):
+    def test_positive(self):
+        data = '<encapsulated>'
+        self.assertTrue(curator.isdatemath(data))
+    def test_negative(self):
+        data = 'not_encapsulated'
+        self.assertFalse(curator.isdatemath(data))
+    def test_raises(self):
+        data = '<badly_encapsulated'
+        self.assertRaises(curator.ConfigurationError, curator.isdatemath, data)
+
+class TestGetDateMath(TestCase):
+    def test_success(self):
+        client = Mock()
+        datemath = u'{hasthemath}'
+        psuedo_random = u'not_random_at_all'
+        expected = u'curator_get_datemath_function_' + psuedo_random + u'-hasthemath'
+        client.indices.get.side_effect = (
+            elasticsearch.NotFoundError(
+                404, "simulated error", {u'error':{u'index':expected}})
+        )
+        self.assertEqual('hasthemath', curator.get_datemath(client, datemath, psuedo_random))
+    def test_failure(self):
+        client = Mock()
+        datemath = u'{hasthemath}'
+        client.indices.get.side_effect = (
+            elasticsearch.NotFoundError(
+                404, "simulated error", {u'error':{u'index':'failure'}})
+        )
+        self.assertRaises(curator.ConfigurationError, curator.get_datemath, client, datemath)

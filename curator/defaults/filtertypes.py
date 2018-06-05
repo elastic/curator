@@ -1,7 +1,6 @@
-from voluptuous import *
-from . import settings
-from . import filter_elements
 import logging
+from curator.defaults import filter_elements, settings
+
 logger = logging.getLogger(__name__)
 
 ## Helpers ##
@@ -84,6 +83,9 @@ def forcemerged(action, config):
         filter_elements.exclude(exclude=True),
     ]
 
+def ilm(action, config):
+    return [ filter_elements.exclude(exclude=True) ]
+
 def kibana(action, config):
     return [ filter_elements.exclude(exclude=True) ]
 
@@ -108,13 +110,15 @@ def period(action, config):
         filter_elements.week_starts_on(),
         filter_elements.epoch(),
         filter_elements.exclude(),
-        filter_elements.intersect(),
         filter_elements.period_type(),
         filter_elements.date_from(),
         filter_elements.date_from_format(),
         filter_elements.date_to(),
         filter_elements.date_to_format(),
     ]
+    # Only add intersect() to index actions.
+    if action in settings.index_actions():
+        retval.append(filter_elements.intersect())
     retval += _age_elements(action, config)
     return retval
 

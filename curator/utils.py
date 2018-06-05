@@ -1,13 +1,13 @@
-from datetime import timedelta, datetime, date
 import elasticsearch
 import time
 import logging
-import yaml, os, re, sys
+import yaml, os, random, re, string, sys
+from datetime import timedelta, datetime, date
 from voluptuous import Schema
-from .exceptions import *
-from .defaults import settings
-from .validators import SchemaCheck, actions, filters, options
-from ._version import __version__
+from curator import exceptions
+from curator.defaults import settings
+from curator.validators import SchemaCheck, actions, filters, options
+from curator._version import __version__
 logger = logging.getLogger(__name__)
 
 def read_file(myfile):
@@ -21,8 +21,8 @@ def read_file(myfile):
         with open(myfile, 'r') as f:
             data = f.read()
         return data
-    except IOError as e:
-        raise FailedExecution(
+    except IOError:
+        raise exceptions.FailedExecution(
             'Unable to read file {0}'.format(myfile)
         )
 
@@ -52,7 +52,7 @@ def get_yaml(path):
     try:
         cfg = yaml.load(raw)
     except yaml.scanner.ScannerError as e:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Unable to parse YAML file. Error: {0}'.format(e))
     return cfg
 
@@ -85,7 +85,7 @@ def rollable_alias(client, alias):
     """
     try:
         response = client.indices.get_alias(name=alias)
-    except elasticsearch.NotFoundError as e:
+    except elasticsearch.exceptions.NotFoundError:
         logger.error('alias "{0}" not found.'.format(alias))
         return False
     # Response should be like:
@@ -155,19 +155,19 @@ def verify_snapshot_list(test):
     """
     # It breaks if this import isn't local to this function
     from .snapshotlist import SnapshotList
-    if not isinstance(test, SnapshotList):    
+    if not isinstance(test, SnapshotList):
         raise TypeError(
             'Not an SnapshotList object. Type: {0}.'.format(type(test))
         )
 
 def report_failure(exception):
     """
-    Raise a `FailedExecution` exception and include the original error message.
+    Raise a `exceptions.FailedExecution` exception and include the original error message.
 
     :arg exception: The upstream exception.
     :rtype: None
     """
-    raise FailedExecution(
+    raise exceptions.FailedExecution(
         'Exception encountered.  Rerun with loglevel DEBUG and/or check '
         'Elasticsearch logs for more information. '
         'Exception: {0}'.format(exception)
@@ -186,7 +186,7 @@ def get_date_regex(timestring):
         if curr == '%':
             pass
         elif curr in settings.date_regex() and prev == '%':
-            regex += '\d{' + settings.date_regex()[curr] + '}'
+            regex += r'\d{' + settings.date_regex()[curr] + '}'
         elif curr in ['.', '-']:
             regex += "\\" + curr
         else:
@@ -363,24 +363,24 @@ def get_unit_count_from_name(index_name, pattern):
 
 def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     """
-    Get the epoch start time and end time of a range of ``unit``s, reckoning the 
-    start of the week (if that's the selected unit) based on ``week_starts_on``, 
+    Get the epoch start time and end time of a range of ``unit``s, reckoning the
+    start of the week (if that's the selected unit) based on ``week_starts_on``,
     which can be either ``sunday`` or ``monday``.
 
     :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
     :arg range_from: How many ``unit`` (s) in the past/future is the origin?
     :arg range_to: How many ``unit`` (s) in the past/future is the end point?
-    :arg epoch: An epoch timestamp used to establish a point of reference for 
+    :arg epoch: An epoch timestamp used to establish a point of reference for
         calculations.
     :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
     :rtype: tuple
     """
     acceptable_units = ['hours', 'days', 'weeks', 'months', 'years']
     if unit not in acceptable_units:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"unit" must be one of: {0}'.format(acceptable_units))
     if not range_to >= range_from:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"range_to" must be greater than or equal to "range_from"')
     if not epoch:
         epoch = time.time()
@@ -390,7 +390,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     # Reverse the polarity, because -1 as last week makes sense when read by
     # humans, but datetime timedelta math makes -1 in the future.
     origin = range_from * -1
-    # These if statements help get the start date or start_delta 
+    # These if statements help get the start date or start_delta
     if unit == 'hours':
         PoR = datetime(rawPoR.year, rawPoR.month, rawPoR.day, rawPoR.hour, 0, 0)
         start_delta = timedelta(hours=origin)
@@ -413,19 +413,19 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         year = rawPoR.year
         month = rawPoR.month
         if origin > 0:
-            for m in range(0, origin):
+            for _ in range(0, origin):
                 if month == 1:
                     year -= 1
                     month = 12
                 else:
                     month -= 1
         else:
-            for m in range(origin, 0):
+            for _ in range(origin, 0):
                 if month == 12:
                     year += 1
                     month = 1
                 else:
-                    month += 1         
+                    month += 1
         start_date = datetime(year, month, 1, 0, 0, 0)
     if unit == 'years':
         PoR = datetime(rawPoR.year, 1, 1, 0, 0, 0)
@@ -438,12 +438,12 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         datetime.utcfromtimestamp(start_epoch).isoformat()))
     # This is the number of units we need to consider.
     count = (range_to - range_from) + 1
-    # We have to iterate to one more month, and then subtract a second to get 
+    # We have to iterate to one more month, and then subtract a second to get
     # the last day of the correct month
     if unit == 'months':
         month = start_date.month
         year = start_date.year
-        for m in range(0, count):
+        for _ in range(0, count):
             if month == 12:
                 year += 1
                 month = 1
@@ -466,7 +466,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     return (start_epoch, end_epoch)
 
 def absolute_date_range(
-        unit, date_from, date_to, 
+        unit, date_from, date_to,
         date_from_format=None, date_to_format=None
     ):
     """
@@ -487,22 +487,22 @@ def absolute_date_range(
     """
     acceptable_units = ['seconds', 'minutes', 'hours', 'days', 'weeks', 'months', 'years']
     if unit not in acceptable_units:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"unit" must be one of: {0}'.format(acceptable_units))
     if not date_from_format or not date_to_format:
-        raise ConfigurationError('Must provide "date_from_format" and "date_to_format"')
+        raise exceptions.ConfigurationError('Must provide "date_from_format" and "date_to_format"')
     try:
         start_epoch = datetime_to_epoch(get_datetime(date_from, date_from_format))
         logger.debug('Start ISO8601 = {0}'.format(datetime.utcfromtimestamp(start_epoch).isoformat()))
     except Exception as e:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Unable to parse "date_from" {0} and "date_from_format" {1}. '
             'Error: {2}'.format(date_from, date_from_format, e)
         )
     try:
         end_date = get_datetime(date_to, date_to_format)
     except Exception as e:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Unable to parse "date_to" {0} and "date_to_format" {1}. '
             'Error: {2}'.format(date_to, date_to_format, e)
         )
@@ -587,9 +587,9 @@ def check_csv(value):
     """
     if isinstance(value, list):
         return True
-    string = False
     # Python3 hack because it doesn't recognize unicode as a type anymore
     if sys.version_info < (3, 0):
+        # pylint: disable=E0602
         if isinstance(value, unicode):
             value = str(value)
     if isinstance(value, str):
@@ -646,7 +646,7 @@ def get_indices(client):
         logger.debug("All indices: {0}".format(indices))
         return indices
     except Exception as e:
-        raise FailedExecution('Failed to get indices. Error: {0}'.format(e))
+        raise exceptions.FailedExecution('Failed to get indices. Error: {0}'.format(e))
 
 def get_version(client):
     """
@@ -695,7 +695,7 @@ def check_version(client):
             'with this version of Curator '
             '({1})'.format(".".join(map(str,version_number)), __version__)
         )
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Elasticsearch version {0} incompatible '
             'with this version of Curator '
             '({1})'.format(".".join(map(str,version_number)), __version__)
@@ -767,7 +767,7 @@ def get_client(**kwargs):
         not work if `hosts` has more than one value.**  It will raise an
         Exception in that case.
     :type master_only: bool
-    :arg skip_version_test: If `True`, skip the version check as part of the 
+    :arg skip_version_test: If `True`, skip the version check as part of the
         client connection.
     :rtype: :class:`elasticsearch.Elasticsearch`
     """
@@ -778,7 +778,7 @@ def get_client(**kwargs):
             ):
             kwargs['url_prefix'] = ''
     if 'host' in kwargs and 'hosts' in kwargs:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             'Both "host" and "hosts" are defined.  Pick only one.')
     elif 'host' in kwargs and not 'hosts' in kwargs:
         kwargs['hosts'] = kwargs['host']
@@ -834,12 +834,12 @@ def get_client(**kwargs):
         else kwargs['aws_region']
     if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_sign_request']:
         if not kwargs['aws_region']:
-            raise MissingArgument(
+            raise exceptions.MissingArgument(
                 'Missing "aws_region".'
             )
         if kwargs['aws_key'] or kwargs['aws_secret_key']:
             if not (kwargs['aws_key'] and kwargs['aws_secret_key']):
-                raise MissingArgument(
+                raise exceptions.MissingArgument(
                     'Missing AWS Access Key or AWS Secret Key'
                 )
     if kwargs['aws_sign_request']:
@@ -866,6 +866,8 @@ def get_client(**kwargs):
             # Override these kwargs
             kwargs['use_ssl'] = True
             kwargs['verify_certs'] = True
+            if kwargs['ssl_no_validate']:
+                kwargs['verify_certs'] = False
             kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
             kwargs['http_auth'] = (
                 AWS4Auth(
@@ -878,8 +880,12 @@ def get_client(**kwargs):
         logger.debug('Not using "requests_aws4auth" python module to connect.')
     if master_only:
         if len(kwargs['hosts']) > 1:
-            raise ConfigurationError(
-                '"master_only" cannot be True if more than one host is '
+            logger.error(
+                '"master_only" cannot be true if more than one host is '
+                'specified. Hosts = {0}'.format(kwargs['hosts'])
+            )
+            raise exceptions.ConfigurationError(
+                '"master_only" cannot be true if more than one host is '
                 'specified. Hosts = {0}'.format(kwargs['hosts'])
             )
     try:
@@ -935,12 +941,12 @@ def get_repository(client, repository=''):
     try:
         return client.snapshot.get_repository(repository=repository)
     except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to get repository {0}.  Response Code: {1}.  Error: {2}.'
             'Check Elasticsearch logs for more information.'.format(
                 repository, e.status_code, e.error
             )
-        )        
+        )
 
 def get_snapshot(client, repository=None, snapshot=''):
     """
@@ -954,12 +960,12 @@ def get_snapshot(client, repository=None, snapshot=''):
     :rtype: dict
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     snapname = '_all' if snapshot == '' else snapshot
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
     except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        raise FailedExecution(
+        raise exceptions.FailedExecution(
             'Unable to get information about snapshot {0} from repository: '
             '{1}.  Error: {2}'.format(snapname, repository, e)
         )
@@ -973,12 +979,12 @@ def get_snapshot_data(client, repository=None):
     :rtype: list
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     try:
         return client.snapshot.get(
             repository=repository, snapshot="_all")['snapshots']
     except (elasticsearch.TransportError, elasticsearch.NotFoundError) as e:
-        raise FailedExecution(
+        raise exceptions.FailedExecution(
             'Unable to get snapshot information from repository: {0}.  '
             'Error: {1}'.format(repository, e)
         )
@@ -1006,7 +1012,7 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
         elif len(inprogress) == 1:
             return inprogress[0]
         else: # This should not be possible
-            raise CuratorException(
+            raise exceptions.CuratorException(
                 'More than 1 snapshot in progress: {0}'.format(inprogress)
             )
 
@@ -1040,7 +1046,7 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     :rtype: bool
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     for count in range(1, retry_count+1):
         in_progress = snapshot_in_progress(
             client, repository=repository
@@ -1132,7 +1138,7 @@ def create_repo_body(repo_type=None,
     """
     # This shouldn't happen, but just in case...
     if not repo_type:
-        raise MissingArgument('Missing required parameter --repo_type')
+        raise exceptions.MissingArgument('Missing required parameter --repo_type')
 
     argdict = locals()
     body = {}
@@ -1192,7 +1198,7 @@ def create_repository(client, **kwargs):
     :rtype: bool
     """
     if not 'repository' in kwargs:
-        raise MissingArgument('Missing required parameter "repository"')
+        raise exceptions.MissingArgument('Missing required parameter "repository"')
     else:
         repository = kwargs['repository']
     skip_repo_fs_check = kwargs.pop('skip_repo_fs_check', False)
@@ -1213,12 +1219,12 @@ def create_repository(client, **kwargs):
             )
             client.snapshot.create_repository(repository=repository, body=body, params=params)
         else:
-            raise FailedExecution(
+            raise exceptions.FailedExecution(
                 'Unable to create repository {0}.  A repository with that name '
                 'already exists.'.format(repository)
             )
     except elasticsearch.TransportError as e:
-        raise FailedExecution(
+        raise exceptions.FailedExecution(
             """
             Unable to create repository {0}.  Response Code: {1}.  Error: {2}.
             Check curator and elasticsearch logs for more information.
@@ -1238,7 +1244,7 @@ def repository_exists(client, repository=None):
     :rtype: bool
     """
     if not repository:
-        raise MissingArgument('No value for "repository" provided')
+        raise exceptions.MissingArgument('No value for "repository" provided')
     try:
         test_result = get_repository(client, repository)
         if repository in test_result:
@@ -1281,7 +1287,7 @@ def test_repo_fs(client, repository=None):
                 )
         except AttributeError:
             msg = ('--- Error message: {0}'.format(e))
-        raise ActionError(
+        raise exceptions.ActionError(
             'Failed to verify all nodes have repository access: '
             '{0}'.format(msg)
         )
@@ -1368,7 +1374,7 @@ def validate_filters(action, filters):
         filtertypes = settings.index_filtertypes()
     for f in filters:
         if f['filtertype'] not in filtertypes:
-            raise ConfigurationError(
+            raise exceptions.ConfigurationError(
                 '"{0}" filtertype is not compatible with action "{1}"'.format(
                     f['filtertype'],
                     action
@@ -1427,8 +1433,8 @@ def validate_actions(data):
                     current_filters = SchemaCheck(
                         valid_structure[k]['filters'],
                         Schema(filters.Filters(current_action, location=loc)),
-                        '"{0}" filters',
-                        '{1}, "filters"'.format(k, loc)
+                        '"{0}" filters'.format(k),
+                        '{0}, "filters"'.format(loc)
                     ).result()
                     add_remove.update(
                         {
@@ -1476,30 +1482,30 @@ def validate_actions(data):
                 clean_config[action_id]['options'].update(
                     { 'remote_filters' : clean_remote_filters }
                 )
-                
+
     # if we've gotten this far without any Exceptions raised, it's valid!
     return { 'actions' : clean_config }
 
 def health_check(client, **kwargs):
     """
     This function calls client.cluster.health and, based on the args provided,
-    will return `True` or `False` depending on whether that particular keyword 
+    will return `True` or `False` depending on whether that particular keyword
     appears in the output, and has the expected value.
-    If multiple keys are provided, all must match for a `True` response. 
+    If multiple keys are provided, all must match for a `True` response.
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     """
     logger.debug('KWARGS= "{0}"'.format(kwargs))
     klist = list(kwargs.keys())
     if len(klist) < 1:
-        raise MissingArgument('Must provide at least one keyword argument')
+        raise exceptions.MissingArgument('Must provide at least one keyword argument')
     hc_data = client.cluster.health()
     response = True
-    
+
     for k in klist:
         # First, verify that all kwargs are in the list
         if not k in list(hc_data.keys()):
-            raise ConfigurationError('Key "{0}" not in cluster health output')
+            raise exceptions.ConfigurationError('Key "{0}" not in cluster health output')
         if not hc_data[k] == kwargs[k]:
             logger.debug(
                 'NO MATCH: Value for key "{0}", health check data: '
@@ -1512,14 +1518,14 @@ def health_check(client, **kwargs):
                 '{1}'.format(kwargs[k], hc_data[k])
             )
     if response:
-        logger.info('Health Check for all provided keys passed.')   
+        logger.info('Health Check for all provided keys passed.')
     return response
 
 def snapshot_check(client, snapshot=None, repository=None):
     """
-    This function calls `client.snapshot.get` and tests to see whether the 
+    This function calls `client.snapshot.get` and tests to see whether the
     snapshot is complete, and if so, with what status.  It will log errors
-    according to the result. If the snapshot is still `IN_PROGRESS`, it will 
+    according to the result. If the snapshot is still `IN_PROGRESS`, it will
     return `False`.  `SUCCESS` will be an `INFO` level message, `PARTIAL` nets
     a `WARNING` message, `FAILED` is an `ERROR`, message, and all others will be
     a `WARNING` level message.
@@ -1532,7 +1538,7 @@ def snapshot_check(client, snapshot=None, repository=None):
         state = client.snapshot.get(
             repository=repository, snapshot=snapshot)['snapshots'][0]['state']
     except Exception as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to obtain information for snapshot "{0}" in repository '
             '"{1}". Error: {2}'.format(snapshot, repository, e)
         )
@@ -1554,23 +1560,41 @@ def snapshot_check(client, snapshot=None, repository=None):
             'Snapshot {0} completed with state: {0}'.format(snapshot))
     return True
 
+def relocate_check(client, index):
+    """
+    This function calls client.cluster.state with a given index to check if
+    all of the shards for that index are in the STARTED state. It will
+    return `True` if all shards both primary and replica are in the STARTED
+    state, and it will return `False` if any primary or replica shard is in
+    a different state.
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg index: The index to check the index shards state.
+    """
+    shard_state_data = client.cluster.state(index=index)['routing_table']['indices'][index]['shards']
+
+    finished_state = all(all(shard['state']=="STARTED" for shard in shards) for shards in shard_state_data.values())
+    if finished_state:
+        logger.info('Relocate Check for index: "{0}" has passed.'.format(index))
+    return finished_state
+
 
 def restore_check(client, index_list):
     """
-    This function calls client.indices.recovery with the list of indices to 
-    check for complete recovery.  It will return `True` if recovery of those 
+    This function calls client.indices.recovery with the list of indices to
+    check for complete recovery.  It will return `True` if recovery of those
     indices is complete, and `False` otherwise.  It is designed to fail fast:
     if a single shard is encountered that is still recovering (not in `DONE`
     stage), it will immediately return `False`, rather than complete iterating
     over the rest of the response.
 
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object 
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg index_list: The list of indices to verify having been restored.
     """
     try:
         response = client.indices.recovery(index=to_csv(index_list), human=True)
     except Exception as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to obtain recovery information for specified indices. '
             'Error: {0}'.format(e)
         )
@@ -1600,18 +1624,18 @@ def restore_check(client, index_list):
 def task_check(client, task_id=None):
     """
     This function calls client.tasks.get with the provided `task_id`.  If the
-    task data contains ``'completed': True``, then it will return `True` 
+    task data contains ``'completed': True``, then it will return `True`
     If the task is not completed, it will log some information about the task
     and return `False`
 
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object    
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg task_id: A task_id which ostensibly matches a task searchable in the
         tasks API.
     """
     try:
         task_data = client.tasks.get(task_id=task_id)
     except Exception as e:
-        raise CuratorException(
+        raise exceptions.CuratorException(
             'Unable to obtain task information for task_id "{0}". Exception '
             '{1}'.format(task_id, e)
         )
@@ -1639,7 +1663,7 @@ def task_check(client, task_id=None):
 
 def wait_for_it(
         client, action, task_id=None, snapshot=None, repository=None,
-        index_list=None, wait_interval=9, max_wait=-1
+        index=None, index_list=None, wait_interval=9, max_wait=-1
     ):
     """
     This function becomes one place to do all wait_for_completion type behaviors
@@ -1652,7 +1676,7 @@ def wait_for_it(
     :arg repository: The Elasticsearch snapshot repository to use
     :arg wait_interval: How frequently the specified "wait" behavior will be
         polled to check for completion.
-    :arg max_wait: Number of seconds will the "wait" behavior persist 
+    :arg max_wait: Number of seconds will the "wait" behavior persist
         before giving up and raising an Exception.  The default is -1, meaning
         it will try forever.
     """
@@ -1685,33 +1709,37 @@ def wait_for_it(
             'function': health_check,
             'args': {'status':'green'},
         },
+        'relocate':{
+            'function': relocate_check,
+            'args': {'index':index}
+        },
     }
     wait_actions = list(action_map.keys())
 
     if action not in wait_actions:
-        raise ConfigurationError(
+        raise exceptions.ConfigurationError(
             '"action" must be one of {0}'.format(wait_actions)
         )
     if action == 'reindex' and task_id == None:
-        raise MissingArgument(
+        raise exceptions.MissingArgument(
             'A task_id must accompany "action" {0}'.format(action)
         )
     if action == 'snapshot' and ((snapshot == None) or (repository == None)):
-        raise MissingArgument(
+        raise exceptions.MissingArgument(
             'A snapshot and repository must accompany "action" {0}. snapshot: '
             '{1}, repository: {2}'.format(action, snapshot, repository)
         )
     if action == 'restore' and index_list == None:
-        raise MissingArgument(
+        raise exceptions.MissingArgument(
             'An index_list must accompany "action" {0}'.format(action)
         )
     elif action == 'reindex':
         try:
-            task_dict = client.tasks.get(task_id=task_id)
+            _ = client.tasks.get(task_id=task_id)
         except Exception as e:
             # This exception should only exist in API usage. It should never
             # occur in regular Curator usage.
-            raise CuratorException(
+            raise exceptions.CuratorException(
                 'Unable to find task_id {0}. Exception: {1}'.format(task_id, e)
             )
 
@@ -1748,7 +1776,7 @@ def wait_for_it(
 
     logger.debug('Result: {0}'.format(result))
     if result == False:
-        raise ActionTimeout(
+        raise exceptions.ActionTimeout(
             'Action "{0}" failed to complete in the max_wait period of '
             '{1} seconds'.format(action, max_wait)
         )
@@ -1767,14 +1795,14 @@ def index_size(client, idx):
 
 def single_data_path(client, node_id):
     """
-    In order for a shrink to work, it should be on a single filesystem, as 
+    In order for a shrink to work, it should be on a single filesystem, as
     shards cannot span filesystems.  Return `True` if the node has a single
     filesystem, and `False` otherwise.
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
-    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1 
+    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1
 
 
 def name_to_node_id(client, name):
@@ -1807,3 +1835,76 @@ def node_id_to_name(client, node_id):
         logger.error('No node_id found matching: "{0}"'.format(node_id))
     logger.debug('Name associated with node_id "{0}": {1}'.format(node_id, name))
     return name
+
+def get_datemath(client, datemath, random_element=None):
+    """
+    Return the parsed index name from ``datemath``
+    """
+    if random_element is None:
+        randomPrefix = (
+            'curator_get_datemath_function_' + 
+            ''.join(random.choice(string.ascii_lowercase) for _ in range(32))
+        )
+    else:
+        randomPrefix = 'curator_get_datemath_function_' + random_element
+    datemath_dummy = '<{0}-{1}>'.format(randomPrefix, datemath)
+    # We both want and expect a 404 here (NotFoundError), since we have
+    # created a 32 character random string to definitely be an unknown
+    # index name.
+    logger.debug('Random datemath string for extraction: {0}'.format(datemath_dummy))
+    try:
+        client.indices.get(index=datemath_dummy)
+    except elasticsearch.exceptions.NotFoundError as e:
+        # This is the magic.  Elasticsearch still gave us the formatted
+        # index name in the error results.
+        fauxIndex = e.info['error']['index']
+    logger.debug('Response index name for extraction: {0}'.format(fauxIndex))
+    # Now we strip the random index prefix back out again
+    pattern = r'^{0}-(.*)$'.format(randomPrefix)
+    r = re.compile(pattern)
+    try:
+        # And return only the now-parsed date string
+        return r.match(fauxIndex).group(1)
+    except AttributeError:
+        raise exceptions.ConfigurationError(
+            'The rendered index "{0}" does not contain a valid date pattern '
+            'or has invalid index name characters.'.format(fauxIndex)
+        )
+
+def isdatemath(data):
+    initial_check = r'^(.).*(.)$'
+    r = re.compile(initial_check)
+    opener = r.match(data).group(1)
+    closer = r.match(data).group(2)
+    logger.debug('opener =  {0}, closer = {1}'.format(opener, closer))
+    if (opener == '<' and closer != '>') or (opener != '<' and closer == '>'):
+        raise exceptions.ConfigurationError('Incomplete datemath encapsulation in "< >"')
+    elif (opener != '<' and closer != '>'):
+        return False
+    return True
+
+def parse_datemath(client, value):
+    """
+    Check if ``value`` is datemath.  
+    Parse it if it is.  
+    Return the bare value otherwise.
+    """
+    if not isdatemath(value):
+        return value
+    else:
+        logger.debug('Properly encapsulated, proceeding to next evaluation...')
+    # Our pattern has 4 capture groups.
+    # 1. Everything after the initial '<' up to the first '{', which we call ``prefix``
+    # 2. Everything between the outermost '{' and '}', which we call ``datemath``
+    # 3. An optional inner '{' and '}' containing a date formatter and potentially a timezone.  Not captured.
+    # 4. Everything after the last '}' up to the closing '>'
+    pattern = r'^<([^\{\}]*)?(\{.*(\{.*\})?\})([^\{\}]*)?>$'
+    r = re.compile(pattern)
+    try:
+        prefix = r.match(value).group(1) or ''
+        datemath = r.match(value).group(2)
+        # formatter = r.match(value).group(3) or '' (not captured, but counted)
+        suffix = r.match(value).group(4) or ''
+    except AttributeError:
+        raise exceptions.ConfigurationError('Value "{0}" does not contain a valid datemath pattern.'.format(value))
+    return '{0}{1}{2}'.format(prefix, get_datemath(client, datemath), suffix)

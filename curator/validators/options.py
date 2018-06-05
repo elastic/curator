@@ -1,5 +1,5 @@
-from voluptuous import *
-from ..defaults import option_defaults
+from voluptuous import Schema
+from curator.defaults import option_defaults
 
 ## Methods for building the schema
 def action_specific(action):
@@ -121,6 +121,7 @@ def action_specific(action):
             option_defaults.wait_for_active_shards(action),
             option_defaults.extra_settings(),
             option_defaults.wait_for_completion(action),
+            option_defaults.wait_for_rebalance(),
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
@@ -132,6 +133,7 @@ def get_schema(action):
     # "Required" and "Optional" elements are hashes themselves.
     options = {}
     defaults = [
+        option_defaults.allow_ilm_indices(),
         option_defaults.continue_if_exception(),
         option_defaults.disable_action(),
         option_defaults.ignore_empty_list(),

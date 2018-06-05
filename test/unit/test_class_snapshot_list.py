@@ -449,3 +449,48 @@ class TestSnapshotListPeriodFilter(TestCase):
             epoch=epoch, range_to=range_to, unit=unit, 
         )
         self.assertEqual(expected, sl.snapshots)
+    def test_invalid_period_type(self):
+        unit = 'days'
+        range_from = -1
+        range_to = -2
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = ValueError
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertRaises(expected, sl.filter_period, unit=unit, period_type='invalid',
+            range_from=range_from, range_to=range_to, source='name', 
+            timestring=timestring, epoch=epoch
+        )
+    def test_invalid_range_from(self):
+        unit = 'days'
+        range_from = -1
+        range_to = 'invalid'
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = curator.ConfigurationError
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertRaises(expected, sl.filter_period, unit=unit, period_type='relative',
+            range_from=range_from, range_to=range_to, source='name', 
+            timestring=timestring, epoch=epoch
+        )
+    def test_missing_absolute_date_values(self):
+        unit = 'days'
+        range_from = -1
+        range_to = 'invalid'
+        timestring = '%Y.%m.%d'
+        epoch = 1456963201
+        expected = curator.ConfigurationError
+        client = Mock()
+        client.snapshot.get.return_value = testvars.snapshots
+        client.snapshot.get_repository.return_value = testvars.test_repo
+        sl = curator.SnapshotList(client, repository=testvars.repo_name)
+        self.assertRaises(expected, sl.filter_period, unit=unit, period_type='absolute',
+            range_from=range_from, range_to=range_to, source='name', 
+            timestring=timestring, epoch=epoch
+        )

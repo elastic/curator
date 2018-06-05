@@ -1,1 +1,1 @@
-from .schemacheck import SchemaCheck
+from curator.validators.schemacheck import SchemaCheck
