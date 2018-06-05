@@ -24,10 +24,6 @@ port = int(port) if port else 9200
 
 global_client = elasticsearch.Elasticsearch(host=host, port=port)
 
-<<<<<<< HEAD
-class TestCLIDeleteIndices(CuratorTestCase):
-    def test_retention_from_name_days(self):
-=======
 class TestActionFileDeleteIndices(CuratorTestCase):
     def test_retention_from_name_days(self):
         # Test extraction of unit_count from index name
@@ -52,7 +48,6 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         )
         self.assertEquals(5, len(curator.get_indices(self.client)))
     def test_retention_from_name_days_ignore_failed_match(self):
->>>>>>> 5.x
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
         # Create indices for 10 days with no retention time in index name
