@@ -832,6 +832,7 @@ def get_client(**kwargs):
         else kwargs['aws_sign_request']
     kwargs['aws_region'] = False if not 'aws_region' in kwargs \
         else kwargs['aws_region']
+    kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
     if kwargs['aws_key'] or kwargs['aws_secret_key'] or kwargs['aws_sign_request']:
         if not kwargs['aws_region']:
             raise exceptions.MissingArgument(
