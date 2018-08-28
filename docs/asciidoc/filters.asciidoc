@@ -15,6 +15,7 @@ The index filtertypes are:
 * <<filtertype_allocated,allocated>>
 * <<filtertype_closed,closed>>
 * <<filtertype_count,count>>
+* <<filtertype_empty,empty>>
 * <<filtertype_forcemerged,forcemerged>>
 * <<filtertype_kibana,kibana>>
 * <<filtertype_none,none>>
@@ -69,6 +70,7 @@ The index filtertypes are:
 * <<filtertype_allocated,allocated>>
 * <<filtertype_closed,closed>>
 * <<filtertype_count,count>>
+* <<filtertype_empty,empty>>
 * <<filtertype_forcemerged,forcemerged>>
 * <<filtertype_kibana,kibana>>
 * <<filtertype_none,none>>
@@ -440,6 +442,26 @@ removed from the actionable list, leaving `index-2017.03.03`,
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 
+
+[[filtertype_empty]]
+== empty
+[source,yaml]
+-------------
+- filtertype: empty
+  exclude: False
+-------------
+
+This <<filtertype,filtertype>> will iterate over the actionable list and match
+indices which does not contain any documents.  They will remain in, or be
+removed from the actionable list based on the value of <<fe_exclude,exclude>>.
+
+By default the indices matched by the empty filter will be excluded since 
+the exclude setting defaults to True. To include matching indices rather than
+exclude, set the exclude setting to False.
+
+=== Optional settings
+
+* <<fe_exclude,exclude>> (default is `True`)
 
 
 [[filtertype_forcemerged]]

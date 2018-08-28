@@ -138,3 +138,8 @@ def state(action, config):
         filter_elements.state(),
         filter_elements.exclude(),
     ]
+
+def empty(action, config):
+    return [
+        filter_elements.exclude(),
+    ]
