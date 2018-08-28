@@ -96,6 +96,7 @@ class IndexList(object):
             'allocated': self.filter_allocated,
             'closed': self.filter_closed,
             'count': self.filter_by_count,
+            'empty': self.filter_empty,
             'forcemerged': self.filter_forceMerged,
             'ilm': self.filter_ilm,
             'kibana': self.filter_kibana,
