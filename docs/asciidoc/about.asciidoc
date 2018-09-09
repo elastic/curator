@@ -35,7 +35,7 @@ https://logstash.jira.com/browse/LOGSTASH-211[`logstash_index_cleaner.py`].
 After a time it was briefly relocated under the
 https://github.com/elastic/logstash[logstash] repository as
 `expire_logs`, at which point it began to gain new functionality.  Soon
-thereafter, Jordan Sissel was hired by Elastic (then still Elasticsearch), as
+there  after, Jordan Sissel was hired by Elastic (then still Elasticsearch), as
 was the original author of Curator.  Not long after that it became Elasticsearch
 Curator and is now hosted at https://github.com/elastic/curator
 
