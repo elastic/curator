@@ -16,6 +16,7 @@ You can use <<envvars,environment variables>> in your configuration files.
 * <<ex_delete_snapshots,delete_snapshots>>
 * <<ex_forcemerge,forcemerge>>
 * <<ex_open,open>>
+* <<ex_reindex,reindex>>
 * <<ex_replicas,replicas>>
 * <<ex_restore,restore>>
 * <<ex_rollover,rollover>>
