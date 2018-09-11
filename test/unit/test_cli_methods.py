@@ -57,8 +57,9 @@ class TestCLI_B(CLITestCase):
         self.assertEqual('localhost', cfg['client']['hosts'])
         self.assertEqual(9200, cfg['client']['port'])
     def test_read_file_corrupt_fail(self):
-        self.assertRaises(curator.ConfigurationError,
-            curator.get_yaml, self.args['invalid_yaml'])
+        with self.assertRaises(SystemExit) as get:
+            curator.get_yaml(self.args['invalid_yaml'])
+        self.assertEqual(get.exception.code, 1)
     def test_read_file_missing_fail(self):
         self.assertRaises(
             curator.FailedExecution,
