@@ -46,15 +46,15 @@ def get_yaml(path):
         else:
             envvar = proto
         return os.environ[envvar] if envvar in os.environ else default
-    yaml.add_constructor('!single', single_constructor)
 
-    raw = read_file(path)
+    yaml.add_constructor('!single', single_constructor)
+    
     try:
-        cfg = yaml.load(raw)
-    except yaml.scanner.ScannerError as e:
-        raise exceptions.ConfigurationError(
-            'Unable to parse YAML file. Error: {0}'.format(e))
-    return cfg
+        return yaml.load(read_file(path))
+    except yaml.scanner.ScannerError as err:
+        print('Unable to read/parse YAML file: {0}'.format(path))
+        print(err)
+        sys.exit(1)
 
 def test_client_options(config):
     """

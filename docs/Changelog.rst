@@ -11,6 +11,11 @@ Changelog
   * The ``empty`` filter has been exposed for general use.  This filter matches
     indices with no documents. (jrask) #1264
 
+**Bug Fixes**
+
+  * Fix YAML linting so that YAML errors are caught and displayed on the
+    command line. Reported in #1237 (untergeek)
+
 **Documentation**
 
   * Added Reindex example to the sidebar. (Nostalgiac) #1227
