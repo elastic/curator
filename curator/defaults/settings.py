@@ -72,6 +72,7 @@ def index_filtertypes():
         'age',
         'closed',
         'count',
+        'empty',
         'forcemerged',
         'ilm',
         'kibana',
