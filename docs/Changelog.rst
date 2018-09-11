@@ -3,6 +3,18 @@
 Changelog
 =========
 
+5.6.0 (? ? ?)
+-------------
+
+**New**
+
+  * The ``empty`` filter has been exposed for general use.  This filter matches
+    indices with no documents. (jrask) #1264
+
+**Documentation**
+
+  * Added Reindex example to the sidebar. (Nostalgiac) #1227
+
 5.5.4 (23 May 2018)
 -------------------
 
