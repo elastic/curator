@@ -246,3 +246,7 @@ Exit codes will indicate success or failure.
 * `-1` - Exception raised that does not result in a `1` exit code.
 
 &nbsp;
+
+
+See also:
+* https://www.elastic.co/guide/en/elasticsearch/client/curator/current/singleton-cli.html
