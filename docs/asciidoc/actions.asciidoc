@@ -1168,3 +1168,5 @@ read about them and change them accordingly.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.
+
+TIP: For listing snapshots see <<command-line.asciidoc#singleton-command-line-interface>>
