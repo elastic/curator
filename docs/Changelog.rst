@@ -10,6 +10,7 @@ Changelog
 
   * The ``empty`` filter has been exposed for general use.  This filter matches
     indices with no documents. (jrask) #1264
+  * Added tests for Elasticsearch 6.3 and 6.4 releases. (untergeek)
 
 **Bug Fixes**
 
