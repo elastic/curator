@@ -777,13 +777,6 @@ caveats regarding this choice:
 These are only a few of the caveats. This is still a valid use-case, especially
 for those running a single-node test box.
 
-For use cases, where "like" indices are being counted, and their name pattern
-guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
-set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
-<<fe_reverse,reverse>> order by default.  For this case, this means that disk
-space calculations will start beginning with the _newest_ indices, and
-proceeding through to the oldest.
-
 === Age-based sorting
 
 [source,yaml]
