@@ -2,7 +2,7 @@ voluptuous>=0.9.3
 elasticsearch>=5.5.2,!=6.0.0,<7.0.0
 boto3>=1.7.24
 requests_aws4auth>=0.9
-click>=6.7
+click>=6.7,<7.0
 pyyaml>=3.10
 certifi>=2018.4.16
 six>=1.11.0
