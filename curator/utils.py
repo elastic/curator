@@ -4,6 +4,7 @@ import logging
 import yaml, os, random, re, string, sys
 from datetime import timedelta, datetime, date
 from voluptuous import Schema
+from .cache import cache
 from curator import exceptions
 from curator.defaults import settings
 from curator.validators import SchemaCheck, actions, filters, options
@@ -48,7 +49,7 @@ def get_yaml(path):
         return os.environ[envvar] if envvar in os.environ else default
 
     yaml.add_constructor('!single', single_constructor)
-    
+
     try:
         return yaml.load(read_file(path))
     except yaml.scanner.ScannerError as err:
@@ -1793,6 +1794,7 @@ def node_roles(client, node_id):
 def index_size(client, idx):
     return client.indices.stats(index=idx)['indices'][idx]['total']['store']['size_in_bytes']
 
+@cache.cache('single_data_path', expire=3600)
 def single_data_path(client, node_id):
     """
     In order for a shrink to work, it should be on a single filesystem, as
@@ -1842,7 +1844,7 @@ def get_datemath(client, datemath, random_element=None):
     """
     if random_element is None:
         randomPrefix = (
-            'curator_get_datemath_function_' + 
+            'curator_get_datemath_function_' +
             ''.join(random.choice(string.ascii_lowercase) for _ in range(32))
         )
     else:
@@ -1885,8 +1887,8 @@ def isdatemath(data):
 
 def parse_datemath(client, value):
     """
-    Check if ``value`` is datemath.  
-    Parse it if it is.  
+    Check if ``value`` is datemath.
+    Parse it if it is.
     Return the bare value otherwise.
     """
     if not isdatemath(value):

@@ -97,3 +97,26 @@ class TestCLICountPattern(CuratorTestCase):
         )
         indices = sorted(list(self.client.indices.get('_all')))
         self.assertEquals(['a-2017.10.03', 'b-2017.09.03', 'not_a_match'], indices)
+    def test_count_indices_by_age_same_age(self):
+        key = 'tag'
+        value = 'value'
+        at = 'include'
+        self.create_index('c-2017.10.01')
+        self.create_index('c-2017.10.02')
+        self.create_index('c-2017.10.03')
+        self.create_index('a-2017.10.01')
+        self.create_index('a-2017.10.02')
+        self.create_index('a-2017.10.03')
+        self.create_index('b-2017.09.01')
+        self.create_index('b-2017.09.02')
+        self.create_index('b-2017.09.03')
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.allocation_count_test.format(key, value, at, False))
+        self.assertEquals(value,
+            self.client.indices.get_settings(index='d-2017.10.01')['d-2017.10.01']['settings']['index']['routing']['allocation'][at][key])
+        self.assertEquals(value,
+            self.client.indices.get_settings(index='c-2017.10.03')['c-2017.10.03']['settings']['index']['routing']['allocation'][at][key])
+        self.assertNotIn('routing',
+            self.client.indices.get_settings(index='a-2017.10.03')['a-2017.10.03']['settings']['index'])
