@@ -1,3 +1,4 @@
+from .cache import cache
 import logging
 import re
 import time
@@ -239,7 +240,7 @@ class Allocation(object):
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
                 self.client.indices.put_settings(
-                    index=utils.to_csv(l), body=self.body
+                    index=utils.to_csv(l), body=self.body, master_timeout="5m"
                 )
                 if self.wfc:
                     self.loggit.debug(
@@ -391,7 +392,7 @@ class ClusterRouting(object):
         """
         self.loggit.info('Updating cluster settings: {0}'.format(self.body))
         try:
-            self.client.cluster.put_settings(body=self.body)
+            self.client.cluster.put_settings(body=self.body, master_timeout="5m")
             if self.wfc:
                 self.loggit.debug(
                     'Waiting for shards to complete routing and/or rebalancing'
@@ -717,7 +718,8 @@ class IndexSettings(object):
                 response = self.client.indices.put_settings(
                     index=utils.to_csv(l), body=self.body,
                     ignore_unavailable=self.ignore_unavailable,
-                    preserve_existing=self.preserve_existing
+                    preserve_existing=self.preserve_existing,
+                    master_timeout="5m"
                 )
                 self.loggit.debug('PUT SETTINGS RESPONSE: {0}'.format(response))
         except Exception as e:
@@ -822,7 +824,7 @@ class Replicas(object):
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
                 self.client.indices.put_settings(index=utils.to_csv(l),
-                    body={'number_of_replicas' : self.count})
+                    body={'number_of_replicas' : self.count}, master_timeout="5m")
                 if self.wfc and self.count > 0:
                     self.loggit.debug(
                         'Waiting for shards to complete replication for '
@@ -1881,6 +1883,7 @@ class Shrink(object):
             except Exception as e:
                 raise exceptions.ConfigurationError('Unable to apply extra settings "{0}" to shrink body. Exception: {1}'.format(extra_settings, e))
 
+    @cache.cache('_data_node', expire=86400)
     def _data_node(self, node_id):
         roles = utils.node_roles(self.client, node_id)
         name = utils.node_id_to_name(self.client, node_id)
@@ -1967,7 +1970,7 @@ class Shrink(object):
         bkey = 'index.routing.allocation.{0}.{1}'.format(allocation_type, key)
         routing = { bkey : value }
         try:
-            self.client.indices.put_settings(index=idx, body=routing)
+            self.client.indices.put_settings(index=idx, body=routing, master_timeout="5m")
             if self.wait_for_rebalance:
                 utils.wait_for_it(self.client, 'allocation', wait_interval=self.wait_interval, max_wait=self.max_wait)
             else:
@@ -1983,11 +1986,11 @@ class Shrink(object):
 
     def _block_writes(self, idx):
         block = { 'index.blocks.write': True }
-        self.client.indices.put_settings(index=idx, body=block)
+        self.client.indices.put_settings(index=idx, body=block, master_timeout="5m")
 
     def _unblock_writes(self, idx):
         unblock = { 'index.blocks.write': False }
-        self.client.indices.put_settings(index=idx, body=unblock)
+        self.client.indices.put_settings(index=idx, body=unblock, master_timeout="5m")
 
     def _check_space(self, idx, dry_run=False):
         # Disk watermark calculation is already baked into `available_in_bytes`
@@ -2126,8 +2129,8 @@ class Shrink(object):
                     # Block writes on index
                     self._block_writes(idx)
                     # Do final health check
-                    if not utils.health_check(self.client, status='green'):
-                        raise exceptions.ActionError('Unable to proceed with shrink action. Cluster health is not "green"')
+                    #if not utils.health_check(self.client, status='green'):
+                    #    raise exceptions.ActionError('Unable to proceed with shrink action. Cluster health is not "green"')
                     # Do the shrink
                     self.loggit.info('Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
                     try:

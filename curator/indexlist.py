@@ -254,7 +254,7 @@ class IndexList(object):
                 if err.status_code == 413:
                     self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                     working_list = {}
-                    working_list.update(self._bulk_queries(l, self._get_indices_segments))  
+                    working_list.update(self._bulk_queries(l, self._get_indices_segments))
 
             if working_list:
                 for index in list(working_list.keys()):
@@ -396,7 +396,8 @@ class IndexList(object):
                     ' metadata'.format(index, self.age_keyfield)
                 )
                 self.__excludify(True, True, index, msg)
-
+        # Sort alphabetically prior to age sort to keep sorting consistent
+        temp.items().sort(key=lambda k: k[0])
         # If reverse is True, this will sort so the youngest indices are first.
         # However, if you want oldest first, set reverse to False.
         # Effectively, this should set us up to act on everything older than
