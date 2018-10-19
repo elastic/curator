@@ -105,6 +105,7 @@ class IndexList(object):
             'period': self.filter_period,
             'pattern': self.filter_by_regex,
             'space': self.filter_by_space,
+            'shards': self.filter_by_shards,
         }
         return methods[ft]
 
@@ -989,6 +990,36 @@ class IndexList(object):
                 condition = True if idx <= count else False
                 self.__excludify(condition, exclude, index, msg)
                 idx += 1
+
+    def filter_by_shards(self, greater_than=None, inclusive_bound=False, exclude=False):
+        """
+        Match `indices` with a given shard count.
+
+        Selects all indices with a shard count greater than `greater_than` by default.
+        `inclusive_bound` can be used to filter greater than or equal to, and `exclude` to invert
+        the results (i.e. less than)
+
+        :arg greater_than: lower bound on number of shards
+        :arg inclusive_bound: True if this lower bound should be inclusive, and false otherwise.
+            Default is `False`
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
+        """
+        self.loggit.debug("Filtering indices by shard count")
+        if not greater_than:
+            raise exceptions.MissingArgument('No value for "greater_than" provided')
+
+        self.empty_list_check()
+        for index in self.working_list():
+            self.loggit.debug('Filter by shard count: Index: {0}'.format(index))
+
+            # src_shards = int(self.client.indices.get(idx)[idx]['settings']['index']['number_of_shards'])
+            if True:
+                self.__excludify(True, exclude, index)
+            else:
+                self.__excludify(False, exclude, index)
 
     def filter_period(
         self, period_type='relative', source='name', range_from=None, range_to=None,

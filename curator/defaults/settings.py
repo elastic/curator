@@ -81,6 +81,7 @@ def index_filtertypes():
         'pattern',
         'period',
         'space',
+        'shards'
     ]
 
 def snapshot_filtertypes():

@@ -60,6 +60,15 @@ def field(**kwargs):
     else:
         return { Optional('field'): Any(*string_types) }
 
+def greater_than(**kwargs):
+    # This setting is only used with the shards filtertype and is required
+    return { Required('greater_than'): All(Coerce(int), Range(min=1)) }
+
+def inclusive_bound(**kwargs):
+    # pylint: disable=E1120
+    # This setting is only used with the shards filtertype and is optional
+    return { Optional('inclusive_bound', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
 def intersect(**kwargs):
     # pylint: disable=E1120
     # This setting is only used with the period filtertype when using field_stats

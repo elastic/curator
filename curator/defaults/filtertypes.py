@@ -139,6 +139,14 @@ def state(action, config):
         filter_elements.exclude(),
     ]
 
+def shards(action, config):
+    return [
+        #filter_elements
+        filter_elements.greater_than(),
+        filter_elements.inclusive_bound(),
+        filter_elements.exclude(),
+    ]
+
 def empty(action, config):
     return [
         filter_elements.exclude(),

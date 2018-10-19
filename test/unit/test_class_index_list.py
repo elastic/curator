@@ -1003,6 +1003,19 @@ class TestIndexListFilterCount(TestCase):
         self.assertRaises(curator.ActionError, self.il.filter_by_count,
             count=1, use_age=True, pattern=r'^(\ )foo(\ )$', source='name', timestring='%Y.%m.%d',
         )
+
+class TestIndexListFilterShards(TestCase):
+    def builder(self):
+        self.client = Mock()
+        self.client.info.return_value = {'version': {'number': '5.0.0'} }
+        self.client.indices.get_settings.return_value = testvars.settings_two
+        self.client.cluster.state.return_value = testvars.clu_state_two
+        self.client.indices.stats.return_value = testvars.stats_two
+        self.il = curator.IndexList(self.client)
+    def test_filter_shards_raise(self):
+        self.builder()
+        self.assertRaises(curator.MissingArgument, self.il.filter_by_shards)
+
 class TestIndexListPeriodFilterName(TestCase):
     def test_get_name_based_age_in_range(self):
         unit = 'days'
