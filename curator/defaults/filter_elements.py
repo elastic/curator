@@ -110,7 +110,7 @@ def reverse(**kwargs):
 def shard_filter_behavior(**kwargs):
     # This setting is only used with the shards filtertype and defaults to 'greater_than'.
     return { Optional('shard_filter_behavior', default='greater_than'): 
-        Any('greater_than', 'less_than', 'greater_than_equal', 'less_than_equal', 'equal') }
+        Any('greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'equal') }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space

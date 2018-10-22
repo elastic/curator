@@ -1024,21 +1024,41 @@ class TestIndexListFilterShards(TestCase):
     def test_bad_shard_count_raise_3(self):
         self.builder()
         self.assertRaises(ValueError, self.il.filter_by_shards, num_shards=-1, shard_filter_behavior='greater_than')
-    def test_with_inclusive_bound(self):
+    def test_greater_than_or_equal(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_equal')
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_or_equal')
         self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
-    def test_with_inclusive_bound_exclude(self):
+    def test_greater_than_or_equal_exclude(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_equal', exclude=True)
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_or_equal', exclude=True)
         self.assertEqual([], self.il.indices)
-    def test_without_inclusive_bound(self):
+    def test_greater_than_bound(self):
         self.builder()
         self.il.filter_by_shards(num_shards=5)
         self.assertEqual([], self.il.indices)
-    def test_without_inclusive_bound_exclude(self):
+    def test_greater_than_exclude(self):
         self.builder()
         self.il.filter_by_shards(num_shards=5, exclude=True)
+        self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
+    def test_less_than_or_equal(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than_or_equal')
+        self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
+    def test_less_than_or_equal_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than_or_equal', exclude=True)
+        self.assertEqual([], self.il.indices)
+    def test_less_than(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than')
+        self.assertEqual([], self.il.indices)
+    def test_less_than_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than', exclude=True)
+        self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
+    def test_equal(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='equal')
         self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
 
 class TestIndexListPeriodFilterName(TestCase):

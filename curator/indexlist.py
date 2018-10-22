@@ -996,12 +996,12 @@ class IndexList(object):
         Match `indices` with a given shard count.
 
         Selects all indices with a shard count 'greater_than' num_shards by default.
-        Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_equal', 
-        'less_than', 'less_than_equal', or 'equal' to num_shards.
+        Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_or_equal', 
+        'less_than', 'less_than_or_equal', or 'equal' to num_shards.
 
         :arg num_shards: shard threshold 
-        :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_equal, less_than, 
-            less_than_equal, or equal?
+        :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_or_equal, less_than, 
+            less_than_or_equal, or equal?
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
             indices will be kept in `indices`.
@@ -1011,7 +1011,7 @@ class IndexList(object):
         if not num_shards:
             raise exceptions.MissingArgument('No value for "num_shards" provided')
 
-        if shard_filter_behavior not in ['greater_than', 'less_than', 'greater_than_equal', 'less_than_equal', 'equal']:
+        if shard_filter_behavior not in ['greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'equal']:
             raise ValueError(
                 'Invalid value for "shard_filter_behavior": {0}'.format(
                     shard_filter_behavior)
@@ -1031,9 +1031,9 @@ class IndexList(object):
                 self.__excludify(int(self.index_info[index]['number_of_shards']) > num_shards, exclude, index)
             elif shard_filter_behavior == 'less_than':
                 self.__excludify(int(self.index_info[index]['number_of_shards']) < num_shards, exclude, index)
-            elif shard_filter_behavior == 'greater_than_equal':
+            elif shard_filter_behavior == 'greater_than_or_equal':
                 self.__excludify(int(self.index_info[index]['number_of_shards']) >= num_shards, exclude, index)
-            elif shard_filter_behavior == 'less_than_equal':
+            elif shard_filter_behavior == 'less_than_or_equal':
                 self.__excludify(int(self.index_info[index]['number_of_shards']) <= num_shards, exclude, index)
             else:
                 self.__excludify(int(self.index_info[index]['number_of_shards']) == num_shards, exclude, index)
