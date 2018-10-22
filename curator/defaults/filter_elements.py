@@ -60,15 +60,6 @@ def field(**kwargs):
     else:
         return { Optional('field'): Any(*string_types) }
 
-def greater_than(**kwargs):
-    # This setting is only used with the shards filtertype and is required
-    return { Required('greater_than'): All(Coerce(int), Range(min=1)) }
-
-def inclusive_bound(**kwargs):
-    # pylint: disable=E1120
-    # This setting is only used with the shards filtertype and is optional
-    return { Optional('inclusive_bound', default=False): Any(bool, All(Any(*string_types), Boolean())) }
-
 def intersect(**kwargs):
     # pylint: disable=E1120
     # This setting is only used with the period filtertype when using field_stats
@@ -88,6 +79,11 @@ def kind(**kwargs):
 def max_num_segments(**kwargs):
     return {
         Required('max_num_segments'): All(Coerce(int), Range(min=1))
+    }
+
+def num_shards(**kwargs):
+    return {
+        Required('num_shards'): All(Coerce(int), Range(min=1))
     }
 
 def pattern(**kwargs):
@@ -110,6 +106,11 @@ def reverse(**kwargs):
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
     return { Optional('reverse', default=True): Any(bool, All(Any(*string_types), Boolean())) }
+
+def shard_filter_behavior(**kwargs):
+    # This setting is only used with the shards filtertype and defaults to 'greater_than'.
+    return { Optional('shard_filter_behavior', default='greater_than'): 
+        Any('greater_than', 'less_than', 'greater_than_equal', 'less_than_equal', 'equal') }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space

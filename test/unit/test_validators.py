@@ -225,8 +225,8 @@ class TestFilterTypes(TestCase):
         config = [
             {
                 'filtertype' : 'shards',
-                'shard_count' : 5,
-                'threshold_behavior': 'greater_than',
+                'num_shards' : 5,
+                'shard_filter_behavior': 'greater_than',
                 'exclude' : False,
             }
         ]

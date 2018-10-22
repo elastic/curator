@@ -141,9 +141,8 @@ def state(action, config):
 
 def shards(action, config):
     return [
-        #filter_elements
-        filter_elements.greater_than(),
-        filter_elements.inclusive_bound(),
+        filter_elements.num_shards(),
+        filter_elements.shard_filter_behavior(),
         filter_elements.exclude(),
     ]
 

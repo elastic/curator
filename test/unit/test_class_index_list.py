@@ -1015,22 +1015,31 @@ class TestIndexListFilterShards(TestCase):
     def test_filter_shards_raise(self):
         self.builder()
         self.assertRaises(curator.MissingArgument, self.il.filter_by_shards)
-    def test_without_inclusive_bound(self):
+    def test_bad_shard_count_raise_1(self):
         self.builder()
-        self.il.filter_by_shards(greater_than=5)
-        self.assertEqual([], self.il.indices)
+        self.assertRaises(curator.MissingArgument, self.il.filter_by_shards, num_shards=0)
+    def test_bad_shard_count_raise_2(self):
+        self.builder()
+        self.assertRaises(ValueError, self.il.filter_by_shards, num_shards=1, shard_filter_behavior='less_than')
+    def test_bad_shard_count_raise_3(self):
+        self.builder()
+        self.assertRaises(ValueError, self.il.filter_by_shards, num_shards=-1, shard_filter_behavior='greater_than')
     def test_with_inclusive_bound(self):
         self.builder()
-        self.il.filter_by_shards(greater_than=5, inclusive_bound=True)
-        self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
-    def test_without_inclusive_bound_exclude(self):
-        self.builder()
-        self.il.filter_by_shards(greater_than=5, exclude=True)
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_equal')
         self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
     def test_with_inclusive_bound_exclude(self):
         self.builder()
-        self.il.filter_by_shards(greater_than=5, inclusive_bound=True, exclude=True)
+        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_equal', exclude=True)
         self.assertEqual([], self.il.indices)
+    def test_without_inclusive_bound(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5)
+        self.assertEqual([], self.il.indices)
+    def test_without_inclusive_bound_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(num_shards=5, exclude=True)
+        self.assertEqual([u'index-2016.03.03', u'index-2016.03.04'], self.il.indices)
 
 class TestIndexListPeriodFilterName(TestCase):
     def test_get_name_based_age_in_range(self):

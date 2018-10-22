@@ -991,53 +991,52 @@ class IndexList(object):
                 self.__excludify(condition, exclude, index, msg)
                 idx += 1
 
-    def filter_by_shards(self, shard_count=None, threshold_behavior='greater_than', exclude=False):
+    def filter_by_shards(self, num_shards=None, shard_filter_behavior='greater_than', exclude=False):
         """
         Match `indices` with a given shard count.
 
-        Selects all indices with a shard count 'greater_than' shard_count by default.
-        Use threshold behavior to select indices with shard count 'less_than' or 'equal' to shard
-        count.
+        Selects all indices with a shard count 'greater_than' num_shards by default.
+        Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_equal', 
+        'less_than', 'less_than_equal', or 'equal' to num_shards.
 
-        :arg shard_count: shard threshold 
-        :arg threshold_behavior: Do you want to filter on greater_than, less_than, or equal?
+        :arg num_shards: shard threshold 
+        :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_equal, less_than, 
+            less_than_equal, or equal?
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
             indices will be kept in `indices`.
             Default is `False`
         """
-        self.loggit.debug("Filtering indices by shard count")
-        if not shard_count:
-            raise exceptions.MissingArgument('No value for "shard_count" provided')
+        self.loggit.debug("Filtering indices by number of shards")
+        if not num_shards:
+            raise exceptions.MissingArgument('No value for "num_shards" provided')
 
-        if threshold_behavior not in ['greater_than', 'less_than', 'equal']:
+        if shard_filter_behavior not in ['greater_than', 'less_than', 'greater_than_equal', 'less_than_equal', 'equal']:
             raise ValueError(
-                'Invalid value for "threshold_behavior": {0}'.format(
-                    threshold_behavior)
+                'Invalid value for "shard_filter_behavior": {0}'.format(
+                    shard_filter_behavior)
             )
 
-        if threshold_behavior == 'less_than' and shard_count <= 1:
+        if num_shards < 1 or (shard_filter_behavior == 'less_than' and num_shards == 1):
             raise ValueError(
-                'Unacceptable value: {0} -- "shard_count" cannot be less than 1. A valid index '
-                'will have at least one shard.'.format(shard_count)
-            )
-
-        if shard_count < 0:
-            raise ValueError(
-                'Unacceptable value: {0} -- "shard_count" cannot be negative. A valid index '
-                'will have at least one shard.'.format(shard_count)
+                'Unacceptable value: {0} -- "num_shards" cannot be less than 1. A valid index '
+                'will have at least one shard.'.format(num_shards)
             )
 
         self.empty_list_check()
         for index in self.working_list():
-            self.loggit.debug('Filter by shard count: Index: {0}'.format(index))
+            self.loggit.debug('Filter by number of shards: Index: {0}'.format(index))
 
-            if threshold_behavior == 'greater_than':
-                self.__excludify(int(self.index_info[index]['number_of_shards']) > shard_count, exclude, index)
-            elif threshold_behavior == 'less_than':
-                self.__excludify(int(self.index_info[index]['number_of_shards']) < shard_count, exclude, index)
+            if shard_filter_behavior == 'greater_than':
+                self.__excludify(int(self.index_info[index]['number_of_shards']) > num_shards, exclude, index)
+            elif shard_filter_behavior == 'less_than':
+                self.__excludify(int(self.index_info[index]['number_of_shards']) < num_shards, exclude, index)
+            elif shard_filter_behavior == 'greater_than_equal':
+                self.__excludify(int(self.index_info[index]['number_of_shards']) >= num_shards, exclude, index)
+            elif shard_filter_behavior == 'less_than_equal':
+                self.__excludify(int(self.index_info[index]['number_of_shards']) <= num_shards, exclude, index)
             else:
-                self.__excludify(int(self.index_info[index]['number_of_shards']) == shard_count, exclude, index)
+                self.__excludify(int(self.index_info[index]['number_of_shards']) == num_shards, exclude, index)
                
 
     def filter_period(
