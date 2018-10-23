@@ -1028,16 +1028,17 @@ class IndexList(object):
             self.loggit.debug('Filter by number of shards: Index: {0}'.format(index))
 
             if shard_filter_behavior == 'greater_than':
-                self.__excludify(int(self.index_info[index]['number_of_shards']) > num_shards, exclude, index)
+                condition = int(self.index_info[index]['number_of_shards']) > num_shards 
             elif shard_filter_behavior == 'less_than':
-                self.__excludify(int(self.index_info[index]['number_of_shards']) < num_shards, exclude, index)
+                condition = int(self.index_info[index]['number_of_shards']) < num_shards 
             elif shard_filter_behavior == 'greater_than_or_equal':
-                self.__excludify(int(self.index_info[index]['number_of_shards']) >= num_shards, exclude, index)
+                condition = int(self.index_info[index]['number_of_shards']) >= num_shards 
             elif shard_filter_behavior == 'less_than_or_equal':
-                self.__excludify(int(self.index_info[index]['number_of_shards']) <= num_shards, exclude, index)
+                condition = int(self.index_info[index]['number_of_shards']) <= num_shards 
             else:
-                self.__excludify(int(self.index_info[index]['number_of_shards']) == num_shards, exclude, index)
-               
+                condition = int(self.index_info[index]['number_of_shards']) == num_shards 
+
+            self.__excludify(condition, exclude, index)
 
     def filter_period(
         self, period_type='relative', source='name', range_from=None, range_to=None,
