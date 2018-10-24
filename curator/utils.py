@@ -235,11 +235,12 @@ def fix_epoch(epoch):
         even nanoseconds.
     :rtype: int
     """
-    if not isinstance(epoch, int):
-        raise ValueError('Invalid epoch datatype received, expected an int')
+    try:
+        # No decimals allowed
+        epoch = int(epoch)
+    except Exception as ex:
+        raise ValueError('Invalid epoch received, unable to convert {} to int'.format(epoch))
 
-    # No decimals allowed
-    epoch = int(epoch)
     # If we're still using this script past January, 2038, we have bigger
     # problems than my hacky math here...
     if len(str(epoch)) <= 10:

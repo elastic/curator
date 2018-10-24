@@ -154,8 +154,7 @@ class TestFixEpoch(TestCase):
                 ]:
             self.assertEqual(epoch, curator.fix_epoch(long_epoch))
     def test_fix_epoch_raise(self):
-        for invalid_type in [None, "1459287636"]:
-            self.assertRaises(ValueError, curator.fix_epoch, invalid_type)
+            self.assertRaises(ValueError, curator.fix_epoch, None)
 
 class TestGetPointOfReference(TestCase):
     def test_get_point_of_reference(self):
