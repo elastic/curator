@@ -1032,7 +1032,7 @@ class TestIndexListFilterShards(TestCase):
         self.builder()
         self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_or_equal', exclude=True)
         self.assertEqual([], self.il.indices)
-    def test_greater_than_bound(self):
+    def test_greater_than(self):
         self.builder()
         self.il.filter_by_shards(num_shards=5)
         self.assertEqual([], self.il.indices)
