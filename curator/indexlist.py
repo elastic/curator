@@ -991,15 +991,15 @@ class IndexList(object):
                 self.__excludify(condition, exclude, index, msg)
                 idx += 1
 
-    def filter_by_shards(self, num_shards=None, shard_filter_behavior='greater_than', exclude=False):
+    def filter_by_shards(self, number_of_shards=None, shard_filter_behavior='greater_than', exclude=False):
         """
         Match `indices` with a given shard count.
 
-        Selects all indices with a shard count 'greater_than' num_shards by default.
+        Selects all indices with a shard count 'greater_than' number_of_shards by default.
         Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_or_equal', 
-        'less_than', 'less_than_or_equal', or 'equal' to num_shards.
+        'less_than', 'less_than_or_equal', or 'equal' to number_of_shards.
 
-        :arg num_shards: shard threshold 
+        :arg number_of_shards: shard threshold 
         :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_or_equal, less_than, 
             less_than_or_equal, or equal?
         :arg exclude: If `exclude` is `True`, this filter will remove matching
@@ -1008,8 +1008,8 @@ class IndexList(object):
             Default is `False`
         """
         self.loggit.debug("Filtering indices by number of shards")
-        if not num_shards:
-            raise exceptions.MissingArgument('No value for "num_shards" provided')
+        if not number_of_shards:
+            raise exceptions.MissingArgument('No value for "number_of_shards" provided')
 
         if shard_filter_behavior not in ['greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'equal']:
             raise ValueError(
@@ -1017,10 +1017,10 @@ class IndexList(object):
                     shard_filter_behavior)
             )
 
-        if num_shards < 1 or (shard_filter_behavior == 'less_than' and num_shards == 1):
+        if number_of_shards < 1 or (shard_filter_behavior == 'less_than' and number_of_shards == 1):
             raise ValueError(
-                'Unacceptable value: {0} -- "num_shards" cannot be less than 1. A valid index '
-                'will have at least one shard.'.format(num_shards)
+                'Unacceptable value: {0} -- "number_of_shards" cannot be less than 1. A valid index '
+                'will have at least one shard.'.format(number_of_shards)
             )
 
         self.empty_list_check()
@@ -1028,15 +1028,15 @@ class IndexList(object):
             self.loggit.debug('Filter by number of shards: Index: {0}'.format(index))
 
             if shard_filter_behavior == 'greater_than':
-                condition = int(self.index_info[index]['number_of_shards']) > num_shards 
+                condition = int(self.index_info[index]['number_of_shards']) > number_of_shards 
             elif shard_filter_behavior == 'less_than':
-                condition = int(self.index_info[index]['number_of_shards']) < num_shards 
+                condition = int(self.index_info[index]['number_of_shards']) < number_of_shards 
             elif shard_filter_behavior == 'greater_than_or_equal':
-                condition = int(self.index_info[index]['number_of_shards']) >= num_shards 
+                condition = int(self.index_info[index]['number_of_shards']) >= number_of_shards 
             elif shard_filter_behavior == 'less_than_or_equal':
-                condition = int(self.index_info[index]['number_of_shards']) <= num_shards 
+                condition = int(self.index_info[index]['number_of_shards']) <= number_of_shards 
             else:
-                condition = int(self.index_info[index]['number_of_shards']) == num_shards 
+                condition = int(self.index_info[index]['number_of_shards']) == number_of_shards 
 
             self.__excludify(condition, exclude, index)
 

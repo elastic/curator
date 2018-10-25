@@ -81,9 +81,9 @@ def max_num_segments(**kwargs):
         Required('max_num_segments'): All(Coerce(int), Range(min=1))
     }
 
-def num_shards(**kwargs):
+def number_of_shards(**kwargs):
     return {
-        Required('num_shards'): All(Coerce(int), Range(min=1))
+        Required('number_of_shards'): All(Coerce(int), Range(min=1))
     }
 
 def pattern(**kwargs):

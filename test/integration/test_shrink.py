@@ -118,7 +118,7 @@ shrink_filter_by_shards = ('---\n'
 '      wait_for_rebalance: {8}\n'
 '    filters:\n'
 '      - filtertype: shards\n'
-'        num_shards: {9}\n'
+'        number_of_shards: {9}\n'
 '        shard_filter_behavior: {10}\n')
 
 class TestActionFileShrink(CuratorTestCase):

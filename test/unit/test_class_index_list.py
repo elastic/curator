@@ -1017,56 +1017,56 @@ class TestIndexListFilterShards(TestCase):
         self.assertRaises(curator.MissingArgument, self.il.filter_by_shards)
     def test_bad_shard_count_raise_1(self):
         self.builder()
-        self.assertRaises(curator.MissingArgument, self.il.filter_by_shards, num_shards=0)
+        self.assertRaises(curator.MissingArgument, self.il.filter_by_shards, number_of_shards=0)
     def test_bad_shard_count_raise_2(self):
         self.builder()
-        self.assertRaises(ValueError, self.il.filter_by_shards, num_shards=1, shard_filter_behavior='less_than')
+        self.assertRaises(ValueError, self.il.filter_by_shards, number_of_shards=1, shard_filter_behavior='less_than')
     def test_bad_shard_count_raise_3(self):
         self.builder()
-        self.assertRaises(ValueError, self.il.filter_by_shards, num_shards=-1, shard_filter_behavior='greater_than')
+        self.assertRaises(ValueError, self.il.filter_by_shards, number_of_shards=-1, shard_filter_behavior='greater_than')
     def test_greater_than_or_equal(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_or_equal')
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='greater_than_or_equal')
         self.assertEqual(
             sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
     def test_greater_than_or_equal_exclude(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='greater_than_or_equal', exclude=True)
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='greater_than_or_equal', exclude=True)
         self.assertEqual(
             sorted([]), sorted(self.il.indices))
     def test_greater_than(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5)
+        self.il.filter_by_shards(number_of_shards=5)
         self.assertEqual(
             sorted([]), sorted(self.il.indices))
     def test_greater_than_exclude(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, exclude=True)
+        self.il.filter_by_shards(number_of_shards=5, exclude=True)
         self.assertEqual(
             sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
     def test_less_than_or_equal(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than_or_equal')
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than_or_equal')
         self.assertEqual(
             sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
     def test_less_than_or_equal_exclude(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than_or_equal', exclude=True)
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than_or_equal', exclude=True)
         self.assertEqual(
             sorted([]), sorted(self.il.indices))
     def test_less_than(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than')
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than')
         self.assertEqual(
             sorted([]), sorted(self.il.indices))
     def test_less_than_exclude(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='less_than', exclude=True)
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than', exclude=True)
         self.assertEqual(
             sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
     def test_equal(self):
         self.builder()
-        self.il.filter_by_shards(num_shards=5, shard_filter_behavior='equal')
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='equal')
         self.assertEqual(
             sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
 

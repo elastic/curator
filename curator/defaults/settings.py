@@ -121,7 +121,7 @@ def structural_filter_elements():
         Optional('key'): Any(*string_types),
         Optional('kind'): Any(*string_types),
         Optional('max_num_segments'): Coerce(int),
-        Optional('num_shards'): Coerce(int),
+        Optional('number_of_shards'): Coerce(int),
         Optional('pattern'): Any(*string_types),
         Optional('period_type'): Any(*string_types),
         Optional('reverse'): Any(None, bool, int, *string_types),
