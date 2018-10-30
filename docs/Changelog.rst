@@ -26,6 +26,7 @@ Changelog
 **Documentation**
 
   * Added Reindex example to the sidebar. (Nostalgiac) #1227
+  * Fix Rollover example text and typos. (untergeek)
 
 5.5.4 (23 May 2018)
 -------------------
