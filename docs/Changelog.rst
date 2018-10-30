@@ -21,6 +21,7 @@ Changelog
     command line. Reported in #1237 (untergeek)
   * Pin ``click`` version for compatibility. (Andrewsville) #1280
   * Allow much older epoch timestamps (rsteneteg) #1296
+  * Reindex action respects ``ignore_empty_list`` flag (untergeek) #1297
 
 **Documentation**
 

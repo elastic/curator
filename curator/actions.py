@@ -1308,11 +1308,8 @@ class Reindex(object):
         dest = self.body['dest']['index']
         source_list = utils.ensure_list(self.body['source']['index'])
         self.loggit.debug('source_list: {0}'.format(source_list))
-        if source_list == []: # Empty list
-            raise exceptions.ConfigurationError(
-                'Source index must be list of actual indices. '
-                'It must not be an empty list.'
-            )
+        if source_list == [] or source_list == ['REINDEX_SELECTED']: # Empty list
+            raise exceptions.NoIndices
         if not self.migration:
             yield self.body['source']['index'], dest
 
@@ -1383,6 +1380,10 @@ class Reindex(object):
                         'to check task_id "{1}" for successful completion '
                         'manually.'.format(self.wfc, response['task'])
                     )
+        except exceptions.NoIndices as e:
+            raise exceptions.NoIndices(
+                'Source index must be list of actual indices. '
+                'It must not be an empty list.')
         except Exception as e:
             utils.report_failure(e)
 
