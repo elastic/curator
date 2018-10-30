@@ -105,6 +105,7 @@ class IndexList(object):
             'period': self.filter_period,
             'pattern': self.filter_by_regex,
             'space': self.filter_by_space,
+            'shards': self.filter_by_shards,
         }
         return methods[ft]
 
@@ -989,6 +990,55 @@ class IndexList(object):
                 condition = True if idx <= count else False
                 self.__excludify(condition, exclude, index, msg)
                 idx += 1
+
+    def filter_by_shards(self, number_of_shards=None, shard_filter_behavior='greater_than', exclude=False):
+        """
+        Match `indices` with a given shard count.
+
+        Selects all indices with a shard count 'greater_than' number_of_shards by default.
+        Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_or_equal', 
+        'less_than', 'less_than_or_equal', or 'equal' to number_of_shards.
+
+        :arg number_of_shards: shard threshold 
+        :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_or_equal, less_than, 
+            less_than_or_equal, or equal?
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
+        """
+        self.loggit.debug("Filtering indices by number of shards")
+        if not number_of_shards:
+            raise exceptions.MissingArgument('No value for "number_of_shards" provided')
+
+        if shard_filter_behavior not in ['greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'equal']:
+            raise ValueError(
+                'Invalid value for "shard_filter_behavior": {0}'.format(
+                    shard_filter_behavior)
+            )
+
+        if number_of_shards < 1 or (shard_filter_behavior == 'less_than' and number_of_shards == 1):
+            raise ValueError(
+                'Unacceptable value: {0} -- "number_of_shards" cannot be less than 1. A valid index '
+                'will have at least one shard.'.format(number_of_shards)
+            )
+
+        self.empty_list_check()
+        for index in self.working_list():
+            self.loggit.debug('Filter by number of shards: Index: {0}'.format(index))
+
+            if shard_filter_behavior == 'greater_than':
+                condition = int(self.index_info[index]['number_of_shards']) > number_of_shards 
+            elif shard_filter_behavior == 'less_than':
+                condition = int(self.index_info[index]['number_of_shards']) < number_of_shards 
+            elif shard_filter_behavior == 'greater_than_or_equal':
+                condition = int(self.index_info[index]['number_of_shards']) >= number_of_shards 
+            elif shard_filter_behavior == 'less_than_or_equal':
+                condition = int(self.index_info[index]['number_of_shards']) <= number_of_shards 
+            else:
+                condition = int(self.index_info[index]['number_of_shards']) == number_of_shards 
+
+            self.__excludify(condition, exclude, index)
 
     def filter_period(
         self, period_type='relative', source='name', range_from=None, range_to=None,

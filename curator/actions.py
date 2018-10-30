@@ -2088,6 +2088,7 @@ class Shrink(object):
         Show what a regular run would do, but don't actually do it.
         """
         self.index_list.filter_closed()
+        self.index_list.filter_by_shards(number_of_shards=self.number_of_shards)
         self.index_list.empty_list_check()
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -2109,6 +2110,7 @@ class Shrink(object):
 
     def do_action(self):
         self.index_list.filter_closed()
+        self.index_list.filter_by_shards(number_of_shards=self.number_of_shards)
         self.index_list.empty_list_check()
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)

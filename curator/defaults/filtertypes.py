@@ -139,6 +139,13 @@ def state(action, config):
         filter_elements.exclude(),
     ]
 
+def shards(action, config):
+    return [
+        filter_elements.number_of_shards(),
+        filter_elements.shard_filter_behavior(),
+        filter_elements.exclude(),
+    ]
+
 def empty(action, config):
     return [
         filter_elements.exclude(),
