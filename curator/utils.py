@@ -48,7 +48,7 @@ def get_yaml(path):
         return os.environ[envvar] if envvar in os.environ else default
 
     yaml.add_constructor('!single', single_constructor)
-    
+
     try:
         return yaml.load(read_file(path))
     except yaml.scanner.ScannerError as err:
@@ -1841,7 +1841,7 @@ def get_datemath(client, datemath, random_element=None):
     """
     if random_element is None:
         randomPrefix = (
-            'curator_get_datemath_function_' + 
+            'curator_get_datemath_function_' +
             ''.join(random.choice(string.ascii_lowercase) for _ in range(32))
         )
     else:
@@ -1884,8 +1884,8 @@ def isdatemath(data):
 
 def parse_datemath(client, value):
     """
-    Check if ``value`` is datemath.  
-    Parse it if it is.  
+    Check if ``value`` is datemath.
+    Parse it if it is.
     Return the bare value otherwise.
     """
     if not isdatemath(value):
