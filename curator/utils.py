@@ -235,19 +235,18 @@ def fix_epoch(epoch):
         even nanoseconds.
     :rtype: int
     """
-    # No decimals allowed
-    epoch = int(epoch)
+    try:
+        # No decimals allowed
+        epoch = int(epoch)
+    except Exception as ex:
+        raise ValueError('Invalid epoch received, unable to convert {} to int'.format(epoch))
+
     # If we're still using this script past January, 2038, we have bigger
     # problems than my hacky math here...
     if len(str(epoch)) <= 10:
         return epoch
-    elif len(str(epoch)) == 13:
+    elif len(str(epoch)) > 10 and len(str(epoch)) <= 13:
         return int(epoch/1000)
-    elif len(str(epoch)) > 10 and len(str(epoch)) < 13:
-        raise ValueError(
-            'Unusually formatted epoch timestamp.  '
-            'Should be 10, 13, or more digits'
-        )
     else:
         orders_of_magnitude = len(str(epoch)) - 10
         powers_of_ten = 10**orders_of_magnitude
