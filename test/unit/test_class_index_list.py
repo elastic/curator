@@ -890,7 +890,7 @@ class TestIterateFiltersIndex(TestCase):
         )
     def test_ilm_filtertype_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '6.3.0'} }
+        client.info.return_value = {'version': {'number': '6.6.0'} }
         # If we don't deepcopy, then it munges the settings for future references.
         with_ilm = deepcopy(testvars.settings_two)
         with_ilm['index-2016.03.03']['settings']['index']['lifecycle'] = {'name':'mypolicy'}
@@ -903,7 +903,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['index-2016.03.04'], ilo.indices)
     def test_ilm_filtertype_no_setting(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '6.3.0'} }
+        client.info.return_value = {'version': {'number': '6.6.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
