@@ -22,6 +22,7 @@ Changelog
   * Pin ``click`` version for compatibility. (Andrewsville) #1280
   * Allow much older epoch timestamps (rsteneteg) #1296
   * Reindex action respects ``ignore_empty_list`` flag (untergeek) #1297
+  * Update ILM index version minimum to 6.6.0 (untergeek)
 
 **Documentation**
 
