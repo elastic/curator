@@ -184,4 +184,4 @@ class TestActionReindex(TestCase):
             'dest': { 'index': 'other_index' } 
         }
         ro = curator.Reindex(ilo, badval)
-        self.assertRaises(curator.FailedExecution, ro.do_action)
+        self.assertRaises(curator.NoIndices, ro.do_action)
