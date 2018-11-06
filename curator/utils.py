@@ -1640,6 +1640,16 @@ def task_check(client, task_id=None):
         )
     task = task_data['task']
     completed = task_data['completed']
+    if task['action'] == 'indices:data/write/reindex':
+        logger.debug('It\'s a REINDEX TASK')
+        logger.debug('TASK_DATA: {0}'.format(task_data))
+        logger.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+        if 'response' in task_data:
+            response = task_data['response']
+            if len(response['failures']) > 0:
+                raise exceptions.FailedReindex(
+                    'Failures found in reindex response: {0}'.format(response['failures'])
+                )
     running_time = 0.000000001 * task['running_time_in_nanos']
     logger.debug('running_time_in_nanos = {0}'.format(running_time))
     descr = task['description']

@@ -23,6 +23,7 @@ Changelog
   * Allow much older epoch timestamps (rsteneteg) #1296
   * Reindex action respects ``ignore_empty_list`` flag (untergeek) #1297
   * Update ILM index version minimum to 6.6.0 (untergeek)
+  * Catch reindex failures properly. Reported in #1260 (untergeek)
 
 **Documentation**
 
