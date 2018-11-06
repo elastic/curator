@@ -477,3 +477,34 @@ class TestActionFileReindex(CuratorTestCase):
                     ],
                     )
         self.assertEqual(expected, self.client.count(index=dest)['count'])
+    def test_reindex_bad_mapping(self):
+        # This test addresses GitHub issue #1260 
+        wait_interval = 1
+        max_wait = 3
+        source = 'my_source'
+        dest = 'my_dest'
+        expected = 1
+
+        self.create_index(source)
+        self.add_docs(source)
+        # Create the dest index with a different mapping.
+        self.client.indices.create(
+            index=dest,
+            body={
+                'settings': {'number_of_shards': 1, 'number_of_replicas': 0},
+                'mappings': {'log': { 'properties': { 'doc1': { 'type': 'integer'}}}}
+            }
+        )
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.reindex.format(wait_interval, max_wait, source, dest))
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, _.exit_code)
