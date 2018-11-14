@@ -96,7 +96,7 @@ class TestActionFileAllocation(CuratorTestCase):
         self.create_index('not_my_index')
         # Put a setting in place before we start the test.
         self.client.indices.put_settings(
-            index='my_index', 
+            index='my_index',
             body={'index.routing.allocation.{0}.{1}'.format(at, key): 'bar'}
         )
         # Ensure we _have_ it here first.

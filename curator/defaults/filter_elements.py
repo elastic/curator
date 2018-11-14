@@ -81,6 +81,11 @@ def max_num_segments(**kwargs):
         Required('max_num_segments'): All(Coerce(int), Range(min=1))
     }
 
+def number_of_shards(**kwargs):
+    return {
+        Required('number_of_shards'): All(Coerce(int), Range(min=1))
+    }
+
 def pattern(**kwargs):
     return {
         Optional('pattern'): Any(*string_types)
@@ -101,6 +106,11 @@ def reverse(**kwargs):
     # Only used with space filtertype
     # Should be ignored if `use_age` is True
     return { Optional('reverse', default=True): Any(bool, All(Any(*string_types), Boolean())) }
+
+def shard_filter_behavior(**kwargs):
+    # This setting is only used with the shards filtertype and defaults to 'greater_than'.
+    return { Optional('shard_filter_behavior', default='greater_than'): 
+        Any('greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'equal') }
 
 def source(**kwargs):
     # This setting is only used with the age filtertype, or with the space

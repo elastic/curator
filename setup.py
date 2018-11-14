@@ -22,13 +22,13 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=5.5.2,!=6.0.0,<7.0.0' ]
+    res = ['elasticsearch>=6.1.0,<7.0.0' ]
     res.append('boto3>=1.7.24')
     res.append('requests_aws4auth>=0.9')
-    res.append('click>=6.7')
+    res.append('click>=6.7,<7.0')
     res.append('pyyaml>=3.10')
     res.append('voluptuous>=0.9.3')
-    res.append('certifi>=2018.4.16')
+    res.append('certifi>=2018.10.15')
     res.append('six>=1.11.0')
     return res
 

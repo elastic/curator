@@ -143,16 +143,18 @@ class TestGetDateRegex(TestCase):
 class TestFixEpoch(TestCase):
     def test_fix_epoch(self):
         for long_epoch, epoch in [
+            (1459287636, 1459287636),
+            (14592876369, 14592876),
+            (145928763699, 145928763),
             (1459287636999, 1459287636),
             (1459287636000000, 1459287636),
             (145928763600000000, 1459287636),
             (145928763600000001, 1459287636),
             (1459287636123456789, 1459287636),
-            (1459287636999, 1459287636),
                 ]:
             self.assertEqual(epoch, curator.fix_epoch(long_epoch))
     def test_fix_epoch_raise(self):
-        self.assertRaises(ValueError, curator.fix_epoch, 12345678901)
+            self.assertRaises(ValueError, curator.fix_epoch, None)
 
 class TestGetPointOfReference(TestCase):
     def test_get_point_of_reference(self):

@@ -3,6 +3,33 @@
 Changelog
 =========
 
+5.6.0 (13 November 2018)
+------------------------
+
+**New**
+
+  * The ``empty`` filter has been exposed for general use.  This filter matches
+    indices with no documents. (jrask) #1264
+  * Added tests for Elasticsearch 6.3 and 6.4 releases. (untergeek)
+  * Sort indices alphabetically before sorting by age.
+    (tschroeder-zendesk) #1290
+  * Add ``shards`` filtertype (cushind) #1298
+
+**Bug Fixes**
+
+  * Fix YAML linting so that YAML errors are caught and displayed on the
+    command line. Reported in #1237 (untergeek)
+  * Pin ``click`` version for compatibility. (Andrewsville) #1280
+  * Allow much older epoch timestamps (rsteneteg) #1296
+  * Reindex action respects ``ignore_empty_list`` flag (untergeek) #1297
+  * Update ILM index version minimum to 6.6.0 (untergeek)
+  * Catch reindex failures properly. Reported in #1260 (untergeek)
+
+**Documentation**
+
+  * Added Reindex example to the sidebar. (Nostalgiac) #1227
+  * Fix Rollover example text and typos. (untergeek)
+
 5.5.4 (23 May 2018)
 -------------------
 

@@ -46,15 +46,15 @@ def get_yaml(path):
         else:
             envvar = proto
         return os.environ[envvar] if envvar in os.environ else default
+
     yaml.add_constructor('!single', single_constructor)
 
-    raw = read_file(path)
     try:
-        cfg = yaml.load(raw)
-    except yaml.scanner.ScannerError as e:
-        raise exceptions.ConfigurationError(
-            'Unable to parse YAML file. Error: {0}'.format(e))
-    return cfg
+        return yaml.load(read_file(path))
+    except yaml.scanner.ScannerError as err:
+        print('Unable to read/parse YAML file: {0}'.format(path))
+        print(err)
+        sys.exit(1)
 
 def test_client_options(config):
     """
@@ -235,19 +235,18 @@ def fix_epoch(epoch):
         even nanoseconds.
     :rtype: int
     """
-    # No decimals allowed
-    epoch = int(epoch)
+    try:
+        # No decimals allowed
+        epoch = int(epoch)
+    except Exception as ex:
+        raise ValueError('Invalid epoch received, unable to convert {} to int'.format(epoch))
+
     # If we're still using this script past January, 2038, we have bigger
     # problems than my hacky math here...
     if len(str(epoch)) <= 10:
         return epoch
-    elif len(str(epoch)) == 13:
+    elif len(str(epoch)) > 10 and len(str(epoch)) <= 13:
         return int(epoch/1000)
-    elif len(str(epoch)) > 10 and len(str(epoch)) < 13:
-        raise ValueError(
-            'Unusually formatted epoch timestamp.  '
-            'Should be 10, 13, or more digits'
-        )
     else:
         orders_of_magnitude = len(str(epoch)) - 10
         powers_of_ten = 10**orders_of_magnitude
@@ -1641,6 +1640,16 @@ def task_check(client, task_id=None):
         )
     task = task_data['task']
     completed = task_data['completed']
+    if task['action'] == 'indices:data/write/reindex':
+        logger.debug('It\'s a REINDEX TASK')
+        logger.debug('TASK_DATA: {0}'.format(task_data))
+        logger.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+        if 'response' in task_data:
+            response = task_data['response']
+            if len(response['failures']) > 0:
+                raise exceptions.FailedReindex(
+                    'Failures found in reindex response: {0}'.format(response['failures'])
+                )
     running_time = 0.000000001 * task['running_time_in_nanos']
     logger.debug('running_time_in_nanos = {0}'.format(running_time))
     descr = task['description']
@@ -1842,7 +1851,7 @@ def get_datemath(client, datemath, random_element=None):
     """
     if random_element is None:
         randomPrefix = (
-            'curator_get_datemath_function_' + 
+            'curator_get_datemath_function_' +
             ''.join(random.choice(string.ascii_lowercase) for _ in range(32))
         )
     else:
@@ -1885,8 +1894,8 @@ def isdatemath(data):
 
 def parse_datemath(client, value):
     """
-    Check if ``value`` is datemath.  
-    Parse it if it is.  
+    Check if ``value`` is datemath.
+    Parse it if it is.
     Return the bare value otherwise.
     """
     if not isdatemath(value):

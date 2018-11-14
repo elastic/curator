@@ -116,6 +116,70 @@ class TestActionFileReindex(CuratorTestCase):
                     ],
                     )
         self.assertEqual(expected, self.client.count(index=dest)['count'])
+    def test_reindex_selected_empty_list_fail(self):
+        wait_interval = 1
+        max_wait = 3
+        source1 = 'my_source1'
+        source2 = 'my_source2'
+        dest = 'my_dest'
+        expected = 6
+
+        self.create_index(source1)
+        self.add_docs(source1)
+        self.create_index(source2)
+        for i in ["4", "5", "6"]:
+            self.client.create(
+                index=source2, doc_type='log', id=i,
+                body={"doc" + i :'TEST DOCUMENT'},
+            )
+            # Decorators make this pylint exception necessary
+            # pylint: disable=E1123
+            self.client.indices.flush(index=source2, force=True)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.reindex_empty_list.format('false', wait_interval, max_wait, dest))
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(_.exit_code, 1)
+    def test_reindex_selected_empty_list_pass(self):
+        wait_interval = 1
+        max_wait = 3
+        source1 = 'my_source1'
+        source2 = 'my_source2'
+        dest = 'my_dest'
+        expected = 6
+
+        self.create_index(source1)
+        self.add_docs(source1)
+        self.create_index(source2)
+        for i in ["4", "5", "6"]:
+            self.client.create(
+                index=source2, doc_type='log', id=i,
+                body={"doc" + i :'TEST DOCUMENT'},
+            )
+            # Decorators make this pylint exception necessary
+            # pylint: disable=E1123
+            self.client.indices.flush(index=source2, force=True)
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.reindex_empty_list.format('true', wait_interval, max_wait, dest))
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(_.exit_code, 0)
     def test_reindex_from_remote(self):
         wait_interval = 1
         max_wait = 3
@@ -413,3 +477,34 @@ class TestActionFileReindex(CuratorTestCase):
                     ],
                     )
         self.assertEqual(expected, self.client.count(index=dest)['count'])
+    def test_reindex_bad_mapping(self):
+        # This test addresses GitHub issue #1260 
+        wait_interval = 1
+        max_wait = 3
+        source = 'my_source'
+        dest = 'my_dest'
+        expected = 1
+
+        self.create_index(source)
+        self.add_docs(source)
+        # Create the dest index with a different mapping.
+        self.client.indices.create(
+            index=dest,
+            body={
+                'settings': {'number_of_shards': 1, 'number_of_replicas': 0},
+                'mappings': {'log': { 'properties': { 'doc1': { 'type': 'integer'}}}}
+            }
+        )
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.reindex.format(wait_interval, max_wait, source, dest))
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(expected, _.exit_code)

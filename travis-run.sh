@@ -36,36 +36,50 @@ start_es6() {
   # curl http://127.0.0.1:$es_port && echo "ES is up!" || cat /tmp/$es_cluster.log ./elasticsearch/logs/$es_cluster.log
 }
 
+common_node_settings() {
+  major=$1
+  minor=$2
+  port=$3
+  clustername=$4
+  file=$5
+  echo 'network.host: 127.0.0.1' > $file
+  echo "http.port: ${port}" >> $file
+  echo "cluster.name: ${clustername}" >> $file
+  echo 'node.max_local_storage_nodes: 2' >> $file
+  echo "discovery.zen.ping.unicast.hosts: [\"127.0.0.1:${port}\"]" >> $file
+  if [[ $major -ge 6 ]] && [[ $minor -ge 3 ]]; then
+    echo 'xpack.monitoring.enabled: false' >> $file
+    echo 'node.ml: false' >> $file
+    echo 'xpack.security.enabled: false' >> $file
+    echo 'xpack.watcher.enabled: false' >> $file
+  fi
+}
+
 setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
 
 java_home='/usr/lib/jvm/java-8-oracle'
+
+## Get major and minor version numbers
+MAJORVER=$(echo $ES_VERSION | awk -F\. '{print $1}')
+MINORVER=$(echo $ES_VERSION | awk -F\. '{print $2}')
 
 ### Build local cluster config (since 5.4 removed most flags)
 LC=elasticsearch/localcluster
 mkdir -p $LC
 cp elasticsearch/config/log4j2.properties $LC
 cp elasticsearch/config/jvm.options $LC
-echo 'network.host: 127.0.0.1' > $LC/elasticsearch.yml
-echo 'http.port: 9200' >> $LC/elasticsearch.yml
-echo 'cluster.name: local' >> $LC/elasticsearch.yml
-echo 'node.max_local_storage_nodes: 2' >> $LC/elasticsearch.yml
-echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9200"]' >> $LC/elasticsearch.yml
+common_node_settings $MAJORVER $MINORVER 9200 "local" "$LC/elasticsearch.yml"
 echo 'path.repo: /' >> $LC/elasticsearch.yml
 echo 'reindex.remote.whitelist: localhost:9201' >> $LC/elasticsearch.yml
+
 
 ### Build remote cluster config (since 5.4 removed most flags)
 RC=elasticsearch/remotecluster
 mkdir -p $RC
 cp elasticsearch/config/log4j2.properties $RC
 cp elasticsearch/config/jvm.options $RC
-echo 'network.host: 127.0.0.1' > $RC/elasticsearch.yml
-echo 'http.port: 9201' >> $RC/elasticsearch.yml
-echo 'cluster.name: remote' >> $RC/elasticsearch.yml
-echo 'node.max_local_storage_nodes: 2' >> $RC/elasticsearch.yml
-echo 'discovery.zen.ping.unicast.hosts: ["127.0.0.1:9201"]' >> $RC/elasticsearch.yml
+common_node_settings $MAJORVER $MINORVER 9201 remote "$RC/elasticsearch.yml"
 
-
-MAJORVER=$(echo $ES_VERSION | awk -F\. '{print $1}')
 if [[ $MAJORVER -lt 6 ]]; then
   start_es $java_home "-d -Epath.conf=$LC" 9200 "local"
   start_es $java_home "-d -Epath.conf=$RC" 9201 "remote"

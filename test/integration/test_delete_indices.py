@@ -462,7 +462,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         self.assertEquals(0, len(curator.get_indices(self.client)))
     def test_allow_ilm_indices_true(self):
         # ILM will not be added until 6.4
-        if curator.get_version(self.client) < (6,4,0):
+        if curator.get_version(self.client) < (6,6,0):
             self.assertTrue(True)
         else:
             self.create_indices(10)
@@ -489,7 +489,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
             self.assertEquals(5, len(curator.get_indices(self.client)))
     def test_allow_ilm_indices_false(self):
         # ILM will not be added until 6.4
-        if curator.get_version(self.client) < (6,4,0):
+        if curator.get_version(self.client) < (6,6,0):
             self.assertTrue(True)
         else:
             self.create_indices(10)

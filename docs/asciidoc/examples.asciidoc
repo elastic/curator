@@ -16,6 +16,7 @@ You can use <<envvars,environment variables>> in your configuration files.
 * <<ex_delete_snapshots,delete_snapshots>>
 * <<ex_forcemerge,forcemerge>>
 * <<ex_open,open>>
+* <<ex_reindex,reindex>>
 * <<ex_replicas,replicas>>
 * <<ex_restore,restore>>
 * <<ex_rollover,rollover>>
@@ -706,18 +707,18 @@ actions:
   1:
     action: rollover
     description: >-
-      Rollover the index associated with index 'name', which should be in the
-      form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+      Rollover the index associated with alias 'aliasname', which should be in the
+      format of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
     options:
       disable_action: True
       name: aliasname
       conditions:
         max_age: 1d
         max_docs: 1000000
+        max_size: 50g
       extra_settings:
         index.number_of_shards: 3
         index.number_of_replicas: 1
-      disable_action: True
 -------------
 
 
