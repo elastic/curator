@@ -341,18 +341,17 @@ wget https://bootstrap.pypa.io/ez_setup.py -O - | python - --user
 
 === Urllib3
 Download and install the https://github.com/shazow/urllib3[urllib3] dependency
-(1.8.3 or greater):
+(1.22):
 
-. `wget https://github.com/shazow/urllib3/archive/1.20.tar.gz -O urllib3-1.20.tar.gz`
-. `pip install urllib3-1.20.tar.gz`
+. `wget https://github.com/shazow/urllib3/archive/1.22.tar.gz -O urllib3-1.22.tar.gz`
+. `pip install urllib3-1.22.tar.gz`
 
 or uncompress and run `python setup.py install`
 
 &nbsp;
 
 === click
-Download and install the http://click.pocoo.org/[click] dependency (6.0 or
-greater):
+Download and install the http://click.pocoo.org/[click] dependency (6.7):
 
 . `wget https://github.com/pallets/click/archive/6.7.tar.gz -O click-6.7.tar.gz`
 . `pip install click-6.7.tar.gz`
@@ -365,7 +364,7 @@ or uncompress and run `python setup.py install`
 Download and install the `certifi` dependency.  Always use the most recent
 version:
 
-. `wget https://github.com/certifi/python-certifi/archive/2018.04.16.tar.gz -O certifi.tar.gz`
+. `wget https://github.com/certifi/python-certifi/archive/2018.10.15.tar.gz -O certifi.tar.gz`
 . `pip install certifi.tar.gz`
 
 &nbsp;
@@ -383,10 +382,10 @@ or uncompress and run `python setup.py install`
 
 === voluptuous
 Download and install the https://github.com/alecthomas/voluptuous[voluptuous]
-dependency (0.9.3 or greater):
+dependency (0.11.5):
 
-. `wget https://github.com/alecthomas/voluptuous/archive/0.9.3.tar.gz`
-. `pip install 0.9.3.tar.gz`
+. `wget https://github.com/alecthomas/voluptuous/archive/0.11.5.tar.gz`
+. `pip install 0.11.5.tar.gz`
 
 or uncompress and run `python setup.py install`
 
