@@ -3,6 +3,18 @@
 Changelog
 =========
 
+5.7.0 (? ? ?)
+-------------
+
+**New**
+
+  * TravisCI testing for Elasticsearch 6.5.0 (untergeek)
+
+**Bug Fixes**
+
+  * Report rollover results in both dry-run and regular runs. Requested
+    in #1313 (untergeek)
+
 5.6.0 (13 November 2018)
 ------------------------
 

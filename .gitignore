@@ -1,4 +1,6 @@
 *.egg
+localhost.es
+oneliners.py
 *.py[co]
 *.zip
 *~
