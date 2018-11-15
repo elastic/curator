@@ -18,6 +18,7 @@ env:
   - ES_VERSION=6.2.4
   - ES_VERSION=6.3.2
   - ES_VERSION=6.4.3
+  - ES_VERSION=6.5.0
 
 os: linux
 
