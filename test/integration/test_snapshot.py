@@ -116,7 +116,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, _.exit_code)
+        self.assertNotEqual(0, _.exit_code)
     def test_extra_option(self):
         self.create_indices(5)
         self.write_config(
@@ -131,7 +131,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, _.exit_code)
+        self.assertNotEqual(0, _.exit_code)
 
 class TestCLISnapshot(CuratorTestCase):
     def test_snapshot(self):

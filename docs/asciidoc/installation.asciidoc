@@ -351,10 +351,10 @@ or uncompress and run `python setup.py install`
 &nbsp;
 
 === click
-Download and install the http://click.pocoo.org/[click] dependency (6.7):
+Download and install the http://click.pocoo.org/[click] dependency (7.0):
 
-. `wget https://github.com/pallets/click/archive/6.7.tar.gz -O click-6.7.tar.gz`
-. `pip install click-6.7.tar.gz`
+. `wget https://github.com/pallets/click/archive/7.0.tar.gz -O click-7.0.tar.gz`
+. `pip install click-7.0.tar.gz`
 
 or uncompress and run `python setup.py install`
 

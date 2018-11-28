@@ -5,7 +5,7 @@ from curator.utils import byte_size
 from datetime import datetime
 
 #### Indices ####
-@click.command(context_settings=get_width())
+@click.command(name="show_indices", context_settings=get_width())
 @click.option('--verbose', help='Show verbose output.', is_flag=True, show_default=True)
 @click.option('--header', help='Print header if --verbose', is_flag=True, show_default=True)
 @click.option('--epoch', help='Print time as epoch if --verbose', is_flag=True, show_default=True)
@@ -69,7 +69,7 @@ def show_indices(ctx, verbose, header, epoch, ignore_empty_list, allow_ilm_indic
             click.echo('{0}'.format(idx))
 
 #### Snapshots ####
-@click.command(context_settings=get_width())
+@click.command(name="show_snapshots", context_settings=get_width())
 @click.option('--repository', type=str, required=True, help='Snapshot repository name')
 @click.option('--ignore_empty_list', is_flag=True, help='Do not raise exception if there are no actionable snapshots')
 @click.option('--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}', help='JSON string representing an array of filters.')

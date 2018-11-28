@@ -214,7 +214,7 @@ class TestActionFileRollover(CuratorTestCase):
                     ],
                     )
         self.assertEqual(expected, self.client.indices.get_alias(name=alias))
-        self.assertEqual(-1, _.exit_code)
+        self.assertNotEqual(0, _.exit_code)
     def test_bad_settings(self):
         oldindex  = 'rolltome-000001'
         alias     = 'delamitri'
@@ -254,7 +254,7 @@ class TestActionFileRollover(CuratorTestCase):
                     ],
                     )
         self.assertEqual([], curator.get_indices(self.client))
-        self.assertEqual(-1, _.exit_code)
+        self.assertNotEqual(0, _.exit_code)
     def test_max_age_with_new_name(self):
         oldindex  = 'rolltome-000001'
         newindex  = 'crazy_test'

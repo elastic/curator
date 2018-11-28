@@ -10,6 +10,10 @@ Changelog
 
   * TravisCI testing for Elasticsearch 6.5.0 (untergeek)
 
+**General**
+
+  * Bumped ``click`` (python module) version dependency to 7.0
+
 **Bug Fixes**
 
   * Report rollover results in both dry-run and regular runs. Requested
