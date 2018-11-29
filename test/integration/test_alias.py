@@ -306,7 +306,7 @@ class TestActionFileAlias(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_add_and_remove_sorted(self):
         alias = 'testalias'
         alias_add_remove = (

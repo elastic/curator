@@ -409,7 +409,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_945(self):
         self.create_indices(10)
         self.write_config(

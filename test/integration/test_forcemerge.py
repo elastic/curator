@@ -53,7 +53,7 @@ class TestActionFileforceMerge(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
 
 class TestCLIforceMerge(CuratorTestCase):
     def test_merge(self):

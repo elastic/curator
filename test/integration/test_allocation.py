@@ -148,7 +148,7 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_skip_closed(self):
         key = 'tag'
         value = 'value'

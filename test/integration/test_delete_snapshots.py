@@ -95,7 +95,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
 
 class TestCLIDeleteSnapshots(CuratorTestCase):
     def test_deletesnapshot(self):

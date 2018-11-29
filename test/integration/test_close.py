@@ -152,7 +152,7 @@ class TestActionFileClose(CuratorTestCase):
                 metric='metadata',
             )['metadata']['indices']['dummy']['state']
         )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
 
 class TestCLIClose(CuratorTestCase):
     def test_close_delete_aliases(self):
