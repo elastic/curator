@@ -132,7 +132,7 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_extra_option(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))

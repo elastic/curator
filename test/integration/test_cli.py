@@ -35,7 +35,7 @@ class TestCLIMethods(CuratorTestCase):
 
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_no_config(self):
         # This test checks whether localhost:9200 is provided if no hosts or
         # port are in the configuration. But in testing, sometimes
@@ -118,7 +118,7 @@ class TestCLIMethods(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_action_is_None(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))

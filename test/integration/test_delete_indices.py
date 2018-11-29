@@ -423,7 +423,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertNotEqual(0, result.exit_code)
     def test_name_epoch_zero(self):
         self.create_index('epoch_zero-1970.01.01')
         self.write_config(
