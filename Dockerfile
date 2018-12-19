@@ -10,7 +10,7 @@ RUN pip3 install -r requirements.txt
 RUN python3 setup.py build_exe
 
 FROM alpine:3.6
-RUN apk --no-cache upgrade && apk --no-cache add ca-certificates
+RUN apk --no-cache upgrade && apk --no-cache add ca-certificates && update-ca-certificates && apk --no-cache add wget
 COPY --from=builder build/exe.linux-x86_64-3.6 /curator/
 USER nobody:nobody
 ENTRYPOINT ["/curator/curator"]
