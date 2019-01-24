@@ -448,7 +448,7 @@ class IndexList(object):
         pattern = re.compile(regex)
         for index in self.working_list():
             self.loggit.debug('Filter by regex: Index: {0}'.format(index))
-            match = pattern.match(index)
+            match = pattern.search(index)
             if match:
                 self.__excludify(True, exclude, index)
             else:

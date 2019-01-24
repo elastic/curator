@@ -138,6 +138,24 @@ class TestIndexListRegexFilters(TestCase):
         )
         il.filter_by_regex(kind='prefix', value='ind', exclude=True)
         self.assertEqual([], il.indices)
+    def test_filter_by_regex_middle(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertEqual(
+            [u'index-2016.03.03', u'index-2016.03.04'],
+            sorted(il.indices)
+        )
+        il.filter_by_regex(kind='regex', value='dex')
+        self.assertEqual(
+            [u'index-2016.03.03', u'index-2016.03.04'],
+            sorted(il.indices)
+        )
+        il.filter_by_regex(kind='regex', value='dex', exclude=True)
+        self.assertEqual([], il.indices)
     def test_filter_by_regex_timestring(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
