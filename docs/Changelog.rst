@@ -14,6 +14,7 @@ Changelog
 
   * Report rollover results in both dry-run and regular runs. Requested
     in #1313 (untergeek)
+  * Hide passwords in DEBUG logs. Requested in #1336 (untergeek)
 
 5.6.0 (13 November 2018)
 ------------------------
