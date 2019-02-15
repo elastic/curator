@@ -1215,6 +1215,7 @@ class IndexList(object):
 
         self.loggit.debug('All filters: {0}'.format(filter_dict['filters']))
         for f in filter_dict['filters']:
+            f = f.copy()
             self.loggit.debug('Top of the loop: {0}'.format(self.indices))
             self.loggit.debug('Un-parsed filter args: {0}'.format(f))
             # Make sure we got at least this much in the configuration
