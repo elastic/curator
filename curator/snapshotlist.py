@@ -504,6 +504,7 @@ class SnapshotList(object):
 
         self.loggit.debug('All filters: {0}'.format(config['filters']))
         for f in config['filters']:
+            f = f.copy()
             self.loggit.debug('Top of the loop: {0}'.format(self.snapshots))
             self.loggit.debug('Un-parsed filter args: {0}'.format(f))
             self.loggit.debug('Parsed filter args: {0}'.format(
