@@ -101,26 +101,26 @@ class CuratorTestCase(TestCase):
     def parse_args(self):
         return Args(self.args)
 
-    def create_indices(self, count, unit=None):
+    def create_indices(self, count, unit=None, ilm_policy=None):
         now = datetime.utcnow()
         unit = unit if unit else self.args['time_unit']
         format = DATEMAP[unit]
         if not unit == 'months':
             step = timedelta(**{unit: 1})
             for _ in range(count):
-                self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
+                self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False, ilm_policy=ilm_policy)
                 now -= step
         else: # months
             now = date.today()
             d = date(now.year, now.month, 1)
-            self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False)
+            self.create_index(self.args['prefix'] + now.strftime(format), wait_for_yellow=False, ilm_policy=ilm_policy)
 
             for _ in range(1, count):
                 if d.month == 1:
                     d = date(d.year-1, 12, 1)
                 else:
                     d = date(d.year, d.month-1, 1)
-                self.create_index(self.args['prefix'] + datetime(d.year, d.month, 1).strftime(format), wait_for_yellow=False)
+                self.create_index(self.args['prefix'] + datetime(d.year, d.month, 1).strftime(format), wait_for_yellow=False, ilm_policy=ilm_policy)
         # pylint: disable=E1123
         self.client.cluster.health(wait_for_status='yellow')
 
@@ -128,11 +128,11 @@ class CuratorTestCase(TestCase):
         # pylint: disable=E1123
         self.client.cluster.health(wait_for_status='yellow')
 
-    def create_index(self, name, shards=1, wait_for_yellow=True):
-        self.client.indices.create(
-            index=name,
-            body={'settings': {'number_of_shards': shards, 'number_of_replicas': 0}}
-        )
+    def create_index(self, name, shards=1, wait_for_yellow=True, ilm_policy=None):
+        request_body={'settings': {'number_of_shards': shards, 'number_of_replicas': 0}}
+        if ilm_policy is not None:
+            request_body['settings']['index'] = {'lifecycle': {'name': ilm_policy}}
+        self.client.indices.create(index=name, body=request_body)
         if wait_for_yellow:
             self.wfy()
 

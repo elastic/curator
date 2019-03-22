@@ -8,13 +8,15 @@ Changelog
 
 **New**
 
-  * TravisCI testing for Elasticsearch 6.5.0 (untergeek)
+  * TravisCI testing for Elasticsearch 6.5.x, and 6.6.x (untergeek)
 
 **Bug Fixes**
 
   * Report rollover results in both dry-run and regular runs. Requested
     in #1313 (untergeek)
   * Hide passwords in DEBUG logs. Requested in #1336 (untergeek)
+  * With ILM fully released, Curator tests now correctly use the
+    ``allow_ilm_indices`` option. (untergeek)
 
 5.6.0 (13 November 2018)
 ------------------------
