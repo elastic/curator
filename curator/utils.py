@@ -50,7 +50,7 @@ def get_yaml(path):
     yaml.add_constructor('!single', single_constructor)
 
     try:
-        return yaml.load(read_file(path))
+        return yaml.load(read_file(path), Loader=yaml.FullLoader)
     except yaml.scanner.ScannerError as err:
         print('Unable to read/parse YAML file: {0}'.format(path))
         print(err)
