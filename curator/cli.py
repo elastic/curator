@@ -134,7 +134,12 @@ def run(config, action_file, dry_run=False):
         logger.debug('ignore_empty_list = {0}'.format(ignore_empty_list))
         allow_ilm = actions[idx]['options'].pop('allow_ilm_indices')
         logger.debug('allow_ilm_indices = {0}'.format(allow_ilm))
-
+        ### Filter ILM indices unless expressly permitted
+        if not allow_ilm and action not in settings.snapshot_actions():
+            if 'filters' in actions[idx]:
+                actions[idx]['filters'].append({'filtertype': 'ilm'})
+            else:
+                actions[idx]['filters'] = [{'filtertype': 'ilm'}]
         ### Skip to next action if 'disabled'
         if action_disabled:
             logger.info(
