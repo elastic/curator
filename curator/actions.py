@@ -1945,12 +1945,6 @@ class Shrink(object):
             raise exceptions.ConfigurationError('Node "{0}" listed for exclusion'.format(self.shrink_node))
         if not self._data_node(node_id):
             raise exceptions.ActionError('Node "{0}" is not usable as a shrink node'.format(self.shrink_node))
-        if not utils.single_data_path(self.client, node_id):
-            raise exceptions.ActionError(
-                'Node "{0}" has multiple data paths and cannot be used '
-                'for shrink operations.'
-                .format(self.shrink_node)
-            )
         self.shrink_node_avail = (
             self.client.nodes.stats()['nodes'][node_id]['fs']['total']['available_in_bytes']
         )
@@ -1974,11 +1968,6 @@ class Shrink(object):
                 continue
             if not self._data_node(node_id):
                 self.loggit.debug('Node "{0}" is not a data node'.format(name))
-                continue
-            if not utils.single_data_path(self.client, node_id):
-                self.loggit.info(
-                    'Node "{0}" has multiple data paths and will not be used for '
-                    'shrink operations.'.format(name))
                 continue
             value = nodes[node_id]['fs']['total']['available_in_bytes']
             if value > mvn_avail:
