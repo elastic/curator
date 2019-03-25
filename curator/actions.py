@@ -233,7 +233,7 @@ class Allocation(object):
         )
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
-
+        self.loggit.info('Updating {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         self.loggit.info('Updating index setting {0}'.format(self.body))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -288,7 +288,7 @@ class Close(object):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Closing selected indices: {0}'.format(self.index_list.indices))
+            'Closing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -531,7 +531,7 @@ class DeleteIndices(object):
         """
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Deleting selected indices: {0}'.format(self.index_list.indices))
+            'Deleting {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -581,7 +581,7 @@ class ForceMerge(object):
         self.index_list.filter_forceMerged(
             max_num_segments=self.max_num_segments)
         self.index_list.empty_list_check()
-        self.loggit.info('forceMerging selected indices')
+        self.loggit.info('forceMerging {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             for index_name in self.index_list.indices:
                 self.loggit.info(
@@ -708,8 +708,8 @@ class IndexSettings(object):
         # didn't result in an empty list (or otherwise empty)
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Applying index settings to indices: '
-            '{0}'.format(self.index_list.indices)
+            'Applying index settings to {0} indices: '
+            '{1}'.format(len(self.index_list.indices), self.index_list.indices)
         )
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -750,7 +750,7 @@ class Open(object):
         """
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Opening selected indices: {0}'.format(self.index_list.indices))
+            'Opening {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -815,8 +815,8 @@ class Replicas(object):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Setting the replica count to {0} for indices: '
-            '{1}'.format(self.count, self.index_list.indices)
+            'Setting the replica count to {0} for {1} indices: '
+            '{2}'.format(self.count, len(self.index_list.indices), self.index_list.indices)
         )
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -1019,7 +1019,7 @@ class DeleteSnapshots(object):
         seconds between retries.
         """
         self.snapshot_list.empty_list_check()
-        self.loggit.info('Deleting selected snapshots')
+        self.loggit.info('Deleting {0} selected snapshots: {1}'.format(len(self.snapshot_list.snapshots), self.snapshot_list.snapshots))
         if not utils.safe_to_snap(
             self.client, repository=self.repository,
             retry_interval=self.retry_interval, retry_count=self.retry_count):
@@ -2140,6 +2140,7 @@ class Shrink(object):
         self.index_list.filter_closed()
         self.index_list.filter_by_shards(number_of_shards=self.number_of_shards)
         self.index_list.empty_list_check()
+        self.loggit.info('Shrinking {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
