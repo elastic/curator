@@ -582,8 +582,9 @@ create_index_with_extra_settings = ('---\n'
 '    options:\n'
 '      name: {0}\n'
 '      extra_settings:\n'
-'        number_of_shards: 1\n'
-'        number_of_replicas: 0\n'
+'        settings:\n'
+'          number_of_shards: 1\n'
+'          number_of_replicas: 0\n'
 '      continue_if_exception: False\n'
 '      disable_action: False\n')
 

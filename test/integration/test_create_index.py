@@ -39,13 +39,10 @@ class TestCLICreateIndex(CuratorTestCase):
             testvars.create_index_with_extra_settings.format('testing'))
         self.assertEqual([], curator.get_indices(self.client))
         test = clicktest.CliRunner()
-        result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+        _ = test.invoke(
+            curator.cli,
+            ['--config', self.args['configfile'], self.args['actionfile']],
+        )
         ilo = curator.IndexList(self.client)
         self.assertEqual(['testing'], ilo.indices)
         self.assertEqual(ilo.index_info['testing']['number_of_shards'], '1')

@@ -336,6 +336,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         # Decorators cause this pylint error
         # pylint: disable=E1123 
         self.client.indices.flush(index='_all', force=True)
+        self.client.indices.refresh(index='intersecting,notintersecting')
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -346,12 +347,9 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         )
         test = clicktest.CliRunner()
         result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            ['--config', self.args['configfile'], self.args['actionfile']],
+        )
         self.assertEqual(0, result.exit_code)
         indices = curator.get_indices(self.client)
         self.assertEquals(1, len(indices))
