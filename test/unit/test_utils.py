@@ -227,7 +227,7 @@ class TestCheckVersion(TestCase):
         self.assertRaises(curator.CuratorException, curator.check_version, client)
     def test_check_version_greater_than(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '7.0.1'} }
+        client.info.return_value = {'version': {'number': '8.0.1'} }
         self.assertRaises(curator.CuratorException, curator.check_version, client)
 
 class TestCheckMaster(TestCase):

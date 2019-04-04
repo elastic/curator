@@ -28,15 +28,13 @@ class TestActionFileforceMerge(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.forcemerge_test.format(count, 0.20))
+            testvars.forcemerge_test.format(count, 0.9))
         test = clicktest.CliRunner()
         _ = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            ['--config', self.args['configfile'], self.args['actionfile']],
+        )
+        self.client.indices.refresh(index=idx)
         ilo2 = curator.IndexList(self.client)
         ilo2._get_segment_counts()
         self.assertEqual(count, ilo2.index_info[idx]['segments'])

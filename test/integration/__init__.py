@@ -10,6 +10,7 @@ from datetime import timedelta, datetime, date
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError
 from subprocess import Popen, PIPE
+from curator import get_version
 
 from . import testvars as testvars
 from unittest import SkipTest, TestCase
@@ -138,13 +139,17 @@ class CuratorTestCase(TestCase):
 
     def add_docs(self, idx):
         for i in ["1", "2", "3"]:
-            self.client.create(
-                index=idx, doc_type='log', id=i,
-                body={"doc" + i :'TEST DOCUMENT'},
-            )
+            ver = get_version(self.client)
+            if ver >= (7, 0, 0):
+                self.client.create(
+                    index=idx, doc_type='_doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+            else:
+                self.client.create(
+                    index=idx, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
             # This should force each doc to be in its own segment.
             # pylint: disable=E1123
             self.client.indices.flush(index=idx, force=True)
+            self.client.indices.refresh(index=idx)
 
     def create_snapshot(self, name, csv_indices):
         body = {

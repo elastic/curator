@@ -8,7 +8,8 @@ Changelog
 
 **New**
 
-  * TravisCI testing for Elasticsearch 6.5.x, and 6.6.x (untergeek)
+  * Support for Elasticsearch 7.0 #1371 (untergeek)
+  * TravisCI testing for Elasticsearch 6.5, 6.6, 6.7, and 7.0 (untergeek)
 
 **Bug Fixes**
 

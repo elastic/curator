@@ -4,7 +4,7 @@ from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 # Elasticsearch versions supported
 def version_max():
-    return (6, 99, 99)
+    return (7, 99, 99)
 def version_min():
     return (5, 0, 0)
 
