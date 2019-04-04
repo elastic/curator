@@ -28,7 +28,7 @@ class TestActionFileforceMerge(CuratorTestCase):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
-            testvars.forcemerge_test.format(count, 0.1))
+            testvars.forcemerge_test.format(count, 0.9))
         test = clicktest.CliRunner()
         _ = test.invoke(
             curator.cli,

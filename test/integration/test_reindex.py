@@ -92,10 +92,10 @@ class TestActionFileReindex(CuratorTestCase):
             ver = curator.get_version(self.client)
             if ver >= (7, 0, 0):
                 self.client.create(
-                    index=source2, doc_type='_doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=source2, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
             else:
                 self.client.create(
-                    index=source2, doc_type='_doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=source2, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
             # Decorators make this pylint exception necessary
             # pylint: disable=E1123
             self.client.indices.flush(index=source2, force=True)
@@ -454,23 +454,26 @@ class TestActionFileReindex(CuratorTestCase):
         source = 'my_source'
         dest = 'my_dest'
         expected = 1
-
-        self.client.indices.create(
-            index=source,
-            body={
-                'settings': {'number_of_shards': 1, 'number_of_replicas': 0},
-                'mappings': { 'properties': { 'doc1': { 'type': 'text'}}}
+        ver = curator.get_version(self.client)
+        if ver < (7, 0, 0):
+            request_body = {
+                "settings": { "number_of_shards": 1, "number_of_replicas": 0},
+                "mappings": { "doc": { "properties": { "doc1": { "type": "keyword" }}}}
             }
-        )
+        else:
+            request_body = {
+                "settings": { "number_of_shards": 1, "number_of_replicas": 0},
+                "mappings": { "properties": { "doc1": { "type": "keyword" }}}
+            }
+
+        self.client.indices.create(index=source, body=request_body)
         self.add_docs(source)
         # Create the dest index with a different mapping.
-        self.client.indices.create(
-            index=dest,
-            body={
-                'settings': {'number_of_shards': 1, 'number_of_replicas': 0},
-                'mappings': { 'properties': { 'doc1': { 'type': 'integer'}}}
-            }
-        )
+        if ver < (7, 0, 0):
+            request_body['mappings']['doc']['properties']['doc1']['type'] = 'integer'
+        else:
+            request_body['mappings']['properties']['doc1']['type'] = 'integer'
+        self.client.indices.create(index=dest, body=request_body)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],

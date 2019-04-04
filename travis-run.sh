@@ -52,16 +52,16 @@ common_node_settings() {
   port=$3
   clustername=$4
   file=$5
-  transport=$(($port+100))
   echo 'network.host: 127.0.0.1' > $file
   echo "http.port: ${port}" >> $file
-  echo "transport.port: ${transport}" >> $file
   echo "cluster.name: ${clustername}" >> $file
   echo "node.name: ${clustername}" >> $file
   echo 'node.max_local_storage_nodes: 2' >> $file
   if [[ $major -lt 7 ]]; then
     echo "discovery.zen.ping.unicast.hosts: [\"127.0.0.1:${port}\"]" >> $file
   else
+    transport=$(($port+100))
+    echo "transport.port: ${transport}" >> $file
     echo "discovery.seed_hosts: [\"localhost:${transport}\"]" >> $file
     echo "discovery.type: single-node" >> $file
   fi

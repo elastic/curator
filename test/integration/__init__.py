@@ -145,7 +145,7 @@ class CuratorTestCase(TestCase):
                     index=idx, doc_type='_doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
             else:
                 self.client.create(
-                    index=idx, doc_type='_doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=idx, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
             # This should force each doc to be in its own segment.
             # pylint: disable=E1123
             self.client.indices.flush(index=idx, force=True)

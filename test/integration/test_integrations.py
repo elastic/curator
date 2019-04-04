@@ -97,7 +97,7 @@ class TestFilters(CuratorTestCase):
         field = '@timestamp'
         time = '2017-12-31T23:59:59.999Z'
         # Create idx with a single, @timestamped doc
-        self.client.create(index=idx, doc_type='_doc', id=1, body={field: time})
+        self.client.create(index=idx, doc_type='doc', id=1, body={field: time})
         # Flush to ensure it's written
         # Decorators make this pylint exception necessary
         # pylint: disable=E1123
