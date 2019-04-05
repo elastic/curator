@@ -2,7 +2,10 @@ import elasticsearch
 import curator
 import os
 import json
-import string, random, tempfile
+import string
+import random
+import tempfile
+from time import sleep
 import click
 from click import testing as clicktest
 from mock import patch, Mock
@@ -34,9 +37,18 @@ class TestActionFileforceMerge(CuratorTestCase):
             curator.cli,
             ['--config', self.args['configfile'], self.args['actionfile']],
         )
-        self.client.indices.refresh(index=idx)
         ilo2 = curator.IndexList(self.client)
-        ilo2._get_segment_counts()
+        # This stupid block is only for the benefit of Travis CI
+        # With Python 2.7 and ES 7.0, it apparently can finish testing before
+        # the segments have _reported_ as fully merged. This is forcing
+        # 3 checks before giving up and reporting the result.
+        for _ in range(0, 3):   
+            self.client.indices.refresh(index=idx)
+            ilo2._get_segment_counts()
+            if ilo2.index_info[idx]['segments'] == count:
+                break
+            else:
+                sleep(1)
         self.assertEqual(count, ilo2.index_info[idx]['segments'])
     def test_extra_option(self):
         self.write_config(
@@ -67,10 +79,20 @@ class TestCLIforceMerge(CuratorTestCase):
             '--config', self.args['configfile'],
             'forcemerge',
             '--max_num_segments', str(count),
-            '--delay', '0.20',
+            '--delay', '0.9',
             '--filter_list', '{"filtertype":"pattern","kind":"prefix","value":"my"}',
         ]
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIforceMerge.test_merge'))
         ilo2 = curator.IndexList(self.client)
-        ilo2._get_segment_counts()
+        # This stupid block is only for the benefit of Travis CI
+        # With Python 2.7 and ES 7.0, it apparently can finish testing before
+        # the segments have _reported_ as fully merged. This is forcing
+        # 3 checks before giving up and reporting the result.
+        for _ in range(0, 3):   
+            self.client.indices.refresh(index=idx)
+            ilo2._get_segment_counts()
+            if ilo2.index_info[idx]['segments'] == count:
+                break
+            else:
+                sleep(1)
         self.assertEqual(count, ilo2.index_info[idx]['segments'])
