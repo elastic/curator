@@ -2304,7 +2304,7 @@ class Shrink(object):
                     # Do the shrink
                     self.loggit.info('Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
                     try:
-                        self.client.indices.shrink(index=idx, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
+                        self.client.indices.shrink(index=idx, params={'copy_settings':'true'}, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
                         # Wait for it to complete
                         if self.wfc:
                             self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
@@ -2341,4 +2341,3 @@ class Shrink(object):
             # Just in case it fails after attempting to meet this condition
             self._unblock_writes(idx)
             utils.report_failure(e)
-
