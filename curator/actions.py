@@ -2305,6 +2305,10 @@ class Shrink(object):
                     self.loggit.info('Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
                     try:
                         self.client.indices.shrink(index=idx, params={'copy_settings':'true'}, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
+                        self.loggit.debug('unblocking writes on {0}'.format(target))
+                        self._unblock_writes(target)
+                        self.loggit.debug('undoing route reqs for {0}'.format(target))
+                        self.route_index(target, 'require', '_name', '')
                         # Wait for it to complete
                         if self.wfc:
                             self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
