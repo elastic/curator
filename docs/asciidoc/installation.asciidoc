@@ -214,7 +214,7 @@ gpgcheck=1
 gpgkey=http://packages.elastic.co/GPG-KEY-elasticsearch
 enabled=1
 --------------------------------------------------
-=========================================
+========================================
 
 [[yum-binary]]
 === Binary Package Installation
