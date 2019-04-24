@@ -3,6 +3,13 @@
 Changelog
 =========
 
+5.7.1 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Fix ``urllib3`` dependency collision on account of ``boto3`` (untergeek)
+
 5.7.0 (24 April 2019)
 ---------------------
 
