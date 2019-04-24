@@ -1,7 +1,7 @@
 [[examples]]
 == Examples
 
-=== Delete _all_ indices with matching <<timestring>> which are older than 30 days
+=== Delete _all_ indices with matching timestring which are older than 30 days
 
 -----
 curator --host 10.0.0.2 delete indices --older-than 30 --time-unit days \
