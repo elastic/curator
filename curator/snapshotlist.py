@@ -233,7 +233,7 @@ class SnapshotList(object):
         self.empty_list_check()
         pattern = re.compile(regex)
         for snapshot in self.working_list():
-            match = pattern.match(snapshot)
+            match = pattern.search(snapshot)
             self.loggit.debug('Filter by regex: Snapshot: {0}'.format(snapshot))
             if match:
                 self.__excludify(True, exclude, snapshot)

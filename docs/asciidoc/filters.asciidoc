@@ -927,7 +927,7 @@ messages like these in the output:
 * <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
-* <<fe_threshold_behavior,fe_threshold_behavior>> (default is `greater_than`)
+* <<fe_threshold_behavior,threshold_behavior>> (default is `greater_than`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 * <<fe_exclude,exclude>> (default is `False`)

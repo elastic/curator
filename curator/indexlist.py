@@ -448,7 +448,7 @@ class IndexList(object):
         pattern = re.compile(regex)
         for index in self.working_list():
             self.loggit.debug('Filter by regex: Index: {0}'.format(index))
-            match = pattern.match(index)
+            match = pattern.search(index)
             if match:
                 self.__excludify(True, exclude, index)
             else:
@@ -1054,8 +1054,8 @@ class IndexList(object):
 
         :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
             ``relative``.  ``date_from`` and ``date_to`` are required when using
-            ``period_type='absolute'`. ``range_from`` and ``range_to`` are
-            required with ``period_type='relative'`.
+            ``period_type='absolute'``. ``range_from`` and ``range_to`` are
+            required with ``period_type='relative'``.
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
         :arg range_from: How many ``unit`` (s) in the past/future is the origin?
@@ -1075,9 +1075,9 @@ class IndexList(object):
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
-            conjunction with ``source``=``field_stats`` to choose whether to
+            conjunction with ``source='field_stats'`` to choose whether to
             reference the minimum or maximum result value.
-        :arg intersect: Only used when ``source``=``field_stats``.
+        :arg intersect: Only used when ``source='field_stats'``.
             If `True`, only indices where both `min_value` and `max_value` are
             within the period will be selected. If `False`, it will use whichever
             you specified.  Default is `False` to preserve expected behavior.

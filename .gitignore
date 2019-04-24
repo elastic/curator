@@ -10,6 +10,7 @@ oneliners.py
 .eggs
 .idea
 .vscode
+venvs
 Elastic.ico
 Vagrant/centos/6/.vagrant
 Vagrant/centos/7/.vagrant

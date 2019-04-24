@@ -3,17 +3,30 @@
 Changelog
 =========
 
-5.7.0 (? ? ?)
--------------
+5.7.0 (24 April 2019)
+---------------------
 
 **New**
 
-  * TravisCI testing for Elasticsearch 6.5.0 (untergeek)
+  * Support for ``elasticsearch-py`` 7.0.0 (untergeek)
+  * Support for Elasticsearch 7.0 #1371 (untergeek)
+  * TravisCI testing for Elasticsearch 6.5, 6.6, 6.7, and 7.0 (untergeek)
+  * Allow shrink action to use multiple data paths #1350 (IzekChen)
 
 **Bug Fixes**
 
+  * Fix ``regex`` pattern filter to use ``re.search`` #1355 (matthewdupre)
   * Report rollover results in both dry-run and regular runs. Requested
     in #1313 (untergeek)
+  * Hide passwords in DEBUG logs. Requested in #1336 (untergeek)
+  * With ILM fully released, Curator tests now correctly use the
+    ``allow_ilm_indices`` option. (untergeek)
+
+**Documentation**
+
+  * Many thanks to those who submitted documentation fixes, both factual as
+    well as typos!
+  
 
 5.6.0 (13 November 2018)
 ------------------------

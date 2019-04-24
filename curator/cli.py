@@ -4,7 +4,7 @@ import logging
 import click
 from voluptuous import Schema
 from curator import actions
-from curator.config_utils import process_config
+from curator.config_utils import process_config, password_filter
 from curator.defaults import settings
 from curator.exceptions import NoIndices, NoSnapshots
 from curator.indexlist import IndexList
@@ -115,10 +115,10 @@ def run(config, action_file, dry_run=False):
     #########################################
     logger.debug('action_file: {0}'.format(action_file))
     action_config = get_yaml(action_file)
-    logger.debug('action_config: {0}'.format(action_config))
+    logger.debug('action_config: {0}'.format(password_filter(action_config)))
     action_dict = validate_actions(action_config)
     actions = action_dict['actions']
-    logger.debug('Full list of actions: {0}'.format(actions))
+    logger.debug('Full list of actions: {0}'.format(password_filter(actions)))
     action_keys = sorted(list(actions.keys()))
     for idx in action_keys:
         action = actions[idx]['action']
@@ -134,7 +134,12 @@ def run(config, action_file, dry_run=False):
         logger.debug('ignore_empty_list = {0}'.format(ignore_empty_list))
         allow_ilm = actions[idx]['options'].pop('allow_ilm_indices')
         logger.debug('allow_ilm_indices = {0}'.format(allow_ilm))
-
+        ### Filter ILM indices unless expressly permitted
+        if not allow_ilm and action not in settings.snapshot_actions():
+            if 'filters' in actions[idx]:
+                actions[idx]['filters'].append({'filtertype': 'ilm'})
+            else:
+                actions[idx]['filters'] = [{'filtertype': 'ilm'}]
         ### Skip to next action if 'disabled'
         if action_disabled:
             logger.info(

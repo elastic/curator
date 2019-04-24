@@ -1,8 +1,8 @@
-:curator_version: 5.7.0.dev0
+:curator_version: 5.7.0
 :curator_major: 5
-:curator_doc_tree: 5.x
-:es_py_version: 6.3.1
-:es_doc_tree: 6.5
+:curator_doc_tree: 5.7
+:es_py_version: 7.0.0
+:es_doc_tree: 7.0
 :pybuild_ver: 3.6.7
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/{es_doc_tree}
 

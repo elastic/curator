@@ -99,13 +99,7 @@ class TestActionShrink_qualify_single_node(TestCase):
         self.client.nodes.info.return_value = {u'nodes':{self.node_id:{u'roles':[u'ingest']}}}
         shrink = curator.Shrink(self.ilo, shrink_node=self.node_name)
         self.assertRaises(curator.ActionError, shrink.qualify_single_node)
-    def test_multi_data_path_node(self):
-        self.builder()
-        self.client.nodes.stats.return_value = {u'nodes':{self.node_id:{u'fs':{u'data':[u'one',u'two']}, u'name':self.node_name}}}
-        self.client.nodes.info.return_value = {u'nodes':{self.node_id:{u'roles':[u'data']}}}
-        shrink = curator.Shrink(self.ilo, shrink_node=self.node_name)
-        self.assertRaises(curator.ActionError, shrink.qualify_single_node)
-
+        
 class TestActionShrink_most_available_node(TestCase):
     def builder(self):
         self.client = Mock()
@@ -124,13 +118,6 @@ class TestActionShrink_most_available_node(TestCase):
         self.client.nodes.stats.return_value = {u'nodes':{self.node_id:{u'fs':{u'data':[u'one'], u'total':{'available_in_bytes':self.byte_count}}, u'name':self.node_name}}}
         node_filters = {u'exclude_nodes': [self.node_name]}
         shrink = curator.Shrink(self.ilo, node_filters=node_filters)
-        shrink.most_available_node()
-        self.assertIsNone(shrink.shrink_node_name)
-    def test_multi_data_path_node(self):
-        self.builder()
-        self.client.nodes.info.return_value = {u'nodes':{self.node_id:{u'roles':[u'data']}}}
-        self.client.nodes.stats.return_value = {u'nodes':{self.node_id:{u'fs':{u'data':[u'one',u'two'], u'total':{'available_in_bytes':self.byte_count}}, u'name':self.node_name}}}
-        shrink = curator.Shrink(self.ilo)
         shrink.most_available_node()
         self.assertIsNone(shrink.shrink_node_name)
 
