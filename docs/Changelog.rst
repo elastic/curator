@@ -3,6 +3,15 @@
 Changelog
 =========
 
+5.7.3 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Still further package collisions with ``urllib3`` between ``boto3`` and
+    ``requests``.  It was working, but with an unacceptable error, which is
+    addressed in release 5.7.3. (untergeek)
+
 5.7.2 (24 April 2019)
 ---------------------
 
