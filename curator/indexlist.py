@@ -1174,7 +1174,7 @@ class IndexList(object):
             Default is `True`
         """
         self.loggit.debug('Filtering indices with index.lifecycle.name')
-        index_lists = utils.chunk_index_list(self.indices)
+        index_lists = utils.chunk_index_list(self.working_list())
         for l in index_lists:
             working_list = self.client.indices.get_settings(index=utils.to_csv(l))
             if working_list:
