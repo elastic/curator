@@ -3,6 +3,14 @@
 Changelog
 =========
 
+5.7.4 (25 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * ILM filter was reading from full index list, rather than the working list
+    Reported in #1389 (untergeek)
+
 5.7.3 (24 April 2019)
 ---------------------
 
