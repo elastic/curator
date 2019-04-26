@@ -1174,14 +1174,18 @@ class IndexList(object):
             Default is `True`
         """
         self.loggit.debug('Filtering indices with index.lifecycle.name')
-        index_lists = utils.chunk_index_list(self.working_list())
+        index_lists = utils.chunk_index_list(self.indices)
+        if index_lists == [['']]:
+            self.loggit.debug('Empty working list. No ILM indices to filter.')
+            return
         for l in index_lists:
             working_list = self.client.indices.get_settings(index=utils.to_csv(l))
             if working_list:
                 for index in list(working_list.keys()):
                     try:
-                        has_ilm = 'name' in working_list[index]['settings']['index']['lifecycle']
-                        msg = '{0} has index.lifecycle.name {1}'.format(index, working_list[index]['settings']['index']['lifecycle']['name'])
+                        subvalue = working_list[index]['settings']['index']['lifecycle']
+                        has_ilm = 'name' in subvalue
+                        msg = '{0} has index.lifecycle.name {1}'.format(index, subvalue['name'])
                     except KeyError:
                         has_ilm = False
                         msg = 'index.lifecycle.name is not set for index {0}'.format(index)
