@@ -3,6 +3,49 @@
 Changelog
 =========
 
+5.7.5 (26 April 2019)
+---------------------
+
+This has to be a new record with 5 releases in 3 days, however, as a wonderful
+aside, this release is the Curator Haiku release (if you don't know why, look
+up the structure of a Haiku).
+
+**Bug Fix**
+
+  * Persistent ILM filter error has finally been caught. Apparently, in Python,
+    a list of lists ``[[]]`` will evaluate as existing, because it has one
+    array element, even if that element is empty. So, this is my bad, but it is
+    fixed now. (untergeek)
+
+5.7.4 (25 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * ILM filter was reading from full index list, rather than the working list
+    Reported in #1389 (untergeek)
+
+5.7.3 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Still further package collisions with ``urllib3`` between ``boto3`` and
+    ``requests``.  It was working, but with an unacceptable error, which is
+    addressed in release 5.7.3. (untergeek)
+
+5.7.2 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Fix ``urllib3`` dependency collision on account of ``boto3`` (untergeek)
+
+5.7.1 (24 April 2019)
+---------------------
+
+We do not speak of 5.7.1
+
 5.7.0 (24 April 2019)
 ---------------------
 

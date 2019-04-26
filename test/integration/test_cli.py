@@ -233,6 +233,7 @@ class TestCLIMethods(CuratorTestCase):
         self.assertEqual(1, result.exit_code)
     def test_no_options_in_action(self):
         self.create_indices(10)
+        self.create_index('my_index') # Added for the ILM filter's sake
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
