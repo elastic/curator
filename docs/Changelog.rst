@@ -3,6 +3,20 @@
 Changelog
 =========
 
+5.7.5 (26 April 2019)
+---------------------
+
+This has to be a new record with 5 releases in 3 days, however, as a wonderful
+aside, this release is the Curator Haiku release (if you don't know why, look
+up the structure of a Haiku).
+
+**Bug Fix**
+
+  * Persistent ILM filter error has finally been caught. Apparently, in Python,
+    a list of lists ``[[]]`` will evaluate as existing, because it has one
+    array element, even if that element is empty. So, this is my bad, but it is
+    fixed now. (untergeek)
+
 5.7.4 (25 April 2019)
 ---------------------
 
