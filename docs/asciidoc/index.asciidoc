@@ -1,4 +1,4 @@
-:curator_version: 5.7.4
+:curator_version: 5.7.5
 :curator_major: 5
 :curator_doc_tree: 5.7
 :es_py_version: 7.0.0
