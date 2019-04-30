@@ -3,6 +3,15 @@
 Changelog
 =========
 
+5.7.6 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * Allow aliases in Elasticsearch versions >= 6.5.0 to refer to more than one
+    index, if ``is_write_index`` is present and one index has it set to `True`.
+    Requested in #1342 (untergeek)
+
 5.7.5 (26 April 2019)
 ---------------------
 

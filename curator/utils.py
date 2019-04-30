@@ -78,7 +78,7 @@ def test_client_options(config):
 def rollable_alias(client, alias):
     """
     Ensure that `alias` is an alias, and points to an index that can use the
-    _rollover API.
+    ``_rollover`` API.
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg alias: An Elasticsearch alias
@@ -92,13 +92,18 @@ def rollable_alias(client, alias):
     # {'there_should_be_only_one': {u'aliases': {'value of "alias" here': {}}}}
     # Where 'there_should_be_only_one' is a single index name that ends in a
     # number, and 'value of "alias" here' reflects the value of the passed
-    # parameter.
+    # parameter, except in versions 6.5.0+ where the ``is_write_index`` setting
+    # makes it possible to have more than one index associated with a rollover index
+    if get_version(client) >= (6, 5, 0):
+        for idx in response:
+            if 'is_write_index' in response[idx]['aliases'][alias]:
+                if response[idx]['aliases'][alias]['is_write_index']:
+                    return True
+    # implied `else` here: If not version 6.5.0+ and has `is_write_index`, it has to fit the
+    # following criteria:
     if len(response) > 1:
         logger.error(
             '"alias" must only reference one index: {0}'.format(response))
-    # elif len(response) < 1:
-    #     logger.error(
-    #         '"alias" must reference at least one index: {0}'.format(response))
     else:
         index = list(response.keys())[0]
         rollable = False
