@@ -3,8 +3,16 @@
 Changelog
 =========
 
-5.7.6 (? ? ?)
--------------
+5.7.6 (6 May 2019)
+------------------
+
+**Security Fix**
+
+Evidently, there were some upstream dependencies which required vulnerable
+versions of ``urllib3`` and ``requests``. These have been addressed.
+
+  * CVE-2018-20060, CVE-2019-11324, CVE-2018-18074 are addressed by this
+    update. Fixed in #1395 (cburgess)
 
 **Bug Fixes**
 
