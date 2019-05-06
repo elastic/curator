@@ -1,7 +1,7 @@
 FROM python:3.6-alpine3.6 as builder
 
-RUN apk --no-cache add build-base tar musl-utils openssl-dev
-RUN pip3 install setuptools cx_Freeze==6.0b1 requests-aws4auth boto3
+RUN apk --no-cache upgrade && apk --no-cache add build-base tar musl-utils openssl-dev
+RUN pip3 install setuptools cx_Freeze==6.0b1
 
 COPY . .
 RUN ln -s /lib/libc.musl-x86_64.so.1 ldd
