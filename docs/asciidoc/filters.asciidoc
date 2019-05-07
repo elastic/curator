@@ -435,7 +435,7 @@ removed from the actionable list, leaving `index-2017.03.03`,
 * <<fe_pattern,pattern>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
-* <<fe_exclude,exclude>> (default is `False`)
+* <<fe_exclude,exclude>> (default is `True`)
 
 === Index-only settings
 
