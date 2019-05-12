@@ -1434,7 +1434,7 @@ class Reindex(object):
                         self.client, 'reindex', task_id=response['task'],
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
-                    self._post_run_quick_check(dest)
+                    self._post_run_quick_check(dest, response['task'])
 
                 else:
                     self.loggit.warn(
