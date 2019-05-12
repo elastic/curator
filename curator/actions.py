@@ -1326,13 +1326,13 @@ class Reindex(object):
         total_processed_items = -1
         task = task_data['task']
         if task['action'] == 'indices:data/write/reindex':
-            logger.debug('It\'s a REINDEX TASK')
-            logger.debug('TASK_DATA: {0}'.format(task_data))
-            logger.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+            self.loggit.debug('It\'s a REINDEX TASK')
+            self.loggit.debug('TASK_DATA: {0}'.format(task_data))
+            self.loggit.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
             if 'response' in task_data:
                 response = task_data['response']
                 total_processed_items = response['total']
-                logger.debug('total_processed_items = {0}'.format(total_processed_items))
+                self.loggit.debug('total_processed_items = {0}'.format(total_processed_items))
 
         return total_processed_items
     
