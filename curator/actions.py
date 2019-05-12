@@ -1324,6 +1324,7 @@ class Reindex(object):
                 '{1}'.format(task_id, e)
             )
         total_processed_items = -1
+        task = task_data['task']
         if task['action'] == 'indices:data/write/reindex':
             logger.debug('It\'s a REINDEX TASK')
             logger.debug('TASK_DATA: {0}'.format(task_data))
