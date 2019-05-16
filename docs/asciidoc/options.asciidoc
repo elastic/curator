@@ -7,6 +7,7 @@
 Options are settings used by <<actions,actions>>.
 
 * <<option_allocation_type,allocation_type>>
+* <<option_allow_ilm,allow_ilm_indices>>
 * <<option_continue,continue_if_exception>>
 * <<option_count,count>>
 * <<option_delay,delay>>
@@ -88,6 +89,29 @@ The value of this setting must be one of `require`, `include`, or `exclude`.
 Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
+
+[[option_allow_ilm]]
+== allow_ilm_indices
+
+This option allows Curator to manage ILM-enabled indices. Exercise caution that
+ILM policies and Curator actions will not interfere with each other.
+
+IMPORTANT: Read more about Curator and Index Lifecycle Management
+  <<ilm,here>>.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete the specified indices"
+options:
+  allow_ilm_indices: true
+filters:
+- filtertype: ...
+-------------
+
+The value of this setting must be either `true` or `false`.
+
+The default value for this setting is `false`.
 
 [[option_continue]]
 == continue_if_exception
