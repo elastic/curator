@@ -592,6 +592,8 @@ def get_client(**kwargs):
             )
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
+        if 'api_key' in kwargs:
+          client.transport.connection_pool.connection.headers.update({'x-api-key': kwargs['api_key']})
         # Verify the version is acceptable.
         check_version(client)
         # Verify "master_only" status, if applicable
