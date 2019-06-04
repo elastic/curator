@@ -3,6 +3,16 @@
 Changelog
 =========
 
+5.7.7 (? ? ?)
+------------------
+
+**New**
+
+  * New client configuration option: api_key - used in the X-Api-key header in
+    requests to Elasticsearch when set, which may be required if ReadonlyREST
+    plugin is configured to require api-key. Requested in #1409 (vetler)
+
+
 5.7.6 (6 May 2019)
 ------------------
 
