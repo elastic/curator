@@ -75,7 +75,7 @@ common_node_settings() {
 
 setup_es https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$ES_VERSION.tar.gz
 
-java_home='/usr/lib/jvm/java-8-oracle'
+java_home='/usr/lib/jvm/java-8-openjdk-amd64/jre'
 
 ## Get major and minor version numbers
 MAJORVER=$(echo $ES_VERSION | awk -F\. '{print $1}')
