@@ -1287,11 +1287,9 @@ def create_repo_body(repo_type=None,
     body['type'] = argdict['repo_type']
     body['settings'] = {}
     settingz = [] # Differentiate from module settings
-    maybes   = [
-                'compress', 'chunk_size',
-                'max_restore_bytes_per_sec', 'max_snapshot_bytes_per_sec'
-               ]
-    s3       = ['bucket', 'region', 'base_path', 'access_key', 'secret_key', 'role_arn']
+    maybes = [
+        'compress', 'chunk_size', 'max_restore_bytes_per_sec', 'max_snapshot_bytes_per_sec']
+    s3args = ['bucket', 'region', 'base_path', 'access_key', 'secret_key', 'role_arn']
 
     settingz += [i for i in maybes if argdict[i]]
     # Type 'fs'
