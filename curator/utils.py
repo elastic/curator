@@ -1112,7 +1112,8 @@ def create_repo_body(repo_type=None,
                      max_snapshot_bytes_per_sec=None,
                      location=None,
                      bucket=None, region=None, base_path=None, access_key=None,
-                     secret_key=None, **kwargs):
+                     secret_key=None,
+                     role_arn=None, **kwargs):
     """
     Build the 'body' portion for use in creating a repository.
 
@@ -1139,6 +1140,8 @@ def create_repo_body(repo_type=None,
         Defaults to value of ``cloud.aws.access_key``.
     :arg secret_key: `S3 only.` The secret key to use for authentication.
         Defaults to value of ``cloud.aws.secret_key``.
+    :arg role_arn: `S3 only.` The role arn for snapshot registration.
+        Required.
 
     :returns: A dictionary suitable for creating a repository from the provided
         arguments.
@@ -1157,7 +1160,7 @@ def create_repo_body(repo_type=None,
                 'compress', 'chunk_size',
                 'max_restore_bytes_per_sec', 'max_snapshot_bytes_per_sec'
                ]
-    s3       = ['bucket', 'region', 'base_path', 'access_key', 'secret_key']
+    s3       = ['bucket', 'region', 'base_path', 'access_key', 'secret_key', 'role_arn']
 
     settingz += [i for i in maybes if argdict[i]]
     # Type 'fs'
