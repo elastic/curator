@@ -1307,7 +1307,7 @@ class Reindex(object):
             del reindex_args['slices']
         return reindex_args
 
-    def _post_run_quick_check(self, index_name):
+    def _post_run_quick_check(self, index_name, task_id):
         # Verify the destination index is there after the fact
         index_exists = self.client.indices.exists(index=index_name)
         alias_instead = self.client.indices.exists_alias(name=index_name)
@@ -1328,6 +1328,36 @@ class Reindex(object):
             raise exceptions.FailedExecution(
                 'Reindex failed. The index or alias identified by "{0}" was '
                 'not found.'.format(index_name)
+            )
+
+        # Verify that the reindex task finished without errors
+        response = self.client.tasks.get(task_id)
+        failures = response['response']['failures']
+
+        if len(failures) > 0:
+            self.loggit.error(
+                'The reindex task completed with {0} errors. '
+                'Check task: {1} for more information.'.format(len(failures), task_id)
+            )
+
+            raise exceptions.FailedExecution(
+                'Reindex completed with {0} errors. '
+                'Check task: {1} for more information.'.format(len(failures), task_id)
+            )
+
+        # Verify that the number of docs in the source and destination index match
+        total_docs = response['task']['status']['total']
+        created_docs = response['task']['status']['created']
+
+        if not created_docs == total_docs:
+            self.loggit.error(
+                'The number of created documents ({0}) in the destination index'
+                'do not match the number of total documents in the source index ({1}). '
+                'Check task: {2} for more information.'.format(created_docs, total_docs, task_id)
+            )
+            raise exceptions.FailedExecution(
+                'Reindex incomplete. The number of created documents ({0}) in the destination index'
+                'do not match the number of total documents in the source index ({1}). '.format(created_docs, total_docs)
             )
 
     def sources(self):
@@ -1399,7 +1429,7 @@ class Reindex(object):
                         self.client, 'reindex', task_id=response['task'],
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
-                    self._post_run_quick_check(dest)
+                    self._post_run_quick_check(dest, response['task'])
 
                 else:
                     self.loggit.warn(
