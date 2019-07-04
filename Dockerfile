@@ -6,7 +6,7 @@ RUN pip3 install setuptools cx_Freeze==6.0b1
 COPY . .
 RUN ln -s /lib/libc.musl-x86_64.so.1 ldd
 RUN ln -s /lib /lib64
-RUN pip3 install -r requirements.txt 
+RUN pip3 install -r requirements.txt
 RUN python3 setup.py build_exe
 
 FROM alpine:3.6
