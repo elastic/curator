@@ -1639,18 +1639,21 @@ def restore_check(client, index_list):
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg index_list: The list of indices to verify having been restored.
     """
-    try:
-        response = client.indices.recovery(index=to_csv(index_list), human=True)
-    except Exception as e:
-        raise exceptions.CuratorException(
-            'Unable to obtain recovery information for specified indices. '
-            'Error: {0}'.format(e)
-        )
-    # This should address #962, where perhaps the cluster state hasn't yet
-    # had a chance to add a _recovery state yet, so it comes back empty.
-    if response == {}:
-        logger.info('_recovery returned an empty response. Trying again.')
-        return False
+    response = {}
+    for chunk in chunk_index_list(index_list):
+        try:
+            chunk_response = client.indices.recovery(index=chunk, human=True)
+        except Exception as e:
+            raise exceptions.CuratorException(
+                'Unable to obtain recovery information for specified indices. '
+                'Error: {0}'.format(e)
+            )
+        # This should address #962, where perhaps the cluster state hasn't yet
+        # had a chance to add a _recovery state yet, so it comes back empty.
+        if chunk_response == {}:
+            logger.info('_recovery returned an empty response. Trying again.')
+            return False
+        response.update(chunk_response)
     # Fixes added in #989
     logger.info('Provided indices: {0}'.format(index_list))
     logger.info('Found indices: {0}'.format(list(response.keys())))
