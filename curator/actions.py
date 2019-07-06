@@ -2151,7 +2151,7 @@ class Shrink(object):
                     # Do the shrink
                     self.loggit.info('Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
                     try:
-                        self.client.indices.shrink(index=idx, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
+                        self.client.indices.shrink(index=idx, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards, params={ copy_settings: True })
                         # Wait for it to complete
                         if self.wfc:
                             self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
