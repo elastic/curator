@@ -452,7 +452,7 @@ removed from the actionable list, leaving `index-2017.03.03`,
 -------------
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices which do not contain any documents.  They will remain in, or be
+indices which either do not contain any documents or has been closed. They will remain in, or be
 removed from the actionable list based on the value of <<fe_exclude,exclude>>.
 
 By default the indices matched by the empty filter will be excluded since 
