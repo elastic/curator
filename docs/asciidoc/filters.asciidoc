@@ -502,12 +502,12 @@ remain in, or be removed from the actionable list based on the value of
   exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove indices `.kibana`, `.kibana-5`,
-and `.kibana-6` from the list of indices, if present.
+This <<filtertype,filtertype>> will remove any index matching the regular 
+expression `^\.kibana.*$` from the list of indices, if present.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices `.kibana`, `.kibana-5`, or `.kibana-6`. They
-will remain in, or be removed from the actionable list based on the value of
+indices matching the regular expression `^\.kibana.*$`. They will remain in, or
+be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
 === Optional settings

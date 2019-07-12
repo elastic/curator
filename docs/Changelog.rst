@@ -12,6 +12,17 @@ Changelog
     requests to Elasticsearch when set, which may be required if ReadonlyREST
     plugin is configured to require api-key. Requested in #1409 (vetler)
 
+**Bug Fixes**
+
+  * Fix kibana filter to match any and all indices starting with ``.kibana``.
+    This addresses #1363, and everyone else upgrading to Elasticsearch 7.x.
+    Update documentation accordingly. (untergeek)
+
+**Documentation**
+
+  * Grammar correction of ilm.asciidoc #1425 (SlavikCA)
+  * Updates to reflect changes to Elasticsearch 7 documentation #1426 and #1428
+    (lcawl) and (jrodewig)
 
 5.7.6 (6 May 2019)
 ------------------

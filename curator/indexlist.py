@@ -652,7 +652,7 @@ class IndexList(object):
 
     def filter_kibana(self, exclude=True):
         """
-        Match any index named ``.kibana``, ``.kibana-5``, or ``.kibana-6``
+        Match any index named ``.kibana*``
         in `indices`. Older releases addressed index names that no longer exist.
 
         :arg exclude: If `exclude` is `True`, this filter will remove matching
@@ -663,9 +663,8 @@ class IndexList(object):
         self.loggit.debug('Filtering kibana indices')
         self.empty_list_check()
         for index in self.working_list():
-            if index in [
-                    '.kibana', '.kibana-5', '.kibana-6'
-                ]:
+            pattern = re.compile(r'^\.kibana.*$')
+            if pattern.match(index):
                 self.__excludify(True, exclude, index)
             else:
                 self.__excludify(False, exclude, index)
