@@ -80,6 +80,19 @@ class TestActionReindex(TestCase):
         client.indices.get_settings.return_value = {'other_index':{}}
         ro = curator.Reindex(ilo, testvars.reindex_basic)
         self.assertIsNone(ro.do_action())
+    def test_reindex_with_wait_zero_total_fail(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_four
+        client.cluster.state.return_value = testvars.clu_state_four
+        client.indices.stats.return_value = testvars.stats_four
+        client.reindex.return_value = testvars.generic_task
+        client.tasks.get.side_effect = testvars.fake_fail
+        ilo = curator.IndexList(client)
+        # After building ilo, we need a different return value
+        client.indices.get_settings.return_value = {'other_index':{}}
+        ro = curator.Reindex(ilo, testvars.reindex_basic)
+        self.assertRaises(curator.CuratorException, ro.do_action)
     def test_reindex_without_wait(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }

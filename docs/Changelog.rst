@@ -17,6 +17,10 @@ Changelog
   * Fix kibana filter to match any and all indices starting with ``.kibana``.
     This addresses #1363, and everyone else upgrading to Elasticsearch 7.x.
     Update documentation accordingly. (untergeek)
+  * Fix reindex post-action checks. When the filters do not return documents
+    to be reindexed, the post-action check to ensure the target index exists
+    is not needed. This new version will skip that validation if no documents
+    are processed (issue #1170). (afharo)
 
 **Documentation**
 
