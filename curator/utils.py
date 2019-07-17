@@ -774,6 +774,8 @@ def get_client(**kwargs):
     :arg skip_version_test: If `True`, skip the version check as part of the
         client connection.
     :rtype: :class:`elasticsearch.Elasticsearch`
+    :arg api_key: value to be used in optional X-Api-key header when accessing Elasticsearch
+    :type api_key: str
     """
     if 'url_prefix' in kwargs:
         if (
@@ -894,6 +896,8 @@ def get_client(**kwargs):
             )
     try:
         client = elasticsearch.Elasticsearch(**kwargs)
+        if 'api_key' in kwargs and kwargs['api_key'] is not None:
+            client.transport.connection_pool.connection.headers.update({'x-api-key': kwargs['api_key']})
         if skip_version_test:
             logger.warn(
                 'Skipping Elasticsearch version verification. This is '

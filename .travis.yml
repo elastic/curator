@@ -29,7 +29,7 @@ cache:
   pip: true
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 before_install:
   - cp requirements.txt ..
@@ -43,8 +43,8 @@ install:
   - pip install .
 
 script:
-  - sudo apt-get update && sudo apt-get install oracle-java8-installer
+  - sudo apt-get update && sudo apt-get install openjdk-8-jdk
   - java -version
-  - sudo update-alternatives --set java /usr/lib/jvm/java-8-oracle/jre/bin/java
+  - sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
   - java -version
   - ./travis-run.sh

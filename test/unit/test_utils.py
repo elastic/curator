@@ -315,6 +315,16 @@ class TestGetClient(TestCase):
             curator.get_client, **kwargs
         )
 
+    def test_api_key_not_set(self):
+        kwargs = { 'api_key': None }
+        self.assertIsNotNone(curator.get_client(**kwargs))
+
+    def test_api_key_set(self):
+        kwargs = { 'api_key': 'some-api-key' }
+        client = curator.get_client(**kwargs)
+        self.assertEqual('some-api-key', client.transport.connection_pool.connection.headers.get('x-api-key'))
+
+
 class TestShowDryRun(TestCase):
     # For now, since it's a pain to capture logging output, this is just a
     # simple code coverage run
