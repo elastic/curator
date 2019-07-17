@@ -18,6 +18,9 @@ Changelog
     This addresses #1363, and everyone else upgrading to Elasticsearch 7.x.
     Update documentation accordingly. (untergeek)
 
+  * Prevent the ``empty`` filtertype from incorrectly matching against closed
+    indices (heyitsmdr)
+
 **Documentation**
 
   * Grammar correction of ilm.asciidoc #1425 (SlavikCA)
