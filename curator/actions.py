@@ -1307,28 +1307,64 @@ class Reindex(object):
             del reindex_args['slices']
         return reindex_args
 
-    def _post_run_quick_check(self, index_name):
-        # Verify the destination index is there after the fact
-        index_exists = self.client.indices.exists(index=index_name)
-        alias_instead = self.client.indices.exists_alias(name=index_name)
-        if not index_exists and not alias_instead:
-            self.loggit.error(
-                'The index described as "{0}" was not found after the reindex '
-                'operation. Check Elasticsearch logs for more '
-                'information.'.format(index_name)
+    def get_processed_items(self, task_id):
+        """
+        This function calls client.tasks.get with the provided `task_id`.  It will get the value 
+        from ``'response.total'`` as the total number of elements processed during reindexing.
+        If the value is not found, it will return -1
+
+        :arg task_id: A task_id which ostensibly matches a task searchable in the
+            tasks API.
+        """
+        try:
+            task_data = self.client.tasks.get(task_id=task_id)
+        except Exception as e:
+            raise exceptions.CuratorException(
+                'Unable to obtain task information for task_id "{0}". Exception '
+                '{1}'.format(task_id, e)
             )
-            if self.remote:
+        total_processed_items = -1
+        task = task_data['task']
+        if task['action'] == 'indices:data/write/reindex':
+            self.loggit.debug('It\'s a REINDEX TASK')
+            self.loggit.debug('TASK_DATA: {0}'.format(task_data))
+            self.loggit.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+            if 'response' in task_data:
+                response = task_data['response']
+                total_processed_items = response['total']
+                self.loggit.debug('total_processed_items = {0}'.format(total_processed_items))
+
+        return total_processed_items
+    
+    def _post_run_quick_check(self, index_name, task_id):
+        # Check whether any documents were processed (if no documents processed, the target index "dest" won't exist)
+        processed_items = self.get_processed_items(task_id)
+        if processed_items == 0:
+            self.loggit.info(
+                'No items were processed. Will not check if target index "{0}" exists'.format(index_name)
+            )
+        else:
+            # Verify the destination index is there after the fact
+            index_exists = self.client.indices.exists(index=index_name)
+            alias_instead = self.client.indices.exists_alias(name=index_name)
+            if not index_exists and not alias_instead:
                 self.loggit.error(
-                    'Did you forget to add "reindex.remote.whitelist: '
-                    '{0}:{1}" to the elasticsearch.yml file on the '
-                    '"dest" node?'.format(
-                        self.remote_host, self.remote_port
-                    )
+                    'The index described as "{0}" was not found after the reindex '
+                    'operation. Check Elasticsearch logs for more '
+                    'information.'.format(index_name)
                 )
-            raise exceptions.FailedExecution(
-                'Reindex failed. The index or alias identified by "{0}" was '
-                'not found.'.format(index_name)
-            )
+                if self.remote:
+                    self.loggit.error(
+                        'Did you forget to add "reindex.remote.whitelist: '
+                        '{0}:{1}" to the elasticsearch.yml file on the '
+                        '"dest" node?'.format(
+                            self.remote_host, self.remote_port
+                        )
+                    )
+                raise exceptions.FailedExecution(
+                    'Reindex failed. The index or alias identified by "{0}" was '
+                    'not found.'.format(index_name)
+                )
 
     def sources(self):
         # Generator for sources & dests
@@ -1399,7 +1435,7 @@ class Reindex(object):
                         self.client, 'reindex', task_id=response['task'],
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
-                    self._post_run_quick_check(dest)
+                    self._post_run_quick_check(dest, response['task'])
 
                 else:
                     self.loggit.warn(
