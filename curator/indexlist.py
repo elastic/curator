@@ -736,8 +736,8 @@ class IndexList(object):
             Default is `True`
         """
         self.loggit.debug('Filtering empty indices')
-        self.empty_list_check()
         self.filter_closed()
+        self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['docs'] == 0
             self.loggit.debug('Index {0} doc count: {1}'.format(
