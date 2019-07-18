@@ -22,6 +22,9 @@ Changelog
     is not needed. This new version will skip that validation if no documents
     are processed (issue #1170). (afharo)
 
+  * Prevent the ``empty`` filtertype from incorrectly matching against closed
+    indices #1430 (heyitsmdr)
+
 **Documentation**
 
   * Grammar correction of ilm.asciidoc #1425 (SlavikCA)

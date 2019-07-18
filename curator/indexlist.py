@@ -727,12 +727,16 @@ class IndexList(object):
         """
         Filter indices with a document count of zero
 
+        Indices that are closed are automatically excluded from consideration
+        due to closed indices reporting a document count of zero.
+
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
             indices will be kept in `indices`.
             Default is `True`
         """
         self.loggit.debug('Filtering empty indices')
+        self.filter_closed()
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['docs'] == 0
