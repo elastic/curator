@@ -19,7 +19,7 @@ Changelog
     Update documentation accordingly. (untergeek)
 
   * Prevent the ``empty`` filtertype from incorrectly matching against closed
-    indices (heyitsmdr)
+    indices #1430 (heyitsmdr)
 
 **Documentation**
 
