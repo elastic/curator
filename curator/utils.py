@@ -1808,8 +1808,16 @@ def node_roles(client, node_id):
     """
     return client.nodes.info()['nodes'][node_id]['roles']
 
-def index_size(client, idx):
-    return client.indices.stats(index=idx)['indices'][idx]['total']['store']['size_in_bytes']
+def index_size(client, idx, value='total'):
+    """
+    Return the sum of either `primaries` or `total` shards for index ``idx``
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg idx: An Elasticsearch index
+    :arg value: One of either `primaries` or `total`
+    :rtype: integer
+    """
+    return client.indices.stats(index=idx)['indices'][idx][value]['store']['size_in_bytes']
 
 def single_data_path(client, node_id):
     """
