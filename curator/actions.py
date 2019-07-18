@@ -2044,7 +2044,7 @@ class Shrink(object):
 
     def _check_space(self, idx, dry_run=False):
         # Disk watermark calculation is already baked into `available_in_bytes`
-        size = utils.index_size(self.client, idx)
+        size = utils.index_size(self.client, idx, value='primaries')
         padded = (size * 2) + (32 * 1024)
         if padded < self.shrink_node_avail:
             self.loggit.debug('Sufficient space available for 2x the size of index "{0}".  Required: {1}, available: {2}'.format(idx, padded, self.shrink_node_avail))
