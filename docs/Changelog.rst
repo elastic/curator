@@ -21,9 +21,13 @@ Changelog
     to be reindexed, the post-action check to ensure the target index exists
     is not needed. This new version will skip that validation if no documents
     are processed (issue #1170). (afharo)
-
   * Prevent the ``empty`` filtertype from incorrectly matching against closed
     indices #1430 (heyitsmdr)
+  * Fix ``index_size`` function to be able to report either for either the
+    ``total`` of all shards (default) or just ``primaries``. Added as a keyword
+    arg to preserve existing behavior. This was needed to fix sizing 
+    calculations for the Shrink action, which should only count ``primaries``.
+    Raised in #1429 (untergeek).
 
 **Documentation**
 
