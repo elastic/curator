@@ -358,6 +358,38 @@ class TestActionFileRollover(CuratorTestCase):
             [ '--config', self.args['configfile'], self.args['actionfile'] ],
         )
         self.assertEqual(expected, len(self.client.indices.get_alias(name=alias)))
+    def test_no_rollover_ilm_associated(self):
+        oldindex  = 'rolltome-000001'
+        newindex  = 'rolltome-000002'
+        alias     = 'delamitri'
+        condition = 'max_age'
+        value     = '1s'
+        expected  = 1
+        version = curator.utils.get_version(self.client)
+        if version <= (6, 6, 0):
+            # No ILM before 6.6.x
+            self.assertEqual(expected, 1)
+        else:
+            self.client.indices.create(
+                index=oldindex, 
+                body={'settings': {'index': {'lifecycle': {'name': 'generic'}}}, 'aliases': { alias: {} } }
+            )
+            time.sleep(1)
+            self.write_config(
+                self.args['configfile'], testvars.client_config.format(host, port))
+            self.write_config(self.args['actionfile'],
+                testvars.rollover_one.format(alias, condition, value))
+            test = clicktest.CliRunner()
+            _ = test.invoke(
+                        curator.cli,
+                        [
+                            '--config', self.args['configfile'],
+                            self.args['actionfile']
+                        ],
+                        )
+            self.assertEqual(0, _.exit_code)
+            self.assertEqual(expected, len(self.client.indices.get_alias(name=alias)))
+            self.assertEqual(oldindex, list(self.client.indices.get_alias(name=alias).keys())[0])
 
 class TestCLIRollover(CuratorTestCase):
     def test_max_age_true(self):
