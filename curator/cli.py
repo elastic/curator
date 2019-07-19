@@ -9,7 +9,7 @@ from curator.defaults import settings
 from curator.exceptions import NoIndices, NoSnapshots
 from curator.indexlist import IndexList
 from curator.snapshotlist import SnapshotList
-from curator.utils import get_client, get_yaml, prune_nones, validate_actions
+from curator.utils import get_client, get_yaml, prune_nones, validate_actions, get_write_index
 from curator.validators import SchemaCheck
 from curator._version import __version__
 
@@ -73,7 +73,7 @@ def process_action(client, config, **kwargs):
                 'Removing indices from alias "{0}"'.format(opts['name']))
             removes.iterate_filters(config['remove'])
             action_obj.remove(
-                removes, warn_if_no_indices= opts['warn_if_no_indices'])
+                removes, warn_if_no_indices=opts['warn_if_no_indices'])
         if 'add' in config:
             logger.debug('Adding indices to alias "{0}"'.format(opts['name']))
             adds.iterate_filters(config['add'])
@@ -134,12 +134,7 @@ def run(config, action_file, dry_run=False):
         logger.debug('ignore_empty_list = {0}'.format(ignore_empty_list))
         allow_ilm = actions[idx]['options'].pop('allow_ilm_indices')
         logger.debug('allow_ilm_indices = {0}'.format(allow_ilm))
-        ### Filter ILM indices unless expressly permitted
-        if not allow_ilm and action not in settings.snapshot_actions():
-            if 'filters' in actions[idx]:
-                actions[idx]['filters'].append({'filtertype': 'ilm'})
-            else:
-                actions[idx]['filters'] = [{'filtertype': 'ilm'}]
+
         ### Skip to next action if 'disabled'
         if action_disabled:
             logger.info(
@@ -164,6 +159,28 @@ def run(config, action_file, dry_run=False):
         # Create a client object for each action...
         client = get_client(**client_args)
         logger.debug('client is {0}'.format(type(client)))
+
+        ### Filter ILM indices unless expressly permitted
+        if allow_ilm:
+            logger.warning('allow_ilm_indices: true')
+            logger.warning('Permitting operation on indices with an ILM policy')
+        if not allow_ilm and action not in settings.snapshot_actions():
+            if actions[idx]['action'] == 'rollover':
+                alias = actions[idx]['options']['name']
+                write_index = get_write_index(client, alias)
+                try:
+                    idx_settings = client.indices.get_settings(index=write_index)
+                    if 'name' in idx_settings[write_index]['settings']['index']['lifecycle']:
+                        logger.info('Alias {0} is associated with ILM policy.'.format(alias))
+                        logger.info(
+                            'Skipping action {0} because allow_ilm_indices is false.'.format(idx))
+                        continue
+                except KeyError:
+                    logger.debug('No ILM policies associated with {0}'.format(alias))
+            elif 'filters' in actions[idx]:
+                actions[idx]['filters'].append({'filtertype': 'ilm'})
+            else:
+                actions[idx]['filters'] = [{'filtertype': 'ilm'}]
         ##########################
         ### Process the action ###
         ##########################

@@ -1934,3 +1934,22 @@ def parse_datemath(client, value):
     except AttributeError:
         raise exceptions.ConfigurationError('Value "{0}" does not contain a valid datemath pattern.'.format(value))
     return '{0}{1}{2}'.format(prefix, get_datemath(client, datemath), suffix)
+
+def get_write_index(client, alias):
+    try:
+        response = client.indices.get_alias(index=alias)
+    except:
+        raise exceptions.CuratorException('Alias {0} not found'.format(alias))
+    # If there are more than one in the list, one needs to be the write index
+    # otherwise the alias is a one to many, and can't do rollover.
+    if len(list(response.keys())) > 1:
+        for index in list(response.keys()):
+            try:
+                if response[index]['aliases'][alias]['is_write_index']:
+                    return index
+            except KeyError:
+                raise exceptions.FailedExecution(
+                    'Invalid alias: is_write_index not found in 1 to many alias')
+    else:
+        # There's only one, so this is it
+        return list(response.keys())[0]

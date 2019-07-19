@@ -28,6 +28,8 @@ Changelog
     arg to preserve existing behavior. This was needed to fix sizing 
     calculations for the Shrink action, which should only count ``primaries``.
     Raised in #1429 (untergeek).
+  * Fix ``allow_ilm_indices`` to work with the ``rollover`` action. Reported in
+    #1418 (untergeek)
 
 **Documentation**
 
