@@ -866,6 +866,7 @@ def get_client(**kwargs):
         except AttributeError:
             logger.debug('Unable to locate AWS credentials')
             raise botoex.NoCredentialsError
+    logger.debug('Checking for AWS settings')
     try:
         from requests_aws4auth import AWS4Auth
         if kwargs['aws_key']:
@@ -894,26 +895,50 @@ def get_client(**kwargs):
                 '"master_only" cannot be true if more than one host is '
                 'specified. Hosts = {0}'.format(kwargs['hosts'])
             )
+
+    # Creating the class object should be okay
+    logger.info('Instantiating client object')
+    client = elasticsearch.Elasticsearch(**kwargs)
+    logger.info('Created Elasticsearch client object with provided settings')
+    if 'api_key' in kwargs and kwargs['api_key'] is not None:
+        client.transport.connection_pool.connection.headers.update({'x-api-key': kwargs['api_key']})
+
+    # Test client connectivity (debug log client.info() output)
+    logger.info('Testing client connectivity')
     try:
-        client = elasticsearch.Elasticsearch(**kwargs)
-        if 'api_key' in kwargs and kwargs['api_key'] is not None:
-            client.transport.connection_pool.connection.headers.update({'x-api-key': kwargs['api_key']})
-        if skip_version_test:
-            logger.warn(
-                'Skipping Elasticsearch version verification. This is '
-                'acceptable for remote reindex operations.'
-            )
-        else:
+        logger.debug('Cluster info: {0}'.format(client.info()))
+    except Exception as err:
+        logger.error('Unable to connect to Elasticsearch cluster. Error: {0}'.format(err))
+        logger.fatal('Curator cannot proceed. Exiting.')
+        raise exceptions.ClientException
+
+    if skip_version_test:
+        logger.warn(
+            'Skipping Elasticsearch version verification. This is '
+            'acceptable for remote reindex operations.'
+        )
+    else:
+        logger.debug('Checking Elasticsearch endpoint version...')
+        try:
             # Verify the version is acceptable.
             check_version(client)
-        # Verify "master_only" status, if applicable
-        check_master(client, master_only=master_only)
-        return client
-    except Exception as e:
-        raise elasticsearch.ElasticsearchException(
-            'Unable to create client connection to Elasticsearch.  '
-            'Error: {0}'.format(e)
-        )
+        except exceptions.CuratorException as err:
+            logger.error('{0}'.format(err))
+            logger.fatal('Curator cannot continue due to version incompatibilites. Exiting')
+            raise exceptions.ClientException
+
+    # Verify "master_only" status, if applicable
+    if master_only:
+        logger.info('Connecting only to local master node...')
+        try:
+            check_master(client, master_only=master_only)
+        except exceptions.ConfigurationError as err:
+            logger.error('master_only check failed: {0}'.format(err))
+            logger.fatal('Curator cannot continue. Exiting.')
+            raise exceptions.ClientException
+    else:
+        logger.debug('Not verifying local master status (master_only: false)')
+    return client
 
 def show_dry_run(ilo, action, **kwargs):
     """
