@@ -30,6 +30,12 @@ Changelog
     Raised in #1429 (untergeek).
   * Fix ``allow_ilm_indices`` to work with the ``rollover`` action. Reported in
     #1418 (untergeek)
+  * Update the client connection logic to be cleaner and log more verbosely in
+    an attempt to address issues like #1418 and others like it more effectively
+    as other failures have appeared to be client failures because the last
+    log message were vague indications that a client connection was attempted.
+    This is a step in the right direction, as it explicitly exits with a 1 exit
+    code for different conditions now. (untergeek)
 
 **Documentation**
 

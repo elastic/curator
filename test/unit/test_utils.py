@@ -260,7 +260,7 @@ class TestGetClient(TestCase):
             'url_prefix': None, 'use_ssl' : True, 'ssl_no_validate' : True
         }
         self.assertRaises(
-            elasticsearch.ElasticsearchException,
+            curator.ClientException,
             curator.get_client, **kwargs
         )
     def test_url_prefix_none_str(self):
@@ -268,7 +268,7 @@ class TestGetClient(TestCase):
             'url_prefix': 'None', 'use_ssl' : True, 'ssl_no_validate' : True
         }
         self.assertRaises(
-            elasticsearch.ElasticsearchException,
+            curator.ClientException,
             curator.get_client, **kwargs
         )
     def test_master_only_multiple_hosts(self):
@@ -293,25 +293,25 @@ class TestGetClient(TestCase):
     def test_certificate_logic(self):
         kwargs = { 'use_ssl' : True, 'certificate' : 'mycert.pem' }
         self.assertRaises(
-            elasticsearch.ElasticsearchException,
+            curator.ClientException,
             curator.get_client, **kwargs
         )
     def test_client_cert_logic(self):
         kwargs = { 'use_ssl' : True, 'client_cert' : 'myclientcert.pem' }
         self.assertRaises(
-            elasticsearch.ElasticsearchException,
+            curator.ClientException,
             curator.get_client, **kwargs
         )
     def test_client_key_logic(self):
         kwargs = { 'use_ssl' : True, 'client_key' : 'myclientkey.pem' }
         self.assertRaises(
-            elasticsearch.ElasticsearchException,
+            curator.ClientException,
             curator.get_client, **kwargs
         )
     def test_certificate_no_verify_logic(self):
         kwargs = { 'use_ssl' : True, 'ssl_no_validate' : True }
         self.assertRaises(
-            elasticsearch.ElasticsearchException,
+            curator.ClientException,
             curator.get_client, **kwargs
         )
 

@@ -58,3 +58,8 @@ class FailedReindex(CuratorException):
     """
     Exception raised when failures are found in the reindex task response
     """
+
+class ClientException(CuratorException):
+    """
+    Exception raised when the Elasticsearch client and/or connection is the source of the problem.
+    """

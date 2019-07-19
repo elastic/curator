@@ -6,7 +6,7 @@ from voluptuous import Schema
 from curator import actions
 from curator.config_utils import process_config, password_filter
 from curator.defaults import settings
-from curator.exceptions import NoIndices, NoSnapshots
+from curator.exceptions import ClientException, ConfigurationError, NoIndices, NoSnapshots
 from curator.indexlist import IndexList
 from curator.snapshotlist import SnapshotList
 from curator.utils import get_client, get_yaml, prune_nones, validate_actions, get_write_index
@@ -157,8 +157,11 @@ def run(config, action_file, dry_run=False):
         kwargs['dry_run'] = dry_run
 
         # Create a client object for each action...
-        client = get_client(**client_args)
-        logger.debug('client is {0}'.format(type(client)))
+        logger.info('Creating client object and testing connection')
+        try:
+            client = get_client(**client_args)
+        except (ClientException, ConfigurationError):
+            sys.exit(1)
 
         ### Filter ILM indices unless expressly permitted
         if allow_ilm:
