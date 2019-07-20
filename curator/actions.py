@@ -254,12 +254,14 @@ class Allocation(object):
             utils.report_failure(e)
 
 class Close(object):
-    def __init__(self, ilo, delete_aliases=False):
+    def __init__(self, ilo, delete_aliases=False, skip_flush=False):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg delete_aliases: If `True`, will delete any associated aliases
             before closing indices.
         :type delete_aliases: bool
+        :arg skip_flush: If `True`, will not flush indices before closing.
+        :type skip_flush: bool
         """
         utils.verify_index_list(ilo)
         #: Instance variable.
@@ -268,6 +270,9 @@ class Close(object):
         #: Instance variable.
         #: Internal reference to `delete_aliases`
         self.delete_aliases = delete_aliases
+        #: Instance variable.
+        #: Internal reference to `skip_flush`
+        self.skip_flush = skip_flush
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client     = ilo.client
@@ -304,8 +309,9 @@ class Close(object):
                             'Some indices may not have had aliases.  Exception:'
                             ' {0}'.format(e)
                         )
-                self.client.indices.flush_synced(
-                    index=utils.to_csv(l), ignore_unavailable=True)
+                if not self.skip_flush:
+                    self.client.indices.flush_synced(
+                        index=utils.to_csv(l), ignore_unavailable=True)
                 self.client.indices.close(
                     index=utils.to_csv(l), ignore_unavailable=True)
         except Exception as e:
