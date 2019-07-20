@@ -176,6 +176,7 @@ action: close
 description: "Close selected indices"
 options:
   delete_aliases: False
+  skip_flush: False
 filters:
 - filtertype: ...
 -------------
@@ -190,6 +191,7 @@ aliases beforehand.
 === Optional settings
 
 * <<option_delete_aliases,delete_aliases>>
+* <<option_skip_flush,skip_flush>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
