@@ -11,6 +11,9 @@ Changelog
   * New client configuration option: api_key - used in the X-Api-key header in
     requests to Elasticsearch when set, which may be required if ReadonlyREST
     plugin is configured to require api-key. Requested in #1409 (vetler)
+  * Add ``skip_flush`` option to the ``close`` action. This should be useful
+    when trying to close indices with unassigned shards (e.g. before restore).
+    Raised in #1412. (psypuff)
 
 **Bug Fixes**
 

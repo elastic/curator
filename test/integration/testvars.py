@@ -397,6 +397,20 @@ close_delete_aliases = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
+close_skip_flush = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Close indices as filtered"\n'
+'    action: close\n'
+'    options:\n'
+'      skip_flush: True\n'
+'      continue_if_exception: False\n'
+'      disable_action: False\n'
+'    filters:\n'
+'      - filtertype: pattern\n'
+'        kind: prefix\n'
+'        value: my\n')
+
 delete_proto = ('---\n'
 'actions:\n'
 '  1:\n'

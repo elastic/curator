@@ -17,7 +17,10 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'close' : [ option_defaults.delete_aliases() ],
+        'close' : [
+            option_defaults.delete_aliases(),
+            option_defaults.skip_flush()
+        ],
         'cluster_routing' : [
             option_defaults.routing_type(),
             option_defaults.cluster_routing_setting(),

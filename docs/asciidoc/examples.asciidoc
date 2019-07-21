@@ -134,6 +134,7 @@ actions:
       Close indices older than 30 days (based on index name), for logstash-
       prefixed indices.
     options:
+      skip_flush: False
       delete_aliases: False
       disable_action: True
     filters:

@@ -129,11 +129,11 @@ class CuratorTestCase(TestCase):
         # pylint: disable=E1123
         self.client.cluster.health(wait_for_status='yellow')
 
-    def create_index(self, name, shards=1, wait_for_yellow=True, ilm_policy=None):
+    def create_index(self, name, shards=1, wait_for_yellow=True, ilm_policy=None, wait_for_active_shards=1):
         request_body={'settings': {'number_of_shards': shards, 'number_of_replicas': 0}}
         if ilm_policy is not None:
             request_body['settings']['index'] = {'lifecycle': {'name': ilm_policy}}
-        self.client.indices.create(index=name, body=request_body)
+        self.client.indices.create(index=name, body=request_body, wait_for_active_shards=wait_for_active_shards)
         if wait_for_yellow:
             self.wfy()
 

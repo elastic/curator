@@ -42,6 +42,9 @@ def delete_after():
 def delete_aliases():
     return { Optional('delete_aliases', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
+def skip_flush():
+    return { Optional('skip_flush', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
 def disable_action():
     return { Optional('disable_action', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
