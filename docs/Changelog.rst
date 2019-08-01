@@ -14,6 +14,10 @@ Changelog
   * Add ``skip_flush`` option to the ``close`` action. This should be useful
     when trying to close indices with unassigned shards (e.g. before restore).
     Raised in #1412. (psypuff)
+  * Use ``RequestsHttpConnection`` class, which permits the use of 
+    ``HTTP_PROXY`` and ``HTTPS_PROXY`` environment variables. Raised in #510
+    and addressed by #1259 (raynigon) in August of 2018, which required some
+    adaptation, and re-submission as a different PR.
 
 **Bug Fixes**
 

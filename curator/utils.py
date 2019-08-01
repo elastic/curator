@@ -792,10 +792,10 @@ def get_client(**kwargs):
     kwargs['hosts'] = '127.0.0.1' if not 'hosts' in kwargs else kwargs['hosts']
     kwargs['master_only'] = False if not 'master_only' in kwargs \
         else kwargs['master_only']
-    if 'skip_version_test' in kwargs:
-        skip_version_test = kwargs.pop('skip_version_test')
-    else:
-        skip_version_test = False
+    skip_version_test = kwargs.pop('skip_version_test', False)
+    api_key = kwargs.pop('api_key', False)
+    if api_key:
+        kwargs["headers"] = {'x-api-key': api_key}
     kwargs['use_ssl'] = False if not 'use_ssl' in kwargs else kwargs['use_ssl']
     kwargs['ssl_no_validate'] = False if not 'ssl_no_validate' in kwargs \
         else kwargs['ssl_no_validate']
@@ -863,7 +863,8 @@ def get_client(**kwargs):
             kwargs['aws_key'] = credentials.access_key
             kwargs['aws_secret_key'] = credentials.secret_key
             kwargs['aws_token'] = credentials.token
-        # If an attribute doesn't exist, we were not able to retrieve credentials as expected so we can't continue
+        # If an attribute doesn't exist, we were not able to retrieve credentials 
+        # as expected so we can't continue
         except AttributeError:
             logger.debug('Unable to locate AWS credentials')
             raise botoex.NoCredentialsError
@@ -876,7 +877,6 @@ def get_client(**kwargs):
             kwargs['verify_certs'] = True
             if kwargs['ssl_no_validate']:
                 kwargs['verify_certs'] = False
-            kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
             kwargs['http_auth'] = (
                 AWS4Auth(
                     kwargs['aws_key'], kwargs['aws_secret_key'],
@@ -901,8 +901,6 @@ def get_client(**kwargs):
     logger.info('Instantiating client object')
     client = elasticsearch.Elasticsearch(**kwargs)
     logger.info('Created Elasticsearch client object with provided settings')
-    if 'api_key' in kwargs and kwargs['api_key'] is not None:
-        client.transport.connection_pool.connection.headers.update({'x-api-key': kwargs['api_key']})
 
     # Test client connectivity (debug log client.info() output)
     logger.info('Testing client connectivity')

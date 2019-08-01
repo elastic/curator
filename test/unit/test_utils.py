@@ -322,7 +322,7 @@ class TestGetClient(TestCase):
     def test_api_key_set(self):
         kwargs = { 'api_key': 'some-api-key' }
         client = curator.get_client(**kwargs)
-        self.assertEqual('some-api-key', client.transport.connection_pool.connection.headers.get('x-api-key'))
+        self.assertEqual('some-api-key', client.transport.kwargs['headers']['x-api-key'])
 
 
 class TestShowDryRun(TestCase):
