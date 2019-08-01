@@ -220,3 +220,14 @@ class TestFilterTypes(TestCase):
             }
         ]
         self.assertEqual(config, shared_result(config, action))
+    def test_shards(self):
+        action = 'shrink'
+        config = [
+            {
+                'filtertype' : 'shards',
+                'number_of_shards' : 5,
+                'shard_filter_behavior': 'greater_than',
+                'exclude' : False,
+            }
+        ]
+        self.assertEqual(config, shared_result(config, action))

@@ -53,3 +53,13 @@ class FailedRestore(CuratorException):
     """
     Exception raised when a Snapshot Restore does not restore all selected indices
     """
+
+class FailedReindex(CuratorException):
+    """
+    Exception raised when failures are found in the reindex task response
+    """
+
+class ClientException(CuratorException):
+    """
+    Exception raised when the Elasticsearch client and/or connection is the source of the problem.
+    """

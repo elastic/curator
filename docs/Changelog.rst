@@ -3,6 +3,161 @@
 Changelog
 =========
 
+5.7.7 (? ? ?)
+------------------
+
+**New**
+
+  * New client configuration option: api_key - used in the X-Api-key header in
+    requests to Elasticsearch when set, which may be required if ReadonlyREST
+    plugin is configured to require api-key. Requested in #1409 (vetler)
+  * Add ``skip_flush`` option to the ``close`` action. This should be useful
+    when trying to close indices with unassigned shards (e.g. before restore).
+    Raised in #1412. (psypuff)
+
+**Bug Fixes**
+
+  * Fix kibana filter to match any and all indices starting with ``.kibana``.
+    This addresses #1363, and everyone else upgrading to Elasticsearch 7.x.
+    Update documentation accordingly. (untergeek)
+  * Fix reindex post-action checks. When the filters do not return documents
+    to be reindexed, the post-action check to ensure the target index exists
+    is not needed. This new version will skip that validation if no documents
+    are processed (issue #1170). (afharo)
+  * Prevent the ``empty`` filtertype from incorrectly matching against closed
+    indices #1430 (heyitsmdr)
+  * Fix ``index_size`` function to be able to report either for either the
+    ``total`` of all shards (default) or just ``primaries``. Added as a keyword
+    arg to preserve existing behavior. This was needed to fix sizing 
+    calculations for the Shrink action, which should only count ``primaries``.
+    Raised in #1429 (untergeek).
+  * Fix ``allow_ilm_indices`` to work with the ``rollover`` action. Reported in
+    #1418 (untergeek)
+  * Update the client connection logic to be cleaner and log more verbosely in
+    an attempt to address issues like #1418 and others like it more effectively
+    as other failures have appeared to be client failures because the last
+    log message were vague indications that a client connection was attempted.
+    This is a step in the right direction, as it explicitly exits with a 1 exit
+    code for different conditions now. (untergeek)
+
+**Documentation**
+
+  * Grammar correction of ilm.asciidoc #1425 (SlavikCA)
+  * Updates to reflect changes to Elasticsearch 7 documentation #1426 and #1428
+    (lcawl) and (jrodewig)
+
+5.7.6 (6 May 2019)
+------------------
+
+**Security Fix**
+
+Evidently, there were some upstream dependencies which required vulnerable
+versions of ``urllib3`` and ``requests``. These have been addressed.
+
+  * CVE-2018-20060, CVE-2019-11324, CVE-2018-18074 are addressed by this
+    update. Fixed in #1395 (cburgess)
+
+**Bug Fixes**
+
+  * Allow aliases in Elasticsearch versions >= 6.5.0 to refer to more than one
+    index, if ``is_write_index`` is present and one index has it set to `True`.
+    Requested in #1342 (untergeek)
+
+5.7.5 (26 April 2019)
+---------------------
+
+This has to be a new record with 5 releases in 3 days, however, as a wonderful
+aside, this release is the Curator Haiku release (if you don't know why, look
+up the structure of a Haiku).
+
+**Bug Fix**
+
+  * Persistent ILM filter error has finally been caught. Apparently, in Python,
+    a list of lists ``[[]]`` will evaluate as existing, because it has one
+    array element, even if that element is empty. So, this is my bad, but it is
+    fixed now. (untergeek)
+
+5.7.4 (25 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * ILM filter was reading from full index list, rather than the working list
+    Reported in #1389 (untergeek)
+
+5.7.3 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Still further package collisions with ``urllib3`` between ``boto3`` and
+    ``requests``.  It was working, but with an unacceptable error, which is
+    addressed in release 5.7.3. (untergeek)
+
+5.7.2 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Fix ``urllib3`` dependency collision on account of ``boto3`` (untergeek)
+
+5.7.1 (24 April 2019)
+---------------------
+
+We do not speak of 5.7.1
+
+5.7.0 (24 April 2019)
+---------------------
+
+**New**
+
+  * Support for ``elasticsearch-py`` 7.0.0 (untergeek)
+  * Support for Elasticsearch 7.0 #1371 (untergeek)
+  * TravisCI testing for Elasticsearch 6.5, 6.6, 6.7, and 7.0 (untergeek)
+  * Allow shrink action to use multiple data paths #1350 (IzekChen)
+
+**Bug Fixes**
+
+  * Fix ``regex`` pattern filter to use ``re.search`` #1355 (matthewdupre)
+  * Report rollover results in both dry-run and regular runs. Requested
+    in #1313 (untergeek)
+  * Hide passwords in DEBUG logs. Requested in #1336 (untergeek)
+  * With ILM fully released, Curator tests now correctly use the
+    ``allow_ilm_indices`` option. (untergeek)
+
+**Documentation**
+
+  * Many thanks to those who submitted documentation fixes, both factual as
+    well as typos!
+  
+
+5.6.0 (13 November 2018)
+------------------------
+
+**New**
+
+  * The ``empty`` filter has been exposed for general use.  This filter matches
+    indices with no documents. (jrask) #1264
+  * Added tests for Elasticsearch 6.3 and 6.4 releases. (untergeek)
+  * Sort indices alphabetically before sorting by age.
+    (tschroeder-zendesk) #1290
+  * Add ``shards`` filtertype (cushind) #1298
+
+**Bug Fixes**
+
+  * Fix YAML linting so that YAML errors are caught and displayed on the
+    command line. Reported in #1237 (untergeek)
+  * Pin ``click`` version for compatibility. (Andrewsville) #1280
+  * Allow much older epoch timestamps (rsteneteg) #1296
+  * Reindex action respects ``ignore_empty_list`` flag (untergeek) #1297
+  * Update ILM index version minimum to 6.6.0 (untergeek)
+  * Catch reindex failures properly. Reported in #1260 (untergeek)
+
+**Documentation**
+
+  * Added Reindex example to the sidebar. (Nostalgiac) #1227
+  * Fix Rollover example text and typos. (untergeek)
+
 5.5.4 (23 May 2018)
 -------------------
 

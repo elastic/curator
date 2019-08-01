@@ -46,15 +46,15 @@ def get_yaml(path):
         else:
             envvar = proto
         return os.environ[envvar] if envvar in os.environ else default
+
     yaml.add_constructor('!single', single_constructor)
 
-    raw = read_file(path)
     try:
-        cfg = yaml.load(raw)
-    except yaml.scanner.ScannerError as e:
-        raise exceptions.ConfigurationError(
-            'Unable to parse YAML file. Error: {0}'.format(e))
-    return cfg
+        return yaml.load(read_file(path))
+    except yaml.scanner.ScannerError as err:
+        print('Unable to read/parse YAML file: {0}'.format(path))
+        print(err)
+        sys.exit(1)
 
 def test_client_options(config):
     """
@@ -78,7 +78,7 @@ def test_client_options(config):
 def rollable_alias(client, alias):
     """
     Ensure that `alias` is an alias, and points to an index that can use the
-    _rollover API.
+    ``_rollover`` API.
 
     :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg alias: An Elasticsearch alias
@@ -92,13 +92,18 @@ def rollable_alias(client, alias):
     # {'there_should_be_only_one': {u'aliases': {'value of "alias" here': {}}}}
     # Where 'there_should_be_only_one' is a single index name that ends in a
     # number, and 'value of "alias" here' reflects the value of the passed
-    # parameter.
+    # parameter, except in versions 6.5.0+ where the ``is_write_index`` setting
+    # makes it possible to have more than one index associated with a rollover index
+    if get_version(client) >= (6, 5, 0):
+        for idx in response:
+            if 'is_write_index' in response[idx]['aliases'][alias]:
+                if response[idx]['aliases'][alias]['is_write_index']:
+                    return True
+    # implied `else` here: If not version 6.5.0+ and has `is_write_index`, it has to fit the
+    # following criteria:
     if len(response) > 1:
         logger.error(
             '"alias" must only reference one index: {0}'.format(response))
-    # elif len(response) < 1:
-    #     logger.error(
-    #         '"alias" must reference at least one index: {0}'.format(response))
     else:
         index = list(response.keys())[0]
         rollable = False
@@ -235,19 +240,18 @@ def fix_epoch(epoch):
         even nanoseconds.
     :rtype: int
     """
-    # No decimals allowed
-    epoch = int(epoch)
+    try:
+        # No decimals allowed
+        epoch = int(epoch)
+    except Exception as ex:
+        raise ValueError('Invalid epoch received, unable to convert {} to int'.format(epoch))
+
     # If we're still using this script past January, 2038, we have bigger
     # problems than my hacky math here...
     if len(str(epoch)) <= 10:
         return epoch
-    elif len(str(epoch)) == 13:
+    elif len(str(epoch)) > 10 and len(str(epoch)) <= 13:
         return int(epoch/1000)
-    elif len(str(epoch)) > 10 and len(str(epoch)) < 13:
-        raise ValueError(
-            'Unusually formatted epoch timestamp.  '
-            'Should be 10, 13, or more digits'
-        )
     else:
         orders_of_magnitude = len(str(epoch)) - 10
         powers_of_ten = 10**orders_of_magnitude
@@ -770,6 +774,8 @@ def get_client(**kwargs):
     :arg skip_version_test: If `True`, skip the version check as part of the
         client connection.
     :rtype: :class:`elasticsearch.Elasticsearch`
+    :arg api_key: value to be used in optional X-Api-key header when accessing Elasticsearch
+    :type api_key: str
     """
     if 'url_prefix' in kwargs:
         if (
@@ -861,6 +867,7 @@ def get_client(**kwargs):
         except AttributeError:
             logger.debug('Unable to locate AWS credentials')
             raise botoex.NoCredentialsError
+    logger.debug('Checking for AWS settings')
     try:
         from requests_aws4auth import AWS4Auth
         if kwargs['aws_key']:
@@ -889,24 +896,50 @@ def get_client(**kwargs):
                 '"master_only" cannot be true if more than one host is '
                 'specified. Hosts = {0}'.format(kwargs['hosts'])
             )
+
+    # Creating the class object should be okay
+    logger.info('Instantiating client object')
+    client = elasticsearch.Elasticsearch(**kwargs)
+    logger.info('Created Elasticsearch client object with provided settings')
+    if 'api_key' in kwargs and kwargs['api_key'] is not None:
+        client.transport.connection_pool.connection.headers.update({'x-api-key': kwargs['api_key']})
+
+    # Test client connectivity (debug log client.info() output)
+    logger.info('Testing client connectivity')
     try:
-        client = elasticsearch.Elasticsearch(**kwargs)
-        if skip_version_test:
-            logger.warn(
-                'Skipping Elasticsearch version verification. This is '
-                'acceptable for remote reindex operations.'
-            )
-        else:
+        logger.debug('Cluster info: {0}'.format(client.info()))
+    except Exception as err:
+        logger.error('Unable to connect to Elasticsearch cluster. Error: {0}'.format(err))
+        logger.fatal('Curator cannot proceed. Exiting.')
+        raise exceptions.ClientException
+
+    if skip_version_test:
+        logger.warn(
+            'Skipping Elasticsearch version verification. This is '
+            'acceptable for remote reindex operations.'
+        )
+    else:
+        logger.debug('Checking Elasticsearch endpoint version...')
+        try:
             # Verify the version is acceptable.
             check_version(client)
-        # Verify "master_only" status, if applicable
-        check_master(client, master_only=master_only)
-        return client
-    except Exception as e:
-        raise elasticsearch.ElasticsearchException(
-            'Unable to create client connection to Elasticsearch.  '
-            'Error: {0}'.format(e)
-        )
+        except exceptions.CuratorException as err:
+            logger.error('{0}'.format(err))
+            logger.fatal('Curator cannot continue due to version incompatibilites. Exiting')
+            raise exceptions.ClientException
+
+    # Verify "master_only" status, if applicable
+    if master_only:
+        logger.info('Connecting only to local master node...')
+        try:
+            check_master(client, master_only=master_only)
+        except exceptions.ConfigurationError as err:
+            logger.error('master_only check failed: {0}'.format(err))
+            logger.fatal('Curator cannot continue. Exiting.')
+            raise exceptions.ClientException
+    else:
+        logger.debug('Not verifying local master status (master_only: false)')
+    return client
 
 def show_dry_run(ilo, action, **kwargs):
     """
@@ -1642,6 +1675,16 @@ def task_check(client, task_id=None):
         )
     task = task_data['task']
     completed = task_data['completed']
+    if task['action'] == 'indices:data/write/reindex':
+        logger.debug('It\'s a REINDEX TASK')
+        logger.debug('TASK_DATA: {0}'.format(task_data))
+        logger.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+        if 'response' in task_data:
+            response = task_data['response']
+            if len(response['failures']) > 0:
+                raise exceptions.FailedReindex(
+                    'Failures found in reindex response: {0}'.format(response['failures'])
+                )
     running_time = 0.000000001 * task['running_time_in_nanos']
     logger.debug('running_time_in_nanos = {0}'.format(running_time))
     descr = task['description']
@@ -1791,8 +1834,16 @@ def node_roles(client, node_id):
     """
     return client.nodes.info()['nodes'][node_id]['roles']
 
-def index_size(client, idx):
-    return client.indices.stats(index=idx)['indices'][idx]['total']['store']['size_in_bytes']
+def index_size(client, idx, value='total'):
+    """
+    Return the sum of either `primaries` or `total` shards for index ``idx``
+
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
+    :arg idx: An Elasticsearch index
+    :arg value: One of either `primaries` or `total`
+    :rtype: integer
+    """
+    return client.indices.stats(index=idx)['indices'][idx][value]['store']['size_in_bytes']
 
 def single_data_path(client, node_id):
     """
@@ -1843,7 +1894,7 @@ def get_datemath(client, datemath, random_element=None):
     """
     if random_element is None:
         randomPrefix = (
-            'curator_get_datemath_function_' + 
+            'curator_get_datemath_function_' +
             ''.join(random.choice(string.ascii_lowercase) for _ in range(32))
         )
     else:
@@ -1886,8 +1937,8 @@ def isdatemath(data):
 
 def parse_datemath(client, value):
     """
-    Check if ``value`` is datemath.  
-    Parse it if it is.  
+    Check if ``value`` is datemath.
+    Parse it if it is.
     Return the bare value otherwise.
     """
     if not isdatemath(value):
@@ -1909,3 +1960,22 @@ def parse_datemath(client, value):
     except AttributeError:
         raise exceptions.ConfigurationError('Value "{0}" does not contain a valid datemath pattern.'.format(value))
     return '{0}{1}{2}'.format(prefix, get_datemath(client, datemath), suffix)
+
+def get_write_index(client, alias):
+    try:
+        response = client.indices.get_alias(index=alias)
+    except:
+        raise exceptions.CuratorException('Alias {0} not found'.format(alias))
+    # If there are more than one in the list, one needs to be the write index
+    # otherwise the alias is a one to many, and can't do rollover.
+    if len(list(response.keys())) > 1:
+        for index in list(response.keys()):
+            try:
+                if response[index]['aliases'][alias]['is_write_index']:
+                    return index
+            except KeyError:
+                raise exceptions.FailedExecution(
+                    'Invalid alias: is_write_index not found in 1 to many alias')
+    else:
+        # There's only one, so this is it
+        return list(response.keys())[0]

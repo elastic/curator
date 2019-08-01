@@ -123,6 +123,43 @@ class TestActionFileClose(CuratorTestCase):
             {"dummy":{"aliases":{"testalias":{}}}},
             self.client.indices.get_alias(name=alias)
         )
+    def test_close_skip_flush(self):
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.close_skip_flush)
+        self.create_index('dummy')
+        # Disable shard allocation to make my_index go red
+        disable_allocation = '{"transient":{"cluster.routing.allocation.enable":"none"}}'
+        self.client.cluster.put_settings(body=disable_allocation)
+        self.create_index('my_index', wait_for_yellow=False, wait_for_active_shards=0)
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        try:
+            self.assertEquals(
+                'close',
+                self.client.cluster.state(
+                    index='my_index',
+                    metric='metadata',
+                )['metadata']['indices']['my_index']['state']
+            )
+            self.assertNotEqual(
+                'close',
+                self.client.cluster.state(
+                    index='dummy',
+                    metric='metadata',
+                )['metadata']['indices']['dummy']['state']
+            )
+        finally:
+            # re-enable shard allocation for next tests
+            enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
+            self.client.cluster.put_settings(body=enable_allocation)
     def test_extra_option(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -187,3 +224,15 @@ class TestCLIClose(CuratorTestCase):
             {"dummy":{"aliases":{"testalias":{}}}},
             self.client.indices.get_alias(name=alias)
         )
+    def test_close_skip_flush(self):
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'close',
+            '--skip_flush',
+            '--filter_list', '{"filtertype":"pattern","kind":"prefix","value":"my"}',
+        ]
+        self.create_index('my_index')
+        self.create_index('dummy')
+        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIClose.test_close_skip_flush'))
+        self.assertEquals('close', self.client.cluster.state(index='my_index', metric='metadata')['metadata']['indices']['my_index']['state'])

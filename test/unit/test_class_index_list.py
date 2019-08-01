@@ -138,6 +138,24 @@ class TestIndexListRegexFilters(TestCase):
         )
         il.filter_by_regex(kind='prefix', value='ind', exclude=True)
         self.assertEqual([], il.indices)
+    def test_filter_by_regex_middle(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        il = curator.IndexList(client)
+        self.assertEqual(
+            [u'index-2016.03.03', u'index-2016.03.04'],
+            sorted(il.indices)
+        )
+        il.filter_by_regex(kind='regex', value='dex')
+        self.assertEqual(
+            [u'index-2016.03.03', u'index-2016.03.04'],
+            sorted(il.indices)
+        )
+        il.filter_by_regex(kind='regex', value='dex', exclude=True)
+        self.assertEqual([], il.indices)
     def test_filter_by_regex_timestring(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -890,7 +908,7 @@ class TestIterateFiltersIndex(TestCase):
         )
     def test_ilm_filtertype_exclude(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '6.3.0'} }
+        client.info.return_value = {'version': {'number': '6.6.0'} }
         # If we don't deepcopy, then it munges the settings for future references.
         with_ilm = deepcopy(testvars.settings_two)
         with_ilm['index-2016.03.03']['settings']['index']['lifecycle'] = {'name':'mypolicy'}
@@ -903,7 +921,7 @@ class TestIterateFiltersIndex(TestCase):
         self.assertEqual(['index-2016.03.04'], ilo.indices)
     def test_ilm_filtertype_no_setting(self):
         client = Mock()
-        client.info.return_value = {'version': {'number': '6.3.0'} }
+        client.info.return_value = {'version': {'number': '6.6.0'} }
         client.indices.get_settings.return_value = testvars.settings_two
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
@@ -1003,6 +1021,73 @@ class TestIndexListFilterCount(TestCase):
         self.assertRaises(curator.ActionError, self.il.filter_by_count,
             count=1, use_age=True, pattern=r'^(\ )foo(\ )$', source='name', timestring='%Y.%m.%d',
         )
+
+class TestIndexListFilterShards(TestCase):
+    def builder(self):
+        self.client = Mock()
+        self.client.info.return_value = {'version': {'number': '5.0.0'} }
+        self.client.indices.get_settings.return_value = testvars.settings_two
+        self.client.cluster.state.return_value = testvars.clu_state_two
+        self.client.indices.stats.return_value = testvars.stats_two
+        self.il = curator.IndexList(self.client)
+    def test_filter_shards_raise(self):
+        self.builder()
+        self.assertRaises(curator.MissingArgument, self.il.filter_by_shards)
+    def test_bad_shard_count_raise_1(self):
+        self.builder()
+        self.assertRaises(curator.MissingArgument, self.il.filter_by_shards, number_of_shards=0)
+    def test_bad_shard_count_raise_2(self):
+        self.builder()
+        self.assertRaises(ValueError, self.il.filter_by_shards, number_of_shards=1, shard_filter_behavior='less_than')
+    def test_bad_shard_count_raise_3(self):
+        self.builder()
+        self.assertRaises(ValueError, self.il.filter_by_shards, number_of_shards=-1, shard_filter_behavior='greater_than')
+    def test_greater_than_or_equal(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='greater_than_or_equal')
+        self.assertEqual(
+            sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
+    def test_greater_than_or_equal_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='greater_than_or_equal', exclude=True)
+        self.assertEqual(
+            sorted([]), sorted(self.il.indices))
+    def test_greater_than(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5)
+        self.assertEqual(
+            sorted([]), sorted(self.il.indices))
+    def test_greater_than_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, exclude=True)
+        self.assertEqual(
+            sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
+    def test_less_than_or_equal(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than_or_equal')
+        self.assertEqual(
+            sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
+    def test_less_than_or_equal_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than_or_equal', exclude=True)
+        self.assertEqual(
+            sorted([]), sorted(self.il.indices))
+    def test_less_than(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than')
+        self.assertEqual(
+            sorted([]), sorted(self.il.indices))
+    def test_less_than_exclude(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='less_than', exclude=True)
+        self.assertEqual(
+            sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
+    def test_equal(self):
+        self.builder()
+        self.il.filter_by_shards(number_of_shards=5, shard_filter_behavior='equal')
+        self.assertEqual(
+            sorted([u'index-2016.03.03', u'index-2016.03.04']), sorted(self.il.indices))
+
 class TestIndexListPeriodFilterName(TestCase):
     def test_get_name_based_age_in_range(self):
         unit = 'days'

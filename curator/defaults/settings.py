@@ -4,7 +4,7 @@ from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 # Elasticsearch versions supported
 def version_max():
-    return (6, 99, 99)
+    return (7, 99, 99)
 def version_min():
     return (5, 0, 0)
 
@@ -72,6 +72,7 @@ def index_filtertypes():
         'age',
         'closed',
         'count',
+        'empty',
         'forcemerged',
         'ilm',
         'kibana',
@@ -80,6 +81,7 @@ def index_filtertypes():
         'pattern',
         'period',
         'space',
+        'shards'
     ]
 
 def snapshot_filtertypes():
@@ -119,11 +121,13 @@ def structural_filter_elements():
         Optional('key'): Any(*string_types),
         Optional('kind'): Any(*string_types),
         Optional('max_num_segments'): Coerce(int),
+        Optional('number_of_shards'): Coerce(int),
         Optional('pattern'): Any(*string_types),
         Optional('period_type'): Any(*string_types),
         Optional('reverse'): Any(None, bool, int, *string_types),
         Optional('range_from'): Coerce(int),
         Optional('range_to'): Coerce(int),
+        Optional('shard_filter_behavior'): Any(*string_types),
         Optional('source'): Any(*string_types),
         Optional('state'): Any(*string_types),
         Optional('stats_result'): Any(None, *string_types),

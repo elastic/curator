@@ -101,6 +101,26 @@ copy_aliases = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
+shrink_filter_by_shards = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Act on indices as filtered"\n'
+'    action: shrink\n'
+'    options:\n'
+'      shrink_node: {0}\n'
+'      node_filters:\n'
+'          {1}: {2}\n'
+'      number_of_shards: {3}\n'
+'      number_of_replicas: {4}\n'
+'      shrink_prefix: {5}\n'
+'      shrink_suffix: {6}\n'
+'      delete_after: {7}\n'
+'      wait_for_rebalance: {8}\n'
+'    filters:\n'
+'      - filtertype: shards\n'
+'        number_of_shards: {9}\n'
+'        shard_filter_behavior: {10}\n')
+
 class TestActionFileShrink(CuratorTestCase):
     def builder(self, action_args):
         self.idx = 'my_index'
@@ -247,7 +267,55 @@ class TestActionFileShrink(CuratorTestCase):
         indices = curator.get_indices(self.client)
         self.assertEqual(1, len(indices)) # Should only have `my_index-shrunken`
         self.assertEqual(indices[0], self.target)
+    def test_shrink_implicit_shard_filter(self):
+        self.create_index('my_invalid_shrink_index', shards=1)
+        self.create_index('my_valid_shrink_index', shards=5)
 
+        suffix = '-shrunken'
+        self.builder(
+            shrink.format(
+                'DETERMINISTIC',
+                'permit_masters',
+                'True',
+                1,
+                0,
+                '',
+                suffix,
+                'True',
+                'False'
+            )
+        )
+
+        indices = curator.get_indices(self.client)
+        self.assertEqual(3, len(indices)) 
+        self.assertTrue('my_invalid_shrink_index-shrunken' not in indices)
+        self.assertTrue('my_valid_shrink_index-shrunken' in indices)
+    def test_shrink_explicit_shard_filter(self):
+        self.create_index('my_invalid_shrink_index', shards=3)
+        self.create_index('my_valid_shrink_index', shards=5)
+
+        suffix = '-shrunken'
+        self.builder(
+            shrink_filter_by_shards.format(
+                'DETERMINISTIC',
+                'permit_masters',
+                'True',
+                1,
+                0,
+                '',
+                suffix,
+                'True',
+                'False',
+                5,
+                'greater_than_or_equal'
+            )
+        )
+
+        indices = curator.get_indices(self.client)
+        self.assertEqual(3, len(indices)) 
+        self.assertTrue('my_invalid_shrink_index-shrunken' not in indices)
+        self.assertTrue('my_valid_shrink_index-shrunken' in indices)
+        self.assertTrue('my_index-shrunken' not in indices)
 
 class TestCLIShrink(CuratorTestCase):
     def builder(self):
