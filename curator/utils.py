@@ -354,7 +354,7 @@ def get_point_of_reference(unit, count, epoch=None):
     return epoch - multiplier * count
 
 def get_unit_count_from_name(index_name, pattern):
-    if (pattern == None):
+    if pattern is None:
         return None
     match = pattern.search(index_name)
     if match:
