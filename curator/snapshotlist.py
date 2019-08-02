@@ -163,7 +163,12 @@ class SnapshotList(object):
         temp = {}
         for snap in snapshot_list:
             if self.age_keyfield in self.snapshot_info[snap]:
-                temp[snap] = self.snapshot_info[snap][self.age_keyfield]
+                # This fixes #1366. Catch None is a potential age value.
+                if self.snapshot_info[snap][self.age_keyfield]:
+                    temp[snap] = self.snapshot_info[snap][self.age_keyfield]
+                else:
+                    msg = ' snapshot %s has no age' % snap
+                    self.__excludify(True, True, snap, msg)
             else:
                 msg = (
                     '{0} does not have age key "{1}" in SnapshotList '
