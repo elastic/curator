@@ -200,6 +200,37 @@ def get_date_regex(timestring):
     logger.debug("regex = {0}".format(regex))
     return regex
 
+# Default filter patterns (regular expressions)
+def build_regex(kind, value):
+    """
+    Return a regex pattern based on the kind and value.
+
+    :arg kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or
+        ``timestring``. This option controls the kind of regex pattern
+        to build.
+    :arg value: Depends on `kind`. It is the strftime string if `kind` is
+        ``timestring``. It's used to build the regular expression for other
+        kinds.  If `kind` is ``prefix`` or ``suffix``, the value is
+        converted so that the regex behaves like a substring search.
+    """
+    if value == 0:
+        pass
+    elif not value:
+        raise ValueError(
+            '{0}: Invalid value for "value". '
+            'Cannot be "None" type, empty, or False'
+        )
+    if kind == 'timestring':
+        return r'^.*{0}.*$'.format(get_date_regex(value))
+    elif kind == 'prefix':
+        return r'^{0}.*$'.format(re.escape(str(value)))
+    elif kind == 'suffix':
+        return r'^.*{0}$'.format(re.escape(str(value)))
+    elif kind == 'regex':
+        return r'{0}'.format(value)
+    else:
+        raise ValueError('{0}: Invalid value for kind'.format(kind))
+
 def get_datetime(index_timestamp, timestring):
     """
     Return the datetime extracted from the index name, which is the index

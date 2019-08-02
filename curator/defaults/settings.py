@@ -12,15 +12,6 @@ def version_min():
 def config_file():
     return path.join(path.expanduser('~'), '.curator', 'curator.yml')
 
-# Default filter patterns (regular expressions)
-def regex_map():
-    return {
-        'timestring': r'^.*{0}.*$',
-        'regex': r'{0}',
-        'prefix': r'^{0}.*$',
-        'suffix': r'^.*{0}$',
-    }
-
 def date_regex():
     return {
         'Y' : '4',

@@ -427,23 +427,7 @@ class IndexList(object):
             Default is `False`
         """
         self.loggit.debug('Filtering indices by regex')
-        if kind not in [ 'regex', 'prefix', 'suffix', 'timestring' ]:
-            raise ValueError('{0}: Invalid value for kind'.format(kind))
-
-        # Stop here if None or empty value, but zero is okay
-        if value == 0:
-            pass
-        elif not value:
-            raise ValueError(
-                '{0}: Invalid value for "value". '
-                'Cannot be "None" type, empty, or False'
-            )
-
-        if kind == 'timestring':
-            regex = settings.regex_map()[kind].format(utils.get_date_regex(value))
-        else:
-            regex = settings.regex_map()[kind].format(value)
-
+        regex = utils.build_regex(kind, value)
         self.empty_list_check()
         pattern = re.compile(regex)
         for index in self.working_list():

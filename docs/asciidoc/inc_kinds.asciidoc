@@ -2,7 +2,7 @@ The different <<fe_kind,`kinds`>> are described as follows:
 
 === prefix
 
-To match all indices starting with `logstash-`:
+To match all indices starting with the substring `logstash-`:
 
 [source,yaml]
 -------------
@@ -11,7 +11,7 @@ To match all indices starting with `logstash-`:
  value: logstash-
 -------------
 
-To match all indices _except_ those starting with `logstash-`:
+To match all indices _except_ those starting with the substring `logstash-`:
 
 [source,yaml]
 -------------
@@ -23,7 +23,7 @@ To match all indices _except_ those starting with `logstash-`:
 
 === suffix
 
-To match all indices ending with `-prod`:
+To match all indices ending with the substring `-prod`:
 
 [source,yaml]
 -------------
@@ -32,7 +32,7 @@ To match all indices ending with `-prod`:
  value: -prod
 -------------
 
-To match all indices _except_ those ending with `-prod`:
+To match all indices _except_ those ending with the substring `-prod`:
 
 [source,yaml]
 -------------
