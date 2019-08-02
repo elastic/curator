@@ -44,6 +44,9 @@ Changelog
     log message were vague indications that a client connection was attempted.
     This is a step in the right direction, as it explicitly exits with a 1 exit
     code for different conditions now. (untergeek)
+  * Catch snapshots without a timestring in the name causing a logic error when
+    using the ``count`` filter and ``use_age`` with ``source: name``. Reported
+    by (nerophon) in #1366. (untergeek)
 
 **Documentation**
 
