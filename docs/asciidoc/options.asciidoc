@@ -1376,9 +1376,6 @@ The default value is `True`.
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
 
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -1419,9 +1416,6 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
 
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -1461,9 +1455,6 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
-
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
