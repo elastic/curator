@@ -2441,7 +2441,7 @@ were `-shrink`, the resulting target index name would be `foo-index-shrink`.
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
 This setting can speed up reindexing operations by using
-{ref}/search-request-scroll.html#sliced-scroll[Sliced Scroll] to slice on the
+{ref}/search-request-body.html#sliced-scroll[Sliced Scroll] to slice on the
 \_uid.
 
 [source,yaml]
