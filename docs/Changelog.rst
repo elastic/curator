@@ -47,6 +47,8 @@ Changelog
   * Catch snapshots without a timestring in the name causing a logic error when
     using the ``count`` filter and ``use_age`` with ``source: name``. Reported
     by (nerophon) in #1366. (untergeek)
+  * Ensure authentication (401), authorization (403), and other 400 errors are
+    logged properly. Reported by (rfalke) in #1413. (untergeek)
 
 **Documentation**
 
