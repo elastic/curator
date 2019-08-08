@@ -890,11 +890,11 @@ def get_client(**kwargs):
         if len(kwargs['hosts']) > 1:
             logger.error(
                 '"master_only" cannot be true if more than one host is '
-                'specified. Hosts = {0}'.format(kwargs['hosts'])
+                'specified. Hosts = %s' % kwargs['hosts']
             )
             raise exceptions.ConfigurationError(
                 '"master_only" cannot be true if more than one host is '
-                'specified. Hosts = {0}'.format(kwargs['hosts'])
+                'specified. Hosts = %s' % kwargs['hosts']
             )
 
     # Creating the class object should be okay
@@ -904,10 +904,23 @@ def get_client(**kwargs):
 
     # Test client connectivity (debug log client.info() output)
     logger.info('Testing client connectivity')
+    fail = False
     try:
-        logger.debug('Cluster info: {0}'.format(client.info()))
+        logger.debug('Cluster info: %s' % client.info())
+    # Catch all TransportError types first
+    except elasticsearch.TransportError as err:
+        try:
+            reason = err.info['error']['reason']
+        except:
+            reason = err.error
+        logger.error('HTTP %s error: %s' % (err.status_code, reason))
+        fail = True
+    # Catch other potential exceptions
     except Exception as err:
-        logger.error('Unable to connect to Elasticsearch cluster. Error: {0}'.format(err))
+        logger.error('Unable to connect to Elasticsearch cluster. Error: %s' % err)
+        fail = True
+
+    if fail:
         logger.fatal('Curator cannot proceed. Exiting.')
         raise exceptions.ClientException
 
@@ -922,7 +935,7 @@ def get_client(**kwargs):
             # Verify the version is acceptable.
             check_version(client)
         except exceptions.CuratorException as err:
-            logger.error('{0}'.format(err))
+            logger.error('%s' % err)
             logger.fatal('Curator cannot continue due to version incompatibilites. Exiting')
             raise exceptions.ClientException
 
@@ -932,7 +945,7 @@ def get_client(**kwargs):
         try:
             check_master(client, master_only=master_only)
         except exceptions.ConfigurationError as err:
-            logger.error('master_only check failed: {0}'.format(err))
+            logger.error('master_only check failed: %s' % err)
             logger.fatal('Curator cannot continue. Exiting.')
             raise exceptions.ClientException
     else:
