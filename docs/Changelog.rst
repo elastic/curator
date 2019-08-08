@@ -3,8 +3,8 @@
 Changelog
 =========
 
-5.7.7 (? ? ?)
-------------------
+5.8.0 (? ? ?)
+-------------
 
 **New**
 
@@ -19,6 +19,9 @@ Changelog
     and addressed by #1259 (raynigon) in August of 2018. Subsequent changes,
     however, required some adaptation, and re-submission as a different PR.
     (untergeek)
+  * ``ignore_existing`` option added to ``CreateIndex``. Will not raise an
+    error if the index to be created already exists. Raised by (breml) in
+    #1352. (untergeek)
 
 **Bug Fixes**
 

@@ -31,6 +31,7 @@ def action_specific(action):
         ],
         'create_index' : [
             option_defaults.name(action),
+            option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
         'delete_indices' : [],

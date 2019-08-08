@@ -54,6 +54,9 @@ def extra_settings():
 def ignore_empty_list():
     return { Optional('ignore_empty_list', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
+def ignore_existing():
+    return { Optional('ignore_existing', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
 def ignore_unavailable():
     return { Optional('ignore_unavailable', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
