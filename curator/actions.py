@@ -4,6 +4,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from curator import exceptions, utils
+from elasticsearch.exceptions import RequestError
 
 class Alias(object):
     def __init__(self, name=None, extra_settings={}, **kwargs):
@@ -410,7 +411,7 @@ class ClusterRouting(object):
             utils.report_failure(e)
 
 class CreateIndex(object):
-    def __init__(self, client, name, extra_settings={}):
+    def __init__(self, client, name, extra_settings={}, ignore_existing=False):
         """
         :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg name: A name, which can contain :py:func:`time.strftime`
@@ -419,20 +420,27 @@ class CreateIndex(object):
             more information see
             https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
         :type extra_settings: dict, representing the settings and mappings.
+        :arg ignore_existing: If an index already exists, and this setting is ``True``, 
+            ignore the 400 error that results in a `resource_already_exists_exception` and
+            return that it was successful.
         """
         if not name:
             raise exceptions.ConfigurationError('Value for "name" not provided.')
         #: Instance variable.
         #: The parsed version of `name`
-        self.name       = utils.parse_date_pattern(name)
+        self.name = utils.parse_date_pattern(name)
         #: Instance variable.
-        #: Extracted from the config yaml, it should be a dictionary of
+        #: Extracted from the action yaml, it should be a dictionary of
         #: mappings and settings suitable for index creation.
-        self.body       = extra_settings
+        self.body = extra_settings
+        #: Instance variable.
+        #: Extracted from the action yaml, it should be a boolean informing
+        #: whether to ignore the error if the index already exists.
+        self.ignore_existing = ignore_existing
         #: Instance variable.
         #: An :class:`elasticsearch.Elasticsearch` client object
-        self.client     = client
-        self.loggit     = logging.getLogger('curator.actions.create_index')
+        self.client = client
+        self.loggit = logging.getLogger('curator.actions.create_index')
 
     def do_dry_run(self):
         """
@@ -440,8 +448,8 @@ class CreateIndex(object):
         """
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
         self.loggit.info(
-            'DRY-RUN: create_index "{0}" with arguments: '
-            '{1}'.format(self.name, self.body)
+            'DRY-RUN: create_index "%s" with arguments: '
+            '%s' % (self.name, self.body)
         )
 
     def do_action(self):
@@ -454,6 +462,13 @@ class CreateIndex(object):
         )
         try:
             self.client.indices.create(index=self.name, body=self.body)
+        # Most likely error is a 400, `resource_already_exists_exception`
+        except RequestError as err:
+            match_list = ["index_already_exists_exception", "resource_already_exists_exception"]
+            if err.error in match_list and self.ignore_existing:
+                self.loggit.warn('Index %s already exists.' % self.name)
+            else:
+                raise exceptions.FailedExecution('Index %s already exists.' % self.name)
         except Exception as e:
             utils.report_failure(e)
 
