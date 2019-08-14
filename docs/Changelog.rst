@@ -54,6 +54,8 @@ Changelog
     logged properly. Reported by (rfalke) in #1413. (untergeek)
   * Fix crashes in restore of "large" number of indices reported by breml in
     #1360. (anandsinghkunwar)
+  * Do an empty list check before querying indices for field stats. Fixed by
+    (CiXiHuo) in #1448.
 
 **Documentation**
 
