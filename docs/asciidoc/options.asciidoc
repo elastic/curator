@@ -7,10 +7,12 @@
 Options are settings used by <<actions,actions>>.
 
 * <<option_allocation_type,allocation_type>>
+* <<option_allow_ilm,allow_ilm_indices>>
 * <<option_continue,continue_if_exception>>
 * <<option_count,count>>
 * <<option_delay,delay>>
 * <<option_delete_aliases,delete_aliases>>
+* <<option_skip_flush,skip_flush>>
 * <<option_disable,disable_action>>
 * <<option_extra_settings,extra_settings>>
 * <<option_ignore_empty,ignore_empty_list>>
@@ -88,6 +90,29 @@ The value of this setting must be one of `require`, `include`, or `exclude`.
 Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
+
+[[option_allow_ilm]]
+== allow_ilm_indices
+
+This option allows Curator to manage ILM-enabled indices. Exercise caution that
+ILM policies and Curator actions will not interfere with each other.
+
+IMPORTANT: Read more about Curator and Index Lifecycle Management
+  <<ilm,here>>.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete the specified indices"
+options:
+  allow_ilm_indices: true
+filters:
+- filtertype: ...
+-------------
+
+The value of this setting must be either `true` or `false`.
+
+The default value for this setting is `false`.
 
 [[option_continue]]
 == continue_if_exception
@@ -239,6 +264,27 @@ filters:
 
 The value for this setting determines whether aliases will be deleted from
 indices before closing.
+
+The default value is `False`.
+
+[[option_skip_flush]]
+== skip_flush
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+[source,yaml]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  skip_flush: False
+filters:
+- filtertype: ...
+-------------
+
+If `skip_flush` is set to `True`, Curator will not flush indices to disk
+before closing. This may be useful for closing red indices before restoring.
 
 The default value is `False`.
 
@@ -1330,9 +1376,6 @@ The default value is `True`.
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
 
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -1373,9 +1416,6 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
 
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -1415,9 +1455,6 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
-
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -1744,7 +1781,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/modules-snapshots.html#_restore
+Read more about this setting at {ref}/modules-snapshots.html#restore-snapshot
 
 There is no default value.
 
@@ -1796,7 +1833,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/modules-snapshots.html#_restore
+Read more about this setting at {ref}/modules-snapshots.html#restore-snapshot
 
 There is no default value.
 
@@ -2404,7 +2441,7 @@ were `-shrink`, the resulting target index name would be `foo-index-shrink`.
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
 This setting can speed up reindexing operations by using
-{ref}/search-request-scroll.html#sliced-scroll[Sliced Scroll] to slice on the
+{ref}/search-request-body.html#sliced-scroll[Sliced Scroll] to slice on the
 \_uid.
 
 [source,yaml]

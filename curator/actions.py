@@ -4,6 +4,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from curator import exceptions, utils
+from elasticsearch.exceptions import RequestError
 
 class Alias(object):
     def __init__(self, name=None, extra_settings={}, **kwargs):
@@ -233,7 +234,7 @@ class Allocation(object):
         )
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
-
+        self.loggit.info('Updating {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         self.loggit.info('Updating index setting {0}'.format(self.body))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -254,12 +255,14 @@ class Allocation(object):
             utils.report_failure(e)
 
 class Close(object):
-    def __init__(self, ilo, delete_aliases=False):
+    def __init__(self, ilo, delete_aliases=False, skip_flush=False):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg delete_aliases: If `True`, will delete any associated aliases
             before closing indices.
         :type delete_aliases: bool
+        :arg skip_flush: If `True`, will not flush indices before closing.
+        :type skip_flush: bool
         """
         utils.verify_index_list(ilo)
         #: Instance variable.
@@ -268,6 +271,9 @@ class Close(object):
         #: Instance variable.
         #: Internal reference to `delete_aliases`
         self.delete_aliases = delete_aliases
+        #: Instance variable.
+        #: Internal reference to `skip_flush`
+        self.skip_flush = skip_flush
         #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
         self.client     = ilo.client
@@ -288,7 +294,7 @@ class Close(object):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Closing selected indices: {0}'.format(self.index_list.indices))
+            'Closing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -304,8 +310,9 @@ class Close(object):
                             'Some indices may not have had aliases.  Exception:'
                             ' {0}'.format(e)
                         )
-                self.client.indices.flush_synced(
-                    index=utils.to_csv(l), ignore_unavailable=True)
+                if not self.skip_flush:
+                    self.client.indices.flush_synced(
+                        index=utils.to_csv(l), ignore_unavailable=True)
                 self.client.indices.close(
                     index=utils.to_csv(l), ignore_unavailable=True)
         except Exception as e:
@@ -404,7 +411,7 @@ class ClusterRouting(object):
             utils.report_failure(e)
 
 class CreateIndex(object):
-    def __init__(self, client, name, extra_settings={}):
+    def __init__(self, client, name, extra_settings={}, ignore_existing=False):
         """
         :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg name: A name, which can contain :py:func:`time.strftime`
@@ -413,20 +420,27 @@ class CreateIndex(object):
             more information see
             https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
         :type extra_settings: dict, representing the settings and mappings.
+        :arg ignore_existing: If an index already exists, and this setting is ``True``, 
+            ignore the 400 error that results in a `resource_already_exists_exception` and
+            return that it was successful.
         """
         if not name:
             raise exceptions.ConfigurationError('Value for "name" not provided.')
         #: Instance variable.
         #: The parsed version of `name`
-        self.name       = utils.parse_date_pattern(name)
+        self.name = utils.parse_date_pattern(name)
         #: Instance variable.
-        #: Extracted from the config yaml, it should be a dictionary of
+        #: Extracted from the action yaml, it should be a dictionary of
         #: mappings and settings suitable for index creation.
-        self.body       = extra_settings
+        self.body = extra_settings
+        #: Instance variable.
+        #: Extracted from the action yaml, it should be a boolean informing
+        #: whether to ignore the error if the index already exists.
+        self.ignore_existing = ignore_existing
         #: Instance variable.
         #: An :class:`elasticsearch.Elasticsearch` client object
-        self.client     = client
-        self.loggit     = logging.getLogger('curator.actions.create_index')
+        self.client = client
+        self.loggit = logging.getLogger('curator.actions.create_index')
 
     def do_dry_run(self):
         """
@@ -434,8 +448,8 @@ class CreateIndex(object):
         """
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
         self.loggit.info(
-            'DRY-RUN: create_index "{0}" with arguments: '
-            '{1}'.format(self.name, self.body)
+            'DRY-RUN: create_index "%s" with arguments: '
+            '%s' % (self.name, self.body)
         )
 
     def do_action(self):
@@ -448,6 +462,13 @@ class CreateIndex(object):
         )
         try:
             self.client.indices.create(index=self.name, body=self.body)
+        # Most likely error is a 400, `resource_already_exists_exception`
+        except RequestError as err:
+            match_list = ["index_already_exists_exception", "resource_already_exists_exception"]
+            if err.error in match_list and self.ignore_existing:
+                self.loggit.warn('Index %s already exists.' % self.name)
+            else:
+                raise exceptions.FailedExecution('Index %s already exists.' % self.name)
         except Exception as e:
             utils.report_failure(e)
 
@@ -531,7 +552,7 @@ class DeleteIndices(object):
         """
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Deleting selected indices: {0}'.format(self.index_list.indices))
+            'Deleting {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -581,7 +602,7 @@ class ForceMerge(object):
         self.index_list.filter_forceMerged(
             max_num_segments=self.max_num_segments)
         self.index_list.empty_list_check()
-        self.loggit.info('forceMerging selected indices')
+        self.loggit.info('forceMerging {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             for index_name in self.index_list.indices:
                 self.loggit.info(
@@ -708,8 +729,8 @@ class IndexSettings(object):
         # didn't result in an empty list (or otherwise empty)
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Applying index settings to indices: '
-            '{0}'.format(self.index_list.indices)
+            'Applying index settings to {0} indices: '
+            '{1}'.format(len(self.index_list.indices), self.index_list.indices)
         )
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -750,7 +771,7 @@ class Open(object):
         """
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Opening selected indices: {0}'.format(self.index_list.indices))
+            'Opening {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -815,8 +836,8 @@ class Replicas(object):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Setting the replica count to {0} for indices: '
-            '{1}'.format(self.count, self.index_list.indices)
+            'Setting the replica count to {0} for {1} indices: '
+            '{2}'.format(self.count, len(self.index_list.indices), self.index_list.indices)
         )
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
@@ -913,6 +934,35 @@ class Rollover(object):
             retval['settings'] = self.settings
         return retval
 
+    def log_result(self, result):
+        """
+        Log the results based on whether the index rolled over or not
+        """
+        dryrun_string = ''
+        if result['dry_run']:
+            dryrun_string = 'DRY-RUN: '
+        self.loggit.debug('{0}Result: {1}'.format(dryrun_string, result))
+        rollover_string = '{0}Old index {1} rolled over to new index {2}'.format(
+            dryrun_string,
+            result['old_index'],
+            result['new_index']
+        )
+        # Success is determined by at one condition being True
+        success = False
+        for k in list(result['conditions'].keys()):
+            if result['conditions'][k]:
+                success = True
+        if result['dry_run'] and success: # log "successful" dry-run
+            self.loggit.info(rollover_string)
+        elif result['rolled_over']:
+            self.loggit.info(rollover_string)
+        else:
+            self.loggit.info(
+                '{0}Rollover conditions not met. Index {0} not rolled over.'.format(
+                    dryrun_string,
+                    result['old_index'])
+            )
+
     def doit(self, dry_run=False):
         """
         This exists solely to prevent having to have duplicate code in both
@@ -931,9 +981,7 @@ class Rollover(object):
         Log what the output would be, but take no action.
         """
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
-        result = self.doit(dry_run=True)
-        self.loggit.info('DRY-RUN: rollover: {0} result: '
-            '{1}'.format(self.name, result))
+        self.log_result(self.doit(dry_run=True))
 
     def do_action(self):
         """
@@ -941,7 +989,7 @@ class Rollover(object):
         """
         self.loggit.info('Performing index rollover')
         try:
-            self.doit()
+            self.log_result(self.doit())
         except Exception as e:
             utils.report_failure(e)
 
@@ -992,7 +1040,7 @@ class DeleteSnapshots(object):
         seconds between retries.
         """
         self.snapshot_list.empty_list_check()
-        self.loggit.info('Deleting selected snapshots')
+        self.loggit.info('Deleting {0} selected snapshots: {1}'.format(len(self.snapshot_list.snapshots), self.snapshot_list.snapshots))
         if not utils.safe_to_snap(
             self.client, repository=self.repository,
             retry_interval=self.retry_interval, retry_count=self.retry_count):
@@ -1280,28 +1328,64 @@ class Reindex(object):
             del reindex_args['slices']
         return reindex_args
 
-    def _post_run_quick_check(self, index_name):
-        # Verify the destination index is there after the fact
-        index_exists = self.client.indices.exists(index=index_name)
-        alias_instead = self.client.indices.exists_alias(name=index_name)
-        if not index_exists and not alias_instead:
-            self.loggit.error(
-                'The index described as "{0}" was not found after the reindex '
-                'operation. Check Elasticsearch logs for more '
-                'information.'.format(index_name)
+    def get_processed_items(self, task_id):
+        """
+        This function calls client.tasks.get with the provided `task_id`.  It will get the value 
+        from ``'response.total'`` as the total number of elements processed during reindexing.
+        If the value is not found, it will return -1
+
+        :arg task_id: A task_id which ostensibly matches a task searchable in the
+            tasks API.
+        """
+        try:
+            task_data = self.client.tasks.get(task_id=task_id)
+        except Exception as e:
+            raise exceptions.CuratorException(
+                'Unable to obtain task information for task_id "{0}". Exception '
+                '{1}'.format(task_id, e)
             )
-            if self.remote:
+        total_processed_items = -1
+        task = task_data['task']
+        if task['action'] == 'indices:data/write/reindex':
+            self.loggit.debug('It\'s a REINDEX TASK')
+            self.loggit.debug('TASK_DATA: {0}'.format(task_data))
+            self.loggit.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+            if 'response' in task_data:
+                response = task_data['response']
+                total_processed_items = response['total']
+                self.loggit.debug('total_processed_items = {0}'.format(total_processed_items))
+
+        return total_processed_items
+    
+    def _post_run_quick_check(self, index_name, task_id):
+        # Check whether any documents were processed (if no documents processed, the target index "dest" won't exist)
+        processed_items = self.get_processed_items(task_id)
+        if processed_items == 0:
+            self.loggit.info(
+                'No items were processed. Will not check if target index "{0}" exists'.format(index_name)
+            )
+        else:
+            # Verify the destination index is there after the fact
+            index_exists = self.client.indices.exists(index=index_name)
+            alias_instead = self.client.indices.exists_alias(name=index_name)
+            if not index_exists and not alias_instead:
                 self.loggit.error(
-                    'Did you forget to add "reindex.remote.whitelist: '
-                    '{0}:{1}" to the elasticsearch.yml file on the '
-                    '"dest" node?'.format(
-                        self.remote_host, self.remote_port
-                    )
+                    'The index described as "{0}" was not found after the reindex '
+                    'operation. Check Elasticsearch logs for more '
+                    'information.'.format(index_name)
                 )
-            raise exceptions.FailedExecution(
-                'Reindex failed. The index or alias identified by "{0}" was '
-                'not found.'.format(index_name)
-            )
+                if self.remote:
+                    self.loggit.error(
+                        'Did you forget to add "reindex.remote.whitelist: '
+                        '{0}:{1}" to the elasticsearch.yml file on the '
+                        '"dest" node?'.format(
+                            self.remote_host, self.remote_port
+                        )
+                    )
+                raise exceptions.FailedExecution(
+                    'Reindex failed. The index or alias identified by "{0}" was '
+                    'not found.'.format(index_name)
+                )
 
     def sources(self):
         # Generator for sources & dests
@@ -1372,7 +1456,7 @@ class Reindex(object):
                         self.client, 'reindex', task_id=response['task'],
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
-                    self._post_run_quick_check(dest)
+                    self._post_run_quick_check(dest, response['task'])
 
                 else:
                     self.loggit.warn(
@@ -1918,12 +2002,6 @@ class Shrink(object):
             raise exceptions.ConfigurationError('Node "{0}" listed for exclusion'.format(self.shrink_node))
         if not self._data_node(node_id):
             raise exceptions.ActionError('Node "{0}" is not usable as a shrink node'.format(self.shrink_node))
-        if not utils.single_data_path(self.client, node_id):
-            raise exceptions.ActionError(
-                'Node "{0}" has multiple data paths and cannot be used '
-                'for shrink operations.'
-                .format(self.shrink_node)
-            )
         self.shrink_node_avail = (
             self.client.nodes.stats()['nodes'][node_id]['fs']['total']['available_in_bytes']
         )
@@ -1947,11 +2025,6 @@ class Shrink(object):
                 continue
             if not self._data_node(node_id):
                 self.loggit.debug('Node "{0}" is not a data node'.format(name))
-                continue
-            if not utils.single_data_path(self.client, node_id):
-                self.loggit.info(
-                    'Node "{0}" has multiple data paths and will not be used for '
-                    'shrink operations.'.format(name))
                 continue
             value = nodes[node_id]['fs']['total']['available_in_bytes']
             if value > mvn_avail:
@@ -1992,7 +2065,7 @@ class Shrink(object):
 
     def _check_space(self, idx, dry_run=False):
         # Disk watermark calculation is already baked into `available_in_bytes`
-        size = utils.index_size(self.client, idx)
+        size = utils.index_size(self.client, idx, value='primaries')
         padded = (size * 2) + (32 * 1024)
         if padded < self.shrink_node_avail:
             self.loggit.debug('Sufficient space available for 2x the size of index "{0}".  Required: {1}, available: {2}'.format(idx, padded, self.shrink_node_avail))
@@ -2113,6 +2186,7 @@ class Shrink(object):
         self.index_list.filter_closed()
         self.index_list.filter_by_shards(number_of_shards=self.number_of_shards)
         self.index_list.empty_list_check()
+        self.loggit.info('Shrinking {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:

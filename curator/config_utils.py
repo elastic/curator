@@ -3,6 +3,7 @@ from voluptuous import Schema
 from curator.validators import SchemaCheck, config_file
 from curator.utils import ensure_list, get_yaml, prune_nones, test_client_options
 from curator.logtools import LogInfo, Whitelist, Blacklist
+from copy import deepcopy
 
 def test_config(config):
     # Get config from yaml file
@@ -38,3 +39,16 @@ def process_config(yaml_file):
     set_logging(config['logging'])
     test_client_options(config['client'])
     return config['client']
+
+def password_filter(data):
+    """
+    Return a deepcopy of the dictionary with any password fields hidden
+    """
+    def iterdict(mydict):
+        for key, value in mydict.items():      
+            if isinstance(value, dict):
+                iterdict(value)
+            elif key == "password":
+                mydict.update({"password": "REDACTED"})
+        return mydict
+    return iterdict(deepcopy(data))

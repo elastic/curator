@@ -336,6 +336,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         # Decorators cause this pylint error
         # pylint: disable=E1123 
         self.client.indices.flush(index='_all', force=True)
+        self.client.indices.refresh(index='intersecting,notintersecting')
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -346,12 +347,9 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         )
         test = clicktest.CliRunner()
         result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            ['--config', self.args['configfile'], self.args['actionfile']],
+        )
         self.assertEqual(0, result.exit_code)
         indices = curator.get_indices(self.client)
         self.assertEquals(1, len(indices))
@@ -461,19 +459,31 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                     )
         self.assertEquals(0, len(curator.get_indices(self.client)))
     def test_allow_ilm_indices_true(self):
-        # ILM will not be added until 6.4
+        # ILM will not be added until 6.6
         if curator.get_version(self.client) < (6,6,0):
             self.assertTrue(True)
         else:
-            self.create_indices(10)
-            settings = {
-                'index': {
-                    'lifecycle': {
-                        'name': 'mypolicy'
+            import requests
+            name = 'test'
+            policy = {
+                'policy': {
+                    'phases': {
+                        'hot': {
+                            'min_age': '0ms',
+                            'actions': {
+                                'rollover': {
+                                    'max_age': '2h',
+                                    'max_docs': 4
+                                }
+                            }
+                        }
                     }
                 }
             }
-            self.client.indices.put_settings(index='_all', body=settings)
+            url = 'http://{0}:{1}/_ilm/policy/{2}'.format(host, port, name)
+            r = requests.put(url, json=policy)
+            # print(r.text) # logging reminder
+            self.create_indices(10, ilm_policy=name)
             self.write_config(
                 self.args['configfile'], testvars.client_config.format(host, port))
             self.write_config(self.args['actionfile'],
@@ -488,19 +498,31 @@ class TestActionFileDeleteIndices(CuratorTestCase):
             )
             self.assertEquals(5, len(curator.get_indices(self.client)))
     def test_allow_ilm_indices_false(self):
-        # ILM will not be added until 6.4
+        # ILM will not be added until 6.6
         if curator.get_version(self.client) < (6,6,0):
             self.assertTrue(True)
         else:
-            self.create_indices(10)
-            settings = {
-                'index': {
-                    'lifecycle': {
-                        'name': 'mypolicy'
+            import requests
+            name = 'test'
+            policy = {
+                'policy': {
+                    'phases': {
+                        'hot': {
+                            'min_age': '0ms',
+                            'actions': {
+                                'rollover': {
+                                    'max_age': '2h',
+                                    'max_docs': 4
+                                }
+                            }
+                        }
                     }
                 }
             }
-            self.client.indices.put_settings(index='_all', body=settings)
+            url = 'http://{0}:{1}/_ilm/policy/{2}'.format(host, port, name)
+            r = requests.put(url, json=policy)
+            # print(r.text) # logging reminder
+            self.create_indices(10, ilm_policy=name)
             self.write_config(
                 self.args['configfile'], testvars.client_config.format(host, port))
             self.write_config(self.args['actionfile'],

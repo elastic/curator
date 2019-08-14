@@ -123,3 +123,38 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIDeleteSnapshots.test_deletesnapshot'))
         snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(2, len(snapshot['snapshots']))
+    def test_count_by_age(self):
+        """
+        Test deleting snapshots, keeping count of n.
+        Must ignore snapshot without timestring in the name
+        """
+        self.create_repository()
+        timestamps = []
+        def add_snap(num, name):
+            self.add_docs('my_index{0}'.format(num))
+            ilo = curator.IndexList(self.client)
+            snap = curator.Snapshot(
+                ilo, repository=self.args['repository'], name=name, wait_interval=0.5)
+            snap.do_action()
+            snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
+            self.assertEqual(num, len(snapshot['snapshots']))
+            time.sleep(1.0)
+            timestamps.append(int(time.time()))
+            time.sleep(1.0)
+        name = 'curator-%Y%m%d%H%M%S'
+        for i in range(1,4):
+            add_snap(i, name)
+        add_snap(4, 'kibana-index')
+        ### Setup the actual delete
+        args = self.get_runner_args()
+        args += [
+            '--config', self.args['configfile'],
+            'delete_snapshots',
+            '--repository', self.args['repository'],
+            '--filter_list',
+            '{"filtertype":"count","count":2,"use_age":true,"source":"name","timestring":"%Y%m%d%H%M%S"}',
+        ]
+        self.assertEqual(
+            0, self.run_subprocess(args, logname='TestCLIDeleteSnapshots.test_deletesnapshot'))
+        snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
+        self.assertEqual(3, len(snapshot['snapshots']))

@@ -39,13 +39,10 @@ class TestCLICreateIndex(CuratorTestCase):
             testvars.create_index_with_extra_settings.format('testing'))
         self.assertEqual([], curator.get_indices(self.client))
         test = clicktest.CliRunner()
-        result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+        _ = test.invoke(
+            curator.cli,
+            ['--config', self.args['configfile'], self.args['actionfile']],
+        )
         ilo = curator.IndexList(self.client)
         self.assertEqual(['testing'], ilo.indices)
         self.assertEqual(ilo.index_info['testing']['number_of_shards'], '1')
@@ -97,3 +94,45 @@ class TestCLICreateIndex(CuratorTestCase):
                     )
         self.assertEqual([], curator.get_indices(self.client))
         self.assertEqual(-1, result.exit_code)
+    def test_already_existing_fail(self):
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+            testvars.create_index.format('testing'))
+        self.create_index('testing')
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual(['testing'], curator.get_indices(self.client))
+        self.assertEqual(1, result.exit_code)
+    def test_already_existing_pass(self):
+        config = (
+            '---\n'
+            'actions:\n'
+            '  1:\n'
+            '    description: "Create index as named"\n'
+            '    action: create_index\n'
+            '    options:\n'
+            '      name: {0}\n'
+            '      ignore_existing: true\n'
+        )
+        idx = 'testing'
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'], config.format(idx))
+        self.create_index(idx)
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertEqual([idx], curator.get_indices(self.client))
+        self.assertEqual(0, result.exit_code)

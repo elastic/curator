@@ -435,7 +435,7 @@ removed from the actionable list, leaving `index-2017.03.03`,
 * <<fe_pattern,pattern>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
-* <<fe_exclude,exclude>> (default is `False`)
+* <<fe_exclude,exclude>> (default is `True`)
 
 === Index-only settings
 
@@ -452,8 +452,9 @@ removed from the actionable list, leaving `index-2017.03.03`,
 -------------
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices which do not contain any documents.  They will remain in, or be
-removed from the actionable list based on the value of <<fe_exclude,exclude>>.
+indices which do not contain any documents. Indices that are closed are automatically
+removed from consideration. They will remain in, or be removed from the actionable list
+based on the value of <<fe_exclude,exclude>>.
 
 By default the indices matched by the empty filter will be excluded since 
 the exclude setting defaults to True. To include matching indices rather than
@@ -502,12 +503,12 @@ remain in, or be removed from the actionable list based on the value of
   exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove indices `.kibana`, `.kibana-5`,
-and `.kibana-6` from the list of indices, if present.
+This <<filtertype,filtertype>> will remove any index matching the regular 
+expression `^\.kibana.*$` from the list of indices, if present.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices `.kibana`, `.kibana-5`, or `.kibana-6`. They
-will remain in, or be removed from the actionable list based on the value of
+indices matching the regular expression `^\.kibana.*$`. They will remain in, or
+be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
 === Optional settings
@@ -927,7 +928,7 @@ messages like these in the output:
 * <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
-* <<fe_threshold_behavior,fe_threshold_behavior>> (default is `greater_than`)
+* <<fe_threshold_behavior,threshold_behavior>> (default is `greater_than`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 * <<fe_exclude,exclude>> (default is `False`)

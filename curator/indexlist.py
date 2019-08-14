@@ -305,6 +305,7 @@ class IndexList(object):
             'Getting index date by querying indices for min & max value of '
             '{0} field'.format(field)
         )
+        self.empty_list_check()
         index_lists = utils.chunk_index_list(self.indices)
         for l in index_lists:
             for index in l:
@@ -448,7 +449,7 @@ class IndexList(object):
         pattern = re.compile(regex)
         for index in self.working_list():
             self.loggit.debug('Filter by regex: Index: {0}'.format(index))
-            match = pattern.match(index)
+            match = pattern.search(index)
             if match:
                 self.__excludify(True, exclude, index)
             else:
@@ -652,7 +653,7 @@ class IndexList(object):
 
     def filter_kibana(self, exclude=True):
         """
-        Match any index named ``.kibana``, ``.kibana-5``, or ``.kibana-6``
+        Match any index named ``.kibana*``
         in `indices`. Older releases addressed index names that no longer exist.
 
         :arg exclude: If `exclude` is `True`, this filter will remove matching
@@ -663,9 +664,8 @@ class IndexList(object):
         self.loggit.debug('Filtering kibana indices')
         self.empty_list_check()
         for index in self.working_list():
-            if index in [
-                    '.kibana', '.kibana-5', '.kibana-6'
-                ]:
+            pattern = re.compile(r'^\.kibana.*$')
+            if pattern.match(index):
                 self.__excludify(True, exclude, index)
             else:
                 self.__excludify(False, exclude, index)
@@ -728,12 +728,16 @@ class IndexList(object):
         """
         Filter indices with a document count of zero
 
+        Indices that are closed are automatically excluded from consideration
+        due to closed indices reporting a document count of zero.
+
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
             indices will be kept in `indices`.
             Default is `True`
         """
         self.loggit.debug('Filtering empty indices')
+        self.filter_closed()
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['docs'] == 0
@@ -999,11 +1003,11 @@ class IndexList(object):
         Match `indices` with a given shard count.
 
         Selects all indices with a shard count 'greater_than' number_of_shards by default.
-        Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_or_equal', 
+        Use shard_filter_behavior to select indices with shard count 'greater_than', 'greater_than_or_equal',
         'less_than', 'less_than_or_equal', or 'equal' to number_of_shards.
 
-        :arg number_of_shards: shard threshold 
-        :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_or_equal, less_than, 
+        :arg number_of_shards: shard threshold
+        :arg shard_filter_behavior: Do you want to filter on greater_than, greater_than_or_equal, less_than,
             less_than_or_equal, or equal?
         :arg exclude: If `exclude` is `True`, this filter will remove matching
             indices from `indices`. If `exclude` is `False`, then only matching
@@ -1031,15 +1035,15 @@ class IndexList(object):
             self.loggit.debug('Filter by number of shards: Index: {0}'.format(index))
 
             if shard_filter_behavior == 'greater_than':
-                condition = int(self.index_info[index]['number_of_shards']) > number_of_shards 
+                condition = int(self.index_info[index]['number_of_shards']) > number_of_shards
             elif shard_filter_behavior == 'less_than':
-                condition = int(self.index_info[index]['number_of_shards']) < number_of_shards 
+                condition = int(self.index_info[index]['number_of_shards']) < number_of_shards
             elif shard_filter_behavior == 'greater_than_or_equal':
-                condition = int(self.index_info[index]['number_of_shards']) >= number_of_shards 
+                condition = int(self.index_info[index]['number_of_shards']) >= number_of_shards
             elif shard_filter_behavior == 'less_than_or_equal':
-                condition = int(self.index_info[index]['number_of_shards']) <= number_of_shards 
+                condition = int(self.index_info[index]['number_of_shards']) <= number_of_shards
             else:
-                condition = int(self.index_info[index]['number_of_shards']) == number_of_shards 
+                condition = int(self.index_info[index]['number_of_shards']) == number_of_shards
 
             self.__excludify(condition, exclude, index)
 
@@ -1054,8 +1058,8 @@ class IndexList(object):
 
         :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
             ``relative``.  ``date_from`` and ``date_to`` are required when using
-            ``period_type='absolute'`. ``range_from`` and ``range_to`` are
-            required with ``period_type='relative'`.
+            ``period_type='absolute'``. ``range_from`` and ``range_to`` are
+            required with ``period_type='relative'``.
         :arg source: Source of index age. Can be one of 'name', 'creation_date',
             or 'field_stats'
         :arg range_from: How many ``unit`` (s) in the past/future is the origin?
@@ -1075,9 +1079,9 @@ class IndexList(object):
         :arg field: A timestamp field name.  Only used for ``field_stats`` based
             calculations.
         :arg stats_result: Either `min_value` or `max_value`.  Only used in
-            conjunction with ``source``=``field_stats`` to choose whether to
+            conjunction with ``source='field_stats'`` to choose whether to
             reference the minimum or maximum result value.
-        :arg intersect: Only used when ``source``=``field_stats``.
+        :arg intersect: Only used when ``source='field_stats'``.
             If `True`, only indices where both `min_value` and `max_value` are
             within the period will be selected. If `False`, it will use whichever
             you specified.  Default is `False` to preserve expected behavior.
@@ -1175,13 +1179,17 @@ class IndexList(object):
         """
         self.loggit.debug('Filtering indices with index.lifecycle.name')
         index_lists = utils.chunk_index_list(self.indices)
+        if index_lists == [['']]:
+            self.loggit.debug('Empty working list. No ILM indices to filter.')
+            return
         for l in index_lists:
             working_list = self.client.indices.get_settings(index=utils.to_csv(l))
             if working_list:
                 for index in list(working_list.keys()):
                     try:
-                        has_ilm = 'name' in working_list[index]['settings']['index']['lifecycle']
-                        msg = '{0} has index.lifecycle.name {1}'.format(index, working_list[index]['settings']['index']['lifecycle']['name'])
+                        subvalue = working_list[index]['settings']['index']['lifecycle']
+                        has_ilm = 'name' in subvalue
+                        msg = '{0} has index.lifecycle.name {1}'.format(index, subvalue['name'])
                     except KeyError:
                         has_ilm = False
                         msg = 'index.lifecycle.name is not set for index {0}'.format(index)

@@ -1,0 +1,90 @@
+[[ilm]]
+= Curator and Index Lifecycle Management
+
+[partintro]
+--
+
+Beginning with Elasticsearch version 6.6, Elasticsearch has provided 
+{ref}/index-lifecycle-management.html[Index Lifecycle Management] (or, ILM) to
+users with at least a Basic license. ILM provides users with many of the most
+common index management features as a matter of policy, rather than execution
+time analysis (which is how Curator works).
+
+--
+
+[[ilm-actions]]
+== ILM Actions
+
+ILM applies policy actions as indices enter time-oriented phases:
+
+* Hot
+* Warm
+* Cold
+* Delete
+
+The policy actions include:
+
+* {ref}/_actions.html#ilm-set-priority-action[Set Priority]
+* {ref}/_actions.html#ilm-rollover-action[Rollover]
+* {ref}/_actions.html#ilm-unfollow-action[Unfollow]
+* {ref}/_actions.html#ilm-allocate-action[Allocate]
+* {ref}/_actions.html#ilm-readonly-action[Read-Only]
+* {ref}/_actions.html#ilm-forcemerge-action[Force Merge]
+* {ref}/_actions.html#ilm-shrink-action[Shrink]
+* {ref}/_actions.html#ilm-freeze-action[Freeze]
+* {ref}/_actions.html#ilm-delete-action[Delete]
+
+[[ilm-or-curator]]
+== ILM or Curator?
+
+If ILM provides the functionality to manage your index lifecycle, and you have
+at least a Basic license, consider using ILM in place of Curator. Many of the
+Stack components make use of ILM by default.
+
+[[ilm-beats]]
+=== Beats
+
+NOTE: All Beats share a similar ILM configuration. Filebeats is used as a
+  reference here.
+
+Starting with version 7.0, Filebeat uses index lifecycle management by default when it connects to a cluster that supports lifecycle management. Filebeat loads the default policy automatically and applies it to any indices created by Filebeat.
+
+You can view and edit the policy in the Index lifecycle policies UI in Kibana. For more information about working with the UI, see 
+{kbref}/index-lifecycle-policies.html[Index lifecyle policies].
+
+Read more about Filebeat and ILM {fbref}/ilm.html[here].
+
+[[ilm-logstash]]
+=== Logstash
+
+NOTE: The Index Lifecycle Management feature requires version 9.3.1 or higher of the
+`logstash-output-elasticsearch` plugin.
+
+Logstash can use {esref}/index-lifecycle-management.html[Index Lifecycle Management]
+to automate the management of indices over time.
+
+The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By
+default, this will automatically detect whether the Elasticsearch instance
+supports ILM, and will use it if it is available. `ilm_enabled` can also be set to
+`true` or `false` to override the automatic detection, or disable ILM.
+
+Read more about Logstash and ILM 
+{lsref}/plugins-outputs-elasticsearch.html#plugins-outputs-elasticsearch-ilm[here].
+
+
+[[ilm-and-curator]]
+== ILM and Curator!
+
+WARNING: Curator will not act on any index associated with an ILM policy without
+  setting `allow_ilm_indices` to `true`.
+
+Curator and ILM _can_ coexist. However, to prevent Curator from accidentally
+interfering, or colliding with ILM policies, any index associated with an ILM
+policy name is excluded by default. This is true whether you have a Basic
+license or not, or whether the ILM policy is enabled or not.
+
+Curator can be configured to work with ILM-enabled indices by setting the
+<<option_allow_ilm,`allow_ilm_indices`>> option to `true` for any action.
+
+Learn more about Index Lifecycle Management 
+{ref}/index-lifecycle-management.html[here].
