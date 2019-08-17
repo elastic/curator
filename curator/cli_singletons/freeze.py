@@ -4,7 +4,7 @@ from curator.cli_singletons.utils import get_width, validate_filter_json
 
 @click.command(context_settings=get_width())
 @click.option('--ignore_empty_list', is_flag=True, help='Do not raise exception if there are no actionable indices')
-@click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', defau
+@click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', default=False, show_default=True)
 @click.option('--filter_list', callback=validate_filter_json, help='JSON array of filters selecting indices to act on.', required=True)
 @click.pass_context
 def freeze(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
