@@ -20,6 +20,7 @@ class TestActionFileFreeze(CuratorTestCase):
         self.write_config(self.args['actionfile'],
             testvars.optionless_proto.format('freeze'))
 
+        version = curator.utils.get_version(self.client)
         if version <= (6, 6, 0):
             expected = 1
             # Freeze / Unfreeze not supported before 6.6
@@ -28,7 +29,6 @@ class TestActionFileFreeze(CuratorTestCase):
         
         self.create_index('my_index')
         self.create_index('dummy')
-        version = curator.utils.get_version(self.client)
         cluster_state = self.client.cluster.state(
                 metric='metadata',
         )
@@ -121,6 +121,8 @@ class TestActionFileFreeze(CuratorTestCase):
             testvars.bad_option_proto_test.format('freeze'))
         self.create_index('my_index')
         self.create_index('dummy')
+
+        version = curator.utils.get_version(self.client)
         if version <= (6, 6, 0):
             expected = 1
             # Freeze / Unfreeze not supported before 6.6
@@ -165,6 +167,7 @@ class TestCLIFreeze(CuratorTestCase):
     def test_freeze_unfrozen(self):
         index = 'my_index'
 
+        version = curator.utils.get_version(self.client)
         if version <= (6, 6, 0):
             expected = 1
             # Freeze / Unfreeze not supported before 6.6
