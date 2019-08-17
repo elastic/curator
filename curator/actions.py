@@ -254,6 +254,7 @@ class Allocation(object):
         except Exception as e:
             utils.report_failure(e)
 
+
 class Close(object):
     def __init__(self, ilo, delete_aliases=False, skip_flush=False):
         """
@@ -317,6 +318,83 @@ class Close(object):
                     index=utils.to_csv(l), ignore_unavailable=True)
         except Exception as e:
             utils.report_failure(e)
+
+class Freeze(object):
+    def __init__(self, ilo):
+        """
+        :arg ilo: A :class:`curator.indexlist.IndexList` object
+        """
+        utils.verify_index_list(ilo)
+        #: Instance variable.
+        #: Internal reference to `ilo`
+        self.index_list = ilo
+        #: Instance variable.
+        #: The Elasticsearch Client object derived from `ilo`
+        self.client     = ilo.client
+        self.loggit     = logging.getLogger('curator.actions.freeze')
+
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        utils.show_dry_run(
+            self.index_list, 'freeze')
+
+    def do_action(self):
+        """
+        Freeze indices in `index_list.indices`
+        """
+        #self.index_list.filter_frozen()
+        self.index_list.empty_list_check()
+        self.loggit.info(
+            'Freezing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
+        try:
+            index_lists = utils.chunk_index_list(self.index_list.indices)
+            for l in index_lists:
+                self.client.xpack.indices.freeze(
+                    index=utils.to_csv(l))
+        except Exception as e:
+            utils.report_failure(e)
+
+
+class Unfreeze(object):
+    def __init__(self, ilo):
+        """
+        :arg ilo: A :class:`curator.indexlist.IndexList` object
+        """
+        utils.verify_index_list(ilo)
+        #: Instance variable.
+        #: Internal reference to `ilo`
+        self.index_list = ilo
+        #: Instance variable.
+        #: The Elasticsearch Client object derived from `ilo`
+        self.client     = ilo.client
+        self.loggit     = logging.getLogger('curator.actions.unfreeze')
+
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        utils.show_dry_run(
+            self.index_list, 'unfreeze')
+
+    def do_action(self):
+        """
+        Unfreeze indices in `index_list.indices`
+        """
+        self.index_list.empty_list_check()
+        self.loggit.info(
+            'Unfreezing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
+        try:
+            index_lists = utils.chunk_index_list(self.index_list.indices)
+            for l in index_lists:
+                self.client.xpack.indices.unfreeze(
+                    index=utils.to_csv(l))
+        except Exception as e:
+            utils.report_failure(e)
+
 
 class ClusterRouting(object):
     def __init__(
@@ -420,7 +498,7 @@ class CreateIndex(object):
             more information see
             https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
         :type extra_settings: dict, representing the settings and mappings.
-        :arg ignore_existing: If an index already exists, and this setting is ``True``, 
+        :arg ignore_existing: If an index already exists, and this setting is ``True``,
             ignore the 400 error that results in a `resource_already_exists_exception` and
             return that it was successful.
         """
@@ -619,6 +697,7 @@ class ForceMerge(object):
                     time.sleep(self.delay)
         except Exception as e:
             utils.report_failure(e)
+
 
 class IndexSettings(object):
     def __init__(self, ilo, index_settings={}, ignore_unavailable=False,
@@ -1330,7 +1409,7 @@ class Reindex(object):
 
     def get_processed_items(self, task_id):
         """
-        This function calls client.tasks.get with the provided `task_id`.  It will get the value 
+        This function calls client.tasks.get with the provided `task_id`.  It will get the value
         from ``'response.total'`` as the total number of elements processed during reindexing.
         If the value is not found, it will return -1
 
@@ -1356,7 +1435,7 @@ class Reindex(object):
                 self.loggit.debug('total_processed_items = {0}'.format(total_processed_items))
 
         return total_processed_items
-    
+
     def _post_run_quick_check(self, index_name, task_id):
         # Check whether any documents were processed (if no documents processed, the target index "dest" won't exist)
         processed_items = self.get_processed_items(task_id)
