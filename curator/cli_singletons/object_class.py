@@ -3,7 +3,7 @@ import sys
 from curator import IndexList, SnapshotList
 from curator.actions import (
     Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, DeleteSnapshots, ForceMerge,
-    IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink, Snapshot
+    Freeze, IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink, Snapshot, Unfreeze
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -21,6 +21,7 @@ CLASS_MAP = {
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,
+    'freeze': Freeze,
     'index_settings' : IndexSettings,
     'open' : Open,
     'reindex' : Reindex,
@@ -29,6 +30,7 @@ CLASS_MAP = {
     'rollover': Rollover,
     'shrink': Shrink,
     'snapshot' : Snapshot,
+    'unfreeze' : Unfreeze,
 }
 
 EXCLUDED_OPTIONS = [
@@ -141,7 +143,7 @@ class cli_action():
             else:
                 self.logger.error('Singleton action failed due to empty {0} list'.format(otype))
                 sys.exit(1)
-    
+
     def get_list_object(self):
         if self.action in snapshot_actions() or self.action == 'show_snapshots':
             self.list_object = SnapshotList(self.client, repository=self.repository)
