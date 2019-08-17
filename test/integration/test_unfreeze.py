@@ -22,6 +22,13 @@ class TestActionFileUnfreezeFrozen(CuratorTestCase):
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.optionless_proto.format('unfreeze'))
+
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+        
         t1, t2 = ('dummy', 'my_index')
         self.create_index(t1)
         self.create_index(t2)
@@ -68,6 +75,13 @@ class TestActionFileUnfreezeFrozen(CuratorTestCase):
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.bad_option_proto_test.format('unfreeze'))
+
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+        
         t1, t2 = ('dummy', 'my_index')
         self.create_index(t1)
         self.create_index(t2)
@@ -111,6 +125,13 @@ class TestActionFileUnfreezeFrozen(CuratorTestCase):
 
 class TestCLIUnfreezeFrozen(CuratorTestCase):
     def test_unfreeze_frozen(self):
+
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+        
         t1, t2 = ('dummy', 'my_index')
         self.create_index(t1)
         self.create_index(t2)

@@ -19,11 +19,19 @@ class TestActionFileFreeze(CuratorTestCase):
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.optionless_proto.format('freeze'))
+
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+        
         self.create_index('my_index')
         self.create_index('dummy')
+        version = curator.utils.get_version(self.client)
         cluster_state = self.client.cluster.state(
                 metric='metadata',
-            )
+        )
         self.assertEqual(
             "false",
             cluster_state['metadata']['indices']['my_index']['settings']['index'].get('frozen', "false")
@@ -36,15 +44,15 @@ class TestActionFileFreeze(CuratorTestCase):
                 
         test = clicktest.CliRunner()
         _ = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+                curator.cli,
+                [
+                    '--config', self.args['configfile'],
+                    self.args['actionfile']
+                ],
+                )
         cluster_state = self.client.cluster.state(
-                metric='metadata',
-            )
+            metric='metadata',
+        )
         self.assertEqual(
             "true",
             cluster_state['metadata']['indices']['my_index']['settings']['index'].get('frozen', "false")
@@ -60,6 +68,14 @@ class TestActionFileFreeze(CuratorTestCase):
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.optionless_proto.format('freeze'))
+
+        version = curator.utils.get_version(self.client)
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+
         self.create_index('my_index')
         # pylint: disable=E1123
         self.client.xpack.indices.freeze(
@@ -105,6 +121,12 @@ class TestActionFileFreeze(CuratorTestCase):
             testvars.bad_option_proto_test.format('freeze'))
         self.create_index('my_index')
         self.create_index('dummy')
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+
         cluster_state = self.client.cluster.state(
                 metric='metadata',
             )
@@ -142,6 +164,13 @@ class TestActionFileFreeze(CuratorTestCase):
 class TestCLIFreeze(CuratorTestCase):
     def test_freeze_unfrozen(self):
         index = 'my_index'
+
+        if version <= (6, 6, 0):
+            expected = 1
+            # Freeze / Unfreeze not supported before 6.6
+            self.assertEqual(expected, 1)
+            return
+
         self.create_index(index)
         self.create_index('dummy')
         self.create_index('my_other')
