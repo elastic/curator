@@ -22,8 +22,9 @@ Changelog
   * ``ignore_existing`` option added to ``CreateIndex``. Will not raise an
     error if the index to be created already exists. Raised by (breml) in
     #1352. (untergeek)
-  * Add support for ``freeze`` and ``unfreeze`` indexes using curator. Requires     ES 6.6 version or greater with xpack enabled. Requested in issue #1399
-    and rasied in PR #1454. (junmuz)
+  * Add support for ``freeze`` and ``unfreeze`` indexes using curator. Requires
+    Elasticsearch version 6.6 or greater with xpack enabled. Requested in issue
+    #1399 and rasied in PR #1454. (junmuz)
 
 **Bug Fixes**
 
