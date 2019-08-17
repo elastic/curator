@@ -44,6 +44,7 @@ def action_specific(action):
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
+        'freeze': [],
         'index_settings' : [
             option_defaults.index_settings(),
             option_defaults.ignore_unavailable(),
@@ -129,6 +130,7 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
+        'unfreeze': [],
     }
     return options[action]
 

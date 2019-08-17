@@ -16,6 +16,8 @@ from curator.cli_singletons.rollover import rollover
 from curator.cli_singletons.snapshot import snapshot
 from curator.cli_singletons.shrink import shrink
 from curator.cli_singletons.show import show_indices, show_snapshots
+from curator.cli_singletons.freeze import freeze
+from curator.cli_singletons.unfreeze import unfreeze
 from curator._version import __version__
 
 import logging
@@ -60,6 +62,7 @@ cli.add_command(close)
 cli.add_command(delete_indices)
 cli.add_command(delete_snapshots)
 cli.add_command(forcemerge)
+cli.add_command(freeze)
 cli.add_command(open_indices)
 cli.add_command(replicas)
 cli.add_command(snapshot)
@@ -68,3 +71,4 @@ cli.add_command(rollover)
 cli.add_command(shrink)
 cli.add_command(show_indices)
 cli.add_command(show_snapshots)
+cli.add_command(unfreeze)
