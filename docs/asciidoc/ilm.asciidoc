@@ -44,7 +44,7 @@ Stack components make use of ILM by default.
 [[ilm-beats]]
 === Beats
 
-NOTE: All Beats share a similar ILM configuration. Filebeats is used as a
+NOTE: All Beats share a similar ILM configuration. Filebeat is used as a
   reference here.
 
 Starting with version 7.0, Filebeat uses index lifecycle management by default when it connects to a cluster that supports lifecycle management. Filebeat loads the default policy automatically and applies it to any indices created by Filebeat.
