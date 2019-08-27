@@ -8,6 +8,7 @@ Changelog
 
 **New**
 
+  * Require ``elasticsearch-py`` version 7.0.4
   * New client configuration option: api_key - used in the X-Api-key header in
     requests to Elasticsearch when set, which may be required if ReadonlyREST
     plugin is configured to require api-key. Requested in #1409 (vetler)
@@ -25,6 +26,8 @@ Changelog
   * Add support for ``freeze`` and ``unfreeze`` indexes using curator. Requires
     Elasticsearch version 6.6 or greater with xpack enabled. Requested in issue
     #1399 and rasied in PR #1454. (junmuz)
+  * Allow the ``close`` action to ignore synced flush failures with the new
+    ``ignore_sync_failures`` option.  Raised in #1248. (untergeek)
 
 **Bug Fixes**
 

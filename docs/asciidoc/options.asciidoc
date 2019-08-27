@@ -458,6 +458,28 @@ an ERROR level message will be logged, and Curator will exit with code 1.
 
 The default value of this setting is `False`
 
+[[option_ignore_sync_failures]]
+== ignore_sync_failures
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+[source,yaml]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  ignore_sync_failures: false
+filters:
+- filtertype: ...
+-------------
+
+If `ignore_sync_failures` is set to `true`, Curator will ignore failures during
+the synced flush that normally takes place before closing. This may be useful
+for closing a list of indices which may include active indices.
+
+The default value is `false`.
+
 [[option_ignore]]
 == ignore_unavailable
 
