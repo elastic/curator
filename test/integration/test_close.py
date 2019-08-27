@@ -160,6 +160,81 @@ class TestActionFileClose(CuratorTestCase):
             # re-enable shard allocation for next tests
             enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
             self.client.cluster.put_settings(body=enable_allocation)
+    def test_close_ignore_sync_failures(self):
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.close_ignore_sync.format('true'))
+        self.create_index('dummy')
+        # Disable shard allocation to make my_index go red
+        disable_allocation = '{"transient":{"cluster.routing.allocation.enable":"none"}}'
+        self.client.cluster.put_settings(body=disable_allocation)
+        self.create_index('my_index', wait_for_yellow=False, wait_for_active_shards=0)
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        try:
+            self.assertEquals(
+                'close',
+                self.client.cluster.state(
+                    index='my_index',
+                    metric='metadata',
+                )['metadata']['indices']['my_index']['state']
+            )
+            self.assertNotEqual(
+                'close',
+                self.client.cluster.state(
+                    index='dummy',
+                    metric='metadata',
+                )['metadata']['indices']['dummy']['state']
+            )
+        finally:
+            # re-enable shard allocation for next tests
+            enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
+            self.client.cluster.put_settings(body=enable_allocation)
+    def test_close_has_sync_failures(self):
+        self.write_config(
+            self.args['configfile'], testvars.client_config.format(host, port))
+        self.write_config(self.args['actionfile'],
+                          testvars.close_ignore_sync.format('false'))
+        self.create_index('dummy')
+        # Disable shard allocation to make my_index go red
+        disable_allocation = '{"transient":{"cluster.routing.allocation.enable":"none"}}'
+        self.client.cluster.put_settings(body=disable_allocation)
+        self.create_index('my_index', wait_for_yellow=False, wait_for_active_shards=0)
+        test = clicktest.CliRunner()
+        _ = test.invoke(
+            curator.cli,
+            [
+                '--config', self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
+        try:
+            self.assertEquals(
+                'open',
+                self.client.cluster.state(
+                    index='my_index',
+                    metric='metadata',
+                )['metadata']['indices']['my_index']['state']
+            )
+            self.assertNotEqual(
+                'close',
+                self.client.cluster.state(
+                    index='dummy',
+                    metric='metadata',
+                )['metadata']['indices']['dummy']['state']
+            )
+            self.assertEquals(1, _.exit_code)
+        finally:
+            # re-enable shard allocation for next tests
+            enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
+            self.client.cluster.put_settings(body=enable_allocation)
     def test_extra_option(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))

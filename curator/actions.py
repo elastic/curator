@@ -4,7 +4,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from curator import exceptions, utils
-from elasticsearch.exceptions import RequestError
+from elasticsearch.exceptions import ConflictError, RequestError
 
 class Alias(object):
     def __init__(self, name=None, extra_settings={}, **kwargs):
@@ -256,7 +256,7 @@ class Allocation(object):
 
 
 class Close(object):
-    def __init__(self, ilo, delete_aliases=False, skip_flush=False):
+    def __init__(self, ilo, delete_aliases=False, skip_flush=False, ignore_sync_failures=False):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg delete_aliases: If `True`, will delete any associated aliases
@@ -264,6 +264,9 @@ class Close(object):
         :type delete_aliases: bool
         :arg skip_flush: If `True`, will not flush indices before closing.
         :type skip_flush: bool
+        :arg ignore_sync_failures: If `True`, will not fail if there are failures while attempting
+            a synced flush.
+        :type ignore_sync_failures: bool
         """
         utils.verify_index_list(ilo)
         #: Instance variable.
@@ -276,9 +279,12 @@ class Close(object):
         #: Internal reference to `skip_flush`
         self.skip_flush = skip_flush
         #: Instance variable.
+        #: Internal reference to `ignore_sync_failures`
+        self.ignore_sync_failures = ignore_sync_failures
+        #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
-        self.client     = ilo.client
-        self.loggit     = logging.getLogger('curator.actions.close')
+        self.client = ilo.client
+        self.loggit = logging.getLogger('curator.actions.close')
 
 
     def do_dry_run(self):
@@ -295,7 +301,10 @@ class Close(object):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Closing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
+            'Closing %s selected indices: %s' % (
+                len(self.index_list.indices), self.index_list.indices
+                )
+        )
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -312,8 +321,16 @@ class Close(object):
                             ' {0}'.format(e)
                         )
                 if not self.skip_flush:
-                    self.client.indices.flush_synced(
-                        index=utils.to_csv(l), ignore_unavailable=True)
+                    try:
+                        self.client.indices.flush_synced(
+                            index=utils.to_csv(l), ignore_unavailable=True)
+                    except ConflictError as err:
+                        if not self.ignore_sync_failures:
+                            raise ConflictError(err.status_code, err.error, err.info)
+                        else:
+                            self.loggit.warn(
+                                'Ignoring flushed sync failures: %s %s' % (err.error, err.info)
+                            )
                 self.client.indices.close(
                     index=utils.to_csv(l), ignore_unavailable=True)
         except Exception as e:

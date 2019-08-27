@@ -136,6 +136,7 @@ actions:
     options:
       skip_flush: False
       delete_aliases: False
+      ignore_sync_failures: True
       disable_action: True
     filters:
     - filtertype: pattern
