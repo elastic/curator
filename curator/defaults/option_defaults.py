@@ -57,6 +57,9 @@ def ignore_empty_list():
 def ignore_existing():
     return { Optional('ignore_existing', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
+def ignore_sync_failures():
+    return { Optional('ignore_sync_failures', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
 def ignore_unavailable():
     return { Optional('ignore_unavailable', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 

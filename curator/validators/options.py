@@ -19,7 +19,8 @@ def action_specific(action):
         ],
         'close' : [
             option_defaults.delete_aliases(),
-            option_defaults.skip_flush()
+            option_defaults.skip_flush(),
+            option_defaults.ignore_sync_failures(),
         ],
         'cluster_routing' : [
             option_defaults.routing_type(),
