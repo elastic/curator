@@ -411,6 +411,18 @@ close_skip_flush = ('---\n'
 '        kind: prefix\n'
 '        value: my\n')
 
+close_ignore_sync = ('---\n'
+'actions:\n'
+'  1:\n'
+'    description: "Close indices as filtered"\n'
+'    action: close\n'
+'    options:\n'
+'      ignore_sync_failures: {0}\n'
+'    filters:\n'
+'      - filtertype: pattern\n'
+'        kind: prefix\n'
+'        value: my\n')
+
 delete_proto = ('---\n'
 'actions:\n'
 '  1:\n'
