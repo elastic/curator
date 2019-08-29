@@ -25,7 +25,7 @@ env:
   - ES_VERSION=7.0.0-linux-x86_64
   - ES_VERSION=7.1.1-linux-x86_64
   - ES_VERSION=7.2.1-linux-x86_64
-  - ES_VERSION=7.3.0-linux-x86_64
+  - ES_VERSION=7.3.1-linux-x86_64
 
 os: linux
 
