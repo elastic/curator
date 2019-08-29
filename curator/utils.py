@@ -897,16 +897,15 @@ def get_client(**kwargs):
                 'specified. Hosts = %s' % kwargs['hosts']
             )
 
-    # Creating the class object should be okay
-    logger.info('Instantiating client object')
-    client = elasticsearch.Elasticsearch(**kwargs)
-    logger.info('Created Elasticsearch client object with provided settings')
-
-    # Test client connectivity (debug log client.info() output)
-    logger.info('Testing client connectivity')
     fail = False
     try:
+        # Creating the class object should be okay
+        logger.info('Instantiating client object')
+        client = elasticsearch.Elasticsearch(**kwargs)
+        # Test client connectivity (debug log client.info() output)
+        logger.info('Testing client connectivity')
         logger.debug('Cluster info: %s' % client.info())
+        logger.info('Successfully created Elasticsearch client object with provided settings')
     # Catch all TransportError types first
     except elasticsearch.TransportError as err:
         try:
