@@ -1699,7 +1699,7 @@ def task_check(client, task_id=None):
                     'Failures found in reindex response: {0}'.format(response['failures'])
                 )
     running_time = 0.000000001 * task['running_time_in_nanos']
-    logger.debug('running_time_in_nanos = {0}'.format(running_time))
+    logger.debug('running_time_in_seconds = {0}'.format(running_time))
     descr = task['description']
 
     if completed:
