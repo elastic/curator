@@ -4,6 +4,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from curator import exceptions, utils
+from elasticsearch.exceptions import ConflictError, RequestError
 
 class Alias(object):
     def __init__(self, name=None, extra_settings={}, **kwargs):
@@ -253,13 +254,19 @@ class Allocation(object):
         except Exception as e:
             utils.report_failure(e)
 
+
 class Close(object):
-    def __init__(self, ilo, delete_aliases=False):
+    def __init__(self, ilo, delete_aliases=False, skip_flush=False, ignore_sync_failures=False):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg delete_aliases: If `True`, will delete any associated aliases
             before closing indices.
         :type delete_aliases: bool
+        :arg skip_flush: If `True`, will not flush indices before closing.
+        :type skip_flush: bool
+        :arg ignore_sync_failures: If `True`, will not fail if there are failures while attempting
+            a synced flush.
+        :type ignore_sync_failures: bool
         """
         utils.verify_index_list(ilo)
         #: Instance variable.
@@ -269,9 +276,15 @@ class Close(object):
         #: Internal reference to `delete_aliases`
         self.delete_aliases = delete_aliases
         #: Instance variable.
+        #: Internal reference to `skip_flush`
+        self.skip_flush = skip_flush
+        #: Instance variable.
+        #: Internal reference to `ignore_sync_failures`
+        self.ignore_sync_failures = ignore_sync_failures
+        #: Instance variable.
         #: The Elasticsearch Client object derived from `ilo`
-        self.client     = ilo.client
-        self.loggit     = logging.getLogger('curator.actions.close')
+        self.client = ilo.client
+        self.loggit = logging.getLogger('curator.actions.close')
 
 
     def do_dry_run(self):
@@ -288,7 +301,10 @@ class Close(object):
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         self.loggit.info(
-            'Closing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
+            'Closing %s selected indices: %s' % (
+                len(self.index_list.indices), self.index_list.indices
+                )
+        )
         try:
             index_lists = utils.chunk_index_list(self.index_list.indices)
             for l in index_lists:
@@ -304,12 +320,98 @@ class Close(object):
                             'Some indices may not have had aliases.  Exception:'
                             ' {0}'.format(e)
                         )
-                self.client.indices.flush_synced(
-                    index=utils.to_csv(l), ignore_unavailable=True)
+                if not self.skip_flush:
+                    try:
+                        self.client.indices.flush_synced(
+                            index=utils.to_csv(l), ignore_unavailable=True)
+                    except ConflictError as err:
+                        if not self.ignore_sync_failures:
+                            raise ConflictError(err.status_code, err.error, err.info)
+                        else:
+                            self.loggit.warn(
+                                'Ignoring flushed sync failures: %s %s' % (err.error, err.info)
+                            )
                 self.client.indices.close(
                     index=utils.to_csv(l), ignore_unavailable=True)
         except Exception as e:
             utils.report_failure(e)
+
+class Freeze(object):
+    def __init__(self, ilo):
+        """
+        :arg ilo: A :class:`curator.indexlist.IndexList` object
+        """
+        utils.verify_index_list(ilo)
+        #: Instance variable.
+        #: Internal reference to `ilo`
+        self.index_list = ilo
+        #: Instance variable.
+        #: The Elasticsearch Client object derived from `ilo`
+        self.client     = ilo.client
+        self.loggit     = logging.getLogger('curator.actions.freeze')
+
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        utils.show_dry_run(
+            self.index_list, 'freeze')
+
+    def do_action(self):
+        """
+        Freeze indices in `index_list.indices`
+        """
+        #self.index_list.filter_frozen()
+        self.index_list.empty_list_check()
+        self.loggit.info(
+            'Freezing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
+        try:
+            index_lists = utils.chunk_index_list(self.index_list.indices)
+            for l in index_lists:
+                self.client.xpack.indices.freeze(
+                    index=utils.to_csv(l))
+        except Exception as e:
+            utils.report_failure(e)
+
+
+class Unfreeze(object):
+    def __init__(self, ilo):
+        """
+        :arg ilo: A :class:`curator.indexlist.IndexList` object
+        """
+        utils.verify_index_list(ilo)
+        #: Instance variable.
+        #: Internal reference to `ilo`
+        self.index_list = ilo
+        #: Instance variable.
+        #: The Elasticsearch Client object derived from `ilo`
+        self.client     = ilo.client
+        self.loggit     = logging.getLogger('curator.actions.unfreeze')
+
+
+    def do_dry_run(self):
+        """
+        Log what the output would be, but take no action.
+        """
+        utils.show_dry_run(
+            self.index_list, 'unfreeze')
+
+    def do_action(self):
+        """
+        Unfreeze indices in `index_list.indices`
+        """
+        self.index_list.empty_list_check()
+        self.loggit.info(
+            'Unfreezing {0} selected indices: {1}'.format(len(self.index_list.indices), self.index_list.indices))
+        try:
+            index_lists = utils.chunk_index_list(self.index_list.indices)
+            for l in index_lists:
+                self.client.xpack.indices.unfreeze(
+                    index=utils.to_csv(l))
+        except Exception as e:
+            utils.report_failure(e)
+
 
 class ClusterRouting(object):
     def __init__(
@@ -404,7 +506,7 @@ class ClusterRouting(object):
             utils.report_failure(e)
 
 class CreateIndex(object):
-    def __init__(self, client, name, extra_settings={}):
+    def __init__(self, client, name, extra_settings={}, ignore_existing=False):
         """
         :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg name: A name, which can contain :py:func:`time.strftime`
@@ -413,20 +515,27 @@ class CreateIndex(object):
             more information see
             https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
         :type extra_settings: dict, representing the settings and mappings.
+        :arg ignore_existing: If an index already exists, and this setting is ``True``,
+            ignore the 400 error that results in a `resource_already_exists_exception` and
+            return that it was successful.
         """
         if not name:
             raise exceptions.ConfigurationError('Value for "name" not provided.')
         #: Instance variable.
         #: The parsed version of `name`
-        self.name       = utils.parse_date_pattern(name)
+        self.name = utils.parse_date_pattern(name)
         #: Instance variable.
-        #: Extracted from the config yaml, it should be a dictionary of
+        #: Extracted from the action yaml, it should be a dictionary of
         #: mappings and settings suitable for index creation.
-        self.body       = extra_settings
+        self.body = extra_settings
+        #: Instance variable.
+        #: Extracted from the action yaml, it should be a boolean informing
+        #: whether to ignore the error if the index already exists.
+        self.ignore_existing = ignore_existing
         #: Instance variable.
         #: An :class:`elasticsearch.Elasticsearch` client object
-        self.client     = client
-        self.loggit     = logging.getLogger('curator.actions.create_index')
+        self.client = client
+        self.loggit = logging.getLogger('curator.actions.create_index')
 
     def do_dry_run(self):
         """
@@ -434,8 +543,8 @@ class CreateIndex(object):
         """
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
         self.loggit.info(
-            'DRY-RUN: create_index "{0}" with arguments: '
-            '{1}'.format(self.name, self.body)
+            'DRY-RUN: create_index "%s" with arguments: '
+            '%s' % (self.name, self.body)
         )
 
     def do_action(self):
@@ -448,6 +557,13 @@ class CreateIndex(object):
         )
         try:
             self.client.indices.create(index=self.name, body=self.body)
+        # Most likely error is a 400, `resource_already_exists_exception`
+        except RequestError as err:
+            match_list = ["index_already_exists_exception", "resource_already_exists_exception"]
+            if err.error in match_list and self.ignore_existing:
+                self.loggit.warn('Index %s already exists.' % self.name)
+            else:
+                raise exceptions.FailedExecution('Index %s already exists.' % self.name)
         except Exception as e:
             utils.report_failure(e)
 
@@ -598,6 +714,7 @@ class ForceMerge(object):
                     time.sleep(self.delay)
         except Exception as e:
             utils.report_failure(e)
+
 
 class IndexSettings(object):
     def __init__(self, ilo, index_settings={}, ignore_unavailable=False,
@@ -1307,28 +1424,64 @@ class Reindex(object):
             del reindex_args['slices']
         return reindex_args
 
-    def _post_run_quick_check(self, index_name):
-        # Verify the destination index is there after the fact
-        index_exists = self.client.indices.exists(index=index_name)
-        alias_instead = self.client.indices.exists_alias(name=index_name)
-        if not index_exists and not alias_instead:
-            self.loggit.error(
-                'The index described as "{0}" was not found after the reindex '
-                'operation. Check Elasticsearch logs for more '
-                'information.'.format(index_name)
+    def get_processed_items(self, task_id):
+        """
+        This function calls client.tasks.get with the provided `task_id`.  It will get the value
+        from ``'response.total'`` as the total number of elements processed during reindexing.
+        If the value is not found, it will return -1
+
+        :arg task_id: A task_id which ostensibly matches a task searchable in the
+            tasks API.
+        """
+        try:
+            task_data = self.client.tasks.get(task_id=task_id)
+        except Exception as e:
+            raise exceptions.CuratorException(
+                'Unable to obtain task information for task_id "{0}". Exception '
+                '{1}'.format(task_id, e)
             )
-            if self.remote:
+        total_processed_items = -1
+        task = task_data['task']
+        if task['action'] == 'indices:data/write/reindex':
+            self.loggit.debug('It\'s a REINDEX TASK')
+            self.loggit.debug('TASK_DATA: {0}'.format(task_data))
+            self.loggit.debug('TASK_DATA keys: {0}'.format(list(task_data.keys())))
+            if 'response' in task_data:
+                response = task_data['response']
+                total_processed_items = response['total']
+                self.loggit.debug('total_processed_items = {0}'.format(total_processed_items))
+
+        return total_processed_items
+
+    def _post_run_quick_check(self, index_name, task_id):
+        # Check whether any documents were processed (if no documents processed, the target index "dest" won't exist)
+        processed_items = self.get_processed_items(task_id)
+        if processed_items == 0:
+            self.loggit.info(
+                'No items were processed. Will not check if target index "{0}" exists'.format(index_name)
+            )
+        else:
+            # Verify the destination index is there after the fact
+            index_exists = self.client.indices.exists(index=index_name)
+            alias_instead = self.client.indices.exists_alias(name=index_name)
+            if not index_exists and not alias_instead:
                 self.loggit.error(
-                    'Did you forget to add "reindex.remote.whitelist: '
-                    '{0}:{1}" to the elasticsearch.yml file on the '
-                    '"dest" node?'.format(
-                        self.remote_host, self.remote_port
-                    )
+                    'The index described as "{0}" was not found after the reindex '
+                    'operation. Check Elasticsearch logs for more '
+                    'information.'.format(index_name)
                 )
-            raise exceptions.FailedExecution(
-                'Reindex failed. The index or alias identified by "{0}" was '
-                'not found.'.format(index_name)
-            )
+                if self.remote:
+                    self.loggit.error(
+                        'Did you forget to add "reindex.remote.whitelist: '
+                        '{0}:{1}" to the elasticsearch.yml file on the '
+                        '"dest" node?'.format(
+                            self.remote_host, self.remote_port
+                        )
+                    )
+                raise exceptions.FailedExecution(
+                    'Reindex failed. The index or alias identified by "{0}" was '
+                    'not found.'.format(index_name)
+                )
 
     def sources(self):
         # Generator for sources & dests
@@ -1399,7 +1552,7 @@ class Reindex(object):
                         self.client, 'reindex', task_id=response['task'],
                         wait_interval=self.wait_interval, max_wait=self.max_wait
                     )
-                    self._post_run_quick_check(dest)
+                    self._post_run_quick_check(dest, response['task'])
 
                 else:
                     self.loggit.warn(
@@ -2008,7 +2161,7 @@ class Shrink(object):
 
     def _check_space(self, idx, dry_run=False):
         # Disk watermark calculation is already baked into `available_in_bytes`
-        size = utils.index_size(self.client, idx)
+        size = utils.index_size(self.client, idx, value='primaries')
         padded = (size * 2) + (32 * 1024)
         if padded < self.shrink_node_avail:
             self.loggit.debug('Sufficient space available for 2x the size of index "{0}".  Required: {1}, available: {2}'.format(idx, padded, self.shrink_node_avail))

@@ -12,6 +12,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_count,count>>
 * <<option_delay,delay>>
 * <<option_delete_aliases,delete_aliases>>
+* <<option_skip_flush,skip_flush>>
 * <<option_disable,disable_action>>
 * <<option_extra_settings,extra_settings>>
 * <<option_ignore_empty,ignore_empty_list>>
@@ -266,6 +267,27 @@ indices before closing.
 
 The default value is `False`.
 
+[[option_skip_flush]]
+== skip_flush
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+[source,yaml]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  skip_flush: False
+filters:
+- filtertype: ...
+-------------
+
+If `skip_flush` is set to `True`, Curator will not flush indices to disk
+before closing. This may be useful for closing red indices before restoring.
+
+The default value is `False`.
+
 [[option_disable]]
 == disable_action
 
@@ -435,6 +457,28 @@ INFO level log message indicating such.  If ignore_empty_list is set to `False`,
 an ERROR level message will be logged, and Curator will exit with code 1.
 
 The default value of this setting is `False`
+
+[[option_ignore_sync_failures]]
+== ignore_sync_failures
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+[source,yaml]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  ignore_sync_failures: false
+filters:
+- filtertype: ...
+-------------
+
+If `ignore_sync_failures` is set to `true`, Curator will ignore failures during
+the synced flush that normally takes place before closing. This may be useful
+for closing a list of indices which may include active indices.
+
+The default value is `false`.
 
 [[option_ignore]]
 == ignore_unavailable
@@ -1354,9 +1398,6 @@ The default value is `True`.
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
 
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -1397,9 +1438,6 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
 
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
 
@@ -1439,9 +1477,6 @@ IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
 
 NOTE: This option is only used by the <<reindex,Reindex action>> when performing
 a remote reindex operation.
-
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
 
 WARNING: This setting will not work unless the `requests-aws4auth` Python module
     has been manually installed first.
@@ -2428,7 +2463,7 @@ were `-shrink`, the resulting target index name would be `foo-index-shrink`.
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
 This setting can speed up reindexing operations by using
-{ref}/search-request-scroll.html#sliced-scroll[Sliced Scroll] to slice on the
+{ref}/search-request-body.html#sliced-scroll[Sliced Scroll] to slice on the
 \_uid.
 
 [source,yaml]

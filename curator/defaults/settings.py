@@ -50,6 +50,7 @@ def index_actions():
         'create_index',
         'delete_indices',
         'forcemerge',
+        'freeze',
         'index_settings',
         'open',
         'reindex',
@@ -57,6 +58,7 @@ def index_actions():
         'rollover',
         'shrink',
         'snapshot',
+        'unfreeze',
     ]
 
 def snapshot_actions():

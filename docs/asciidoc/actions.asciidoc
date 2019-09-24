@@ -175,7 +175,9 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: close
 description: "Close selected indices"
 options:
-  delete_aliases: False
+  delete_aliases: false
+  skip_flush: false
+  ignore_sync_failures: false
 filters:
 - filtertype: ...
 -------------
@@ -190,6 +192,8 @@ aliases beforehand.
 === Optional settings
 
 * <<option_delete_aliases,delete_aliases>>
+* <<option_skip_flush,skip_flush>>
+* <<option_ignore_sync_failures,ignore_sync_failures>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>

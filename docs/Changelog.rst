@@ -3,6 +3,78 @@
 Changelog
 =========
 
+5.8.0 (24 September 2019)
+-------------------------
+
+**New**
+
+  * Require ``elasticsearch-py`` version 7.0.4
+  * Official support for Python 3.7 — In fact, the pre-built packages are built
+    using Python 3.7 now.
+  * Packages bundle OpenSSL 1.1.1c, removing the need for system OpenSSL
+  * Certifi 2019.9.11 certificates included.
+  * New client configuration option: api_key - used in the X-Api-key header in
+    requests to Elasticsearch when set, which may be required if ReadonlyREST
+    plugin is configured to require api-key. Requested in #1409 (vetler)
+  * Add ``skip_flush`` option to the ``close`` action. This should be useful
+    when trying to close indices with unassigned shards (e.g. before restore).
+    Raised in #1412. (psypuff)
+  * Use ``RequestsHttpConnection`` class, which permits the use of 
+    ``HTTP_PROXY`` and ``HTTPS_PROXY`` environment variables. Raised in #510
+    and addressed by #1259 (raynigon) in August of 2018. Subsequent changes,
+    however, required some adaptation, and re-submission as a different PR.
+    (untergeek)
+  * ``ignore_existing`` option added to ``CreateIndex``. Will not raise an
+    error if the index to be created already exists. Raised by (breml) in
+    #1352. (untergeek)
+  * Add support for ``freeze`` and ``unfreeze`` indexes using curator. Requires
+    Elasticsearch version 6.6 or greater with xpack enabled. Requested in issue
+    #1399 and rasied in PR #1454. (junmuz)
+  * Allow the ``close`` action to ignore synced flush failures with the new
+    ``ignore_sync_failures`` option.  Raised in #1248. (untergeek)
+
+**Bug Fixes**
+
+  * Fix kibana filter to match any and all indices starting with ``.kibana``.
+    This addresses #1363, and everyone else upgrading to Elasticsearch 7.x.
+    Update documentation accordingly. (untergeek)
+  * Fix reindex post-action checks. When the filters do not return documents
+    to be reindexed, the post-action check to ensure the target index exists
+    is not needed. This new version will skip that validation if no documents
+    are processed (issue #1170). (afharo)
+  * Prevent the ``empty`` filtertype from incorrectly matching against closed
+    indices #1430 (heyitsmdr)
+  * Fix ``index_size`` function to be able to report either for either the
+    ``total`` of all shards (default) or just ``primaries``. Added as a keyword
+    arg to preserve existing behavior. This was needed to fix sizing 
+    calculations for the Shrink action, which should only count ``primaries``.
+    Raised in #1429 (untergeek).
+  * Fix ``allow_ilm_indices`` to work with the ``rollover`` action. Reported in
+    #1418 (untergeek)
+  * Update the client connection logic to be cleaner and log more verbosely in
+    an attempt to address issues like #1418 and others like it more effectively
+    as other failures have appeared to be client failures because the last
+    log message were vague indications that a client connection was attempted.
+    This is a step in the right direction, as it explicitly exits with a 1 exit
+    code for different conditions now. (untergeek)
+  * Catch snapshots without a timestring in the name causing a logic error when
+    using the ``count`` filter and ``use_age`` with ``source: name``. Reported
+    by (nerophon) in #1366. (untergeek)
+  * Ensure authentication (401), authorization (403), and other 400 errors are
+    logged properly. Reported by (rfalke) in #1413. (untergeek)
+  * Fix crashes in restore of "large" number of indices reported by breml in
+    #1360. (anandsinghkunwar)
+  * Do an empty list check before querying indices for field stats. Fixed by
+    (CiXiHuo) in #1448.
+  * Fix "Correctly report task runtime in seconds" while reindexing. Reported 
+    by (jkelastic) in #1335 
+
+**Documentation**
+
+  * Grammar correction of ilm.asciidoc #1425 (SlavikCA)
+  * Updates to reflect changes to Elasticsearch 7 documentation #1426 and #1428
+    (lcawl) and (jrodewig)
+
 5.7.6 (6 May 2019)
 ------------------
 

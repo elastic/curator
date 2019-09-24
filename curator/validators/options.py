@@ -17,7 +17,11 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'close' : [ option_defaults.delete_aliases() ],
+        'close' : [
+            option_defaults.delete_aliases(),
+            option_defaults.skip_flush(),
+            option_defaults.ignore_sync_failures(),
+        ],
         'cluster_routing' : [
             option_defaults.routing_type(),
             option_defaults.cluster_routing_setting(),
@@ -28,6 +32,7 @@ def action_specific(action):
         ],
         'create_index' : [
             option_defaults.name(action),
+            option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
         'delete_indices' : [],
@@ -40,6 +45,7 @@ def action_specific(action):
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
+        'freeze': [],
         'index_settings' : [
             option_defaults.index_settings(),
             option_defaults.ignore_unavailable(),
@@ -125,6 +131,7 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
+        'unfreeze': [],
     }
     return options[action]
 

@@ -42,6 +42,9 @@ def delete_after():
 def delete_aliases():
     return { Optional('delete_aliases', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
+def skip_flush():
+    return { Optional('skip_flush', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
 def disable_action():
     return { Optional('disable_action', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
@@ -50,6 +53,12 @@ def extra_settings():
 
 def ignore_empty_list():
     return { Optional('ignore_empty_list', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
+def ignore_existing():
+    return { Optional('ignore_existing', default=False): Any(bool, All(Any(*string_types), Boolean())) }
+
+def ignore_sync_failures():
+    return { Optional('ignore_sync_failures', default=False): Any(bool, All(Any(*string_types), Boolean())) }
 
 def ignore_unavailable():
     return { Optional('ignore_unavailable', default=False): Any(bool, All(Any(*string_types), Boolean())) }
