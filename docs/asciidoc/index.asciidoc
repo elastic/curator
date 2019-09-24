@@ -4,7 +4,7 @@
 :es_py_version: 7.0.4
 :es_doc_tree: 7.3
 :stack_doc_tree: 7.3
-:pybuild_ver: 3.6.8
+:pybuild_ver: 3.7.4
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/{es_doc_tree}
 :esref: http://www.elastic.co/guide/en/elasticsearch/reference/{stack_doc_tree}
 :fbref: https://www.elastic.co/guide/en/beats/filebeat/{stack_doc_tree}

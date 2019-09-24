@@ -3,12 +3,16 @@
 Changelog
 =========
 
-5.8.0 (? ? ?)
--------------
+5.8.0 (24 September 2019)
+-------------------------
 
 **New**
 
   * Require ``elasticsearch-py`` version 7.0.4
+  * Official support for Python 3.7 — In fact, the pre-built packages are built
+    using Python 3.7 now.
+  * Packages bundle OpenSSL 1.1.1c, removing the need for system OpenSSL
+  * Certifi 2019.9.11 certificates included.
   * New client configuration option: api_key - used in the X-Api-key header in
     requests to Elasticsearch when set, which may be required if ReadonlyREST
     plugin is configured to require api-key. Requested in #1409 (vetler)
