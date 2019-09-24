@@ -62,6 +62,8 @@ Changelog
     #1360. (anandsinghkunwar)
   * Do an empty list check before querying indices for field stats. Fixed by
     (CiXiHuo) in #1448.
+  * Fix "Correctly report task runtime in seconds" while reindexing. Reported 
+    by (jkelastic) in #1335 
 
 **Documentation**
 
