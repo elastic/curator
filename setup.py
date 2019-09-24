@@ -30,7 +30,7 @@ def get_install_requires():
     res.append('click>=6.7,<7.0')
     res.append('pyyaml==3.13')
     res.append('voluptuous>=0.9.3')
-    res.append('certifi>=2019.6.16')
+    res.append('certifi>=2019.9.11')
     res.append('six>=1.11.0')
     return res
 
@@ -132,6 +132,7 @@ try:
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
         ],
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"],
@@ -170,6 +171,7 @@ except ImportError:
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
         ],
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"]
