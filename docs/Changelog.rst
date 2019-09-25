@@ -3,6 +3,14 @@
 Changelog
 =========
 
+5.8.1 (25 September 2019)
+-------------------------
+
+**Bug Fixes**
+
+  * ``LD_LIBRARY_PATH`` will now be set in ``/usr/bin/curator`` and the
+    associated scripts rather than set in ``/etc/ld.so.conf.d``
+
 5.8.0 (24 September 2019)
 -------------------------
 
