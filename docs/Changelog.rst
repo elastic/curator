@@ -3,6 +3,13 @@
 Changelog
 =========
 
+5.8.2 (? ? ?)
+-------------
+
+**Bug Fixes**
+
+  * First bugfix goes here.
+
 5.8.1 (25 September 2019)
 -------------------------
 
@@ -10,6 +17,10 @@ Changelog
 
   * ``LD_LIBRARY_PATH`` will now be set in ``/usr/bin/curator`` and the
     associated scripts rather than set in ``/etc/ld.so.conf.d``
+
+**Other**
+
+  * Unsaved logging change in ``utils.py`` that got missed is merged.
 
 5.8.0 (24 September 2019)
 -------------------------
