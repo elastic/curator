@@ -7,7 +7,7 @@ from copy import deepcopy
 
 def test_config(config):
     # Get config from yaml file
-    yaml_config  = get_yaml(config)
+    yaml_config = get_yaml(config)
     # if the file is empty, which is still valid yaml, set as an empty dict
     yaml_config = {} if not yaml_config else prune_nones(yaml_config)
     # Voluptuous can't verify the schema of a dict if it doesn't have keys,

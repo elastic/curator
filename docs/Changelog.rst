@@ -6,9 +6,17 @@ Changelog
 5.8.2 (? ? ?)
 -------------
 
+**New**
+
+  * ``http_auth`` is now deprecated. You can continue to use it, but it will go
+    away in the next major release. Moving forward, you should use ``username``
+    and ``password``. This should work in ``curator``, ``curator_cli``, and
+    ``es_repo_mgr``.
+
 **Bug Fixes**
 
-  * First bugfix goes here.
+  * Lots of code cleanup, trying to go PEP-8. All tests are still passing, and
+    the APIs are not changed (yet—-that comes in the next major release).
 
 5.8.1 (25 September 2019)
 -------------------------

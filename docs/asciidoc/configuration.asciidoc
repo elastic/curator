@@ -195,7 +195,8 @@ client:
   client_cert:
   client_key:
   ssl_no_validate: False
-  http_auth:
+  username:
+  password:
   timeout: 30
   master_only: False
 
@@ -484,6 +485,8 @@ The default value is `False`.
 [[http_auth]]
 === http_auth
 
+**NOTE: This setting is now deprecated. Please use `username` and `password` instead.**
+
 This should be a authentication credentials (e.g. `user:pass`), or left empty.
 
 [source,sh]
@@ -494,6 +497,16 @@ http_auth:
 This setting allows basic HTTP authentication to an Elasticsearch instance.
 
 The default is empty.
+
+[[username]]
+=== username
+
+The HTTP Basic Authentication username
+
+[[password]]
+=== password
+
+The HTTP Basic Authentication password
 
 [[timeout]]
 === timeout

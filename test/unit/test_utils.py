@@ -1,11 +1,30 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
-from mock import Mock
+from mock import MagicMock, Mock, PropertyMock, patch
 import elasticsearch
 import yaml
 from . import testvars as testvars
 
+import botocore
+import boto3
 import curator
+
+IMPORT_TEST_MODULES = ['boto3', 'botocore']
+### Monkey-patch builder for builtins.__import__ for testing ImportError code blocks
+#### The try/except block is to catch and support Python 2.x, as only 3.x has ``builtins``
+try:
+    import builtins
+except ImportError:
+    import __builtin__ as builtins
+realimport = builtins.__import__
+
+def force_ImportError(name, globals, locals, fromlist, level):
+    if name in IMPORT_TEST_MODULES:
+        raise ImportError
+    return realimport(name, globals, locals, fromlist, level)
+
+#### Use ``builtins.__import__ = force_ImportError`` to monkey-patch test functions
+### End monkey-patch builder
 
 class TestEnsureList(TestCase):
     def test_ensure_list_returns_lists(self):
@@ -233,21 +252,13 @@ class TestCheckVersion(TestCase):
 class TestCheckMaster(TestCase):
     def test_check_master_positive(self):
         client = Mock()
-        client.nodes.info.return_value = {
-            'nodes': { "foo" : "bar"}
-        }
-        client.cluster.state.return_value = {
-            "master_node" : "foo"
-        }
+        client.nodes.info.return_value = {'nodes': {"foo": "bar"}}
+        client.cluster.state.return_value = {"master_node": "foo"}
         self.assertIsNone(curator.check_master(client, master_only=True))
     def test_check_master_negative(self):
         client = Mock()
-        client.nodes.info.return_value = {
-            'nodes': { "bad" : "mojo"}
-        }
-        client.cluster.state.return_value = {
-            "master_node" : "foo"
-        }
+        client.nodes.info.return_value = {'nodes': {"bad": "mojo"}}
+        client.cluster.state.return_value = {"master_node": "foo"}
         with self.assertRaises(SystemExit) as cm:
             curator.check_master(client, master_only=True)
         self.assertEqual(cm.exception.code, 0)
@@ -1297,3 +1308,233 @@ class TestGetDateMath(TestCase):
                 404, "simulated error", {u'error':{u'index':'failure'}})
         )
         self.assertRaises(curator.ConfigurationError, curator.get_datemath, client, datemath)
+
+class Test_process_auth_args(TestCase):
+    """
+    Tests for the ``process_auth_args`` function
+
+    The function will expect to receive at least a None value for the keys username, password, and http_auth
+    because of the schema validation steps.
+    """
+    def empty(self):
+        """Return 'sort of empty' dictionary"""
+        return {'http_auth': None, 'username': None, 'password': None, 'other': 'test_value'}
+    def test_all_none(self):
+        """Test to see if no changes are made to test_data"""
+        test_data = self.empty()
+        self.assertEqual(test_data, curator.utils.process_auth_args(test_data))
+    def test_has_http_auth(self):
+        """Test when http_auth present"""
+        test_data = self.empty()
+        test_data['http_auth'] = 'user:pass'
+        self.assertEqual(test_data, curator.utils.process_auth_args(test_data))
+    def test_has_user_and_pass(self):
+        """Test when username and password are both present"""
+        test_data = self.empty()
+        test_data['username'] = 'user'
+        test_data['password'] = 'pass'
+        self.assertEqual(('user', 'pass'), curator.utils.process_auth_args(test_data)['http_auth'])
+    def test_has_user_and_not_pass(self):
+        """Test when username is present and password is not"""
+        test_data = self.empty()
+        test_data['username'] = 'user'
+        self.assertRaises(curator.ClientException, curator.utils.process_auth_args, test_data)
+    def test_has_pass_and_not_user(self):
+        """Test when password is present and username is not"""
+        test_data = self.empty()
+        test_data['password'] = 'pass'
+        self.assertRaises(curator.ClientException, curator.utils.process_auth_args, test_data)
+
+
+class Test_process_aws_args(TestCase):
+    """
+    Tests for the ``process_aws_args`` function
+
+    The function will add default ``False`` values to ``aws_key``, ``aws_secret_key``,
+    ``aws_region``, and ``aws_sign_request`` if not provided. The function will set ``aws_token``
+    to an empty string if not provided.
+    """
+    def empty(self):
+        """Return 'sort of empty' dictionary"""
+        return {'other': 'test_value'}
+    def test_no_values_provided(self):
+        """
+        Test whether false values are indeed provided for all expected keys when no keys are in
+        the data dictionary.
+        """
+        test_data = self.empty()
+        false_keys = ['aws_key', 'aws_secret_key', 'aws_region', 'aws_sign_request']
+        response = curator.utils.process_aws_args(test_data)
+        for key in false_keys:
+            self.assertFalse(response[key])
+        self.assertEqual('', response['aws_token'])
+        self.assertEqual(test_data['other'], response['other'])
+    def test_null_aws_region(self):
+        """
+        Test that an exception is raised if ``aws_region`` is omitted when ``aws_key`` is provided.
+        """
+        test_data = self.empty()
+        test_data['aws_key'] = 'example'
+        self.assertRaises(curator.MissingArgument, curator.utils.process_aws_args, test_data)
+    def test_null_aws_secret_key(self):
+        """
+        Test that an exception is raised when all necessary values are provided except for
+        ``aws_secret_key``
+        """
+        test_data = self.empty()
+        test_data['aws_region'] = 'example_region'
+        test_data['aws_key'] = 'example_key'
+        self.assertRaises(curator.MissingArgument, curator.utils.process_aws_args, test_data)
+
+class Test_try_boto_session(TestCase):
+    """
+    Tests for the ``try_boto_session`` function
+
+    The function will attempt to replace values in the provided data dictionary if
+    ``aws_sign_requests`` is ``True``.
+    """
+    def empty(self):
+        """Return 'sort of empty' dictionary"""
+        return {'other': 'test_value'}
+    def test_passthru(self):
+        """If ``aws_sign_requests`` is ``False``, return the unchanged data dictionary"""
+        test_data = self.empty()
+        test_data['aws_sign_request'] = False
+        self.assertEqual(test_data, curator.utils.try_boto_session(test_data))
+    def test_ImportError(self):
+        """Test whether we get an ImportError by monkey-patching"""
+        import sys
+        if sys.version_info < (3, 0):
+            # This hack doesn't work on Python 2
+            # And I don't care, because Curator will stop supporting Python 2 after 2019-12-31
+            self.assertTrue(True)
+        else:
+            ### Monkey-patch builtins.__import__ to force an ImportError
+            builtins.__import__ = force_ImportError
+            ### End monkey-patch
+            test_data = self.empty()
+            test_data['aws_sign_request'] = True
+            self.assertRaises(ImportError, curator.utils.try_boto_session, test_data)
+            ## set it back
+            builtins.__import__ = realimport
+    def test_get_credentials_fail(self):
+        from botocore import exceptions as botoex
+        test_data = self.empty()
+        test_data['aws_sign_request'] = True
+        self.assertRaises(botoex.NoCredentialsError, curator.utils.try_boto_session, test_data)
+    @patch.object(boto3.Session, 'get_credentials')
+    def test_credentials_obtained_success(self, boto3_mock):
+        """Test that credentials are passed successfully if a ``Session()`` is established"""
+        test_data = self.empty()
+        test_data['aws_sign_request'] = True
+        access = 'sample_access_key'
+        secret = 'sample_secret_key'
+        token = 'sample_token'
+        test_tuple = [('aws_access_key', access), ('aws_secret_key', secret), ('aws_token', token)]
+        boto3_mock.get_credentials.return_value = (access, secret, token)
+        type(boto3_mock.get_credentials).access_key = PropertyMock(return_value=access)
+        type(boto3_mock.get_credentials).secret_key = PropertyMock(return_value=secret)
+        type(boto3_mock.get_credentials).token = PropertyMock(return_value=token)
+        returned = curator.utils.try_boto_session(test_data)
+        self.assertTrue('test_value', returned['other'])
+
+class Test_try_aws_auth(TestCase):
+    """
+    Tests for the ``try_aws_auth`` function
+
+    The function will attempt to replace values in the provided data dictionary if the
+    ``requests_aws4auth`` can be imported and ``aws_key`` exists in ``data``.
+
+    This function requires that ``aws_key``, ``aws_secret_key``, ``aws_token``, and ``aws_region``
+    are set in ``data``.
+    """
+    def empty(self):
+        """Return 'sort of empty' dictionary"""
+        return {
+            'aws_key': 'sample_aws_key',
+            'aws_secret_key': 'sample_aws_secret_key',
+            'aws_token': 'sample_aws_token',
+            'aws_region': 'sample_aws_region',
+            'ssl_no_validate': True,
+            'other': 'test_value'
+        }
+    def test_passthru(self):
+        """If ``data['aws_key']`` is ``False``, return the unchanged data dictionary"""
+        test_data = self.empty()
+        test_data['aws_key'] = False
+        self.assertEqual(test_data, curator.utils.try_aws_auth(test_data))
+    def test_ImportError(self):
+        """Test whether we get an ImportError by monkey-patching"""
+        def local_ImportError(name, globals, locals, fromlist, level):
+            if name == 'requests_aws4auth':
+                raise ImportError
+            return realimport(name, globals, locals, fromlist, level)
+        import sys
+        if sys.version_info < (3, 0):
+            # This hack doesn't work on Python 2
+            # And I don't care, because Curator will stop supporting Python 2 after 2019-12-31
+            self.assertTrue(True)
+        else:
+            ### Monkey-patch builtins.__import__ to force an ImportError
+            builtins.__import__ = local_ImportError
+            test_data = self.empty()
+            self.assertEqual(test_data, curator.utils.try_aws_auth(test_data))
+            ## set it back
+            builtins.__import__ = realimport
+    def test_expect_success(self):
+        """Test for values to be properly passed as expected on success"""
+        test_data = self.empty()
+        received = curator.utils.try_aws_auth(test_data)
+        for key in list(test_data.keys()):
+            self.assertEqual(test_data[key], received[key])
+        self.assertFalse(received['verify_certs'])
+    def test_verify_certs(self):
+        """Test that ``verify_certs`` is ``True`` if ``ssl_no_validate`` is ``False``"""
+        test_data = self.empty()
+        test_data['ssl_no_validate'] = False
+        self.assertTrue(curator.utils.try_aws_auth(test_data)['verify_certs'])
+
+class Test_do_version_check(TestCase):
+    """Test the ``do_version_check`` function"""
+    def test_skip(self):
+        """Test that ``skip=True`` is verified and no further evauluation happens"""
+        client = Mock()
+        self.assertIsNone(curator.utils.do_version_check(client, True))
+    def test_version_fails(self):
+        """Test a failing version number"""
+        client = Mock()
+        client.info.return_value = {'version': {'number': '2.4.3'} }
+        self.assertRaises(
+            curator.exceptions.ClientException, curator.utils.do_version_check, client, False)
+    def test_version_succeeds(self):
+        """Ensure that a None value is returned if the version is valid"""
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.6.18'} }
+        self.assertIsNone(curator.utils.do_version_check(client, False))
+
+class Test_verify_master_status(TestCase):
+    """
+    Unit (non-integration) tests to verify ``master_only``, i.e. whether connected only to the
+    elected master node.
+    """
+    def test_master_only_is_False(self):
+        """Function returns None response if ``master_only`` is set to ``False``"""
+        client = Mock()
+        master_only = False
+        self.assertIsNone(curator.utils.verify_master_status(client, master_only))
+    def test_master_only_raises_exception(self):
+        client = Mock()
+        client.nodes.info.return_value = {'nodes': {"foo": "bar"}}
+        client.cluster.state.return_value = {"master_node": "wrong"}
+        client.cluster.state.side_effect = curator.exceptions.ConfigurationError('FAIL')
+        master_only = True
+        self.assertRaises(
+            curator.exceptions.ClientException,
+            curator.utils.verify_master_status, client, master_only
+        )
+    def test_master_only_succceeds(self):
+        client = Mock()
+        client.nodes.info.return_value = {'nodes': {"foo": "bar"}}
+        client.cluster.state.return_value = {"master_node": "foo"}
+        master_only = True
+        self.assertIsNone(curator.utils.verify_master_status(client, master_only))
