@@ -164,7 +164,6 @@ def run(config, action_file, dry_run=False):
             client = get_client(**client_args)
         except (ClientException, ConfigurationError):
             sys.exit(1)
-
         ### Filter ILM indices unless expressly permitted
         if allow_ilm:
             logger.warning('allow_ilm_indices: true')

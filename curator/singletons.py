@@ -33,7 +33,9 @@ logger = logging.getLogger(__name__)
 @click.option('--client-cert', help='Path to file containing SSL certificate for client auth.', type=str)
 @click.option('--client-key', help='Path to file containing SSL key for client auth.', type=str)
 @click.option('--ssl-no-validate', is_flag=True, callback=false_to_none, help='Do not validate SSL certificate')
-@click.option('--http_auth', help='Use Basic Authentication ex: user:pass')
+@click.option('--http_auth', help='Use Basic Authentication ex: user:pass -- DEPRECATED. Use username and password.')
+@click.option('--username', help='HTTP Basic Authentication username', type=str)
+@click.option('--password', help='HTTP Basic Authentication password', type=str)
 @click.option('--timeout', help='Connection timeout in seconds.', type=int)
 @click.option('--master-only', is_flag=True, callback=false_to_none, help='Only operate on elected master node.')
 @click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
@@ -43,9 +45,9 @@ logger = logging.getLogger(__name__)
 @click.version_option(version=__version__)
 @click.pass_context
 def cli(
-    ctx, config, host, url_prefix, port, use_ssl, certificate, client_cert,
-    client_key, ssl_no_validate, http_auth, timeout, master_only, dry_run,
-    loglevel, logfile, logformat):
+    ctx, config, host, url_prefix, port, use_ssl, certificate, client_cert, client_key,
+    ssl_no_validate, http_auth, username, password, timeout, master_only, dry_run, loglevel,
+    logfile, logformat):
     if os.path.isfile(config):
         initial_config = test_config(config)
     else:

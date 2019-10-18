@@ -1,9 +1,11 @@
+"""Define valid schemas for client configuration validation"""
 from six import string_types
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range
 
 # Configuration file: client
 # pylint: disable=no-value-for-parameter
 def config_client():
+    """Client schema"""
     return {
         Optional('hosts', default='127.0.0.1'): Any(None, list, *string_types),
         Optional('port', default=9200): Any(
@@ -20,6 +22,8 @@ def config_client():
         Optional('aws_sign_request', default=False): Boolean(),
         Optional('aws_region'): Any(None, *string_types),
         Optional('ssl_no_validate', default=False): Boolean(),
+        Optional('username', default=None): Any(None, *string_types),
+        Optional('password', default=None): Any(None, *string_types),
         Optional('http_auth', default=None): Any(None, *string_types),
         Optional('timeout', default=30): All(
             Coerce(int), Range(min=1, max=86400)),
@@ -29,19 +33,15 @@ def config_client():
 
 # Configuration file: logging
 def config_logging():
+    """Logging schema"""
     return {
-        Optional(
-            'loglevel', default='INFO'): Any(None,
-            'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL',
-            All(Coerce(int), Any(0, 10, 20, 30, 40, 50))
-        ),
+        Optional('loglevel', default='INFO'):
+            Any(None, 'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL',
+                All(Coerce(int), Any(0, 10, 20, 30, 40, 50))
+                ),
         Optional('logfile', default=None): Any(None, *string_types),
-        Optional(
-            'logformat', default='default'): Any(None, All(
-                Any(*string_types),
-                Any('default', 'json', 'logstash')
-            )
-        ),
+        Optional('logformat', default='default'):
+            Any(None, All(Any(*string_types), Any('default', 'json', 'logstash'))),
         Optional(
             'blacklist', default=['elasticsearch', 'urllib3']): Any(None, list),
     }
