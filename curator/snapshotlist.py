@@ -1,3 +1,4 @@
+"""SnapshotList"""
 import time
 import re
 import logging
@@ -7,6 +8,7 @@ from curator.defaults import settings
 from curator.validators import SchemaCheck, filters
 
 class SnapshotList(object):
+    """Snapshot list object"""
     def __init__(self, client, repository=None):
         utils.verify_client_object(client)
         if not repository:
@@ -51,7 +53,7 @@ class SnapshotList(object):
             self.snapshots.remove(snap)
 
     def __excludify(self, condition, exclude, snap, msg=None):
-        if condition == True:
+        if condition:
             if exclude:
                 text = "Removed from actionable list"
                 self.__not_actionable(snap)
@@ -80,7 +82,7 @@ class SnapshotList(object):
                 self.snapshot_info[list_item['snapshot']] = list_item
         self.empty_list_check()
 
-    def __map_method(self, ft):
+    def __map_method(self, ftype):
         methods = {
             'age': self.filter_by_age,
             'count': self.filter_by_count,
@@ -89,7 +91,7 @@ class SnapshotList(object):
             'period': self.filter_period,
             'state': self.filter_by_state,
         }
-        return methods[ft]
+        return methods[ftype]
 
     def empty_list_check(self):
         """Raise exception if `snapshots` is empty"""
@@ -116,9 +118,9 @@ class SnapshotList(object):
         # Check for empty list before proceeding here to prevent non-iterable
         # condition
         self.empty_list_check()
-        ts = utils.TimestringSearch(timestring)
+        tstamp = utils.TimestringSearch(timestring)
         for snapshot in self.working_list():
-            epoch = ts.get_epoch(snapshot)
+            epoch = tstamp.get_epoch(snapshot)
             if epoch:
                 self.snapshot_info[snapshot]['age_by_name'] = epoch
             else:
@@ -218,7 +220,7 @@ class SnapshotList(object):
             matching snapshots will be kept in `snapshots`.
             Default is `False`
         """
-        if kind not in [ 'regex', 'prefix', 'suffix', 'timestring' ]:
+        if kind not in ['regex', 'prefix', 'suffix', 'timestring']:
             raise ValueError('{0}: Invalid value for kind'.format(kind))
 
         # Stop here if None or empty value, but zero is okay
@@ -245,9 +247,10 @@ class SnapshotList(object):
             else:
                 self.__excludify(False, exclude, snapshot)
 
-    def filter_by_age(self, source='creation_date', direction=None,
-        timestring=None, unit=None, unit_count=None, epoch=None, exclude=False
-        ):
+    def filter_by_age(
+            self, source='creation_date', direction=None,
+            timestring=None, unit=None, unit_count=None, epoch=None, exclude=False
+    ):
         """
         Remove snapshots from `snapshots` by relative age calculations.
 
@@ -268,9 +271,9 @@ class SnapshotList(object):
             Default is `False`
         """
         self.loggit.debug('Starting filter_by_age')
-        # Get timestamp point of reference, PoR
-        PoR = utils.get_point_of_reference(unit, unit_count, epoch)
-        self.loggit.debug('Point of Reference: {0}'.format(PoR))
+        # Get timestamp point of reference, por
+        por = utils.get_point_of_reference(unit, unit_count, epoch)
+        self.loggit.debug('Point of Reference: {0}'.format(por))
         if not direction:
             raise exceptions.MissingArgument('Must provide a value for "direction"')
         if direction not in ['older', 'younger']:
@@ -289,7 +292,7 @@ class SnapshotList(object):
                     snapshot,
                     utils.fix_epoch(self.snapshot_info[snapshot][self.age_keyfield]),
                     direction,
-                    PoR
+                    por
                 )
             )
             # Because time adds to epoch, smaller numbers are actually older
@@ -297,9 +300,9 @@ class SnapshotList(object):
             snapshot_age = utils.fix_epoch(
                 self.snapshot_info[snapshot][self.age_keyfield])
             if direction == 'older':
-                agetest = snapshot_age < PoR
+                agetest = snapshot_age < por
             else: # 'younger'
-                agetest = snapshot_age > PoR
+                agetest = snapshot_age > por
             self.__excludify(agetest, exclude, snapshot, msg)
 
     def filter_by_state(self, state=None, exclude=False):
@@ -326,12 +329,13 @@ class SnapshotList(object):
                 self.__excludify(False, exclude, snapshot)
 
     def filter_none(self):
+        """No filter at all"""
         self.loggit.debug('"None" filter selected.  No filtering will be done.')
 
     def filter_by_count(
             self, count=None, reverse=True, use_age=False,
             source='creation_date', timestring=None, exclude=True
-        ):
+    ):
         """
         Remove snapshots from the actionable list beyond the number `count`,
         sorted reverse-alphabetically by default.  If you set `reverse` to
@@ -390,14 +394,13 @@ class SnapshotList(object):
             idx += 1
 
     def filter_period(
-        self, period_type='relative', source='name', range_from=None, 
-        range_to=None, date_from=None, date_to=None, date_from_format=None, 
-        date_to_format=None, timestring=None, unit=None, 
-        week_starts_on='sunday', epoch=None, exclude=False,
-        ):
+            self, period_type='relative', source='name', range_from=None, range_to=None,
+            date_from=None, date_to=None, date_from_format=None, date_to_format=None,
+            timestring=None, unit=None, week_starts_on='sunday', epoch=None, exclude=False
+    ):
         """
         Match `snapshots` with ages within a given period.
-        
+
         :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
             ``relative``.  ``date_from`` and ``date_to`` are required when using
             ``period_type='absolute'`. ``range_from`` and ``range_to`` are
@@ -433,19 +436,23 @@ class SnapshotList(object):
                 'Unacceptable value: {0} -- "period_type" must be either '
                 '"absolute" or "relative".'.format(period_type)
             )
+        self.loggit.debug('period_type = {0}'.format(period_type))
         if period_type == 'relative':
             func = utils.date_range
             args = [unit, range_from, range_to, epoch]
-            kwgs = { 'week_starts_on': week_starts_on }
-            if type(range_from) != type(int()) or type(range_to) != type(int()):
+            kwgs = {'week_starts_on': week_starts_on}
+            try:
+                range_from = int(range_from)
+                range_to = int(range_to)
+            except ValueError as err:
                 raise exceptions.ConfigurationError(
-                    '"range_from" and "range_to" must be integer values')
+                    '"range_from" and "range_to" must be integer values. Error: {0}'.format(err))
         else:
             func = utils.absolute_date_range
             args = [unit, date_from, date_to]
-            kwgs = { 
-                'date_from_format': date_from_format, 
-                'date_to_format': date_to_format 
+            kwgs = {
+                'date_from_format': date_from_format,
+                'date_to_format': date_to_format
             }
             for reqd in [date_from, date_to, date_from_format, date_to_format]:
                 if not reqd:
@@ -456,8 +463,8 @@ class SnapshotList(object):
                     )
         try:
             start, end = func(*args, **kwgs)
-        except Exception as e:
-            utils.report_failure(e)
+        except Exception as err:
+            utils.report_failure(err)
         self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][self.age_keyfield]:
@@ -503,29 +510,30 @@ class SnapshotList(object):
 
         """
         # Make sure we actually _have_ filters to act on
-        if not 'filters' in config or len(config['filters']) < 1:
+        if not 'filters' in config or not config['filters']:
             self.loggit.info('No filters in config.  Returning unaltered object.')
             return
 
         self.loggit.debug('All filters: {0}'.format(config['filters']))
-        for f in config['filters']:
+        for fltr in config['filters']:
             self.loggit.debug('Top of the loop: {0}'.format(self.snapshots))
-            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
-            self.loggit.debug('Parsed filter args: {0}'.format(
+            self.loggit.debug('Un-parsed filter args: {0}'.format(fltr))
+            self.loggit.debug(
+                'Parsed filter args: {0}'.format(
                     SchemaCheck(
-                        f,
+                        fltr,
                         filters.structure(),
                         'filter',
                         'SnapshotList.iterate_filters'
                     ).result()
                 )
             )
-            method = self.__map_method(f['filtertype'])
-            # Remove key 'filtertype' from dictionary 'f'
-            del f['filtertype']
+            method = self.__map_method(fltr['filtertype'])
+            # Remove key 'filtertype' from dictionary 'fltr'
+            del fltr['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            self.loggit.debug('Filter args: {0}'.format(f))
+            self.loggit.debug('Filter args: {0}'.format(fltr))
             self.loggit.debug('Pre-instance: {0}'.format(self.snapshots))
-            method(**f)
+            method(**fltr)
             self.loggit.debug('Post-instance: {0}'.format(self.snapshots))

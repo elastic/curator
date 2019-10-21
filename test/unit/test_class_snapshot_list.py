@@ -445,8 +445,9 @@ class TestSnapshotListPeriodFilter(TestCase):
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
         sl = curator.SnapshotList(client, repository=testvars.repo_name)
-        sl.filter_period(source='name', range_from=range_from, epoch=epoch,
-            range_to=range_to, timestring='%Y.%m.%d', unit=unit, 
+        sl.filter_period(
+            source='name', range_from=range_from, epoch=epoch,
+            range_to=range_to, timestring='%Y.%m.%d', unit=unit,
         )
         self.assertEqual(expected, sl.snapshots)
     def test_no_creation_date(self):

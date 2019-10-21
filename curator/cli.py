@@ -1,6 +1,8 @@
-import os, sys
-import yaml
+"""Main CLI for Curator"""
+import os
+import sys
 import logging
+import yaml
 import click
 from voluptuous import Schema
 from curator import actions
@@ -80,7 +82,7 @@ def process_action(client, config, **kwargs):
             logger.debug('Adding indices to alias "{0}"'.format(opts['name']))
             adds.iterate_filters(config['add'])
             action_obj.add(adds, warn_if_no_indices=opts['warn_if_no_indices'])
-    elif action in [ 'cluster_routing', 'create_index', 'rollover']:
+    elif action in ['cluster_routing', 'create_index', 'rollover']:
         action_obj = action_class(client, **mykwargs)
     elif action == 'delete_snapshots' or action == 'restore':
         logger.debug('Running "{0}"'.format(action))
@@ -95,7 +97,7 @@ def process_action(client, config, **kwargs):
         ilo.iterate_filters(config)
         action_obj = action_class(ilo, **mykwargs)
     ### Do the action
-    if 'dry_run' in kwargs and kwargs['dry_run'] == True:
+    if 'dry_run' in kwargs and kwargs['dry_run']:
         action_obj.do_dry_run()
     else:
         logger.debug('Doing the action here.')
@@ -189,27 +191,28 @@ def run(config, action_file, dry_run=False):
         ### Process the action ###
         ##########################
         try:
-            logger.info('Trying Action ID: {0}, "{1}": '
+            logger.info(
+                'Trying Action ID: {0}, "{1}": '
                 '{2}'.format(idx, action, actions[idx]['description'])
             )
             process_action(client, actions[idx], **kwargs)
-        except Exception as e:
-            if isinstance(e, NoIndices) or isinstance(e, NoSnapshots):
+        except Exception as err:
+            if isinstance(err, NoIndices) or isinstance(err, NoSnapshots):
                 if ignore_empty_list:
                     logger.info(
                         'Skipping action "{0}" due to empty list: '
-                        '{1}'.format(action, type(e))
+                        '{1}'.format(action, type(err))
                     )
                 else:
                     logger.error(
                         'Unable to complete action "{0}".  No actionable items '
-                        'in list: {1}'.format(action, type(e))
+                        'in list: {1}'.format(action, type(err))
                     )
                     sys.exit(1)
             else:
                 logger.error(
                     'Failed to complete action: {0}.  {1}: '
-                    '{2}'.format(action, type(e), e)
+                    '{2}'.format(action, type(err), err)
                 )
                 if continue_if_exception:
                     logger.info(
@@ -223,7 +226,8 @@ def run(config, action_file, dry_run=False):
     logger.info('Job completed.')
 
 @click.command()
-@click.option('--config',
+@click.option(
+    '--config',
     help="Path to configuration file. Default: ~/.curator/curator.yml",
     type=click.Path(exists=True), default=settings.config_file()
 )
