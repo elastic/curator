@@ -1,11 +1,13 @@
+"""Configuration utilty functions"""
 import logging
+from copy import deepcopy
 from voluptuous import Schema
 from curator.validators import SchemaCheck, config_file
 from curator.utils import ensure_list, get_yaml, prune_nones, test_client_options
 from curator.logtools import LogInfo, Whitelist, Blacklist
-from copy import deepcopy
 
 def test_config(config):
+    """Test YAML against the schema"""
     # Get config from yaml file
     yaml_config = get_yaml(config)
     # if the file is empty, which is still valid yaml, set as an empty dict
@@ -17,10 +19,12 @@ def test_config(config):
             yaml_config[k] = {}
         else:
             yaml_config[k] = prune_nones(yaml_config[k])
-    return SchemaCheck(yaml_config, config_file.client(),
-        'Client Configuration', 'full configuration dictionary').result()
+    return SchemaCheck(
+        yaml_config, config_file.client(), 'Client Configuration', 'full configuration dictionary'
+    ).result()
 
 def set_logging(log_opts):
+    """Configure global logging options"""
     # Set up logging
     loginfo = LogInfo(log_opts)
     logging.root.addHandler(loginfo.handler)
@@ -35,6 +39,7 @@ def set_logging(log_opts):
                 handler.addFilter(Blacklist(bl_entry))
 
 def process_config(yaml_file):
+    """Process yaml_file and return a valid client configuration"""
     config = test_config(yaml_file)
     set_logging(config['logging'])
     test_client_options(config['client'])
@@ -45,7 +50,7 @@ def password_filter(data):
     Return a deepcopy of the dictionary with any password fields hidden
     """
     def iterdict(mydict):
-        for key, value in mydict.items():      
+        for key, value in mydict.items():
             if isinstance(value, dict):
                 iterdict(value)
             elif key == "password":
