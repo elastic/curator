@@ -1,3 +1,4 @@
+"""Curator Exceptions"""
 class CuratorException(Exception):
     """
     Base class for all exceptions raised by Curator which are not Elasticsearch
