@@ -1,9 +1,11 @@
+"""Logging tools"""
 import sys
 import json
 import logging
 import time
 
 class LogstashFormatter(logging.Formatter):
+    """Logstash formatting (JSON)"""
     # The LogRecord attributes we want to carry over to the Logstash message,
     # mapped to the corresponding output key.
     WANTED_ATTRS = {'levelname': 'loglevel',
@@ -26,6 +28,7 @@ class LogstashFormatter(logging.Formatter):
         return json.dumps(result, sort_keys=True)
 
 class Whitelist(logging.Filter):
+    """How to whitelist logs"""
     def __init__(self, *whitelist):
         self.whitelist = [logging.Filter(name) for name in whitelist]
 
@@ -33,10 +36,12 @@ class Whitelist(logging.Filter):
         return any(f.filter(record) for f in self.whitelist)
 
 class Blacklist(Whitelist):
+    """Blacklist monkey-patch of Whitelist"""
     def filter(self, record):
         return not Whitelist.filter(self, record)
 
 class LogInfo(object):
+    """Logging Class"""
     def __init__(self, cfg):
         cfg['loglevel'] = 'INFO' if not 'loglevel' in cfg else cfg['loglevel']
         cfg['logfile'] = None if not 'logfile' in cfg else cfg['logfile']
