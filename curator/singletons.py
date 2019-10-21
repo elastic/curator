@@ -1,5 +1,7 @@
-import click
+"""CLI module for curator_cli"""
 import os
+import logging
+import click
 from curator.defaults import settings
 from curator.config_utils import test_config, set_logging
 from curator.utils import test_client_options
@@ -20,24 +22,37 @@ from curator.cli_singletons.freeze import freeze
 from curator.cli_singletons.unfreeze import unfreeze
 from curator._version import __version__
 
-import logging
-logger = logging.getLogger(__name__)
-
 @click.group(context_settings=get_width())
-@click.option('--config', help='Path to configuration file. Default: ~/.curator/curator.yml', type=click.Path(), default=settings.config_file())
+@click.option(
+    '--config', help='Path to configuration file. Default: ~/.curator/curator.yml',
+    type=click.Path(), default=settings.config_file()
+)
 @click.option('--host', help='Elasticsearch host.')
 @click.option('--url_prefix', help='Elasticsearch http url prefix.')
 @click.option('--port', help='Elasticsearch port.')
-@click.option('--use_ssl', is_flag=True, callback=false_to_none, help='Connect to Elasticsearch through SSL.')
+@click.option(
+    '--use_ssl', is_flag=True,
+    callback=false_to_none, help='Connect to Elasticsearch through SSL.'
+)
 @click.option('--certificate', help='Path to certificate to use for SSL validation.')
-@click.option('--client-cert', help='Path to file containing SSL certificate for client auth.', type=str)
+@click.option(
+    '--client-cert', help='Path to file containing SSL certificate for client auth.', type=str)
 @click.option('--client-key', help='Path to file containing SSL key for client auth.', type=str)
-@click.option('--ssl-no-validate', is_flag=True, callback=false_to_none, help='Do not validate SSL certificate')
-@click.option('--http_auth', help='Use Basic Authentication ex: user:pass -- DEPRECATED. Use username and password.')
+@click.option(
+    '--ssl-no-validate', is_flag=True,
+    callback=false_to_none, help='Do not validate SSL certificate'
+)
+@click.option(
+    '--http_auth',
+    help='Use Basic Authentication ex: user:pass -- DEPRECATED. Use username and password.'
+)
 @click.option('--username', help='HTTP Basic Authentication username', type=str)
 @click.option('--password', help='HTTP Basic Authentication password', type=str)
 @click.option('--timeout', help='Connection timeout in seconds.', type=int)
-@click.option('--master-only', is_flag=True, callback=false_to_none, help='Only operate on elected master node.')
+@click.option(
+    '--master-only', is_flag=True, callback=false_to_none,
+    help='Only operate on elected master node.'
+)
 @click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
 @click.option('--loglevel', help='Log level')
 @click.option('--logfile', help='log file')
@@ -45,9 +60,11 @@ logger = logging.getLogger(__name__)
 @click.version_option(version=__version__)
 @click.pass_context
 def cli(
-    ctx, config, host, url_prefix, port, use_ssl, certificate, client_cert, client_key,
-    ssl_no_validate, http_auth, username, password, timeout, master_only, dry_run, loglevel,
-    logfile, logformat):
+        ctx, config, host, url_prefix, port, use_ssl, certificate, client_cert, client_key,
+        ssl_no_validate, http_auth, username, password, timeout, master_only, dry_run, loglevel,
+        logfile, logformat
+    ):
+    """CLI input"""
     if os.path.isfile(config):
         initial_config = test_config(config)
     else:

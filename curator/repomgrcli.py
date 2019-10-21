@@ -1,21 +1,23 @@
-import elasticsearch
-import click
-import re
+"""es_repo_mgr CLI"""
 import sys
+import re
 import logging
+import click
+import elasticsearch
 from .defaults import settings
 from .exceptions import *
 from .config_utils import process_config
 from .utils import *
 from ._version import __version__
 
-logger = logging.getLogger('curator.repomgrcli')
 
 def delete_callback(ctx, param, value):
+    """Callback if delete called"""
     if not value:
         ctx.abort()
 
 def show_repos(client):
+    """Show all repositories"""
     for repository in sorted(get_repository(client, '_all').keys()):
         print('{0}'.format(repository))
     sys.exit(0)
@@ -31,23 +33,38 @@ def show_repos(client):
         'Must match remote path, & be accessible to all master & data nodes'
     )
 )
-@click.option('--compression', type=bool, default=True, show_default=True,
-            help='Enable/Disable metadata compression.')
-@click.option('--chunk_size', type=str,
-            help='Chunk size, e.g. 1g, 10m, 5k. [unbounded]')
-@click.option('--max_restore_bytes_per_sec', type=str, default='20mb',
-            show_default=True,
-            help='Throttles per node restore rate (per second).')
-@click.option('--max_snapshot_bytes_per_sec', type=str, default='20mb',
-            show_default=True,
-            help='Throttles per node snapshot rate (per second).')
-@click.option('--skip_repo_fs_check', type=bool, default=False, show_default=True,
-            help='Skip repository verification after creation')
+@click.option(
+    '--compression',
+    type=bool,
+    default=True,
+    show_default=True,
+    help='Enable/Disable metadata compression.'
+)
+@click.option('--chunk_size', type=str, help='Chunk size, e.g. 1g, 10m, 5k. [unbounded]')
+@click.option(
+    '--max_restore_bytes_per_sec',
+    type=str, default='20mb',
+    show_default=True,
+    help='Throttles per node restore rate (per second).'
+)
+@click.option(
+    '--max_snapshot_bytes_per_sec',
+    type=str, default='20mb',
+    show_default=True,
+    help='Throttles per node snapshot rate (per second).'
+)
+@click.option(
+    '--skip_repo_fs_check',
+    type=bool,
+    default=False,
+    show_default=True,
+    help='Skip repository verification after creation'
+)
 @click.pass_context
 def fs(
-    ctx, repository, location, compression, chunk_size,
-    max_restore_bytes_per_sec, max_snapshot_bytes_per_sec,
-    skip_repo_fs_check):
+        ctx, repository, location, compression, chunk_size, max_restore_bytes_per_sec,
+        max_snapshot_bytes_per_sec, skip_repo_fs_check
+    ):
     """
     Create a filesystem repository.
     """
@@ -55,8 +72,8 @@ def fs(
     client = get_client(**ctx.obj['client_args'])
     try:
         create_repository(client, repo_type='fs', **ctx.params)
-    except FailedExecution as e:
-        logger.critical(e)
+    except FailedExecution as err:
+        logger.critical(err)
         sys.exit(1)
 
 
@@ -65,27 +82,46 @@ def fs(
 @click.option('--bucket', required=True, type=str, help='S3 bucket name')
 @click.option('--region', type=str, help='S3 region. [US Standard]')
 @click.option('--base_path', type=str, help='S3 base path. [root]')
-@click.option('--access_key', type=str,
-            help='S3 access key. [value of cloud.aws.access_key]')
-@click.option('--secret_key', type=str,
-            help='S3 secret key. [value of cloud.aws.secret_key]')
-@click.option('--compression', type=bool, default=True, show_default=True,
-            help='Enable/Disable metadata compression.')
-@click.option('--chunk_size', type=str,
-            help='Chunk size, e.g. 1g, 10m, 5k. [unbounded]')
-@click.option('--max_restore_bytes_per_sec', type=str, default='20mb',
-            show_default=True,
-            help='Throttles per node restore rate (per second).')
-@click.option('--max_snapshot_bytes_per_sec', type=str, default='20mb',
-            show_default=True,
-            help='Throttles per node snapshot rate (per second).')
-@click.option('--skip_repo_fs_check', type=bool, default=False, show_default=True,
-            help='Skip repository verification after creation')
+@click.option('--access_key', type=str, help='S3 access key. [value of cloud.aws.access_key]')
+@click.option('--secret_key', type=str, help='S3 secret key. [value of cloud.aws.secret_key]')
+@click.option(
+    '--compression',
+    type=bool,
+    default=True,
+    show_default=True,
+    help='Enable/Disable metadata compression.'
+)
+@click.option(
+    '--chunk_size',
+    type=str,
+    help='Chunk size, e.g. 1g, 10m, 5k. [unbounded]'
+)
+@click.option(
+    '--max_restore_bytes_per_sec',
+    type=str,
+    default='20mb',
+    show_default=True,
+    help='Throttles per node restore rate (per second).'
+)
+@click.option(
+    '--max_snapshot_bytes_per_sec',
+    type=str,
+    default='20mb',
+    show_default=True,
+    help='Throttles per node snapshot rate (per second).'
+)
+@click.option(
+    '--skip_repo_fs_check',
+    type=bool,
+    default=False,
+    show_default=True,
+    help='Skip repository verification after creation'
+)
 @click.pass_context
 def s3(
-    ctx, repository, bucket, region, base_path, access_key, secret_key,
-    compression, chunk_size, max_restore_bytes_per_sec,
-    max_snapshot_bytes_per_sec, skip_repo_fs_check):
+        ctx, repository, bucket, region, base_path, access_key, secret_key, compression,
+        chunk_size, max_restore_bytes_per_sec, max_snapshot_bytes_per_sec, skip_repo_fs_check
+    ):
     """
     Create an S3 repository.
     """
@@ -93,8 +129,8 @@ def s3(
     client = get_client(**ctx.obj['client_args'])
     try:
         create_repository(client, repo_type='s3', **ctx.params)
-    except FailedExecution as e:
-        logger.critical(e)
+    except FailedExecution as err:
+        logger.critical(err)
         sys.exit(1)
 
 
@@ -106,9 +142,7 @@ def s3(
 )
 @click.pass_context
 def repo_mgr_cli(ctx, config):
-    """
-    Repository manager for Elasticsearch Curator.
-    """
+    """Repository manager for Elasticsearch Curator."""
     ctx.obj = {}
     ctx.obj['client_args'] = process_config(config)
     logger = logging.getLogger(__name__)
@@ -124,20 +158,20 @@ _create.add_command(s3)
 @repo_mgr_cli.command('show')
 @click.pass_context
 def show(ctx):
-    """
-    Show all repositories
-    """
+    """Show all repositories"""
     client = get_client(**ctx.obj['client_args'])
     show_repos(client)
 
 @repo_mgr_cli.command('delete')
 @click.option('--repository', required=True, help='Repository name', type=str)
-@click.option('--yes', is_flag=True, callback=delete_callback,
-                expose_value=False,
-                prompt='Are you sure you want to delete the repository?')
+@click.option(
+    '--yes', is_flag=True, callback=delete_callback, expose_value=False,
+    prompt='Are you sure you want to delete the repository?'
+)
 @click.pass_context
 def _delete(ctx, repository):
     """Delete an Elasticsearch repository"""
+    logger = logging.getLogger('curator.repomgrcli._delete')
     client = get_client(**ctx.obj['client_args'])
     try:
         logger.info('Deleting repository {0}...'.format(repository))

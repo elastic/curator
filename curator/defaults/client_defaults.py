@@ -8,9 +8,7 @@ def config_client():
     """Client schema"""
     return {
         Optional('hosts', default='127.0.0.1'): Any(None, list, *string_types),
-        Optional('port', default=9200): Any(
-            None, All(Coerce(int), Range(min=1, max=65535))
-        ),
+        Optional('port', default=9200): Any(None, All(Coerce(int), Range(min=1, max=65535))),
         Optional('url_prefix', default=''): Any(None, *string_types),
         Optional('use_ssl', default=False): Boolean(),
         Optional('certificate', default=None): Any(None, *string_types),
@@ -25,8 +23,7 @@ def config_client():
         Optional('username', default=None): Any(None, *string_types),
         Optional('password', default=None): Any(None, *string_types),
         Optional('http_auth', default=None): Any(None, *string_types),
-        Optional('timeout', default=30): All(
-            Coerce(int), Range(min=1, max=86400)),
+        Optional('timeout', default=30): All(Coerce(int), Range(min=1, max=86400)),
         Optional('master_only', default=False): Boolean(),
         Optional('api_key', default=None): Any(None, *string_types),
     }
@@ -42,6 +39,5 @@ def config_logging():
         Optional('logfile', default=None): Any(None, *string_types),
         Optional('logformat', default='default'):
             Any(None, All(Any(*string_types), Any('default', 'json', 'logstash'))),
-        Optional(
-            'blacklist', default=['elasticsearch', 'urllib3']): Any(None, list),
+        Optional('blacklist', default=['elasticsearch', 'urllib3']): Any(None, list),
     }
