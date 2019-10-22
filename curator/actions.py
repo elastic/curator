@@ -2043,6 +2043,10 @@ class Shrink(object):
         if extra_settings:
             self._merge_extra_settings(extra_settings)
 
+        self.shrink_copy_settings = {'copy_settings': 'true'}
+        if utils.get_version(self.client) < (6,4,3):
+            self.shrink_copy_settings = ''
+
     def _merge_extra_settings(self, extra_settings):
         self.loggit.debug(
             'Adding extra_settings to shrink body: '
@@ -2304,7 +2308,14 @@ class Shrink(object):
                     # Do the shrink
                     self.loggit.info('Shrinking index "{0}" to "{1}" with settings: {2}, wait_for_active_shards={3}'.format(idx, target, self.body, self.wait_for_active_shards))
                     try:
-                        self.client.indices.shrink(index=idx, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
+
+
+                        self.client.indices.shrink(index=idx, params=self.shrink_copy_settings, target=target, body=self.body, wait_for_active_shards=self.wait_for_active_shards)
+                        if utils.get_version(self.client) >= (6,4,3):
+                            self.loggit.debug('unblocking writes on {0}'.format(target))
+                            self._unblock_writes(target)
+                            self.loggit.debug('undoing route reqs for {0}'.format(target))
+                            self.route_index(target, 'require', '_name', '')
                         # Wait for it to complete
                         if self.wfc:
                             self.loggit.debug('Wait for shards to complete allocation for index: {0}'.format(target))
@@ -2341,4 +2352,3 @@ class Shrink(object):
             # Just in case it fails after attempting to meet this condition
             self._unblock_writes(idx)
             utils.report_failure(e)
-
