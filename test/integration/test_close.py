@@ -1,34 +1,34 @@
-import elasticsearch
-import curator
+"""Integration tests of the Close action class"""
 import os
+import logging
+import elasticsearch
 import click
 from click import testing as clicktest
+import curator
 
 from . import CuratorTestCase
-from . import testvars as testvars
+from . import testvars
 
-import logging
-logger = logging.getLogger(__name__)
-
-host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
-port = int(port) if port else 9200
+HOST, PORT = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
+PORT = int(PORT) if PORT else 9200
 
 class TestActionFileClose(CuratorTestCase):
+    """Tests of the Close action class"""
     def test_close_opened(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-            testvars.optionless_proto.format('close'))
+        """Test if it can close opened indices"""
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.optionless_proto.format('close'))
         self.create_index('my_index')
         self.create_index('dummy')
         test = clicktest.CliRunner()
         _ = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            [
+                '--config',
+                self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
         self.assertEquals(
             'close',
             self.client.cluster.state(
@@ -44,10 +44,9 @@ class TestActionFileClose(CuratorTestCase):
             )['metadata']['indices']['dummy']['state']
         )
     def test_close_closed(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-            testvars.optionless_proto.format('close'))
+        """Test if it will close/ignore already closed indices"""
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.optionless_proto.format('close'))
         self.create_index('my_index')
         # pylint: disable=E1123
         self.client.indices.close(
@@ -55,12 +54,13 @@ class TestActionFileClose(CuratorTestCase):
         self.create_index('dummy')
         test = clicktest.CliRunner()
         _ = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            [
+                '--config',
+                self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
         self.assertEquals(
             'close',
             self.client.cluster.state(
@@ -76,6 +76,7 @@ class TestActionFileClose(CuratorTestCase):
             )['metadata']['indices']['dummy']['state']
         )
     def test_close_delete_aliases(self):
+        """Test if it can delete aliases from an index before closing"""
         # Create aliases first
         alias = 'testalias'
         index = 'my_index'
@@ -91,18 +92,17 @@ class TestActionFileClose(CuratorTestCase):
             self.client.indices.get_alias(name=alias)
         )
         # Now close `index` with delete_aliases=True (dummy stays open)
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-            testvars.close_delete_aliases)
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.close_delete_aliases)
         test = clicktest.CliRunner()
         _ = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            [
+                '--config',
+                self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
         self.assertEquals(
             'close',
             self.client.cluster.state(
@@ -123,11 +123,11 @@ class TestActionFileClose(CuratorTestCase):
             {"dummy":{"aliases":{"testalias":{}}}},
             self.client.indices.get_alias(name=alias)
         )
+
     def test_close_skip_flush(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-                          testvars.close_skip_flush)
+        """Test if it will skip the synced flush if so flagged"""
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.close_skip_flush)
         self.create_index('dummy')
         # Disable shard allocation to make my_index go red
         disable_allocation = '{"transient":{"cluster.routing.allocation.enable":"none"}}'
@@ -137,9 +137,10 @@ class TestActionFileClose(CuratorTestCase):
         _ = test.invoke(
             curator.cli,
             [
-                '--config', self.args['configfile'],
+                '--config',
+                self.args['configfile'],
                 self.args['actionfile']
-            ],
+            ]
         )
         try:
             self.assertEquals(
@@ -160,11 +161,11 @@ class TestActionFileClose(CuratorTestCase):
             # re-enable shard allocation for next tests
             enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
             self.client.cluster.put_settings(body=enable_allocation)
+
     def test_close_ignore_sync_failures(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-                          testvars.close_ignore_sync.format('true'))
+        """Test if it will ignore sync failures if so flagged"""
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.close_ignore_sync.format('true'))
         self.create_index('dummy')
         # Disable shard allocation to make my_index go red
         disable_allocation = '{"transient":{"cluster.routing.allocation.enable":"none"}}'
@@ -174,9 +175,10 @@ class TestActionFileClose(CuratorTestCase):
         _ = test.invoke(
             curator.cli,
             [
-                '--config', self.args['configfile'],
+                '--config',
+                self.args['configfile'],
                 self.args['actionfile']
-            ],
+            ]
         )
         try:
             self.assertEquals(
@@ -197,11 +199,11 @@ class TestActionFileClose(CuratorTestCase):
             # re-enable shard allocation for next tests
             enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
             self.client.cluster.put_settings(body=enable_allocation)
+
     def test_close_has_sync_failures(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-                          testvars.close_ignore_sync.format('false'))
+        """Test if it will exit with an error if there are sync failures and not so flagged"""
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.close_ignore_sync.format('false'))
         self.create_index('dummy')
         # Disable shard allocation to make my_index go red
         disable_allocation = '{"transient":{"cluster.routing.allocation.enable":"none"}}'
@@ -211,9 +213,10 @@ class TestActionFileClose(CuratorTestCase):
         _ = test.invoke(
             curator.cli,
             [
-                '--config', self.args['configfile'],
+                '--config',
+                self.args['configfile'],
                 self.args['actionfile']
-            ],
+            ]
         )
         try:
             self.assertEquals(
@@ -235,21 +238,22 @@ class TestActionFileClose(CuratorTestCase):
             # re-enable shard allocation for next tests
             enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
             self.client.cluster.put_settings(body=enable_allocation)
+
     def test_extra_option(self):
-        self.write_config(
-            self.args['configfile'], testvars.client_config.format(host, port))
-        self.write_config(self.args['actionfile'],
-            testvars.bad_option_proto_test.format('close'))
+        """Test if extra options cause an exit failure"""
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
+        self.write_config(self.args['actionfile'], testvars.bad_option_proto_test.format('close'))
         self.create_index('my_index')
         self.create_index('dummy')
         test = clicktest.CliRunner()
         result = test.invoke(
-                    curator.cli,
-                    [
-                        '--config', self.args['configfile'],
-                        self.args['actionfile']
-                    ],
-                    )
+            curator.cli,
+            [
+                '--config',
+                self.args['configfile'],
+                self.args['actionfile']
+            ],
+        )
         self.assertNotEqual(
             'close',
             self.client.cluster.state(
@@ -267,7 +271,9 @@ class TestActionFileClose(CuratorTestCase):
         self.assertEqual(-1, result.exit_code)
 
 class TestCLIClose(CuratorTestCase):
+    """Test curator_cli Close action functionality"""
     def test_close_delete_aliases(self):
+        """Test if curator_cli will delete aliases when closing indices, if so flagged"""
         # Create aliases first
         alias = 'testalias'
         index = 'my_index'
@@ -290,9 +296,20 @@ class TestCLIClose(CuratorTestCase):
             '--delete_aliases',
             '--filter_list', '{"filtertype":"pattern","kind":"prefix","value":"my"}',
         ]
-        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIClose.test_close_delete_aliases'))
-        self.assertEquals('close', self.client.cluster.state(index=index, metric='metadata')['metadata']['indices'][index]['state'])
-        self.assertEquals('close', self.client.cluster.state(index='my_other', metric='metadata')['metadata']['indices']['my_other']['state'])
+        self.assertEqual(
+            0,
+            self.run_subprocess(args, logname='TestCLIClose.test_close_delete_aliases')
+        )
+        self.assertEquals(
+            'close',
+            self.client.cluster.state(
+                index=index, metric='metadata')['metadata']['indices'][index]['state']
+        )
+        self.assertEquals(
+            'close',
+            self.client.cluster.state(
+                index='my_other', metric='metadata')['metadata']['indices']['my_other']['state']
+        )
         # Now open the indices and verify that the alias is still gone.
         self.client.indices.open(index=index)
         self.assertEquals(
@@ -300,6 +317,7 @@ class TestCLIClose(CuratorTestCase):
             self.client.indices.get_alias(name=alias)
         )
     def test_close_skip_flush(self):
+        """Test if curator_cli will skip flush on close if so flagged"""
         args = self.get_runner_args()
         args += [
             '--config', self.args['configfile'],
@@ -309,5 +327,12 @@ class TestCLIClose(CuratorTestCase):
         ]
         self.create_index('my_index')
         self.create_index('dummy')
-        self.assertEqual(0, self.run_subprocess(args, logname='TestCLIClose.test_close_skip_flush'))
-        self.assertEquals('close', self.client.cluster.state(index='my_index', metric='metadata')['metadata']['indices']['my_index']['state'])
+        self.assertEqual(
+            0,
+            self.run_subprocess(args, logname='TestCLIClose.test_close_skip_flush')
+        )
+        self.assertEquals(
+            'close',
+            self.client.cluster.state(
+                index='my_index', metric='metadata')['metadata']['indices']['my_index']['state']
+        )
