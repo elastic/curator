@@ -1,15 +1,18 @@
+"""Object builder"""
 import logging
 import sys
+from voluptuous import Schema
 from curator import IndexList, SnapshotList
 from curator.actions import (
-    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, DeleteSnapshots, ForceMerge,
-    Freeze, IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink, Snapshot, Unfreeze
+    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, DeleteSnapshots,
+    ForceMerge, Freeze, IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink,
+    Snapshot, Unfreeze
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
 from curator.validators import SchemaCheck, filters, options
 from curator.utils import get_client, prune_nones, validate_filters
-from voluptuous import Schema
+
 
 
 CLASS_MAP = {
@@ -72,7 +75,7 @@ class cli_action():
                     self.alias[k]['filters'] = self.filters
                     if self.allow_ilm:
                         self.alias[k]['filters'].append({'filtertype':'ilm'})
-        elif action in [ 'cluster_routing', 'create_index', 'rollover']:
+        elif action in ['cluster_routing', 'create_index', 'rollover']:
             self.action_kwargs = {}
             # No filters for these actions
             if action == 'rollover':
@@ -88,12 +91,14 @@ class cli_action():
         self.ignore = ignore_empty_list
 
     def prune_excluded(self, option_dict):
+        """Prune excluded options"""
         for k in list(option_dict.keys()):
             if k in EXCLUDED_OPTIONS:
                 del option_dict[k]
         return option_dict
 
     def check_options(self, option_dict):
+        """Validate provided options"""
         try:
             self.logger.debug('Validating provided options: {0}'.format(option_dict))
             # Kludgy work-around to needing 'repository' in options for these actions
@@ -110,11 +115,12 @@ class cli_action():
             # Remove this after the schema check, as the action class won't need it as an arg
             if self.action in ['delete_snapshots', 'restore']:
                 del self.options['repository']
-        except ConfigurationError as e:
-            self.logger.critical('Unable to parse options: {0}'.format(e))
+        except ConfigurationError as err:
+            self.logger.critical('Unable to parse options: {0}'.format(err))
             sys.exit(1)
 
     def check_filters(self, filter_dict, loc='singleton', key='filters'):
+        """Validate provided filters"""
         try:
             self.logger.debug('Validating provided filters: {0}'.format(filter_dict))
             _ = SchemaCheck(
@@ -124,19 +130,20 @@ class cli_action():
                 '{0} singleton action "{1}"'.format(self.action, key)
             ).result()
             self.filters = validate_filters(self.action, _)
-        except ConfigurationError as e:
-            self.logger.critical('Unable to parse filters: {0}'.format(e))
+        except ConfigurationError as err:
+            self.logger.critical('Unable to parse filters: {0}'.format(err))
             sys.exit(1)
 
     def do_filters(self):
+        """Actually run the filters"""
         self.logger.debug('Running filters and testing for empty list object')
         if self.allow_ilm:
-            self.filters.append({'filtertype':'ilm','exclude':True})
+            self.filters.append({'filtertype':'ilm', 'exclude':True})
         try:
             self.list_object.iterate_filters({'filters':self.filters})
             self.list_object.empty_list_check()
-        except (NoIndices, NoSnapshots) as e:
-            otype = 'index' if isinstance(e, NoIndices) else 'snapshot'
+        except (NoIndices, NoSnapshots) as err:
+            otype = 'index' if isinstance(err, NoIndices) else 'snapshot'
             if self.ignore:
                 self.logger.info('Singleton action not performed: empty {0} list'.format(otype))
                 sys.exit(0)
@@ -145,12 +152,14 @@ class cli_action():
                 sys.exit(1)
 
     def get_list_object(self):
+        """Get either a SnapshotList or IndexList object"""
         if self.action in snapshot_actions() or self.action == 'show_snapshots':
             self.list_object = SnapshotList(self.client, repository=self.repository)
         else:
             self.list_object = IndexList(self.client)
 
     def get_alias_obj(self):
+        """Get the Alias object"""
         action_obj = Alias(name=self.alias['name'], extra_settings=self.alias['extra_settings'])
         for k in ['remove', 'add']:
             if k in self.alias:
@@ -163,16 +172,17 @@ class cli_action():
                 )
                 self.alias[k]['ilo'] = IndexList(self.client)
                 self.alias[k]['ilo'].iterate_filters({'filters':self.alias[k]['filters']})
-                f = getattr(action_obj, k)
-                f(self.alias[k]['ilo'], warn_if_no_indices=self.alias['wini'])
+                fltr = getattr(action_obj, k)
+                fltr(self.alias[k]['ilo'], warn_if_no_indices=self.alias['wini'])
         return action_obj
 
     def do_singleton_action(self, dry_run=False):
+        """Execute the (ostensibly) completely ready to run action"""
         self.logger.debug('Doing the singleton "{0}" action here.'.format(self.action))
         try:
             if self.action == 'alias':
                 action_obj = self.get_alias_obj()
-            elif self.action in [ 'cluster_routing', 'create_index', 'rollover']:
+            elif self.action in ['cluster_routing', 'create_index', 'rollover']:
                 action_obj = self.action_class(self.client, *self.action_args, **self.action_kwargs)
             else:
                 self.get_list_object()
@@ -184,9 +194,10 @@ class cli_action():
                     action_obj.do_dry_run()
                 else:
                     action_obj.do_action()
-            except Exception as e:
-                raise e # pass it on?
-        except Exception as e:
-            self.logger.critical('Failed to complete action: {0}.  {1}: {2}'.format(self.action, type(e), e))
+            except Exception as err:
+                raise err # pass it on?
+        except Exception as err:
+            self.logger.critical(
+                'Failed to complete action: {0}.  {1}: {2}'.format(self.action, type(err), err))
             sys.exit(1)
         self.logger.info('"{0}" action completed.'.format(self.action))
