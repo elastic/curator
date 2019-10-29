@@ -1,7 +1,8 @@
+"""Filtertype schema definitions"""
 import logging
 from curator.defaults import filter_elements, settings
 
-logger = logging.getLogger(__name__)
+# pylint: disable=missing-docstring
 
 ## Helpers ##
 
@@ -43,6 +44,7 @@ def alias(action, config):
 
 def age(action, config):
     # Required & Optional
+    logger = logging.getLogger('curator.defaults.filtertypes.age')
     retval = [
         filter_elements.direction(),
         filter_elements.unit(),
@@ -64,7 +66,7 @@ def allocated(action, config):
     ]
 
 def closed(action, config):
-    return [ filter_elements.exclude(exclude=True) ]
+    return [filter_elements.exclude(exclude=True)]
 
 def count(action, config):
     retval = [
@@ -84,16 +86,16 @@ def forcemerged(action, config):
     ]
 
 def ilm(action, config):
-    return [ filter_elements.exclude(exclude=True) ]
+    return [filter_elements.exclude(exclude=True)]
 
 def kibana(action, config):
-    return [ filter_elements.exclude(exclude=True) ]
+    return [filter_elements.exclude(exclude=True)]
 
 def none(action, config):
-    return [ ]
+    return []
 
 def opened(action, config):
-    return [ filter_elements.exclude(exclude=True) ]
+    return [filter_elements.exclude(exclude=True)]
 
 def pattern(action, config):
     return [
