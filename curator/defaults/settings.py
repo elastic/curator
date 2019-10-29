@@ -1,19 +1,24 @@
+"""Utilities/Helpers for defaults and schemas"""
 from os import path
 from six import string_types
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 # Elasticsearch versions supported
 def version_max():
+    """Return the maximum Elasticsearch version Curator supports"""
     return (7, 99, 99)
 def version_min():
+    """Return the minimum Elasticsearch version Curator supports"""
     return (5, 0, 0)
 
 # Default Config file location
 def config_file():
+    """Return the default config file location"""
     return path.join(path.expanduser('~'), '.curator', 'curator.yml')
 
 # Default filter patterns (regular expressions)
 def regex_map():
+    """Return a dictionary of pattern filter 'kind's with their associated regular expression"""
     return {
         'timestring': r'^.*{0}.*$',
         'regex': r'{0}',
@@ -22,6 +27,7 @@ def regex_map():
     }
 
 def date_regex():
+    """Return a dictionary/map of the strftime string characters and their string length"""
     return {
         'Y' : '4',
         'G' : '4',
@@ -40,9 +46,11 @@ def date_regex():
 # Actions
 
 def cluster_actions():
-    return [ 'cluster_routing' ]
+    """Return a list of supported cluster actions"""
+    return ['cluster_routing']
 
 def index_actions():
+    """Return a list of supported index actions"""
     return [
         'alias',
         'allocation',
@@ -62,12 +70,15 @@ def index_actions():
     ]
 
 def snapshot_actions():
-    return [ 'delete_snapshots', 'restore' ]
+    """Return a list of supported snapshot actions"""
+    return ['delete_snapshots', 'restore']
 
 def all_actions():
+    """Return a sorted list of all supported actions: cluster, index, and snapshot"""
     return sorted(cluster_actions() + index_actions() + snapshot_actions())
 
 def index_filtertypes():
+    """Return a list of supported index filter types"""
     return [
         'alias',
         'allocated',
@@ -87,12 +98,15 @@ def index_filtertypes():
     ]
 
 def snapshot_filtertypes():
+    """Return a list of supported snapshot filter types"""
     return ['age', 'count', 'none', 'pattern', 'period', 'state']
 
 def all_filtertypes():
+    """Return a sorted list of all supported filter types (both snapshot and index)"""
     return sorted(list(set(index_filtertypes() + snapshot_filtertypes())))
 
 def default_options():
+    """Set default values for these options"""
     return {
         'allow_ilm_indices': False,
         'continue_if_exception': False,
@@ -102,9 +116,11 @@ def default_options():
     }
 
 def default_filters():
-    return { 'filters' : [{ 'filtertype' : 'none' }] }
+    """If no filters are set, add a 'none' filter"""
+    return {'filters': [{'filtertype': 'none'}]}
 
 def structural_filter_elements():
+    """Barebones schemas for initial validation of filters"""
     # pylint: disable=E1120
     return {
         Optional('aliases'): Any(list, *string_types),
