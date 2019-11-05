@@ -13,4 +13,5 @@ FROM alpine:3.6
 RUN apk --no-cache upgrade && apk --no-cache add ca-certificates && update-ca-certificates && apk --no-cache add wget
 COPY --from=builder build/exe.linux-x86_64-3.6 /curator/
 USER nobody:nobody
+ENV LD_LIBRARY_PATH=/curator/lib
 ENTRYPOINT ["/curator/curator"]
