@@ -17,6 +17,8 @@ Changelog
 
   * Lots of code cleanup, trying to go PEP-8. All tests are still passing, and
     the APIs are not changed (yet—-that comes in the next major release).
+  * Dockerfile has been updated to produce a working version with Python 3.7
+    and Curator 5.8.1
 
 5.8.1 (25 September 2019)
 -------------------------
