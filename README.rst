@@ -1,6 +1,6 @@
 .. _readme:
 
-This repository
+**NOTE:** this package is a fork of `Elasticsearch Curator <https://github.com/elastic/curator>`_ without the CLI functionality (and without a dependency on `Click <https://click.palletsprojects.com/>`_). Only the API is exposed for library usage.
 
 
 Curator API
