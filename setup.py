@@ -27,7 +27,6 @@ def get_install_requires():
     res.append('requests>=2.20.0')
     res.append('boto3>=1.9.142')
     res.append('requests_aws4auth>=0.9')
-    res.append('click>=6.7,<7.0')
     res.append('pyyaml==3.13')
     res.append('voluptuous>=0.9.3')
     res.append('certifi>=2019.9.11')
@@ -116,13 +115,6 @@ try:
         keywords = "elasticsearch time-series indexed index-expiry",
         packages = ["curator"],
         include_package_data=True,
-        entry_points = {
-            "console_scripts" : [
-                "curator = curator.cli:cli",
-                "curator_cli = curator.curator_cli:main",
-                "es_repo_mgr = curator.repomgrcli:repo_mgr_cli",
-            ]
-        },
         classifiers=[
             "Intended Audience :: Developers",
             "Intended Audience :: System Administrators",

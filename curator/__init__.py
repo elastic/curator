@@ -8,5 +8,3 @@ from curator.utils import *
 from curator.indexlist import IndexList
 from curator.snapshotlist import SnapshotList
 from curator.actions import *
-from curator.cli import *
-from curator.repomgrcli import *
