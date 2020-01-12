@@ -1,10 +1,12 @@
 .. _readme:
 
+This repository
 
-Curator
-=======
 
-Have indices in Elasticsearch? This is the tool for you!
+Curator API
+===========
+
+Have indices in Elasticsearch? This is the library for you!
 
 Like a museum curator manages the exhibits and collections on display,
 Elasticsearch Curator helps you curate, or manage your indices.
@@ -46,14 +48,6 @@ the `Elasticsearch Python API`_.
 
 .. _Elasticsearch Python API: http://elasticsearch-py.readthedocs.io/
 
-
-`Curator CLI Documentation`_
-----------------------------
-
-The `Curator CLI Documentation`_ is now a part of the document repository at
-http://elastic.co/guide at http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
-
-.. _Curator CLI Documentation: http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
 
 `Getting Started`_
 ------------------

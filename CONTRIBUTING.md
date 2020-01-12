@@ -19,13 +19,6 @@ similar goals, or even new and different things with the
 [Curator API](http://curator.readthedocs.io/), and the
 [Elasticsearch Python API](http://elasticsearch-py.readthedocs.io/).
 
-Want to know how to use the command-line interface (CLI)?
-
-* [Curator CLI Documentation](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html)
-  The Curator CLI Documentation is now a part of the document repository at
-  http://elastic.co/guide at
-  http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
-
 Want to lurk about and see what others are doing with Curator?
 
 * The irc channels (#logstash and #elasticsearch on irc.freenode.org) are good
@@ -57,16 +50,9 @@ developers first! You can reach us via
 [github](https://github.com/elastic/curator/issues), or via IRC (#logstash or
  #elasticsearch on freenode irc)
 
-Documentation is in two parts: API and CLI documentation.
-
 API documentation is generated from comments inside the classes and methods
 within the code.  This documentation is rendered and hosted at
 http://curator.readthedocs.io
-
-CLI documentation is in Asciidoc format in the GitHub repository at
-https://github.com/elastic/curator/tree/master/docs/asciidoc.
-This documentation can be changed via a pull request as with any other code
-change.
 
 ## Contribution Steps
 
