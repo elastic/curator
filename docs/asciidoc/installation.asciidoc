@@ -303,9 +303,9 @@ That might look like this:
 
 [source,sh]
 --------------------------------------
-wget https://github.com/username/project/archive/#.#.#.tar.gz -O package.tar.gz
-tar zxf package.tar.gz
-cd package-#.#.#
+wget https://github.com/elastic/curator/archive/v#.#.#.tar.gz -O curator.tar.gz
+tar zxf curator.tar.gz
+cd curator-#.#.#
 python setup.py install
 --------------------------------------
 
