@@ -18,7 +18,7 @@ files.  <<actions,Actions>> and <<filters,filters>> are documented separately.
 WARNING: This functionality is experimental and may be changed or removed +
     completely in a future release.
 
-You can use environment variable references in the both the
+You can use environment variable references in both the
 <<configfile,configuration file>> and the <<actionfile,action file>> to set
 values that need to be configurable at runtime. To do this, use:
 
