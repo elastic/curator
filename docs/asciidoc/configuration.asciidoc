@@ -272,8 +272,11 @@ This should be a single value:
 port: 9200
 -----------
 
-The default is `9200`.  This value will only be applied to <<hosts,hosts>>
-without a port affixed, e.g. `localhost`.
+The default is `9200`. This value will only be applied to hosts without a port affixed. For example, if you have:
+
+  hosts: "localhost:9200"
+  port: 9202
+In this example, port 9202 will not be affixed to localhost:9200, nor will 9202 replace the 9200.
 
 [[url_prefix]]
 === url_prefix
