@@ -27,6 +27,15 @@ class LogstashFormatter(logging.Formatter):
             result[self.WANTED_ATTRS[attribute]] = getattr(record, attribute)
         return json.dumps(result, sort_keys=True)
 
+class ECSFormatter(LogstashFormatter):
+    """Elastic Common Schema formatting (ECS)"""
+    # Overload LogstashFormatter attribute
+    WANTED_ATTRS = {'levelname': 'log.level',
+                    'funcName': 'log.origin.function',
+                    'lineno': 'log.origin.file.line',
+                    'message': 'message',
+                    'name': 'log.logger'}
+
 class Whitelist(logging.Filter):
     """How to whitelist logs"""
     def __init__(self, *whitelist):
@@ -63,5 +72,7 @@ class LogInfo(object):
 
         if cfg['logformat'] == 'json' or cfg['logformat'] == 'logstash':
             self.handler.setFormatter(LogstashFormatter())
+        elif cfg['logformat'] == 'ecs':
+            self.handler.setFormatter(ECSFormatter())
         else:
             self.handler.setFormatter(logging.Formatter(self.format_string))

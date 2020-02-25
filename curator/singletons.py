@@ -56,7 +56,7 @@ from curator._version import __version__
 @click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
 @click.option('--loglevel', help='Log level')
 @click.option('--logfile', help='log file')
-@click.option('--logformat', help='Log output format [default|logstash|json].')
+@click.option('--logformat', help='Log output format [default|logstash|json|ecs].')
 @click.version_option(version=__version__)
 @click.pass_context
 def cli(
