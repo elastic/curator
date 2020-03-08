@@ -136,3 +136,34 @@ class TestCLICreateIndex(CuratorTestCase):
                     )
         self.assertEqual([idx], curator.get_indices(self.client))
         self.assertEqual(0, result.exit_code)
+    def test_incorrect_mapping_fail_with_propper_error(self):
+        config = (
+            '---\n'
+            'actions:\n'
+            '  1:\n'
+            '    description: "Create index as named"\n'
+            '    action: create_index\n'
+            '    options:\n'
+            '      name: {0}\n'
+            '      extra_settings:\n'
+            '        mappings:\n'
+            '          type:\n'
+            '            properties:\n'
+            '              name:\n'
+            '                type: keyword\n'
+        )
+        idx = 'testing'
+        self.write_config(
+            self.args['configfile'], testvars.none_logging_config.format(host, port))
+        self.write_config(self.args['actionfile'], config.format(idx))
+        test = clicktest.CliRunner()
+        result = test.invoke(
+                    curator.cli,
+                    [
+                        '--config', self.args['configfile'],
+                        self.args['actionfile']
+                    ],
+                    )
+        self.assertTrue(b'mapper_parsing_exception' in result.output_bytes)
+        self.assertEqual([], curator.get_indices(self.client))
+        self.assertEqual(1, result.exit_code)

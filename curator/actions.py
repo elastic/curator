@@ -579,10 +579,12 @@ class CreateIndex(object):
         # Most likely error is a 400, `resource_already_exists_exception`
         except RequestError as err:
             match_list = ["index_already_exists_exception", "resource_already_exists_exception"]
-            if err.error in match_list and self.ignore_existing:
-                self.loggit.warn('Index %s already exists.' % self.name)
-            else:
-                raise exceptions.FailedExecution('Index %s already exists.' % self.name)
+            if err.error in match_list:
+                if self.ignore_existing:
+                    self.loggit.warn('Index %s already exists.' % self.name)
+                else:
+                    raise exceptions.FailedExecution('Index %s already exists.' % self.name)
+            raise
         except Exception as err:
             utils.report_failure(err)
 
