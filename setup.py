@@ -22,7 +22,7 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=7.0.4,<8.0.0' ]
+    res = ['elasticsearch==7.1.0' ]
     res.append('urllib3>=1.24.2,<1.25')
     res.append('requests>=2.20.0')
     res.append('boto3>=1.9.142')
@@ -133,6 +133,7 @@ try:
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
         ],
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"],
