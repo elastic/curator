@@ -12,6 +12,8 @@ Changelog
     away in the next major release. Moving forward, you should use ``username``
     and ``password``. This should work in ``curator``, ``curator_cli``, and
     ``es_repo_mgr``.
+  * Removed tests for all 5.x branches of Elasticsearch but the final (5.6).
+  * Added tests for missing 7.x branches of Elasticsearch
 
 **Bug Fixes**
 
@@ -19,6 +21,7 @@ Changelog
     the APIs are not changed (yet—-that comes in the next major release).
   * Dockerfile has been updated to produce a working version with Python 3.7
     and Curator 5.8.1
+  * Pin (for now) Elasticsearch Python module to 7.1.0
 
 5.8.1 (25 September 2019)
 -------------------------
