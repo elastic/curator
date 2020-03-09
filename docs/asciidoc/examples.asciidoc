@@ -15,6 +15,7 @@ You can use <<envvars,environment variables>> in your configuration files.
 * <<ex_delete_indices,delete_indices>>
 * <<ex_delete_snapshots,delete_snapshots>>
 * <<ex_forcemerge,forcemerge>>
+* <<ex_freeze,freeze>>
 * <<ex_open,open>>
 * <<ex_reindex,reindex>>
 * <<ex_replicas,replicas>>
@@ -22,7 +23,7 @@ You can use <<envvars,environment variables>> in your configuration files.
 * <<ex_rollover,rollover>>
 * <<ex_shrink,shrink>>
 * <<ex_snapshot,snapshot>>
-
+* <<ex_unfreeze,unfreeze>>
 --
 
 [[ex_alias]]
@@ -335,6 +336,45 @@ actions:
     - filtertype: forcemerged
       max_num_segments: 2
       exclude:
+-------------
+
+[[ex_freeze]]
+== freeze
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: freeze
+    description: >-
+      Freeze indices older than 30 days but younger than 60 days (based on index
+      name), for logstash- prefixed indices.
+    options:
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 30
+    - filtertype: age
+      source: name
+      direction: younger
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 60
 -------------
 
 
@@ -822,4 +862,45 @@ actions:
       unit: days
       unit_count: 1
 -------------
+
+
+[[ex_unfreeze]]
+== unfreeze
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: unfreeze
+    description: >-
+      Unfreeze indices older than 30 days but younger than 60 days (based on index
+      name), for logstash- prefixed indices.
+    options:
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 30
+    - filtertype: age
+      source: name
+      direction: younger
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 60
+-------------
+
 
