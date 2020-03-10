@@ -147,10 +147,8 @@ class TestCLICreateIndex(CuratorTestCase):
             '      name: {0}\n'
             '      extra_settings:\n'
             '        mappings:\n'
-            '          type:\n'
-            '            properties:\n'
-            '              name:\n'
-            '                type: keyword\n'
+            '          properties:\n'
+            '            name: ["test"]\n'
         )
         idx = 'testing'
         self.write_config(
