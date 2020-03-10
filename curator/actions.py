@@ -584,7 +584,8 @@ class CreateIndex(object):
                     self.loggit.warn('Index %s already exists.' % self.name)
                 else:
                     raise exceptions.FailedExecution('Index %s already exists.' % self.name)
-            raise
+            else:
+                raise
         except Exception as err:
             utils.report_failure(err)
 
