@@ -2091,16 +2091,23 @@ class Shrink(object):
         self.number_of_shards = number_of_shards
         self.wait_for_active_shards = wait_for_active_shards
         self.shrink_node_name = None
+
         self.body = {
             'settings': {
                 'index.number_of_shards' : number_of_shards,
                 'index.number_of_replicas' : number_of_replicas,
-                'index.routing.allocation.require._name': None,
-                'index.blocks.write': None
             }
         }
+
         if extra_settings:
             self._merge_extra_settings(extra_settings)
+
+        if utils.get_version(self.client) > (6, 0, 1):
+            self._merge_extra_settings({
+                'settings': {
+                    'index.routing.allocation.require._name': None,
+                    'index.blocks.write': None
+                }})
 
     def _merge_extra_settings(self, extra_settings):
         self.loggit.debug(
