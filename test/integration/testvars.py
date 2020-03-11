@@ -479,7 +479,11 @@ delete_period_proto = ('---\n'
 '      stats_result: {7}\n'
 '      intersect: {8}\n'
 '      epoch: {9}\n'
-'      week_starts_on: {10}\n')
+'      week_starts_on: {10}\n'
+'    - filtertype: pattern\n'
+'      kind: prefix\n'
+'      value: ilm-history-\n'
+'      exclude: True\n')
 
 delete_ignore_proto = ('---\n'
 'actions:\n'
