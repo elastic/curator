@@ -2095,8 +2095,8 @@ class Shrink(object):
             'settings': {
                 'index.number_of_shards' : number_of_shards,
                 'index.number_of_replicas' : number_of_replicas,
-                "index.routing.allocation.require._name": None,
-                "index.blocks.write": None
+                'index.routing.allocation.require._name': None,
+                'index.blocks.write': None
             }
         }
         if extra_settings:
