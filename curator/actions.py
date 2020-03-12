@@ -2102,7 +2102,7 @@ class Shrink(object):
         if extra_settings:
             self._merge_extra_settings(extra_settings)
 
-        if utils.get_version(self.client) > (6, 0, 1):
+        if utils.get_version(self.client) >= (6, 1, 0):
             self._merge_extra_settings({
                 'settings': {
                     'index.routing.allocation.require._name': None,
