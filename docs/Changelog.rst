@@ -16,6 +16,7 @@ Changelog
   * Added tests for missing 7.x branches of Elasticsearch
   * Remove tests for Python 3.5 
   * Fix hang of Shrink action in ES 7.x in #1528 (jclegras)
+  * Add ``ecs`` as a ``logformat`` option in #1529 (m1keil)
 
 **Bug Fixes**
 
@@ -34,7 +35,6 @@ Changelog
 
   * Add Freeze/Unfreeze documentation in #1497 (lucabelluccini)
   * Update compatibility matrix in #1522 (jibsonline)
-  * Add ECS logging output in #1529 (m1keil)
 
 5.8.1 (25 September 2019)
 -------------------------
