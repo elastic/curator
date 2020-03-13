@@ -14,6 +14,8 @@ Changelog
     ``es_repo_mgr``.
   * Removed tests for all 5.x branches of Elasticsearch but the final (5.6).
   * Added tests for missing 7.x branches of Elasticsearch
+  * Remove tests for Python 3.5 
+  * Fix hang of Shrink action in ES 7.x in #1528 (jclegras)
 
 **Bug Fixes**
 
@@ -21,7 +23,18 @@ Changelog
     the APIs are not changed (yet—-that comes in the next major release).
   * Dockerfile has been updated to produce a working version with Python 3.7
     and Curator 5.8.1
-  * Pin (for now) Elasticsearch Python module to 7.1.0
+  * Pin (for now) Elasticsearch Python module to 7.1.0. This will be updated
+    when an updated release of the module fixes the `cluster.state` API call
+    regression at https://github.com/elastic/elasticsearch-py/issues/1141
+  * Fix ``client.tasks.get`` API call to be ``client.tasks.list`` when no index
+    name is provided.  See
+    https://github.com/elastic/elasticsearch-py/issues/1110
+
+**Documentation**
+
+  * Add Freeze/Unfreeze documentation in #1497 (lucabelluccini)
+  * Update compatibility matrix in #1522 (jibsonline)
+  * Add ECS logging output in #1529 (m1keil)
 
 5.8.1 (25 September 2019)
 -------------------------
