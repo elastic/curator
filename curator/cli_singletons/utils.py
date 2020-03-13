@@ -155,7 +155,7 @@ def config_override(ctx, config_dict):
         elif k == 'host':
             if 'host' in ctx.params and ctx.params['host'] is not None:
                 config_dict['client']['hosts'] = ctx.params[k]
-        elif k in ['loglevel', 'logfile', 'logformat']:
+        elif k in ['loglevel', 'logfile', 'logformat', 'ecs']:
             if k in ctx.params and ctx.params[k] is not None:
                 config_dict['logging'][k] = ctx.params[k]
         else:
