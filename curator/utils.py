@@ -1164,7 +1164,7 @@ def find_snapshot_tasks(client):
     :rtype: bool
     """
     retval = False
-    tasklist = client.tasks.get()
+    tasklist = client.tasks.list()
     for node in tasklist['nodes']:
         for task in tasklist['nodes'][node]['tasks']:
             activity = tasklist['nodes'][node]['tasks'][task]['action']
