@@ -64,3 +64,8 @@ class ClientException(CuratorException):
     """
     Exception raised when the Elasticsearch client and/or connection is the source of the problem.
     """
+
+class LoggingException(CuratorException):
+    """
+    Exception raised when Curator cannot either log or configure logging
+    """
