@@ -148,7 +148,7 @@ class Alias(object):
                 '"{3}"'.format(
                     job.rstrip('e'),
                     index,
-                    'to' if job is 'add' else 'from',
+                    'to' if job == 'add' else 'from',
                     alias
                 )
             )
