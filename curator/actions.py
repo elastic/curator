@@ -582,7 +582,9 @@ class CreateIndex(object):
             if err.error in match_list and self.ignore_existing:
                 self.loggit.warn('Index %s already exists.' % self.name)
             else:
-                raise exceptions.FailedExecution('Index %s already exists.' % self.name)
+                raise exceptions.FailedExecution(
+                    'Unable to create index \"{0}\". Exception: {1}'.format(self.name, err)
+                )
         except Exception as err:
             utils.report_failure(err)
 
