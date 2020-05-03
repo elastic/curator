@@ -1198,3 +1198,38 @@ class TestPeriodFilterAbsolute(TestCase):
             il.filter_period, unit=unit, source='creation_date', period_type='absolute', date_from=date_from,
             date_to=date_to, date_from_format=date_from_format, date_to_format=date_to_format
         )
+
+class TestIndexListFilterByMeta(TestCase):
+    def test_missing_meta_value(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_three
+        client.cluster.state.return_value = testvars.clu_state_three
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        self.assertRaises(curator.MissingArgument, il.filter_by_meta)
+    def test_filter_result_by_meta(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_three
+        client.cluster.state.return_value = testvars.clu_state_three
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_meta(meta_key='address', meta_value='Moon')
+        self.assertEqual(['index-2016.03.04'], il.indices)
+    def test_filter_result_by_name_exclude(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_three
+        client.cluster.state.return_value = testvars.clu_state_three
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_meta(meta_key='address', meta_value='Moon', exclude=True)
+        self.assertEqual(['index-2016.03.03'], il.indices)
+
+
+
+

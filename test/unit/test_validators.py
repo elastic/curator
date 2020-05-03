@@ -231,3 +231,15 @@ class TestFilterTypes(TestCase):
             }
         ]
         self.assertEqual(config, shared_result(config, action))
+    def test_meta(self):
+        action = 'delete_indices'
+        config = [
+            {
+                'filtertype' : 'meta',
+                'meta_key' : 'my_key',
+                'meta_value': 'my_value',
+                'operator': 'equal',
+                'exclude' : False,
+            }
+        ]
+        self.assertEqual(config, shared_result(config, action))

@@ -252,6 +252,34 @@ settings_two  = {
         }
     }
 }
+settings_three  = {
+    u'index-2016.03.03': {
+        u'state': u'open',
+        u'aliases': [u'my_alias'],
+        u'mappings': {u'_default_':{u'_meta':{u'address':u'Moon'}},u'page':{u'_meta':{u'address':u'Asia'},u'properties':{u'message':{u'type':u'text',u'fields':{u'keyword':{u'ignore_above':256,u'type':u'keyword'}}}}}},
+        u'settings': {
+            u'index': {
+                u'number_of_replicas': u'1', u'uuid': u'random_uuid_string_here',
+                u'number_of_shards': u'5', u'creation_date': u'1456963200172',
+                u'routing': {u'allocation': {u'include': {u'tag': u'foo'}}},
+                u'version': {u'created': u'2020099'}, u'refresh_interval': u'5s'
+            }
+        }
+    },
+    u'index-2016.03.04': {
+        u'state': u'open',
+        u'aliases': [u'my_alias'],
+        u'mappings': {u'page':{u'_meta':{u'address':u'Moon'},u'properties':{u'message':{u'type':u'text',u'fields':{u'keyword':{u'ignore_above':256,u'type':u'keyword'}}}}}},
+        u'settings': {
+            u'index': {
+                u'number_of_replicas': u'1', u'uuid': u'another_random_uuid_string',
+                u'number_of_shards': u'5', u'creation_date': u'1457049600812',
+                u'routing': {u'allocation': {u'include': {u'tag': u'bar'}}},
+                u'version': {u'created': u'2020099'}, u'refresh_interval': u'5s'
+            }
+        }
+    }
+}
 
 settings_2_get_aliases = {
     "index-2016.03.03": { "aliases" : { 'my_alias' : { } } },
@@ -410,6 +438,12 @@ clu_state_two  = {
         u'indices': settings_two
     }
 }
+clu_state_three  = {
+    u'metadata': {
+        u'indices': settings_three
+    }
+}
+
 cs_two_closed  = {
     u'metadata': {
         u'indices': settings_2_closed
