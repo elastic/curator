@@ -180,6 +180,24 @@ def value(**kwargs):
     # action, and the allocated filtertype.
     return { Required('value'): Any(*string_types) }
 
+def meta_key(**kwargs):
+    # This setting is only used with the meta filtertype and is a required
+    return { Required('meta_key'): Any(*string_types) }
+
+def meta_value(**kwargs):
+    # This setting is only used with the meta filtertype and is a required
+    return { Required('meta_value'): Any(*string_types) }
+
+def operator(**kwargs):
+    # This setting is only used with the meta filtertype and is a required
+    return {
+        Optional('operator', default='equal'): Any(
+            "equal", None
+        )
+    }
+
+
+
 def week_starts_on(**kwargs):
     return {
         Optional('week_starts_on', default='sunday'): Any(

@@ -106,6 +106,7 @@ class IndexList(object):
             'pattern': self.filter_by_regex,
             'space': self.filter_by_space,
             'shards': self.filter_by_shards,
+            'meta': self.filter_by_meta,
         }
         return methods[ft]
 
@@ -220,6 +221,13 @@ class IndexList(object):
                     s['state'] = wl['state']
                     if 'routing' in wl['settings']['index']:
                         s['routing'] = wl['settings']['index']['routing']
+                    s['meta'] = {}
+                    if '_default_' in wl['mappings'].keys():
+                        s['meta'].update(wl['mappings']['_default_']['_meta'])
+                        del wl['mappings']['_default_']
+                    for type in list(wl['mappings'].keys()):
+                        if '_meta' in wl['mappings'][type].keys():
+                            s['meta'].update(wl['mappings'][type]['_meta'])
 
     def empty_list_check(self):
         """Raise exception if `indices` is empty"""
@@ -1045,6 +1053,36 @@ class IndexList(object):
             else:
                 condition = int(self.index_info[index]['number_of_shards']) == number_of_shards
 
+            self.__excludify(condition, exclude, index)
+
+    def filter_by_meta(self, meta_key=None, meta_value=None, operator="equal", exclude=False):
+        """
+        Match `indices` with metadata info.
+
+        Selects all indices those metadata contains $(meta_key operator meta_value) == true. index should contains only one type.
+
+        :arg meta_key: metadata key
+        :arg meta_value: metadata value
+        :arg operator:  Intermediate operator, current only equal
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
+        """
+        self.loggit.debug('Filtering indices by metadata')
+        self.loggit.debug('Filter by metadata: meta_key: {0}, meta_value: {1}'.format(meta_key, meta_value))
+        if not meta_key:
+            raise exceptions.MissingArgument('No value for "meta_key" provided')
+        if not meta_value:
+            raise exceptions.MissingArgument('No value for "meta_value" provided')
+        self.empty_list_check()
+        for index in self.working_list():
+            condition = False
+            if meta_key in self.index_info[index]['meta'].keys():
+                val = self.index_info[index]['meta'].get(meta_key)
+                if isinstance(val, str):
+                    if 'equal' == operator and meta_value == val:
+                        condition = True
             self.__excludify(condition, exclude, index)
 
     def filter_period(

@@ -83,7 +83,8 @@ def index_filtertypes():
         'pattern',
         'period',
         'space',
-        'shards'
+        'shards',
+        'meta'
     ]
 
 def snapshot_filtertypes():
@@ -141,4 +142,7 @@ def structural_filter_elements():
         Optional('use_age'): Boolean(),
         Optional('value'): Any(int, float, bool, *string_types),
         Optional('week_starts_on'): Any(None, *string_types),
+        Optional('meta_key'): Any(None, *string_types),
+        Optional('meta_value'): Any(None, *string_types),
+        Optional('operator'): Any(None, *string_types),
     }

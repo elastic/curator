@@ -146,6 +146,14 @@ def shards(action, config):
         filter_elements.exclude(),
     ]
 
+def meta(action, config):
+    return [
+        filter_elements.meta_key(),
+        filter_elements.meta_value(),
+        filter_elements.operator(),
+        filter_elements.exclude(),
+    ]
+
 def empty(action, config):
     return [
         filter_elements.exclude(),
