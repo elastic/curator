@@ -1,0 +1,22 @@
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: index_settings
+    description: "Change settings for selected indices"
+    options:
+      index_settings:
+        index:
+          refresh_interval: 5s
+      ignore_unavailable: False
+      preserve_existing: False
+    filters:
+    - filtertype: meta
+      meta_key: address
+      meta_value: Asia
+      exclude:

@@ -1080,7 +1080,8 @@ class IndexList(object):
             condition = False
             if meta_key in self.index_info[index]['meta'].keys():
                 val = self.index_info[index]['meta'].get(meta_key)
-                if isinstance(val, str):
+                # val should be str
+                if type(val) in (type(u''), type(b'')):
                     if 'equal' == operator and meta_value == val:
                         condition = True
             self.__excludify(condition, exclude, index)
