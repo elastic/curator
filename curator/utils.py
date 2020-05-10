@@ -869,7 +869,10 @@ def try_boto_session(data):
             LOGGER.error('Unable to sign AWS requests. Failed to import a module: {0}'.format(err))
             raise ImportError('Failed to import a module: {0}'.format(err))
         try:
-            session = session.Session()
+            if 'aws_region' in data:
+                session = session.Session(region_name=data['aws_region'])
+            else:
+                session = session.Session()
             credentials = session.get_credentials()
             data['aws_key'] = credentials.access_key
             data['aws_secret_key'] = credentials.secret_key
