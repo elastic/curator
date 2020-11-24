@@ -3,11 +3,21 @@
 Changelog
 =========
 
-5.8.2 (? ? ?)
--------------
+5.8.2 (24 November 2020)
+------------------------
+
+**Announcement**
+
+  * No, Curator isn't going away. But as you can tell, it's not as actively
+    developed as it once was. I am gratified to find there are still users who
+    make it a part of their workflow. I intend to continue development in my
+    spare time. Curator is now a labor of love, not an engineering project I
+    do during work hours.
 
 **New**
 
+  * Testing changes. Only last ES version of 5.x and 6.x are tested, plus the
+    releases of 7.x since 7.2.
   * ``http_auth`` is now deprecated. You can continue to use it, but it will go
     away in the next major release. Moving forward, you should use ``username``
     and ``password``. This should work in ``curator``, ``curator_cli``, and
@@ -30,6 +40,8 @@ Changelog
   * Fix ``client.tasks.get`` API call to be ``client.tasks.list`` when no index
     name is provided.  See
     https://github.com/elastic/elasticsearch-py/issues/1110
+  * Pin some pip versions to allow urllib3 and boto to coexist. See #1562
+    (sethmlarson).
 
 **Documentation**
 
