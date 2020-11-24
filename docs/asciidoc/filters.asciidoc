@@ -290,7 +290,7 @@ based on the values of <<fe_count,count>>, <<fe_exclude,exclude>>, and
 
 === Age-based sorting
 
-For use cases, where "like" items are being counted, and their name pattern
+For use cases where "like" items are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as item names will be sorted in
 <<fe_reverse,reverse>> order by default.  This means that the item count will
@@ -800,7 +800,7 @@ caveats regarding this choice:
 These are only a few of the caveats. This is still a valid use-case, especially
 for those running a single-node test box.
 
-For use cases, where "like" indices are being counted, and their name pattern
+For use cases where "like" indices are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
 <<fe_reverse,reverse>> order by default.  For this case, this means that disk
@@ -817,7 +817,7 @@ proceeding through to the oldest.
   source: creation_date
 -------------
 
-For use cases, where "like" indices are being counted, and their name pattern
+For use cases where "like" indices are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
 <<fe_reverse,reverse>> order by default.  For this case, this means that disk
