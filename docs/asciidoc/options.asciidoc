@@ -1803,7 +1803,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/modules-snapshots.html#restore-snapshot
+Read more about this setting at {ref}/restore-snapshot.html
 
 There is no default value.
 
@@ -1855,7 +1855,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/modules-snapshots.html#restore-snapshot
+Read more about this setting at {ref}/restore-snapshot.html
 
 There is no default value.
 
