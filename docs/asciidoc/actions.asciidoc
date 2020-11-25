@@ -918,7 +918,7 @@ actions:
 
 In this case, the number of replicas will be applied to the restored indices.
 
-For more information see the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
+For more information see the {ref}/snapshots-restore-snapshot.html#change-index-settings-during-restore[official Elasticsearch Documentation].
 
 === Required settings
 
