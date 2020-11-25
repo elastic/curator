@@ -31,6 +31,7 @@ The policy actions include:
 * {ref}/ilm-readonly.html[Read-Only]
 * {ref}/ilm-forcemerge.html[Force Merge]
 * {ref}/ilm-shrink.html[Shrink]
+* {ref}/ilm-freeze.html[Freeze]
 * {ref}/ilm-delete.html[Delete]
 
 [[ilm-or-curator]]
