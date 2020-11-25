@@ -396,7 +396,7 @@ actions:
 action: rollover
 description: >-
   Rollover the index associated with alias 'name', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -754,7 +754,7 @@ will be raised, and execution will halt.
 action: rollover
 description: >-
   Rollover the index associated with alias 'aliasname', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -779,7 +779,7 @@ Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 action: rollover
 description: >-
   Rollover the index associated with alias 'aliasname', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -803,7 +803,7 @@ an error.
 action: rollover
 description: >-
   Rollover the index associated with alias 'aliasname', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -2775,7 +2775,7 @@ actions:
 action: rollover
 description: >-
   Rollover the index associated with alias 'name', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
