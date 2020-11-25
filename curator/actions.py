@@ -1812,7 +1812,7 @@ class Restore(object):
         :type rename_replacement: str
         :arg extra_settings: Extra settings, including shard count and settings
             to omit. For more information see
-            https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html#_changing_index_settings_during_restore
+            https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-restore-snapshot.html#change-index-settings-during-restore
         :type extra_settings: dict, representing the settings.
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `True`)
