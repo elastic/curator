@@ -358,7 +358,7 @@ options:
 
 === <<restore,restore>>
 
-See the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
+See the {ref}/snapshots-restore-snapshot.html#change-index-settings-during-restore[official Elasticsearch Documentation].
 
 [source,yaml]
 -------------
