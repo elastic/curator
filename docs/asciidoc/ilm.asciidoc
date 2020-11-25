@@ -24,15 +24,15 @@ ILM applies policy actions as indices enter time-oriented phases:
 
 The policy actions include:
 
-* {ref}/_actions.html#ilm-set-priority-action[Set Priority]
-* {ref}/_actions.html#ilm-rollover-action[Rollover]
-* {ref}/_actions.html#ilm-unfollow-action[Unfollow]
-* {ref}/_actions.html#ilm-allocate-action[Allocate]
-* {ref}/_actions.html#ilm-readonly-action[Read-Only]
-* {ref}/_actions.html#ilm-forcemerge-action[Force Merge]
-* {ref}/_actions.html#ilm-shrink-action[Shrink]
-* {ref}/_actions.html#ilm-freeze-action[Freeze]
-* {ref}/_actions.html#ilm-delete-action[Delete]
+* {ref}/ilm-set-priority.html[Set Priority]
+* {ref}/ilm-rollover.html[Rollover]
+* {ref}/ilm-unfollow.html[Unfollow]
+* {ref}/ilm-allocate.html[Allocate]
+* {ref}/ilm-readonly.html[Read-Only]
+* {ref}/ilm-forcemerge.html[Force Merge]
+* {ref}/ilm-shrink.html[Shrink]
+* {ref}/ilm-freeze.html[Freeze]
+* {ref}/ilm-delete.html[Delete]
 
 [[ilm-or-curator]]
 == ILM or Curator?
