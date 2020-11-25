@@ -16,12 +16,15 @@ logger = logging.getLogger(__name__)
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
+EMPTY710ROUTING = {'allocation': {'include': {'_tier_preference': 'data_content'}}}
+
 
 class TestActionFileAllocation(CuratorTestCase):
     def test_include(self):
         key = 'tag'
         value = 'value'
         at = 'include'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -38,12 +41,21 @@ class TestActionFileAllocation(CuratorTestCase):
                     )
         self.assertEquals(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )
     def test_require(self):
         key = 'tag'
         value = 'value'
         at = 'require'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -60,12 +72,21 @@ class TestActionFileAllocation(CuratorTestCase):
                     )
         self.assertEquals(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )
     def test_exclude(self):
         key = 'tag'
         value = 'value'
         at = 'exclude'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -82,12 +103,21 @@ class TestActionFileAllocation(CuratorTestCase):
                     )
         self.assertEquals(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )
     def test_remove_exclude_with_none_value(self):
         key = 'tag'
         value = ''
         at = 'exclude'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -110,10 +140,23 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='my_index')['my_index']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']
+            )
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(index='my_index')['my_index']['settings']['index'])
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )
+
     def test_invalid_allocation_type(self):
         key = 'tag'
         value = 'value'
@@ -153,6 +196,7 @@ class TestActionFileAllocation(CuratorTestCase):
         key = 'tag'
         value = 'value'
         at = 'include'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -168,14 +212,27 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='my_index')['my_index']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']
+            )
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(index='my_index')['my_index']['settings']['index'])
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )
     def test_wait_for_completion(self):
         key = 'tag'
         value = 'value'
         at = 'require'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -192,14 +249,23 @@ class TestActionFileAllocation(CuratorTestCase):
                     )
         self.assertEquals(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )
 
 class TestCLIAllocation(CuratorTestCase):
     def test_include(self):
         key = 'tag'
         value = 'value'
         at = 'include'
+        ver = curator.get_version(self.client)
         self.create_index('my_index')
         self.create_index('not_my_index')
         args = self.get_runner_args()
@@ -215,5 +281,13 @@ class TestCLIAllocation(CuratorTestCase):
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIAllocation.test_include'))
         self.assertEquals(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index'])
+        if ver >= (7, 10, 0):
+            self.assertEquals(
+                EMPTY710ROUTING,
+                self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
+            )
+        else:
+            self.assertNotIn('routing',
+                self.client.indices.get_settings(
+                    index='not_my_index')['not_my_index']['settings']['index']
+            )

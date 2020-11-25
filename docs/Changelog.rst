@@ -3,20 +3,72 @@
 Changelog
 =========
 
-5.8.2 (? ? ?)
--------------
+5.8.3 (25 November 2020)
+------------------------
 
 **New**
 
+  * Determined to test the last 2 major version's final patch releases, plus
+    the last 5 minor releases in the current major version. Travis CI testing
+    needs to go faster, and this should suffice. For now, this means versions
+    5.6.16, 6.8.13, 7.6.2, 7.7.1, 7.8.1, 7.9.3, and 7.10.0
+
+**Bug Fixes**
+
+  * Caught a few stale merge failures, and asciidoc documentation problems
+    which needed fixing in the 5.8 branch, which necessitate this tiny bump
+    release. No code changes between 5.8.2 and 5.8.3.
+
+5.8.2 (24 November 2020)
+------------------------
+
+**Announcement**
+
+  * No, Curator isn't going away. But as you can tell, it's not as actively
+    developed as it once was. I am gratified to find there are still users who
+    make it a part of their workflow. I intend to continue development in my
+    spare time. Curator is now a labor of love, not an engineering project I
+    do during work hours.
+
+**New**
+
+  * Testing changes. Only last ES version of 5.x and 6.x are tested, plus the
+    releases of 7.x since 7.2.
   * ``http_auth`` is now deprecated. You can continue to use it, but it will go
     away in the next major release. Moving forward, you should use ``username``
     and ``password``. This should work in ``curator``, ``curator_cli``, and
     ``es_repo_mgr``.
+<<<<<<< HEAD
+=======
+  * Removed tests for all 5.x branches of Elasticsearch but the final (5.6).
+  * Added tests for missing 7.x branches of Elasticsearch
+  * Remove tests for Python 3.5 
+  * Fix hang of Shrink action in ES 7.x in #1528 (jclegras)
+  * Add ``ecs`` as a ``logformat`` option in #1529 (m1keil)
+>>>>>>> 5.8
 
 **Bug Fixes**
 
   * Lots of code cleanup, trying to go PEP-8. All tests are still passing, and
     the APIs are not changed (yet—-that comes in the next major release).
+<<<<<<< HEAD
+=======
+  * Dockerfile has been updated to produce a working version with Python 3.7
+    and Curator 5.8.1
+  * Pin (for now) Elasticsearch Python module to 7.1.0. This will be updated
+    when an updated release of the module fixes the `cluster.state` API call
+    regression at https://github.com/elastic/elasticsearch-py/issues/1141
+  * Fix ``client.tasks.get`` API call to be ``client.tasks.list`` when no index
+    name is provided.  See
+    https://github.com/elastic/elasticsearch-py/issues/1110
+  * Pin some pip versions to allow urllib3 and boto to coexist. See #1562
+    (sethmlarson).
+
+**Documentation**
+
+  * Add Freeze/Unfreeze documentation in #1497 (lucabelluccini)
+  * Update compatibility matrix in #1522 (jibsonline)
+>>>>>>> 5.8
 
 5.8.1 (25 September 2019)
 -------------------------

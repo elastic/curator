@@ -38,6 +38,6 @@ def config_logging():
                 ),
         Optional('logfile', default=None): Any(None, *string_types),
         Optional('logformat', default='default'):
-            Any(None, All(Any(*string_types), Any('default', 'json', 'logstash'))),
+            Any(None, All(Any(*string_types), Any('default', 'json', 'logstash', 'ecs'))),
         Optional('blacklist', default=['elasticsearch', 'urllib3']): Any(None, list),
     }

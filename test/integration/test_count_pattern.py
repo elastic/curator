@@ -18,6 +18,8 @@ port = int(port) if port else 9200
 
 global_client = elasticsearch.Elasticsearch(host=host, port=port)
 
+EMPTY710ROUTING = {'allocation': {'include': {'_tier_preference': 'data_content'}}}
+
 delete_count_pattern = ('---\n'
 'actions:\n'
 '  1:\n'
@@ -53,7 +55,7 @@ class TestCLICountPattern(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -79,7 +81,7 @@ class TestCLICountPattern(CuratorTestCase):
             )
         )
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -92,6 +94,7 @@ class TestCLICountPattern(CuratorTestCase):
         key = 'tag'
         value = 'value'
         at = 'include'
+        ver = curator.get_version(self.client)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -109,7 +112,7 @@ class TestCLICountPattern(CuratorTestCase):
         self.create_index('d-2017.10.02')
         self.create_index('d-2017.10.03')
         test = clicktest.CliRunner()
-        result = test.invoke(
+        _ = test.invoke(
             curator.cli,
             [
                 '--config', self.args['configfile'],
@@ -120,23 +123,20 @@ class TestCLICountPattern(CuratorTestCase):
             self.client.indices.get_settings(index='c-2017.10.03')['c-2017.10.03']['settings']['index']['routing']['allocation'][at][key])
         self.assertEquals(value,
             self.client.indices.get_settings(index='d-2017.10.03')['d-2017.10.03']['settings']['index']['routing']['allocation'][at][key])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='a-2017.10.01')['a-2017.10.01']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='a-2017.10.02')['a-2017.10.02']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='a-2017.10.03')['a-2017.10.03']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='b-2017.10.01')['b-2017.10.01']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='b-2017.10.02')['b-2017.10.02']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='b-2017.10.03')['b-2017.10.03']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='c-2017.10.01')['c-2017.10.01']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='c-2017.10.02')['c-2017.10.02']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='d-2017.10.01')['d-2017.10.01']['settings']['index'])
-        self.assertNotIn('routing',
-            self.client.indices.get_settings(index='d-2017.10.02')['d-2017.10.02']['settings']['index'])
+        idxlist = [
+            'a-2017.10.01', 'a-2017.10.02', 'a-2017.10.03',
+            'b-2017.10.01', 'b-2017.10.02', 'b-2017.10.03',
+            'c-2017.10.01', 'c-2017.10.02',
+            'd-2017.10.01', 'd-2017.10.02'
+        ]
+        for idx in idxlist:
+            if ver >= (7, 10, 0):
+                self.assertEquals(
+                    EMPTY710ROUTING,
+                    self.client.indices.get_settings(index=idx)[idx]['settings']['index']['routing']
+                )
+            else:
+                self.assertNotIn('routing',
+                    self.client.indices.get_settings(
+                        index=idx)[idx]['settings']['index']
+                )
