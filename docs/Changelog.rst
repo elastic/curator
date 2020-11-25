@@ -3,6 +3,22 @@
 Changelog
 =========
 
+5.8.3 (25 November 2020)
+------------------------
+
+**New**
+
+  * Determined to test the last 2 major version's final patch releases, plus
+    the last 5 minor releases in the current major version. Travis CI testing
+    needs to go faster, and this should suffice. For now, this means versions
+    5.6.16, 6.8.13, 7.6.2, 7.7.1, 7.8.1, 7.9.3, and 7.10.0
+
+**Bug Fixes**
+
+  * Caught a few stale merge failures, and asciidoc documentation problems
+    which needed fixing in the 5.8 branch, which necessitate this tiny bump
+    release. No code changes between 5.8.2 and 5.8.3.
+
 5.8.2 (24 November 2020)
 ------------------------
 
