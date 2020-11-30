@@ -5,6 +5,6 @@ requests>=2.20.0
 boto3>=1.9.142
 requests_aws4auth>=0.9
 click>=6.7,<7.0
-pyyaml==3.13
+pyyaml==5.1
 certifi>=2019.9.11
 six>=1.11.0

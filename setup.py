@@ -28,7 +28,7 @@ def get_install_requires():
     res.append('boto3>=1.9.142')
     res.append('requests_aws4auth>=0.9')
     res.append('click>=6.7,<7.0')
-    res.append('pyyaml==3.13')
+    res.append('pyyaml==5.1')
     res.append('voluptuous>=0.9.3')
     res.append('certifi>=2019.9.11')
     res.append('six>=1.11.0')
@@ -98,7 +98,7 @@ try:
             packages = [],
             excludes = [],
             include_files = [cert_file, msvcrt],
-            include_msvcr = True, 
+            include_msvcr = True,
         )
 
     setup(
