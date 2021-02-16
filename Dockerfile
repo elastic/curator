@@ -10,7 +10,7 @@ RUN pip3 install -r requirements.txt
 RUN python3 setup.py build_exe
 
 FROM alpine:3.7
-RUN apk --no-cache upgrade && apk --no-cache add openssl-dev
+RUN apk --no-cache upgrade && apk --no-cache add openssl-dev expat
 COPY --from=builder build/exe.linux-x86_64-3.7 /curator/
 
 USER nobody:nobody
