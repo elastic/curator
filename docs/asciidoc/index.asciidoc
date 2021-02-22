@@ -14,6 +14,9 @@
 [[curator-reference]]
 = Curator Reference
 
+DO NOT MERGE
+This is a {ref}/bad-link.html[bad link]
+
 include::ilm.asciidoc[]
 include::about.asciidoc[]
 include::versions.asciidoc[]
