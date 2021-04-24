@@ -81,7 +81,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_extra_options(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -95,7 +95,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
 
 class TestCLIDeleteSnapshots(CuratorTestCase):
     def test_deletesnapshot(self):
@@ -116,7 +116,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         args = self.get_runner_args()
         args += [
             '--config', self.args['configfile'],
-            'delete_snapshots',
+            'delete-snapshots',
             '--repository', self.args['repository'],
             '--filter_list', '{"filtertype":"age","source":"creation_date","direction":"older","unit":"seconds","unit_count":0,"epoch":' + str(timestamps[0]) + '}',
         ]
@@ -124,10 +124,6 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(2, len(snapshot['snapshots']))
     def test_count_by_age(self):
-        """
-        Test deleting snapshots, keeping count of n.
-        Must ignore snapshot without timestring in the name
-        """
         self.create_repository()
         timestamps = []
         def add_snap(num, name):
@@ -149,7 +145,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         args = self.get_runner_args()
         args += [
             '--config', self.args['configfile'],
-            'delete_snapshots',
+            'delete-snapshots',
             '--repository', self.args['repository'],
             '--filter_list',
             '{"filtertype":"count","count":2,"use_age":true,"source":"name","timestring":"%Y%m%d%H%M%S"}',
