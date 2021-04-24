@@ -93,7 +93,7 @@ class TestCLICreateIndex(CuratorTestCase):
                     ],
                     )
         self.assertEqual([], curator.get_indices(self.client))
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_already_existing_fail(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))

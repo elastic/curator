@@ -29,7 +29,7 @@ def delete_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
     """
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = cli_action(
-        ctx.info_name,
+        'delete_indices',
         ctx.obj['config']['client'],
         {'allow_ilm_indices':allow_ilm_indices},
         filter_list,
@@ -74,7 +74,7 @@ def delete_snapshots(
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = cli_action(
-        ctx.info_name,
+        'delete_snapshots',
         ctx.obj['config']['client'],
         manual_options,
         filter_list,
