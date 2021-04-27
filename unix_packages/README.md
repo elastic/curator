@@ -12,9 +12,9 @@ If you edit the `Dockerfile`, you will see:
 
 ```
 # Can change these
-ENV PYVER=3.8
-ENV PYPATCH=7
-ENV OPENSSL_VER=1.1.1i
+ENV PYVER=3.9
+ENV PYPATCH=4
+ENV OPENSSL_VER=1.1.1k
 ```
 
 You should be able to edit these values with whatever is available at the respective

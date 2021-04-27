@@ -4,9 +4,9 @@
 FROM centos:6 as builder
 
 # Can change these
-ENV PYVER=3.8
-ENV PYPATCH=7
-ENV OPENSSL_VER=1.1.1i
+ENV PYVER=3.9
+ENV PYPATCH=4
+ENV OPENSSL_VER=1.1.1k
 
 # Don't change these
 ENV PKG_TARGET=/curator_packages

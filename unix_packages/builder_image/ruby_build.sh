@@ -13,7 +13,7 @@ gem update --system
 gem install rdoc
 gem install fpm
 ## MONKEY PATCH FPM https://github.com/jordansissel/fpm/issues/1739
-RUVER=$(which ruby | awk -F\/ '{print $6}')
-FPMVER=$(gem list | grep fpm | awk -F\( '{print $2}' | awk -F\) '{print $1}')
-sed -i '/require "digest"/a require "zlib"' /usr/local/rvm/gems/${RUVER}/gems/fpm-${FPMVER}/lib/fpm/package/deb.rb
+#RUVER=$(which ruby | awk -F\/ '{print $6}')
+#FPMVER=$(gem list | grep fpm | awk -F\( '{print $2}' | awk -F\) '{print $1}')
+#sed -i '/require "digest"/a require "zlib"' /usr/local/rvm/gems/${RUVER}/gems/fpm-${FPMVER}/lib/fpm/package/deb.rb
 
