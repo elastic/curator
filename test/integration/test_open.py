@@ -61,7 +61,7 @@ class TestActionFileOpenClosed(CuratorTestCase):
         csi = self.client.cluster.state(metric='metadata')['metadata']['indices']
         self.assertEqual('close', csi[t2]['state'])
         self.assertNotEqual('close', csi[t1]['state'])
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
 
 class TestCLIOpenClosed(CuratorTestCase):
     def test_open_closed(self):

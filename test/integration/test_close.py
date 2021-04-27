@@ -13,9 +13,7 @@ HOST, PORT = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 PORT = int(PORT) if PORT else 9200
 
 class TestActionFileClose(CuratorTestCase):
-    """Tests of the Close action class"""
     def test_close_opened(self):
-        """Test if it can close opened indices"""
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
         self.write_config(self.args['actionfile'], testvars.optionless_proto.format('close'))
         self.create_index('my_index')
@@ -44,7 +42,6 @@ class TestActionFileClose(CuratorTestCase):
             )['metadata']['indices']['dummy']['state']
         )
     def test_close_closed(self):
-        """Test if it will close/ignore already closed indices"""
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
         self.write_config(self.args['actionfile'], testvars.optionless_proto.format('close'))
         self.create_index('my_index')
@@ -76,7 +73,6 @@ class TestActionFileClose(CuratorTestCase):
             )['metadata']['indices']['dummy']['state']
         )
     def test_close_delete_aliases(self):
-        """Test if it can delete aliases from an index before closing"""
         # Create aliases first
         alias = 'testalias'
         index = 'my_index'
@@ -125,7 +121,6 @@ class TestActionFileClose(CuratorTestCase):
         )
 
     def test_close_skip_flush(self):
-        """Test if it will skip the synced flush if so flagged"""
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
         self.write_config(self.args['actionfile'], testvars.close_skip_flush)
         self.create_index('dummy')
@@ -163,7 +158,6 @@ class TestActionFileClose(CuratorTestCase):
             self.client.cluster.put_settings(body=enable_allocation)
 
     def test_close_ignore_sync_failures(self):
-        """Test if it will ignore sync failures if so flagged"""
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
         self.write_config(self.args['actionfile'], testvars.close_ignore_sync.format('true'))
         self.create_index('dummy')
@@ -201,7 +195,6 @@ class TestActionFileClose(CuratorTestCase):
             self.client.cluster.put_settings(body=enable_allocation)
 
     def test_close_has_sync_failures(self):
-        """Test if it will exit with an error if there are sync failures and not so flagged"""
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
         self.write_config(self.args['actionfile'], testvars.close_ignore_sync.format('false'))
         self.create_index('dummy')
@@ -240,7 +233,6 @@ class TestActionFileClose(CuratorTestCase):
             self.client.cluster.put_settings(body=enable_allocation)
 
     def test_extra_option(self):
-        """Test if extra options cause an exit failure"""
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST, PORT))
         self.write_config(self.args['actionfile'], testvars.bad_option_proto_test.format('close'))
         self.create_index('my_index')
@@ -268,12 +260,10 @@ class TestActionFileClose(CuratorTestCase):
                 metric='metadata',
             )['metadata']['indices']['dummy']['state']
         )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
 
 class TestCLIClose(CuratorTestCase):
-    """Test curator_cli Close action functionality"""
     def test_close_delete_aliases(self):
-        """Test if curator_cli will delete aliases when closing indices, if so flagged"""
         # Create aliases first
         alias = 'testalias'
         index = 'my_index'
@@ -317,7 +307,6 @@ class TestCLIClose(CuratorTestCase):
             self.client.indices.get_alias(name=alias)
         )
     def test_close_skip_flush(self):
-        """Test if curator_cli will skip flush on close if so flagged"""
         args = self.get_runner_args()
         args += [
             '--config', self.args['configfile'],

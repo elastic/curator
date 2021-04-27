@@ -123,7 +123,7 @@ class TestActionFileUnfreezeFrozen(CuratorTestCase):
             "false",
             cluster_state['metadata']['indices']['dummy']['settings']['index'].get('frozen', "false")
         )                    
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
 
 class TestCLIUnfreezeFrozen(CuratorTestCase):
     def test_unfreeze_frozen(self):
