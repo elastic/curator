@@ -1437,6 +1437,22 @@ class Test_try_boto_session(TestCase):
         type(boto3_mock.get_credentials).token = PropertyMock(return_value=token)
         returned = curator.utils.try_boto_session(test_data)
         self.assertTrue('test_value', returned['other'])
+    @patch.object(boto3.Session, 'get_credentials')
+    def test_credentials_obtained_success_with_region(self, boto3_mock):
+        """Test that credentials are passed successfully if a ``Session()`` is established"""
+        test_data = self.empty()
+        test_data['aws_sign_request'] = True
+        test_data['aws_region'] = 'us-west-1'
+        access = 'sample_access_key'
+        secret = 'sample_secret_key'
+        token = 'sample_token'
+        test_tuple = [('aws_access_key', access), ('aws_secret_key', secret), ('aws_token', token)]
+        boto3_mock.get_credentials.return_value = (access, secret, token)
+        type(boto3_mock.get_credentials).access_key = PropertyMock(return_value=access)
+        type(boto3_mock.get_credentials).secret_key = PropertyMock(return_value=secret)
+        type(boto3_mock.get_credentials).token = PropertyMock(return_value=token)
+        returned = curator.utils.try_boto_session(test_data)
+        self.assertTrue('test_value', returned['other'])
 
 class Test_try_aws_auth(TestCase):
     """

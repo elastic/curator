@@ -10,28 +10,6 @@ Like a museum curator manages the exhibits and collections on display,
 Elasticsearch Curator helps you curate, or manage your indices.
 
 
-Build Status
-------------
-
-+--------+----------+
-| Branch | Status   |
-+========+==========+
-| Master | |master| |
-+--------+----------+
-| 5.x    | |5_x|    |
-+--------+----------+
-
-
-PyPI: |pypi_pkg|
-
-.. |master| image:: https://travis-ci.org/elastic/curator.svg?branch=master
-    :target: https://travis-ci.org/elastic/curator
-.. |5_x| image:: https://travis-ci.org/elastic/curator.svg?branch=5.x
-    :target: https://travis-ci.org/elastic/curator
-.. |pypi_pkg| image:: https://badge.fury.io/py/elasticsearch-curator.svg
-    :target: https://badge.fury.io/py/elasticsearch-curator
-
-
 `Curator API Documentation`_
 ----------------------------
 
