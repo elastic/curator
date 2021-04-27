@@ -67,12 +67,13 @@ try:
         base=base,
         targetName = "es_repo_mgr",
     )
-    buildOptions = dict(
-        packages = [],
-        excludes = [],
-        include_files = [cert_file],
-    )
-
+    build_dict = { 
+        "build_exe": dict(
+            packages = [],
+            excludes = [],
+            include_files = [cert_file],
+        )
+    }
     if sys.platform == "win32":
         curator_exe = Executable(
             "run_curator.py",
@@ -94,12 +95,20 @@ try:
         )
 
         msvcrt = 'vcruntime140.dll'
-        buildOptions = dict(
-            packages = [],
-            excludes = [],
-            include_files = [cert_file, msvcrt],
-            include_msvcr = True, 
-        )
+        build_dict = { 
+            "build_exe": {
+                "include_files": [cert_file, msvcrt],
+                "include_msvcr": True, 
+                "silent": True,
+            },
+            "bdist_msi": {
+                "upgrade_code": fread("msi_guid.txt"),
+                "all_users": True,
+                "add_to_path": True,
+                "summary_data": {"author": "Elastic", "comments": "version {0}".format(get_version())},
+                "install_icon": icon,
+            }
+        }
 
     setup(
         name = "elasticsearch-curator",
@@ -136,8 +145,8 @@ try:
         ],
         test_suite = "test.run_tests.run_all",
         tests_require = ["mock", "nose", "coverage", "nosexcover"],
-        options = {"build_exe" : buildOptions},
-        executables = [curator_exe,curator_cli_exe,repomgr_exe]
+        options = build_dict,
+        executables = [curator_exe, curator_cli_exe, repomgr_exe]
     )
     ### end cx_Freeze ###
 except ImportError:

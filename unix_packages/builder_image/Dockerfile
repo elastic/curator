@@ -35,7 +35,15 @@ ENV C_POST_UPGRADE=${WORKDIR}/es_curator_after_upgrade.sh
 # It won't work without it
 COPY CentOS-Base.repo /etc/yum.repos.d
 RUN yum -y groupinstall "Development Tools"
-RUN yum -y install zlib-devel bzip2-devel sqlite-devel openssl-devel git curl wget ncurses-devel readline-devel gdbm-devel xz-devel libffi-devel libuuid-devel which
+RUN yum -y install zlib-devel bzip2-devel curl-devel expat-devel gettext-devel sqlite-devel openssl-devel curl wget ncurses-devel readline-devel gdbm-devel xz-devel libffi-devel libuuid-devel which
+
+# Build patchelf
+COPY patchelf_build.sh /
+RUN /patchelf_build.sh
+
+# Build newer Git 
+COPY git_build.sh /
+RUN /git_build.sh
 
 # Build OpenSSL
 RUN curl -O https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz
@@ -61,7 +69,11 @@ RUN rm -rf Python-${PYVER}.${PYPATCH}.tgz Python-${PYVER}.${PYPATCH}
 
 # Install RVM
 COPY ruby_build.sh /
+COPY rpm.erb.patched /
 RUN /ruby_build.sh
+
+# Cleanup after all this installation
+RUN yum clean all
 
 COPY package_maker.sh /
 RUN mkdir /curator_packages

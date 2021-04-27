@@ -12,8 +12,7 @@ gem install bundler
 gem update --system
 gem install rdoc
 gem install fpm
-## MONKEY PATCH FPM https://github.com/jordansissel/fpm/issues/1739
-#RUVER=$(which ruby | awk -F\/ '{print $6}')
-#FPMVER=$(gem list | grep fpm | awk -F\( '{print $2}' | awk -F\) '{print $1}')
-#sed -i '/require "digest"/a require "zlib"' /usr/local/rvm/gems/${RUVER}/gems/fpm-${FPMVER}/lib/fpm/package/deb.rb
-
+## MONKEY PATCH FPM https://github.com/jordansissel/fpm/issues/1777#issuecomment-810409151
+RUVER=$(which ruby | awk -F\/ '{print $6}')
+FPMVER=$(gem list | grep fpm | awk -F\( '{print $2}' | awk -F\) '{print $1}')
+cp /rpm.erb.patched /usr/local/rvm/gems/${RUVER}/gems/fpm-${FPMVER}/templates/rpm.erb
