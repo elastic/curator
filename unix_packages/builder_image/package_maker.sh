@@ -4,6 +4,12 @@
 rm -rf ${WORKDIR} ${VENVDIR} ${SRCDIR} /opt/elasticsearch-curator
 mkdir -p ${WORKDIR}
 
+#/usr/local/bin/python?.? --version
+#Python 3.9.4
+RAWPYVER=$(/usr/local/bin/python?.? --version | awk '{print $2}')
+PYVER=$(echo $RAWPYVER | awk -F\. '{print $1"."$2}')
+MINOR=$(echo $RAWPYVER | awk -F\. '{print $3}')
+
 for file in ${C_POST_INSTALL} ${C_PRE_REMOVE} ${C_POST_REMOVE}; do
   echo '#!/bin/bash' > ${file}
   echo >> ${file}
@@ -65,7 +71,7 @@ mkdir -p ${VENVDIR}/${PYVER}.${MINOR}
 cd ${VENVDIR}
 /usr/local/bin/virtualenv ${PYVER}.${MINOR}
 source ${VENVDIR}/${PYVER}.${MINOR}/bin/activate
-pip install cx_freeze
+pip install cx_freeze patchelf-wrapper
 
 # Install pre-requisites
 cd ${GIT_PATH}

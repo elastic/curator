@@ -102,13 +102,13 @@ Options:
 Commands:
   allocation        Shard Routing Allocation
   close             Close indices
-  delete_indices    Delete indices
-  delete_snapshots  Delete snapshots
+  delete-indices    Delete indices
+  delete-snapshots  Delete snapshots
   forcemerge        forceMerge index/shard segments
   open              Open indices
   replicas          Change replica count
-  show_indices      Show indices
-  show_snapshots    Show snapshots
+  show-indices      Show indices
+  show-snapshots    Show snapshots
   snapshot          Snapshot indices
 ---------
 
@@ -163,8 +163,8 @@ test your filters without causing any harm to the system.
 
 [source,sh]
 -----------
-$ curator_cli show_indices --help
-Usage: curator_cli show_indices [OPTIONS]
+$ curator_cli show-indices --help
+Usage: curator_cli show-indices [OPTIONS]
 
   Show indices
 
@@ -179,8 +179,8 @@ Options:
 
 [source,sh]
 -----------
-$ curator_cli show_snapshots --help
-Usage: curator_cli show_snapshots [OPTIONS]
+$ curator_cli show-snapshots --help
+Usage: curator_cli show-snapshots [OPTIONS]
 
   Show snapshots
 
@@ -191,8 +191,8 @@ Options:
   --help              Show this message and exit.
 -----------
 
-The `show_snapshots` command will only show snapshots matching the provided
-filters.  The `show_indices` command will also do this, but also offers a few
+The `show-snapshots` command will only show snapshots matching the provided
+filters.  The `show-indices` command will also do this, but also offers a few
 extra features.
 
 * `--verbose` adds state, total size of primary and all replicas, the document
@@ -203,7 +203,7 @@ extra features.
 * `--epoch` changes the date format from ISO8601 to epoch time.  If `--header`
   is also selected, the column header title will change to `creation_date`
 
-There are no extra columns or `--verbose` output for the `show_snapshots`
+There are no extra columns or `--verbose` output for the `show-snapshots`
 command.
 
 Without `--epoch`
