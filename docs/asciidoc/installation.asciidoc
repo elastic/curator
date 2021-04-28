@@ -31,17 +31,6 @@ target machine has internet connectivity.
 pip install elasticsearch-curator
 ---------------------------------
 
-[IMPORTANT]
-======================
-If you plan on using Curator with AWS ES using IAM credentials, you must also
-install the `requests_aws4auth` python module:
-
----------------------------------
-pip install requests_aws4auth
----------------------------------
-
-======================
-
 === Upgrading with pip
 
 If you already have Elasticsearch Curator installed, and want to upgrade to the
@@ -336,68 +325,6 @@ Alternatively, setuptools may be installed to a user-local path:
 -----------
 wget https://bootstrap.pypa.io/ez_setup.py -O - | python - --user
 -----------
-
-&nbsp;
-
-=== Urllib3
-Download and install the https://github.com/shazow/urllib3[urllib3] dependency
-(1.22):
-
-. `wget https://github.com/shazow/urllib3/archive/1.22.tar.gz -O urllib3-1.22.tar.gz`
-. `pip install urllib3-1.22.tar.gz`
-
-or uncompress and run `python setup.py install`
-
-&nbsp;
-
-=== click
-Download and install the http://click.pocoo.org/[click] dependency (6.7):
-
-. `wget https://github.com/pallets/click/archive/6.7.tar.gz -O click-6.7.tar.gz`
-. `pip install click-6.7.tar.gz`
-
-or uncompress and run `python setup.py install`
-
-&nbsp;
-
-=== certifi
-Download and install the `certifi` dependency.  Always use the most recent
-version:
-
-. `wget https://github.com/certifi/python-certifi/archive/2018.10.15.tar.gz -O certifi.tar.gz`
-. `pip install certifi.tar.gz`
-
-&nbsp;
-
-=== PyYAML
-Download and install the http://pyyaml.org/wiki/PyYAML/[PyYAML] dependency (3.10
-or greater):
-
-. `wget http://pyyaml.org/download/pyyaml/PyYAML-3.12.tar.gz -O PyYAML-3.12.tar.gz`
-. `pip install PyYAML-3.12.tar.gz`
-
-or uncompress and run `python setup.py install`
-
-&nbsp;
-
-=== voluptuous
-Download and install the https://github.com/alecthomas/voluptuous[voluptuous]
-dependency (0.11.5):
-
-. `wget https://github.com/alecthomas/voluptuous/archive/0.11.5.tar.gz`
-. `pip install 0.11.5.tar.gz`
-
-or uncompress and run `python setup.py install`
-
-&nbsp;
-
-=== elasticsearch (python module)
-Download and install the https://github.com/elastic/elasticsearch-py[elasticsearch-py] dependency:
-
-. `wget https://github.com/elastic/elasticsearch-py/archive/`+pass:attributes[{es_py_version}].tar.gz -O elasticsearch-py.tar.gz+
-. `pip install elasticsearch-py.tar.gz`
-
-or uncompress and run `python setup.py install`
 
 &nbsp;
 

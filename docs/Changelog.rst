@@ -33,9 +33,9 @@ Changelog
   * Now using `elasticsearch-py` version 7.12.0
   * Adding testing for Python 3.9
   * Removing testing on Python 3.6
-  * Tested Elasticsearch versions now include 7.12.0, 7.11.2, 7.10.x, 7.9.3,
-    7.8.1, 6.8.x, 5.6.16
-  * Pinning `requirements.txt` as follows: (to add)
+  * Tested Elasticsearch versions now include 7.12.0, 7.11.2, 7.10.2, 7.9.3,
+    7.8.1, 6.8.15, 5.6.16
+  * Changing `requirements.txt` as follows:
     - boto3-1.17.57
     - certifi-2020.12.5
     - click-7.1.2
