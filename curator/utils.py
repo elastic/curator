@@ -7,6 +7,7 @@ import re
 import string
 import sys
 from datetime import timedelta, datetime, date
+import base64
 import yaml
 import elasticsearch
 from voluptuous import Schema
@@ -808,6 +809,26 @@ def process_auth_args(data):
     data['http_auth'] = http_auth
     return data
 
+def isbase64(data):
+    try:
+        return base64.b64encode(base64.b64decode(data)).decode() == data
+    except Exception:
+        return False
+
+def process_apikey_auth_args(data):
+    """
+    Return a valid api_key base64 token for API Key authentication in the elasticsearch.Elasticsearch
+    client object
+    """
+    api_key = data.pop('apikey_auth', None)
+    if api_key and not isbase64(api_key):
+            LOGGER.error('apikey_auth shall be base64 encoded.')
+            LOGGER.fatal('Curator cannot proceed. Exiting.')
+            raise exceptions.ConfigurationError
+
+    data['api_key'] = api_key
+    return data
+
 def process_ssl_args(data):
     """Populate and validate the proper SSL args in data and return it"""
     data['use_ssl'] = False if 'use_ssl' not in data else data['use_ssl']
@@ -1005,6 +1026,8 @@ def get_client(**kwargs):
     :rtype: :class:`elasticsearch.Elasticsearch`
     :arg api_key: value to be used in optional X-Api-key header when accessing Elasticsearch
     :type api_key: str
+    :arg apikey_auth: API Key authentication in `id:api_key` encoded in base64 format.
+    :type apikey_auth: str
     """
     # Walk through parsing/testing series of arguments to build the client
     skip_version_test = kwargs.pop('skip_version_test', False)
@@ -1018,6 +1041,7 @@ def get_client(**kwargs):
     kwargs = try_aws_auth(kwargs)
     kwargs, master_only = process_master_only_arg(kwargs)
     kwargs = process_auth_args(kwargs)
+    kwargs = process_apikey_auth_args(kwargs)
 
     LOGGER.debug("kwargs = {0}".format(kwargs))
     fail = False

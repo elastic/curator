@@ -48,6 +48,11 @@ from curator._version import __version__
 )
 @click.option('--username', help='HTTP Basic Authentication username', type=str)
 @click.option('--password', help='HTTP Basic Authentication password', type=str)
+@click.option(
+    '--apikey_auth',
+    help='API Key Authentication encoded in base64 containing `id:api_key`',
+    type=str
+)
 @click.option('--timeout', help='Connection timeout in seconds.', type=int)
 @click.option(
     '--master-only', is_flag=True, callback=false_to_none,
@@ -61,7 +66,7 @@ from curator._version import __version__
 @click.pass_context
 def cli(
         ctx, config, host, url_prefix, port, use_ssl, certificate, client_cert, client_key,
-        ssl_no_validate, http_auth, username, password, timeout, master_only, dry_run, loglevel,
+        ssl_no_validate, http_auth, username, password, apikey_auth, timeout, master_only, dry_run, loglevel,
         logfile, logformat
     ):
     """CLI input"""

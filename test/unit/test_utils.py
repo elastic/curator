@@ -1,10 +1,10 @@
+import base64
 from datetime import datetime, timedelta
 from unittest import TestCase
 from mock import MagicMock, Mock, PropertyMock, patch
 import elasticsearch
 import yaml
 from . import testvars as testvars
-
 import botocore
 import boto3
 import curator
@@ -134,7 +134,7 @@ class TestGetIndexTime(TestCase):
             ('2014-42', '%Y-%W', datetime(2014, 10, 20)),
             ('2014-42', '%G-%V', datetime(2014, 10, 13)),
             ('2014-43', '%G-%V', datetime(2014, 10, 20)),
-            # 
+            #
             ('2008-52', '%G-%V', datetime(2008, 12, 22)),
             ('2008-52', '%Y-%W', datetime(2008, 12, 29)),
             ('2009-01', '%Y-%W', datetime(2009, 1, 5)),
@@ -357,7 +357,7 @@ class TestGetRepository(TestCase):
     def test_get_repository_positive(self):
         client = Mock()
         client.snapshot.get_repository.return_value = testvars.test_repo
-        self.assertEqual(testvars.test_repo, 
+        self.assertEqual(testvars.test_repo,
             curator.get_repository(client, repository=testvars.repo_name))
     def test_get_repository_transporterror_negative(self):
         client = Mock()
@@ -727,35 +727,35 @@ class TestSnapshotCheck(TestCase):
         client = Mock()
         client.snapshot.get.return_value = testvars.oneinprogress
         self.assertFalse(
-            curator.snapshot_check(client, 
+            curator.snapshot_check(client,
                 repository='foo', snapshot=testvars.snap_name)
         )
     def test_success(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshot
         self.assertTrue(
-            curator.snapshot_check(client, 
+            curator.snapshot_check(client,
                 repository='foo', snapshot=testvars.snap_name)
         )
     def test_partial(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.partial
         self.assertTrue(
-            curator.snapshot_check(client, 
+            curator.snapshot_check(client,
                 repository='foo', snapshot=testvars.snap_name)
         )
     def test_failed(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.failed
         self.assertTrue(
-            curator.snapshot_check(client, 
+            curator.snapshot_check(client,
                 repository='foo', snapshot=testvars.snap_name)
         )
     def test_other(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.othersnap
         self.assertTrue(
-            curator.snapshot_check(client, 
+            curator.snapshot_check(client,
                 repository='foo', snapshot=testvars.snap_name)
         )
 
@@ -819,35 +819,35 @@ class TestWaitForIt(TestCase):
     def test_reindex_action_no_task_id(self):
         client = Mock()
         self.assertRaises(
-            curator.MissingArgument, curator.wait_for_it, 
+            curator.MissingArgument, curator.wait_for_it,
             client, 'reindex')
     def test_snapshot_action_no_snapshot(self):
         client = Mock()
         self.assertRaises(
-            curator.MissingArgument, curator.wait_for_it, 
+            curator.MissingArgument, curator.wait_for_it,
             client, 'snapshot', repository='foo')
     def test_snapshot_action_no_repository(self):
         client = Mock()
         self.assertRaises(
-            curator.MissingArgument, curator.wait_for_it, 
+            curator.MissingArgument, curator.wait_for_it,
             client, 'snapshot', snapshot='foo')
     def test_restore_action_no_indexlist(self):
         client = Mock()
         self.assertRaises(
-            curator.MissingArgument, curator.wait_for_it, 
+            curator.MissingArgument, curator.wait_for_it,
             client, 'restore')
     def test_reindex_action_bad_task_id(self):
         client = Mock()
         client.tasks.get.return_value = {'a':'b'}
         client.tasks.get.side_effect = testvars.fake_fail
         self.assertRaises(
-            curator.CuratorException, curator.wait_for_it, 
+            curator.CuratorException, curator.wait_for_it,
             client, 'reindex', task_id='foo')
     def test_reached_max_wait(self):
         client = Mock()
         client.cluster.health.return_value = {'status':'red'}
         self.assertRaises(curator.ActionTimeout,
-            curator.wait_for_it, client, 'replicas', 
+            curator.wait_for_it, client, 'replicas',
                 wait_interval=1, max_wait=1
         )
 
@@ -867,7 +867,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  3, 21,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  3, 21, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_hours_past_range(self):
         unit = 'hours'
@@ -876,7 +876,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  3, 19,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  3, 21, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_hours_future_range(self):
         unit = 'hours'
@@ -885,7 +885,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  3, 22,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  4, 00, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_hours_span_range(self):
         unit = 'hours'
@@ -894,7 +894,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  3, 21,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  4, 00, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_days_single(self):
         unit = 'days'
@@ -903,7 +903,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  2,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_days_past_range(self):
         unit = 'days'
@@ -912,7 +912,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 31,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_days_future_range(self):
         unit = 'days'
@@ -921,7 +921,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  3,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  5, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_days_span_range(self):
         unit = 'days'
@@ -930,7 +930,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  2,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  5, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_weeks_single(self):
         unit = 'weeks'
@@ -939,7 +939,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 26,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  1, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_weeks_past_range(self):
         unit = 'weeks'
@@ -948,7 +948,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 12,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  1, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_weeks_future_range(self):
         unit = 'weeks'
@@ -957,7 +957,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  2, 00,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4, 22, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_weeks_span_range(self):
         unit = 'weeks'
@@ -966,7 +966,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 26,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4, 22, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_weeks_single_iso(self):
         unit = 'weeks'
@@ -975,8 +975,8 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 27,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
-        self.assertEqual((start,end), 
-            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+        self.assertEqual((start,end),
+            curator.date_range(unit, range_from, range_to, epoch=epoch,
                 week_starts_on='monday')
         )
     def test_weeks_past_range_iso(self):
@@ -986,8 +986,8 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 13,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4,  2, 23, 59, 59))
-        self.assertEqual((start,end), 
-            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+        self.assertEqual((start,end),
+            curator.date_range(unit, range_from, range_to, epoch=epoch,
                 week_starts_on='monday')
         )
     def test_weeks_future_range_iso(self):
@@ -997,8 +997,8 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  4,  3,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4, 23, 23, 59, 59))
-        self.assertEqual((start,end), 
-            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+        self.assertEqual((start,end),
+            curator.date_range(unit, range_from, range_to, epoch=epoch,
                 week_starts_on='monday')
         )
     def test_weeks_span_range_iso(self):
@@ -1008,8 +1008,8 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3, 27,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  4, 23, 23, 59, 59))
-        self.assertEqual((start,end), 
-            curator.date_range(unit, range_from, range_to, epoch=epoch, 
+        self.assertEqual((start,end),
+            curator.date_range(unit, range_from, range_to, epoch=epoch,
                 week_starts_on='monday')
         )
     def test_months_single(self):
@@ -1019,7 +1019,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  3, 31, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_months_past_range(self):
         unit = 'months'
@@ -1028,7 +1028,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2016, 12,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  3, 31, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_months_future_range(self):
         unit = 'months'
@@ -1037,7 +1037,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017, 11,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2018,  2, 28, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_months_super_future_range(self):
         unit = 'months'
@@ -1046,7 +1046,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2018,  1,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2018,  2, 28, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_months_span_range(self):
         unit = 'months'
@@ -1055,7 +1055,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  3,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2017,  6, 30, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_years_single(self):
         unit = 'years'
@@ -1064,7 +1064,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2016,  1,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2016, 12, 31, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_years_past_range(self):
         unit = 'years'
@@ -1073,7 +1073,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2014,  1,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2016, 12, 31, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_years_future_range(self):
         unit = 'years'
@@ -1082,7 +1082,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2017,  1,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2019, 12, 31, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
     def test_years_span_range(self):
         unit = 'years'
@@ -1091,7 +1091,7 @@ class TestDateRange(TestCase):
         epoch = curator.datetime_to_epoch(datetime(2017,  4,  3, 22, 50, 17))
         start = curator.datetime_to_epoch(datetime(2016,  1,  1,  0,  0,  0))
         end   = curator.datetime_to_epoch(datetime(2019, 12, 31, 23, 59, 59))
-        self.assertEqual((start,end), 
+        self.assertEqual((start,end),
             curator.date_range(unit, range_from, range_to, epoch=epoch))
 
 class TestAbsoluteDateRange(TestCase):
@@ -1345,6 +1345,30 @@ class Test_process_auth_args(TestCase):
         test_data['password'] = 'pass'
         self.assertRaises(curator.ClientException, curator.utils.process_auth_args, test_data)
 
+class Test_process_apikey_auth_args(TestCase):
+    """
+    Tests for the ``process_apikey_auth_args`` function
+
+    The function will expect to receive at least a None value for the key ``apikey_auth``
+    because of the schema validation steps.
+    """
+    def empty(self):
+        """Return 'sort of empty' dictionary"""
+        return {'apikey_auth': None}
+    def test_none(self):
+        """Test to see if no changes are made to test_data"""
+        test_data = self.empty()
+        self.assertEqual(test_data, curator.utils.process_apikey_auth_args(test_data))
+    def test_has_valid_apikey_auth(self):
+        """Test when apikey_auth present and base64 encoded"""
+        test_data = self.empty()
+        test_data['apikey_auth'] = base64.b64encode(b'id:api_key').decode()
+        self.assertEqual(test_data, curator.utils.process_apikey_auth_args(test_data))
+    def test_has_invalid_apikey_auth(self):
+        """Test when apikey_key is present but not base64 encoded"""
+        test_data = self.empty()
+        test_data['apikey_auth'] = 'id:api_key'
+        self.assertRaises(curator.ConfigurationError, curator.utils.process_apikey_auth_args, test_data)
 
 class Test_process_aws_args(TestCase):
     """
