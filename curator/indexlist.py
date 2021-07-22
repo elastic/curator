@@ -112,7 +112,7 @@ class IndexList(object):
 
     def _get_index_stats(self):
         """
-        Populate `index_info` with index `size_in_bytes` and doc count
+        Populate `index_info` with index `size_in_bytes`, `primary_size_in_bytes` and doc count
         information for each index.
         """
         self.loggit.debug('Getting index stats')
@@ -122,7 +122,7 @@ class IndexList(object):
             for index in stats['indices']:
                 size = stats['indices'][index]['total']['store']['size_in_bytes']
                 docs = stats['indices'][index]['total']['docs']['count']
-                primary_size = stats['indices'][index]['primary']['store']['size_in_bytes']
+                primary_size = stats['indices'][index]['primaries']['store']['size_in_bytes']
 
                 self.loggit.debug(
                     'Index: {0}  Size: {1}  Docs: {2}  PrimarySize: {3}'.format(
