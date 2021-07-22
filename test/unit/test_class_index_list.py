@@ -1229,7 +1229,7 @@ class TestIndexListFilterBySize(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         il.filter_by_size(size_threshold=0.52)
-        self.assertEqual(['index-2016.03.04'], il.indices)
+        self.assertEqual([u'index-2016.03.04'], il.indices)
     def test_filter_default_result_and_exclude(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -1239,7 +1239,7 @@ class TestIndexListFilterBySize(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         il.filter_by_size(size_threshold=0.52, exclude=True)
-        self.assertEqual(['index-2016.03.03'], il.indices)
+        self.assertEqual([u'index-2016.03.03'], il.indices)
     def test_filter_by_threshold_behavior_less_than(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -1249,7 +1249,7 @@ class TestIndexListFilterBySize(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         il.filter_by_size(size_threshold=0.52, threshold_behavior='less_than')
-        self.assertEqual(['index-2016.03.03'], il.indices)
+        self.assertEqual([u'index-2016.03.03'], il.indices)
     def test_filter_by_size_behavior_total(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -1259,7 +1259,7 @@ class TestIndexListFilterBySize(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         il.filter_by_size(size_threshold=1.04, size_behavior='total')
-        self.assertEqual(['index-2016.03.04'], il.indices)
+        self.assertEqual([u'index-2016.03.04'], il.indices)
     def test_filter_by_size_behavior_total_and_threshold_behavior_less_than(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -1269,4 +1269,4 @@ class TestIndexListFilterBySize(TestCase):
         client.field_stats.return_value = testvars.fieldstats_two
         il = curator.IndexList(client)
         il.filter_by_size(size_threshold=1.04, size_behavior='total', threshold_behavior='less_than')
-        self.assertEqual(['index-2016.03.03'], il.indices)
+        self.assertEqual([u'index-2016.03.03'], il.indices)

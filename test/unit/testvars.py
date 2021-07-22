@@ -821,7 +821,9 @@ actions:
       disable_action: False
     filters:
       - filtertype: size
-        size_threshold: 0.52
+        size_threshold: 1.04
+        size_behavior: total
+        threshold_behavior: less_than
 '''
 
 not_rollable_name = {'index': {u'aliases': {'foo': {}}}}
