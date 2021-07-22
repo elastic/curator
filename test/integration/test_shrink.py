@@ -287,7 +287,7 @@ class TestActionFileShrink(CuratorTestCase):
         )
 
         indices = curator.get_indices(self.client)
-        self.assertEqual(3, len(indices))
+        self.assertEqual(3, len(indices)) 
         self.assertTrue('my_invalid_shrink_index-shrunken' not in indices)
         self.assertTrue('my_valid_shrink_index-shrunken' in indices)
     def test_shrink_explicit_shard_filter(self):
@@ -312,7 +312,7 @@ class TestActionFileShrink(CuratorTestCase):
         )
 
         indices = curator.get_indices(self.client)
-        self.assertEqual(3, len(indices))
+        self.assertEqual(3, len(indices)) 
         self.assertTrue('my_invalid_shrink_index-shrunken' not in indices)
         self.assertTrue('my_valid_shrink_index-shrunken' in indices)
         self.assertTrue('my_index-shrunken' not in indices)
@@ -352,3 +352,4 @@ class TestCLIShrink(CuratorTestCase):
         indices = curator.get_indices(self.client)
         self.assertEqual(1, len(indices)) # Should only have `my_index-shrunken`
         self.assertEqual(indices[0], self.target)
+        
