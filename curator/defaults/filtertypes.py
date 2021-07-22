@@ -152,3 +152,11 @@ def empty(action, config):
     return [
         filter_elements.exclude(),
     ]
+
+def size(action, config):
+    return [
+        filter_elements.size_threshold(),
+        filter_elements.threshold_behavior(),
+        filter_elements.size_behavior(),
+        filter_elements.exclude(),
+    ]
