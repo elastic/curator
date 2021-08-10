@@ -151,7 +151,7 @@ def timestring(**kwargs):
         return {Optional('timestring', default=None): Any(None, *string_types)}
 
 def threshold_behavior(**kwargs):
-    # This setting is only used with the space filtertype and defaults to 'greater_than'.
+    # This setting is only used with the space and size filtertype and defaults to 'greater_than'.
     return {
         Optional('threshold_behavior', default='greater_than'): Any('greater_than', 'less_than')
     }
@@ -192,4 +192,14 @@ def week_starts_on(**kwargs):
         Optional('week_starts_on', default='sunday'): Any(
             'Sunday', 'sunday', 'SUNDAY', 'Monday', 'monday', 'MONDAY', None
         )
+    }
+
+def size_threshold(**kwargs):
+    # This setting is only used with the size filtertype and is required
+    return { Required('size_threshold'): Any(Coerce(float)) }
+
+def size_behavior(**kwargs):
+    # This setting is only used with the size filtertype and defaults to 'primary'.
+    return {
+        Optional('size_behavior', default='primary'): Any('primary', 'total')
     }
