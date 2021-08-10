@@ -23,7 +23,7 @@ def get_version():
 
 def get_install_requires():
     res = ['elasticsearch>=7.12.0,<8.0.0' ]
-    res.append('urllib3==1.26.4')
+    res.append('urllib3==1.26.5')
     res.append('requests>=2.25.1')
     res.append('boto3>=1.17.57')
     res.append('requests_aws4auth>=1.0.1')

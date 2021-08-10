@@ -631,7 +631,7 @@ class TestIndexListFilterKibana(TestCase):
         # Establish the object per requirements, then overwrite
         il.indices = ['.kibana', '.kibana-5', '.kibana-6', 'dummy']
         il.filter_kibana(exclude=False)
-        self.assertEqual(['.kibana', '.kibana-5', '.kibana-6'], il.indices)    
+        self.assertEqual(['.kibana', '.kibana-5', '.kibana-6'], il.indices)
     def test_filter_kibana_positive_exclude(self):
         client = Mock()
         client.info.return_value = {'version': {'number': '5.0.0'} }
@@ -929,6 +929,16 @@ class TestIterateFiltersIndex(TestCase):
         config = {'filters': [{'filtertype':'ilm','exclude':True}]}
         ilo.iterate_filters(config)
         self.assertEqual(['index-2016.03.03','index-2016.03.04'], sorted(ilo.indices))
+    def test_size_filtertype(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        ilo = curator.IndexList(client)
+        config = yaml.load(testvars.size_ft, Loader=yaml.FullLoader)['actions'][1]
+        ilo.iterate_filters(config)
+        self.assertEqual(['index-2016.03.03'], ilo.indices)
 
 class TestIndexListFilterAlias(TestCase):
     def test_raise(self):
@@ -1102,7 +1112,7 @@ class TestIndexListPeriodFilterName(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         il = curator.IndexList(client)
-        il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
+        il.filter_period(unit=unit, range_from=range_from, range_to=range_to,
             source='name', timestring=timestring, epoch=epoch)
         self.assertEqual(expected, il.indices)
     def test_get_name_based_age_not_in_range(self):
@@ -1118,7 +1128,7 @@ class TestIndexListPeriodFilterName(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         il = curator.IndexList(client)
-        il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
+        il.filter_period(unit=unit, range_from=range_from, range_to=range_to,
             source='name', timestring=timestring, epoch=epoch)
         self.assertEqual(expected, il.indices)
     def test_bad_arguments(self):
@@ -1133,8 +1143,8 @@ class TestIndexListPeriodFilterName(TestCase):
         client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
         il = curator.IndexList(client)
-        self.assertRaises(curator.FailedExecution, 
-            il.filter_period, unit=unit, range_from=range_from, 
+        self.assertRaises(curator.FailedExecution,
+            il.filter_period, unit=unit, range_from=range_from,
             range_to=range_to, source='name', timestring=timestring, epoch=epoch
         )
     def test_missing_creation_date_raises(self):
@@ -1151,7 +1161,7 @@ class TestIndexListPeriodFilterName(TestCase):
         il = curator.IndexList(client)
         il.index_info['index-2016.03.03']['age'].pop('creation_date')
         il.index_info['index-2016.03.04']['age'].pop('creation_date')
-        il.filter_period(unit=unit, range_from=range_from, range_to=range_to, 
+        il.filter_period(unit=unit, range_from=range_from, range_to=range_to,
             source='creation_date', epoch=epoch)
         self.assertEqual(expected, il.indices)
     def test_non_integer_range_value(self):
@@ -1198,3 +1208,65 @@ class TestPeriodFilterAbsolute(TestCase):
             il.filter_period, unit=unit, source='creation_date', period_type='absolute', date_from=date_from,
             date_to=date_to, date_from_format=date_from_format, date_to_format=date_to_format
         )
+
+
+class TestIndexListFilterBySize(TestCase):
+    def test_missing_size_value(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        self.assertRaises(curator.MissingArgument, il.filter_by_size)
+    def test_filter_default_result(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_size(size_threshold=0.52)
+        self.assertEqual([u'index-2016.03.04'], il.indices)
+    def test_filter_default_result_and_exclude(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_size(size_threshold=0.52, exclude=True)
+        self.assertEqual([u'index-2016.03.03'], il.indices)
+    def test_filter_by_threshold_behavior_less_than(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_size(size_threshold=0.52, threshold_behavior='less_than')
+        self.assertEqual([u'index-2016.03.03'], il.indices)
+    def test_filter_by_size_behavior_total(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_size(size_threshold=1.04, size_behavior='total')
+        self.assertEqual([u'index-2016.03.04'], il.indices)
+    def test_filter_by_size_behavior_total_and_threshold_behavior_less_than(self):
+        client = Mock()
+        client.info.return_value = {'version': {'number': '5.0.0'} }
+        client.indices.get_settings.return_value = testvars.settings_two
+        client.cluster.state.return_value = testvars.clu_state_two
+        client.indices.stats.return_value = testvars.stats_two
+        client.field_stats.return_value = testvars.fieldstats_two
+        il = curator.IndexList(client)
+        il.filter_by_size(size_threshold=1.04, size_behavior='total', threshold_behavior='less_than')
+        self.assertEqual([u'index-2016.03.03'], il.indices)
