@@ -22,16 +22,16 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=7.12.0,<8.0.0' ]
-    res.append('urllib3==1.26.5')
-    res.append('requests>=2.25.1')
-    res.append('boto3>=1.17.57')
-    res.append('requests_aws4auth>=1.0.1')
+    res = ['elasticsearch>=7.14.0,<8.0.0' ]
+    res.append('urllib3>=1.26.5,<2')
+    res.append('requests>=2.26.0')
+    res.append('boto3>=1.18.18')
+    res.append('requests_aws4auth>=1.1.1')
     res.append('click>=7.0,<8.0')
     res.append('pyyaml==5.4.1')
     res.append('voluptuous>=0.12.1')
-    res.append('certifi>=2020.12.5')
-    res.append('six>=1.15.0')
+    res.append('certifi>=2021.5.30')
+    res.append('six>=1.16.0')
     return res
 
 try:
@@ -138,7 +138,6 @@ try:
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
@@ -177,7 +176,6 @@ except ImportError:
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
