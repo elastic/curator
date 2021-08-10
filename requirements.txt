@@ -1,6 +1,6 @@
 voluptuous>=0.12.1
 elasticsearch>=7.12.0,<8.0.0
-urllib3==1.26.4
+urllib3==1.26.5
 requests>=2.25.1
 boto3>=1.17.57
 requests_aws4auth>=1.0.1
