@@ -7,17 +7,17 @@ RUN apk --no-cache upgrade && apk --no-cache add build-base tar musl-utils opens
 RUN pip3 install setuptools cx_Freeze patchelf-wrapper
 
 COPY . .
-RUN ln -s /lib/libc.musl-x86_64.so.1 ldd
+RUN apk add util-linux
+RUN ln -s /lib/ld-linux-$(lscpu | grep Architecture | awk '{print $2}').so.1 ldd
 RUN ln -s /lib /lib64
 RUN pip3 install -r requirements.txt
 RUN python3 setup.py build_exe
 
 FROM alpine:3.13
 RUN apk --no-cache upgrade && apk --no-cache add openssl-dev expat
-COPY --from=builder build/exe.linux-x86_64-3.9 /curator/
+COPY --from=builder build/exe.linux-* /curator/
 RUN mkdir /.curator
 
 USER nobody:nobody
 ENV LD_LIBRARY_PATH /curator/lib:$LD_LIBRARY_PATH
 ENTRYPOINT ["/curator/curator"]
-
