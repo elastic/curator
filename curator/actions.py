@@ -2139,7 +2139,7 @@ class Shrink(object):
     def _data_node(self, node_id):
         roles = utils.node_roles(self.client, node_id)
         name = utils.node_id_to_name(self.client, node_id)
-        if not 'data' in roles:
+        if not 'data' in roles and not 'data_hot' in roles:
             self.loggit.info('Skipping node "{0}": non-data node'.format(name))
             return False
         if 'master' in roles and not self.node_filters['permit_masters']:
