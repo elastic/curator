@@ -204,7 +204,7 @@ logging:
   loglevel: INFO
   logfile:
   logformat: default
-  blacklist: ['elasticsearch', 'urllib3']
+  denylist: ['elasticsearch', 'urllib3']
 -----------
 
 It is a YAML configuration file.  The two root keys must be `client` and
@@ -632,15 +632,15 @@ The `ecs` format looks like:
 
 The default value is `default`.
 
-[[blacklist]]
-=== blacklist
+[[denylist]]
+=== denylist
 
 This should be an empty array `[]`, an array of log handler strings, or left
 empty.
 
 [source,sh]
 -----------
-blacklist: ['elasticsearch', 'urllib3']
+denylist: ['elasticsearch', 'urllib3']
 -----------
 
 The default value is `['elasticsearch', 'urllib3']`, which will result in
@@ -648,6 +648,6 @@ logs for the `elasticsearch` and `urllib3` Python modules _not_ being output.
 These can be quite verbose, so unless you need them to debug an issue, you
 should accept the default value.
 
-TIP: If you do need to troubleshoot an issue, set `blacklist` to `[]`, which is
+TIP: If you do need to troubleshoot an issue, set `denylist` to `[]`, which is
 an empty array.  Leaving it unset will result in the default behavior, which is
 to filter out `elasticsearch` and `urllib3` log traffic.

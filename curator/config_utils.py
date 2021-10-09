@@ -4,7 +4,7 @@ from copy import deepcopy
 from voluptuous import Schema
 from curator.validators import SchemaCheck, config_file
 from curator.utils import ensure_list, get_yaml, prune_nones, test_client_options
-from curator.logtools import LogInfo, Whitelist, Blacklist
+from curator.logtools import LogInfo, Whitelist, Denylist
 
 def test_config(config):
     """Test YAML against the schema"""
@@ -33,10 +33,10 @@ def set_logging(log_opts):
     # Set up NullHandler() to handle nested elasticsearch.trace Logger
     # instance in elasticsearch python client
     logging.getLogger('elasticsearch.trace').addHandler(logging.NullHandler())
-    if log_opts['blacklist']:
-        for bl_entry in ensure_list(log_opts['blacklist']):
+    if log_opts['denylist']:
+        for bl_entry in ensure_list(log_opts['denylist']):
             for handler in logging.root.handlers:
-                handler.addFilter(Blacklist(bl_entry))
+                handler.addFilter(Denylist(bl_entry))
 
 def process_config(yaml_file):
     """Process yaml_file and return a valid client configuration"""

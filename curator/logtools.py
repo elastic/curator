@@ -85,8 +85,8 @@ class Whitelist(logging.Filter):
     def filter(self, record):
         return any(f.filter(record) for f in self.whitelist)
 
-class Blacklist(Whitelist):
-    """Blacklist monkey-patch of Whitelist"""
+class Denylist(Whitelist):
+    """Denylist monkey-patch of Whitelist"""
     def filter(self, record):
         return not Whitelist.filter(self, record)
 

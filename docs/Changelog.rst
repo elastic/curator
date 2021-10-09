@@ -1138,7 +1138,7 @@ improves documentation and includes new linux binary packages.
   * Community contributed doc fixes.
   * Reduced logging verbosity by making most messages debug level. #684
     (untergeek)
-  * Fixed log whitelist behavior (and switched to blacklisting instead).
+  * Fixed log whitelist behavior (and switched to denylisting instead).
     Default behavior will now filter traffic from the ``elasticsearch`` and
     ``urllib3`` modules.
   * Fix Travis CI testing to accept some skipped tests, as needed. #695
@@ -1160,7 +1160,7 @@ improves documentation and includes new linux binary packages.
   * Community contributed doc fixes.
   * Reduced logging verbosity by making most messages debug level. #684
     (untergeek)
-  * Fixed log whitelist behavior (and switched to blacklisting instead).
+  * Fixed log whitelist behavior (and switched to denylisting instead).
     Default behavior will now filter traffic from the ``elasticsearch`` and
     ``urllib3`` modules.
   * Fix Travis CI testing to accept some skipped tests, as needed. #695
