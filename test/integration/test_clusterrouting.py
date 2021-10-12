@@ -36,7 +36,7 @@ class TestCLIClusterRouting(CuratorTestCase):
                     ],
                     )
 
-        self.assertEquals(testvars.CRA_all,
+        self.assertEqual(testvars.CRA_all,
             self.client.cluster.get_settings())
     def test_extra_option(self):
         self.write_config(

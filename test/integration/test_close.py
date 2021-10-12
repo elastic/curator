@@ -27,7 +27,7 @@ class TestActionFileClose(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index='my_index',
@@ -58,7 +58,7 @@ class TestActionFileClose(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index='my_index',
@@ -80,7 +80,7 @@ class TestActionFileClose(CuratorTestCase):
         self.create_index('dummy')
         self.create_index('my_other')
         self.client.indices.put_alias(index='my_index,dummy', name=alias)
-        self.assertEquals(
+        self.assertEqual(
             {
                 "dummy":{"aliases":{"testalias":{}}},
                 "my_index":{"aliases":{"testalias":{}}}
@@ -99,14 +99,14 @@ class TestActionFileClose(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index=index,
                 metric='metadata',
             )['metadata']['indices'][index]['state']
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index='my_other',
@@ -115,7 +115,7 @@ class TestActionFileClose(CuratorTestCase):
         )
         # Now open the indices and verify that the alias is still gone.
         self.client.indices.open(index=index)
-        self.assertEquals(
+        self.assertEqual(
             {"dummy":{"aliases":{"testalias":{}}}},
             self.client.indices.get_alias(name=alias)
         )
@@ -138,7 +138,7 @@ class TestActionFileClose(CuratorTestCase):
             ]
         )
         try:
-            self.assertEquals(
+            self.assertEqual(
                 'close',
                 self.client.cluster.state(
                     index='my_index',
@@ -175,7 +175,7 @@ class TestActionFileClose(CuratorTestCase):
             ]
         )
         try:
-            self.assertEquals(
+            self.assertEqual(
                 'close',
                 self.client.cluster.state(
                     index='my_index',
@@ -212,7 +212,7 @@ class TestActionFileClose(CuratorTestCase):
             ]
         )
         try:
-            self.assertEquals(
+            self.assertEqual(
                 'open',
                 self.client.cluster.state(
                     index='my_index',
@@ -226,7 +226,7 @@ class TestActionFileClose(CuratorTestCase):
                     metric='metadata',
                 )['metadata']['indices']['dummy']['state']
             )
-            self.assertEquals(1, _.exit_code)
+            self.assertEqual(1, _.exit_code)
         finally:
             # re-enable shard allocation for next tests
             enable_allocation = '{"transient":{"cluster.routing.allocation.enable":null}}'
@@ -271,7 +271,7 @@ class TestCLIClose(CuratorTestCase):
         self.create_index('dummy')
         self.create_index('my_other')
         self.client.indices.put_alias(index='my_index,dummy', name=alias)
-        self.assertEquals(
+        self.assertEqual(
             {
                 "dummy":{"aliases":{"testalias":{}}},
                 "my_index":{"aliases":{"testalias":{}}}
@@ -290,19 +290,19 @@ class TestCLIClose(CuratorTestCase):
             0,
             self.run_subprocess(args, logname='TestCLIClose.test_close_delete_aliases')
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index=index, metric='metadata')['metadata']['indices'][index]['state']
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index='my_other', metric='metadata')['metadata']['indices']['my_other']['state']
         )
         # Now open the indices and verify that the alias is still gone.
         self.client.indices.open(index=index)
-        self.assertEquals(
+        self.assertEqual(
             {"dummy":{"aliases":{"testalias":{}}}},
             self.client.indices.get_alias(name=alias)
         )
@@ -320,7 +320,7 @@ class TestCLIClose(CuratorTestCase):
             0,
             self.run_subprocess(args, logname='TestCLIClose.test_close_skip_flush')
         )
-        self.assertEquals(
+        self.assertEqual(
             'close',
             self.client.cluster.state(
                 index='my_index', metric='metadata')['metadata']['indices']['my_index']['state']

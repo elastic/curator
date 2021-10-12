@@ -168,7 +168,7 @@ class TestCLIMethods(CuratorTestCase):
 
                     ],
                     )
-        self.assertEquals(10, len(curator.get_indices(self.client)))
+        self.assertEqual(10, len(curator.get_indices(self.client)))
     def test_action_disabled(self):
         self.create_indices(10)
         self.write_config(
@@ -183,7 +183,7 @@ class TestCLIMethods(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(0, len(curator.get_indices(self.client)))
+        self.assertEqual(0, len(curator.get_indices(self.client)))
         self.assertEqual(0, result.exit_code)
     # I'll have to think up another way to create an exception.
     # The exception that using "alias" created, a missing argument,
@@ -208,7 +208,7 @@ class TestCLIMethods(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(0, len(curator.get_indices(self.client)))
+        self.assertEqual(0, len(curator.get_indices(self.client)))
         self.assertEqual(0, result.exit_code)
     def test_continue_if_exception_False(self):
         name = 'log1'
@@ -229,7 +229,7 @@ class TestCLIMethods(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(2, len(curator.get_indices(self.client)))
+        self.assertEqual(2, len(curator.get_indices(self.client)))
         self.assertEqual(1, result.exit_code)
     def test_no_options_in_action(self):
         self.create_indices(10)

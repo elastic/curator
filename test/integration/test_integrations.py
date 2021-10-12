@@ -35,7 +35,7 @@ class TestFilters(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(1, len(curator.get_indices(self.client)))
+        self.assertEqual(1, len(curator.get_indices(self.client)))
     def test_filter_by_array_of_aliases(self):
         alias = 'testalias'
         self.write_config(
@@ -55,9 +55,9 @@ class TestFilters(CuratorTestCase):
                     )
         ver = curator.get_version(self.client)
         if ver >= (5,5,0):
-            self.assertEquals(2, len(curator.get_indices(self.client)))
+            self.assertEqual(2, len(curator.get_indices(self.client)))
         else:
-            self.assertEquals(1, len(curator.get_indices(self.client)))
+            self.assertEqual(1, len(curator.get_indices(self.client)))
     def test_filter_by_alias_bad_aliases(self):
         alias = 'testalias'
         self.write_config(
@@ -75,9 +75,9 @@ class TestFilters(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(
+        self.assertEqual(
             type(curator.ConfigurationError()), type(result.exception))
-        self.assertEquals(2, len(curator.get_indices(self.client)))
+        self.assertEqual(2, len(curator.get_indices(self.client)))
     def test_field_stats_skips_empty_index(self):
         delete_field_stats = ('---\n'
             'actions:\n'

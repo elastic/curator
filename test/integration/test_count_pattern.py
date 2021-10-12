@@ -63,7 +63,7 @@ class TestCLICountPattern(CuratorTestCase):
             ],
         )
         indices = sorted(list(self.client.indices.get('_all')))
-        self.assertEquals(['a-3', 'b-6', 'c-8', 'not_a_match'], indices)
+        self.assertEqual(['a-3', 'b-6', 'c-8', 'not_a_match'], indices)
     def test_match_proper_indices_by_age(self):
         self.create_index('a-2017.10.01')
         self.create_index('a-2017.10.02')
@@ -89,7 +89,7 @@ class TestCLICountPattern(CuratorTestCase):
             ],
         )
         indices = sorted(list(self.client.indices.get('_all')))
-        self.assertEquals(['a-2017.10.03', 'b-2017.09.03', 'not_a_match'], indices)
+        self.assertEqual(['a-2017.10.03', 'b-2017.09.03', 'not_a_match'], indices)
     def test_count_indices_by_age_same_age(self):
         key = 'tag'
         value = 'value'
@@ -119,9 +119,9 @@ class TestCLICountPattern(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='c-2017.10.03')['c-2017.10.03']['settings']['index']['routing']['allocation'][at][key])
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='d-2017.10.03')['d-2017.10.03']['settings']['index']['routing']['allocation'][at][key])
         idxlist = [
             'a-2017.10.01', 'a-2017.10.02', 'a-2017.10.03',
@@ -131,7 +131,7 @@ class TestCLICountPattern(CuratorTestCase):
         ]
         for idx in idxlist:
             if ver >= (7, 10, 0):
-                self.assertEquals(
+                self.assertEqual(
                     EMPTY710ROUTING,
                     self.client.indices.get_settings(index=idx)[idx]['settings']['index']['routing']
                 )

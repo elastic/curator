@@ -35,7 +35,7 @@ class TestActionFileAlias(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
+        self.assertEqual(2, len(self.client.indices.get_alias(name=alias)))
     def test_add_only_with_extra_settings(self):
         alias = 'testalias'
         self.write_config(
@@ -51,7 +51,7 @@ class TestActionFileAlias(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(
+        self.assertEqual(
             {
                 'my_index': {
                     'aliases': {
@@ -108,9 +108,9 @@ class TestActionFileAlias(CuratorTestCase):
                     )
         version = curator.get_version(self.client)
         if version > (3,0,0):
-            self.assertEquals(2, len(self.client.indices.get_alias(name=alias)))
+            self.assertEqual(2, len(self.client.indices.get_alias(name=alias)))
         else:
-            self.assertEquals(1, len(self.client.indices.get_alias(name=alias)))
+            self.assertEqual(1, len(self.client.indices.get_alias(name=alias)))
     def test_add_and_remove(self):
         alias = 'testalias'
         self.write_config(

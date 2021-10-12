@@ -39,10 +39,10 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )
@@ -70,10 +70,10 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )
@@ -101,10 +101,10 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )
@@ -130,7 +130,7 @@ class TestActionFileAllocation(CuratorTestCase):
             body={'index.routing.allocation.{0}.{1}'.format(at, key): 'bar'}
         )
         # Ensure we _have_ it here first.
-        self.assertEquals('bar',
+        self.assertEqual('bar',
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         test = clicktest.CliRunner()
         _ = test.invoke(
@@ -141,11 +141,11 @@ class TestActionFileAllocation(CuratorTestCase):
                     ],
                     )
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']
             )
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )
@@ -213,11 +213,11 @@ class TestActionFileAllocation(CuratorTestCase):
                     ],
                     )
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']
             )
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )
@@ -247,10 +247,10 @@ class TestActionFileAllocation(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )
@@ -279,10 +279,10 @@ class TestCLIAllocation(CuratorTestCase):
             '--filter_list', '{"filtertype":"pattern","kind":"prefix","value":"my"}',
         ]
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIAllocation.test_include'))
-        self.assertEquals(value,
+        self.assertEqual(value,
             self.client.indices.get_settings(index='my_index')['my_index']['settings']['index']['routing']['allocation'][at][key])
         if ver >= (7, 10, 0):
-            self.assertEquals(
+            self.assertEqual(
                 EMPTY710ROUTING,
                 self.client.indices.get_settings(index='not_my_index')['not_my_index']['settings']['index']['routing']
             )

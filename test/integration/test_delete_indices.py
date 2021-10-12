@@ -54,7 +54,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
             ],
         )
 
-        self.assertEquals(5, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(5, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_retention_from_name_days_ignore_failed_match(self):
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
@@ -79,7 +79,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(15, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(15, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_retention_from_name_days_keep_exclude_false_after_failed_match(self):
         # Test extraction of unit_count from index name and confirm correct
         # behavior after a failed regex match with no fallback time - see gh issue 1206
@@ -115,7 +115,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(25, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(25, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_retention_from_name_days_failed_match_with_fallback(self):
         # Test extraction of unit_count from index name
         # Create indices for 10 days with retention time of 5 days in index name
@@ -140,7 +140,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(12, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(12, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_retention_from_name_no_capture_group(self):
         # Test extraction of unit_count from index name when pattern contains no capture group
         # Create indices for 10 months with retention time of 2 months in index name
@@ -163,7 +163,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(10, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(10, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_retention_from_name_illegal_regex_no_fallback(self):
         # Test extraction of unit_count from index name when pattern contains an illegal regular expression
         # Create indices for 10 months with retention time of 2 months in index name
@@ -186,7 +186,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(10, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(10, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_retention_from_name_illegal_regex_with_fallback(self):
         # Test extraction of unit_count from index name when pattern contains an illegal regular expression
         # Create indices for 10 days with retention time of 2 days in index name
@@ -208,7 +208,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 self.args['actionfile']
             ],
         )
-        self.assertEquals(3, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(3, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_name_older_than_now(self):
         self.create_indices(10)
         self.write_config(
@@ -226,7 +226,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(5, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(5, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_creation_date_newer_than_epoch(self):
         self.create_indices(10)
         self.write_config(
@@ -245,7 +245,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(0, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(0, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_delete_in_period(self):
         # filtertype: {0}
         # source: {1}
@@ -276,7 +276,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                     ],
                     )
         self.assertEqual(0, result.exit_code)
-        self.assertEquals(5, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(5, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_delete_in_period_absolute_date(self):
         delete_period_abs = ('---\n'
         'actions:\n'
@@ -360,7 +360,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         )
         self.assertEqual(0, result.exit_code)
         indices = exclude_ilm_history(curator.get_indices(self.client))
-        self.assertEquals(1, len(indices))
+        self.assertEqual(1, len(indices))
         self.assertEqual('notintersecting', indices[0])
     def test_empty_list(self):
         self.create_indices(10)
@@ -380,7 +380,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(10, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(10, len(exclude_ilm_history(curator.get_indices(self.client))))
         self.assertEqual(1, result.exit_code)
     def test_ignore_empty_list(self):
         self.create_indices(10)
@@ -400,7 +400,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(10, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(10, len(exclude_ilm_history(curator.get_indices(self.client))))
         self.assertEqual(0, result.exit_code)
     def test_extra_options(self):
         self.write_config(
@@ -447,7 +447,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(0, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(0, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_name_negative_epoch(self):
         self.create_index('index-1969.12.31')
         self.write_config(
@@ -465,7 +465,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(0, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(0, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_allow_ilm_indices_true(self):
         # ILM will not be added until 6.6
         if curator.get_version(self.client) < (6,6,0):
@@ -504,7 +504,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 curator.cli,
                 [ '--config', self.args['configfile'], self.args['actionfile'] ],
             )
-            self.assertEquals(5, len(exclude_ilm_history(curator.get_indices(self.client))))
+            self.assertEqual(5, len(exclude_ilm_history(curator.get_indices(self.client))))
     def test_allow_ilm_indices_false(self):
         # ILM will not be added until 6.6
         if curator.get_version(self.client) < (6,6,0):
@@ -544,7 +544,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 curator.cli,
                 [ '--config', self.args['configfile'], self.args['actionfile'] ],
             )
-            self.assertEquals(10, len(exclude_ilm_history(curator.get_indices(self.client))))
+            self.assertEqual(10, len(exclude_ilm_history(curator.get_indices(self.client))))
 
 class TestCLIDeleteIndices(CuratorTestCase):
     def test_name_older_than_now_cli(self):
@@ -556,4 +556,4 @@ class TestCLIDeleteIndices(CuratorTestCase):
             '--filter_list', '{"filtertype":"age","source":"name","direction":"older","timestring":"%Y.%m.%d","unit":"days","unit_count":5}',
         ]
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIDeleteIndices.test_name_older_than_now_cli'))
-        self.assertEquals(5, len(exclude_ilm_history(curator.get_indices(self.client))))
+        self.assertEqual(5, len(exclude_ilm_history(curator.get_indices(self.client))))

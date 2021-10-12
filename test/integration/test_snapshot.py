@@ -80,7 +80,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                     self.client, self.args['repository'], '_all'
                    )
         self.assertEqual(0, len(snapshot['snapshots']))
-        self.assertEquals(0, len(curator.get_indices(self.client)))
+        self.assertEqual(0, len(curator.get_indices(self.client)))
     def test_snapshot_do_not_ignore_empty_list(self):
         self.create_indices(5)
         self.create_repository()
@@ -101,7 +101,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                     self.client, self.args['repository'], '_all'
                    )
         self.assertEqual(0, len(snapshot['snapshots']))
-        self.assertEquals(5, len(curator.get_indices(self.client)))
+        self.assertEqual(5, len(curator.get_indices(self.client)))
     def test_no_repository(self):
         self.create_indices(5)
         self.write_config(

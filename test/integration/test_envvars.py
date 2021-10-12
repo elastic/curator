@@ -87,5 +87,5 @@ class TestEnvVars(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEquals(5, len(curator.get_indices(self.client)))
+        self.assertEqual(5, len(curator.get_indices(self.client)))
         del os.environ[evar]
