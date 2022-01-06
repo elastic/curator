@@ -18,7 +18,7 @@ files.  <<actions,Actions>> and <<filters,filters>> are documented separately.
 WARNING: This functionality is experimental and may be changed or removed +
     completely in a future release.
 
-You can use environment variable references in the both the
+You can use environment variable references in both the
 <<configfile,configuration file>> and the <<actionfile,action file>> to set
 values that need to be configurable at runtime. To do this, use:
 
@@ -508,6 +508,20 @@ The HTTP Basic Authentication username
 
 The HTTP Basic Authentication password
 
+[[apikey_auth]]
+=== apikey_auth
+
+This should a base64 encoded token (e.g: `id:api_key`).
+
+[source,sh]
+---------
+apikey_auth:
+---------
+
+This setting allows API Key authentication to an Elasticsearch instance.
+
+The default is empty.
+
 [[timeout]]
 === timeout
 
@@ -587,7 +601,7 @@ console.
 [[logformat]]
 === logformat
 
-This should `default`, `json`, `logstash`, or left empty.
+This should `default`, `json`, `logstash`, `ecs` or left empty.
 
 [source,sh]
 -----------
@@ -607,6 +621,13 @@ The `json` or `logstash` formats look like:
 -----------
 {"@timestamp": "2016-04-22T11:54:29.033Z", "function": "cli", "linenum": 178,
 "loglevel": "INFO", "message": "Action #1: ACTIONNAME", "name": "curator.cli"}
+-----------
+
+The `ecs` format looks like:
+[source,sh]
+-----------
+{"@timestamp": "2020-02-22T11:55:00.022Z", "log.origin.function": "cli", "log.origin.file.line": 178,
+"log.level": "INFO", "message": "Action #1: ACTIONNAME", "log.logger": "curator.cli"}
 -----------
 
 The default value is `default`.

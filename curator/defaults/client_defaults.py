@@ -26,6 +26,7 @@ def config_client():
         Optional('timeout', default=30): All(Coerce(int), Range(min=1, max=86400)),
         Optional('master_only', default=False): Boolean(),
         Optional('api_key', default=None): Any(None, *string_types),
+        Optional('apikey_auth', default=None): Any(None, *string_types),
     }
 
 # Configuration file: logging
@@ -38,6 +39,6 @@ def config_logging():
                 ),
         Optional('logfile', default=None): Any(None, *string_types),
         Optional('logformat', default='default'):
-            Any(None, All(Any(*string_types), Any('default', 'json', 'logstash'))),
+            Any(None, All(Any(*string_types), Any('default', 'json', 'logstash', 'ecs'))),
         Optional('blacklist', default=['elasticsearch', 'urllib3']): Any(None, list),
     }

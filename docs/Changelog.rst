@@ -3,15 +3,119 @@
 Changelog
 =========
 
-5.8.2 (? ? ?)
+5.8.5 (* * *)
 -------------
+
+**Announcement**
+
+  * As mentioned in 5.8.4's release notes, `boto3` deprecates support for 
+    Python 2.7, and now so does Curator.
 
 **New**
 
+  * Add filter by size feature. #1612 (IndraGunawan)
+  * Update Elasticsearch client to 7.14.0
+
+**Security Fixes**
+
+  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni)
+
+5.8.4 (27 April 2021)
+---------------------
+
+**Announcement**
+
+  * Because Python 2.7 has been EOL for over a year now, many projects are no
+    longer supporting it. This will also be the case for Curator as its 
+    dependencies cease to support Python 2.7. With `boto3` having announced it
+    is ceasing support of Python 2.7, deprecated as of 15 Jan 2021, and fully
+    unsupported on 15 Jul 2021, Curator will follow these same dates. This
+    means that you will need to use an older version of Curator to continue
+    using Python 2.7, or upgrade to Python 3.6 or greater.
+
+**Breaking**
+
+  * Normally I would not include breaking changes, but users have asked for
+    Click v7, which changes actions to require hyphens, and not underscores.
+    Options can still have underscores, but actions can't--well, not strictly
+    true. You can have underscores, but Click v7 will convert them to hyphens. 
+    This should _only_ affect users of the Curator CLI, and not YAML file
+    users, and only the actions: `show-indices`, `show-snapshots`,
+    `delete-indices`, `delete-snapshots`. The actual actions are still named
+    with underscores, and the code has been updated to work with the hyphenated
+    action names.
+
+**New**
+
+  * Now using `elasticsearch-py` version 7.12.0
+  * Adding testing for Python 3.9
+  * Removing testing on Python 3.6
+  * Tested Elasticsearch versions now include 7.12.0, 7.11.2, 7.10.2, 7.9.3,
+    7.8.1, 6.8.15, 5.6.16
+  * Changing `requirements.txt` as follows:
+    - boto3-1.17.57
+    - certifi-2020.12.5
+    - click-7.1.2
+    - elasticsearch-7.12.0
+    - pyyaml-5.4.1
+    - requests-2.25.1
+    - requests-aws4auth-1.0.1
+    - six-1.15.0
+    - urllib3-1.26.4
+    - voluptuous-0.12.1
+
+**Bug Fixes**
+
+  * Alias integration tests needed updating for newer versions of Elasticsearch
+    that include ILM.
+  * Click 7.0 now reports an exit code of `1` for schema mismatches where it
+    yielded a `-1` in the past. Tests needed updating to correct for this.
+
+**Security**
+
+  * Address multiple `pyyaml` vulnerabilities by bumping to version 5.4.1.
+    Contributed in #1596 (tsaarni)
+
+5.8.3 (25 November 2020)
+------------------------
+
+**New**
+
+  * Determined to test the last 2 major version's final patch releases, plus
+    the last 5 minor releases in the current major version. Travis CI testing
+    needs to go faster, and this should suffice. For now, this means versions
+    5.6.16, 6.8.13, 7.6.2, 7.7.1, 7.8.1, 7.9.3, and 7.10.0
+
+**Bug Fixes**
+
+  * Caught a few stale merge failures, and asciidoc documentation problems
+    which needed fixing in the 5.8 branch, which necessitate this tiny bump
+    release. No code changes between 5.8.2 and 5.8.3.
+
+5.8.2 (24 November 2020)
+------------------------
+
+**Announcement**
+
+  * No, Curator isn't going away. But as you can tell, it's not as actively
+    developed as it once was. I am gratified to find there are still users who
+    make it a part of their workflow. I intend to continue development in my
+    spare time. Curator is now a labor of love, not an engineering project I
+    do during work hours.
+
+**New**
+
+  * Testing changes. Only last ES version of 5.x and 6.x are tested, plus the
+    releases of 7.x since 7.2.
   * ``http_auth`` is now deprecated. You can continue to use it, but it will go
     away in the next major release. Moving forward, you should use ``username``
     and ``password``. This should work in ``curator``, ``curator_cli``, and
     ``es_repo_mgr``.
+  * Removed tests for all 5.x branches of Elasticsearch but the final (5.6).
+  * Added tests for missing 7.x branches of Elasticsearch
+  * Remove tests for Python 3.5 
+  * Fix hang of Shrink action in ES 7.x in #1528 (jclegras)
+  * Add ``ecs`` as a ``logformat`` option in #1529 (m1keil)
 
 **Bug Fixes**
 
@@ -19,6 +123,19 @@ Changelog
     the APIs are not changed (yet—-that comes in the next major release).
   * Dockerfile has been updated to produce a working version with Python 3.7
     and Curator 5.8.1
+  * Pin (for now) Elasticsearch Python module to 7.1.0. This will be updated
+    when an updated release of the module fixes the `cluster.state` API call
+    regression at https://github.com/elastic/elasticsearch-py/issues/1141
+  * Fix ``client.tasks.get`` API call to be ``client.tasks.list`` when no index
+    name is provided.  See
+    https://github.com/elastic/elasticsearch-py/issues/1110
+  * Pin some pip versions to allow urllib3 and boto to coexist. See #1562
+    (sethmlarson).
+
+**Documentation**
+
+  * Add Freeze/Unfreeze documentation in #1497 (lucabelluccini)
+  * Update compatibility matrix in #1522 (jibsonline)
 
 5.8.1 (25 September 2019)
 -------------------------

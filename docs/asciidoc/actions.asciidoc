@@ -15,6 +15,7 @@ once created, can only be deleted.
 * <<delete_indices,Delete Indices>>
 * <<delete_snapshots,Delete Snapshots>>
 * <<forcemerge,forceMerge>>
+* <<freeze,Freeze>>
 * <<index_settings,Index Settings>>
 * <<open,Open>>
 * <<reindex,Reindex>>
@@ -23,6 +24,7 @@ once created, can only be deleted.
 * <<rollover,Rollover>>
 * <<shrink,Shrink>>
 * <<snapshot,Snapshot>>
+* <<unfreeze,Unfreeze>>
 --
 
 [[alias]]
@@ -534,6 +536,37 @@ filters:
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_forcemerge,here>>.
 
+[[freeze]]
+== Freeze
+
+[source,yaml]
+-------------
+action: freeze
+description: "freeze selected indices"
+options:
+  continue_if_exception: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action freezes the selected indices.
+In order to use this action, it is required to have at least a Basic license.
+See https://www.elastic.co/subscriptions[Subscriptions].
+
+=== Optional settings
+
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_freeze,here>>.
+
 
 [[index_settings]]
 == Index Settings
@@ -885,7 +918,7 @@ actions:
 
 In this case, the number of replicas will be applied to the restored indices.
 
-For more information see the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
+For more information see the {ref}/snapshots-restore-snapshot.html#change-index-settings-during-restore[official Elasticsearch Documentation].
 
 === Required settings
 
@@ -1172,3 +1205,35 @@ read about them and change them accordingly.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.
+    
+[[unfreeze]]
+== Unfreeze
+
+[source,yaml]
+-------------
+action: unfreeze
+description: "unfreeze selected indices"
+options:
+  continue_if_exception: False
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action unfreezes the selected indices.
+In order to use this action, it is required to have at least a Basic license.
+See https://www.elastic.co/subscriptions[Subscriptions].
+
+=== Optional settings
+
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
+
+TIP: See an example of this action in an <<actionfile,actionfile>>
+    <<ex_unfreeze,here>>.
+

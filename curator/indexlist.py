@@ -106,12 +106,13 @@ class IndexList(object):
             'pattern': self.filter_by_regex,
             'space': self.filter_by_space,
             'shards': self.filter_by_shards,
+            'size': self.filter_by_size,
         }
         return methods[ft]
 
     def _get_index_stats(self):
         """
-        Populate `index_info` with index `size_in_bytes` and doc count
+        Populate `index_info` with index `size_in_bytes`, `primary_size_in_bytes` and doc count
         information for each index.
         """
         self.loggit.debug('Getting index stats')
@@ -121,13 +122,16 @@ class IndexList(object):
             for index in stats['indices']:
                 size = stats['indices'][index]['total']['store']['size_in_bytes']
                 docs = stats['indices'][index]['total']['docs']['count']
+                primary_size = stats['indices'][index]['primaries']['store']['size_in_bytes']
+
                 self.loggit.debug(
-                    'Index: {0}  Size: {1}  Docs: {2}'.format(
-                        index, utils.byte_size(size), docs
+                    'Index: {0}  Size: {1}  Docs: {2}  PrimarySize: {3}'.format(
+                        index, utils.byte_size(size), docs, utils.byte_size(primary_size)
                     )
                 )
                 self.index_info[index]['size_in_bytes'] = size
                 self.index_info[index]['docs'] = docs
+                self.index_info[index]['primary_size_in_bytes'] = primary_size
 
         working_list = self.working_list()
         for index in self.working_list():
@@ -1247,3 +1251,60 @@ class IndexList(object):
             else:
                 # Otherwise, it's a settingless filter.
                 method()
+
+    def filter_by_size(
+        self, size_threshold=None, threshold_behavior='greater_than', exclude=False, size_behavior='primary'):
+        """
+        Remove indices from the actionable list based on index size.
+
+        `threshold_behavior`, when set to `greater_than` (default), includes if it the index
+        tests to be larger than `size_threshold`. When set to `less_than`, it includes if
+        the index is smaller than `size_threshold`
+
+        :arg size_threshold: Filter indices over *n* gigabytes
+        :arg threshold_behavior: Size to filter, either ``greater_than`` or ``less_than``. Defaults
+            to ``greater_than`` to preserve backwards compatability.
+        :arg size_behavior: Size that used to filter, either ``primary`` or ``total``. Defaults to ``primary``
+        :arg exclude: If `exclude` is `True`, this filter will remove matching
+            indices from `indices`. If `exclude` is `False`, then only matching
+            indices will be kept in `indices`.
+            Default is `False`
+        """
+        self.loggit.debug('Filtering indices by index size')
+        # Ensure that disk_space is a float
+        if not size_threshold:
+            raise exceptions.MissingArgument('No value for "size_threshold" provided')
+
+        if size_behavior not in ['primary', 'total']:
+            raise ValueError( 'Invalid value for "size_behavior": {0}'.format(size_behavior))
+
+        if threshold_behavior not in ['greater_than', 'less_than']:
+            raise ValueError( 'Invalid value for "threshold_behavior": {0}'.format(threshold_behavior))
+
+        index_size_limit = float(size_threshold) * 2**30
+
+        self.loggit.debug(
+            'Cannot get disk usage info from closed indices.  '
+            'Omitting any closed indices.'
+        )
+        self.filter_closed()
+
+        # Create a copy-by-value working list
+        working_list = self.working_list()
+
+        for index in working_list:
+
+            if size_behavior == 'primary':
+                index_size = self.index_info[index]['primary_size_in_bytes']
+            else:
+                index_size = self.index_info[index]['size_in_bytes']
+
+            msg = (
+                '{0}, index size is {1} and size limit is {2}.'.format(
+                    index, utils.byte_size(index_size), utils.byte_size(index_size_limit)
+                )
+            )
+            if threshold_behavior == 'greater_than':
+                self.__excludify((index_size > index_size_limit), exclude, index, msg)
+            elif threshold_behavior == 'less_than':
+                self.__excludify((index_size < index_size_limit), exclude, index, msg)

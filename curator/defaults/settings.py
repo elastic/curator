@@ -94,7 +94,8 @@ def index_filtertypes():
         'pattern',
         'period',
         'space',
-        'shards'
+        'shards',
+        'size',
     ]
 
 def snapshot_filtertypes():
@@ -146,6 +147,8 @@ def structural_filter_elements():
         Optional('range_from'): Coerce(int),
         Optional('range_to'): Coerce(int),
         Optional('shard_filter_behavior'): Any(*string_types),
+        Optional('size_behavior'): Any(*string_types),
+        Optional('size_threshold'): Any(Coerce(float)),
         Optional('source'): Any(*string_types),
         Optional('state'): Any(*string_types),
         Optional('stats_result'): Any(None, *string_types),

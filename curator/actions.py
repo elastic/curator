@@ -148,7 +148,7 @@ class Alias(object):
                 '"{3}"'.format(
                     job.rstrip('e'),
                     index,
-                    'to' if job is 'add' else 'from',
+                    'to' if job == 'add' else 'from',
                     alias
                 )
             )
@@ -1812,7 +1812,7 @@ class Restore(object):
         :type rename_replacement: str
         :arg extra_settings: Extra settings, including shard count and settings
             to omit. For more information see
-            https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-snapshots.html#_changing_index_settings_during_restore
+            https://www.elastic.co/guide/en/elasticsearch/reference/current/snapshots-restore-snapshot.html#change-index-settings-during-restore
         :type extra_settings: dict, representing the settings.
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `True`)
@@ -2091,14 +2091,23 @@ class Shrink(object):
         self.number_of_shards = number_of_shards
         self.wait_for_active_shards = wait_for_active_shards
         self.shrink_node_name = None
+
         self.body = {
             'settings': {
                 'index.number_of_shards' : number_of_shards,
                 'index.number_of_replicas' : number_of_replicas,
             }
         }
+
         if extra_settings:
             self._merge_extra_settings(extra_settings)
+
+        if utils.get_version(self.client) >= (6, 1, 0):
+            self._merge_extra_settings({
+                'settings': {
+                    'index.routing.allocation.require._name': None,
+                    'index.blocks.write': None
+                }})
 
     def _merge_extra_settings(self, extra_settings):
         self.loggit.debug(
