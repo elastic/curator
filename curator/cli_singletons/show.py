@@ -35,7 +35,7 @@ def show_indices(ctx, verbose, header, epoch, ignore_empty_list, allow_ilm_indic
     """
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = cli_action(
-        ctx.info_name,
+        'show_indices',
         ctx.obj['config']['client'],
         {'allow_ilm_indices': allow_ilm_indices},
         filter_list,
@@ -112,7 +112,7 @@ def show_snapshots(ctx, repository, ignore_empty_list, filter_list):
     """
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = cli_action(
-        ctx.info_name,
+        'show_snapshots',
         ctx.obj['config']['client'],
         {},
         filter_list,

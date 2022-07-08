@@ -23,8 +23,8 @@ dry_run_rollover = {
   "shards_acknowledged": True,
   "old_index": "index-000001",
   "new_index": "index-000002",
-  "rolled_over": False, 
-  "dry_run": True, 
+  "rolled_over": False,
+  "dry_run": True,
   "conditions": {
     "max_age" : "1s"
   }
@@ -83,7 +83,7 @@ oneinprogress  = { 'snapshots': [
                         'snapshot': snap_name, 'end_time': '2015-03-01T00:00:03.000Z',
                         'indices': named_indices,
                         'failures': [], 'start_time_in_millis': 1425168002
-                    }]}                    
+                    }]}
 partial        = { 'snapshots': [
                     {
                         'duration_in_millis': 60000, 'start_time': '2015-02-01T00:00:00.000Z',
@@ -110,7 +110,7 @@ othersnap      = { 'snapshots': [
                         'snapshot': snap_name, 'end_time': '2015-02-01T00:00:01.000Z',
                         'indices': named_indices,
                         'failures': [], 'start_time_in_millis': 1422748800
-                    }]}                    
+                    }]}
 snapshots         = { 'snapshots': [
                     {
                         'duration_in_millis': 60000, 'start_time': '2015-02-01T00:00:00.000Z',
@@ -809,6 +809,21 @@ actions:
       disable_action: False
     filters:
       - filtertype: none
+'''
+size_ft     = '''
+---
+actions:
+  1:
+    description: open all matching indices
+    action: open
+    options:
+      continue_if_exception: False
+      disable_action: False
+    filters:
+      - filtertype: size
+        size_threshold: 1.04
+        size_behavior: total
+        threshold_behavior: less_than
 '''
 
 not_rollable_name = {'index': {u'aliases': {'foo': {}}}}

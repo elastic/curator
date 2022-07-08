@@ -415,7 +415,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_945(self):
         self.create_indices(10)
         self.write_config(
@@ -429,7 +429,7 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_name_epoch_zero(self):
         self.create_index('epoch_zero-1970.01.01')
         self.write_config(
@@ -552,7 +552,7 @@ class TestCLIDeleteIndices(CuratorTestCase):
         args = self.get_runner_args()
         args += [
             '--config', self.args['configfile'],
-            'delete_indices',
+            'delete-indices',
             '--filter_list', '{"filtertype":"age","source":"name","direction":"older","timestring":"%Y.%m.%d","unit":"days","unit_count":5}',
         ]
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIDeleteIndices.test_name_older_than_now_cli'))

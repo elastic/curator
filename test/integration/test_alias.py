@@ -173,7 +173,7 @@ class TestActionFileAlias(CuratorTestCase):
                     )
         self.assertEqual(
             {'dummy': {'aliases': {alias: {}}},'my_index': {'aliases': {alias: {}}}},
-            self.client.indices.get_alias()
+            self.client.indices.get_alias(alias)
         )
     def test_remove_with_empty_add(self):
         alias = 'testalias'
@@ -193,8 +193,8 @@ class TestActionFileAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            {'dummy': {'aliases': {}},'my_index': {'aliases': {alias: {}}}},
-            self.client.indices.get_alias()
+            {'my_index': {'aliases': {alias: {}}}},
+            self.client.indices.get_alias(alias)
         )
     def test_add_with_empty_list(self):
         alias = 'testalias'
@@ -214,8 +214,8 @@ class TestActionFileAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
-            self.client.indices.get_alias()
+            {'dummy': {'aliases': {alias: {}}}},
+            self.client.indices.get_alias(alias)
         )
     def test_remove_with_empty_list(self):
         alias = 'testalias'
@@ -235,8 +235,8 @@ class TestActionFileAlias(CuratorTestCase):
                     ],
                     )
         self.assertEqual(
-            {'dummy': {'aliases': {alias: {}}}, 'my_index': {'aliases': {}}},
-            self.client.indices.get_alias()
+            {'dummy': {'aliases': {alias: {}}}},
+            self.client.indices.get_alias(alias)
         )
     def test_remove_index_not_in_alias(self):
         alias = 'testalias'
@@ -255,9 +255,9 @@ class TestActionFileAlias(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(
-            {'my_index1': {'aliases': {}}, 'my_index2': {'aliases': {}}},
-            self.client.indices.get_alias()
+        self.assertRaises(
+            elasticsearch.exceptions.NotFoundError,
+            self.client.indices.get_alias, alias
         )
         self.assertEqual(0, result.exit_code)
     def test_no_add_remove(self):
@@ -292,7 +292,7 @@ class TestActionFileAlias(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_extra_options(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -306,7 +306,7 @@ class TestActionFileAlias(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
     def test_add_and_remove_sorted(self):
         alias = 'testalias'
         alias_add_remove = (

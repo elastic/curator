@@ -53,4 +53,4 @@ class TestCLIClusterRouting(CuratorTestCase):
                         self.args['actionfile']
                     ],
                     )
-        self.assertEqual(-1, result.exit_code)
+        self.assertEqual(1, result.exit_code)
