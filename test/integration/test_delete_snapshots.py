@@ -1,4 +1,3 @@
-import elasticsearch
 import curator
 import os
 import json
@@ -64,6 +63,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
                     self.client, self.args['repository'], '_all'
                    )
         self.assertEqual(2, len(snapshot['snapshots']))
+
     def test_no_repository(self):
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
@@ -123,6 +123,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         self.assertEqual(0, self.run_subprocess(args, logname='TestCLIDeleteSnapshots.test_deletesnapshot'))
         snapshot = curator.get_snapshot(self.client, self.args['repository'], '_all')
         self.assertEqual(2, len(snapshot['snapshots']))
+
     def test_count_by_age(self):
         self.create_repository()
         timestamps = []

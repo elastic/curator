@@ -2,7 +2,6 @@ import sys
 import logging
 from unittest import TestCase
 from mock import Mock, patch, mock_open
-import elasticsearch
 import curator
 from curator import _version as __version__
 from . import CLITestCase
