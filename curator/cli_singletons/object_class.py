@@ -5,8 +5,8 @@ from voluptuous import Schema
 from curator import IndexList, SnapshotList
 from curator.actions import (
     Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, DeleteSnapshots,
-    ForceMerge, Freeze, IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink,
-    Snapshot, Unfreeze
+    ForceMerge, IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink,
+    Snapshot
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -24,7 +24,6 @@ CLASS_MAP = {
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,
-    'freeze': Freeze,
     'index_settings' : IndexSettings,
     'open' : Open,
     'reindex' : Reindex,
@@ -33,7 +32,6 @@ CLASS_MAP = {
     'rollover': Rollover,
     'shrink': Shrink,
     'snapshot' : Snapshot,
-    'unfreeze' : Unfreeze,
 }
 
 EXCLUDED_OPTIONS = [

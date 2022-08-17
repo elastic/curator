@@ -1,7 +1,6 @@
 from unittest import TestCase
 from mock import Mock, patch
 from copy import deepcopy
-import elasticsearch
 import yaml
 import curator
 # Get test variables and constants from a single source

@@ -1,4 +1,3 @@
-import elasticsearch
 import curator
 import os, sys
 import json
