@@ -577,6 +577,414 @@ def get_indices(client):
     except Exception as err:
         raise exceptions.FailedExecution(f'Failed to get indices. Error: {err}')
 
+def get_version(client):
+    """
+    Return the ES version number as a tuple.
+    Omits trailing tags like -dev, or Beta
+
+    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :rtype: tuple
+    """
+    version = client.info()['version']['number']
+    version = version.split('-')[0]
+    if len(version.split('.')) > 3:
+        version = version.split('.')[:-1]
+    else:
+       version = version.split('.')
+    return tuple(map(int, version))
+
+def is_master_node(client):
+    """
+    Return `True` if the connected client node is the elected master node in
+    the Elasticsearch cluster, otherwise return `False`.
+
+    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :rtype: bool
+    """
+    my_node_id = list(client.nodes.info('_local')['nodes'])[0]
+    master_node_id = client.cluster.state(metric='master_node')['master_node']
+    return my_node_id == master_node_id
+
+def check_version(client):
+    """
+    Verify version is within acceptable range.  Raise an exception if it is not.
+
+    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :rtype: None
+    """
+    version_number = get_version(client)
+    LOGGER.debug('Detected Elasticsearch version {0}'.format(".".join(map(str, version_number))))
+    if version_number >= settings.version_max() \
+        or version_number < settings.version_min():
+        LOGGER.error(
+            'Elasticsearch version {0} incompatible with this version of Curator '
+            '({1})'.format(".".join(map(str, version_number)), __version__)
+        )
+        raise exceptions.CuratorException(
+            'Elasticsearch version {0} incompatible with this version of Curator '
+            '({1})'.format(".".join(map(str, version_number)), __version__)
+        )
+
+def check_master(client, master_only=False):
+    """
+    Check if connected client is the elected master node of the cluster.
+    If not, cleanly exit with a log message.
+
+    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :rtype: None
+    """
+    if master_only and not is_master_node(client):
+        LOGGER.info(
+            'Master-only flag detected. '
+            'Connected to non-master node. Aborting.'
+        )
+        sys.exit(0)
+
+def process_url_prefix_arg(data):
+    """Test for and validate the ``url_prefix`` setting"""
+    if 'url_prefix' in data:
+        if (data['url_prefix'] is None or data['url_prefix'] == "None"):
+            data['url_prefix'] = ''
+    return data
+
+def process_host_args(data):
+    """
+    Check for ``host`` and ``hosts`` in the provided dictionary.
+    Raise an exception if both ``host`` and ``hosts`` are present.
+    If ``host`` is used, replace that with ``hosts``.
+    """
+    if 'host' in data and 'hosts' in data:
+        raise exceptions.ConfigurationError(
+            'Both "host" and "hosts" are defined.  Pick only one.')
+    elif 'host' in data and 'hosts' not in data:
+        data['hosts'] = data['host']
+        del data['host']
+    data['hosts'] = '127.0.0.1' if 'hosts' not in data else data['hosts']
+    data['hosts'] = ensure_list(data['hosts'])
+    return data
+
+def process_x_api_key_arg(data):
+    """Test for arg and set x-api-key header if present"""
+    api_key = data.pop('api_key', False)
+    if api_key:
+        data['headers'] = {'x-api-key': api_key}
+    return data
+
+def process_master_only_arg(data):
+    """
+    Test whether there are multiple hosts and ``master_only`` is ``True``
+
+    Return the data/kwargs minus the ``master_only`` key/value pair if the test passes. Otherwise,
+    raise an exception.
+    """
+    master_only = data.pop('master_only', False)
+    if master_only:
+        if len(data['hosts']) > 1:
+            LOGGER.error(
+                '"master_only" cannot be true if more than one host is '
+                'specified. Hosts = {0}'.format(data['hosts'])
+            )
+            raise exceptions.ConfigurationError(
+                '"master_only" cannot be true if more than one host is '
+                'specified. Hosts = {0}'.format(data['hosts'])
+            )
+    return data, master_only
+
+def process_auth_args(data):
+    """
+    Return a valid http_auth tuple for authentication in the elasticsearch6.Elasticsearch
+    client object
+    """
+    http_auth = data['http_auth'] if 'http_auth' in data else None
+    username = data.pop('username', False)
+    password = data.pop('password', False)
+    if http_auth:
+        # No change to http_auth
+        LOGGER.warn(
+            'Use of "http_auth" is deprecated. Please use "username" and "password" instead.')
+    elif username and password:
+        http_auth = (username, password)
+    elif not username and password:
+        LOGGER.error('Password provided without username.')
+        LOGGER.fatal('Curator cannot proceed. Exiting.')
+        raise exceptions.ClientException
+    elif username and not password:
+        LOGGER.error('Username provided without password.')
+        LOGGER.fatal('Curator cannot proceed. Exiting.')
+        raise exceptions.ClientException
+    # else all are empty or None, so no worries. Return as-is
+    data['http_auth'] = http_auth
+    return data
+
+def isbase64(data):
+    try:
+        return base64.b64encode(base64.b64decode(data)).decode() == data
+    except Exception:
+        return False
+
+def process_apikey_auth_args(data):
+    """
+    Return a valid api_key base64 token for API Key authentication in the elasticsearch6.Elasticsearch
+    client object
+    """
+    api_key = data.pop('apikey_auth', None)
+    if api_key and not isbase64(api_key):
+            LOGGER.error('apikey_auth shall be base64 encoded.')
+            LOGGER.fatal('Curator cannot proceed. Exiting.')
+            raise exceptions.ConfigurationError
+
+    data['api_key'] = api_key
+    return data
+
+def process_ssl_args(data):
+    """Populate and validate the proper SSL args in data and return it"""
+    data['use_ssl'] = False if 'use_ssl' not in data else data['use_ssl']
+    data['ssl_no_validate'] = False if 'ssl_no_validate' not in data \
+        else data['ssl_no_validate']
+    data['certificate'] = False if 'certificate' not in data \
+        else data['certificate']
+    data['client_cert'] = False if 'client_cert' not in data \
+        else data['client_cert']
+    data['client_key'] = False if 'client_key' not in data \
+        else data['client_key']
+    if data['use_ssl']:
+        if data['ssl_no_validate']:
+            data['verify_certs'] = False # Not needed, but explicitly defined
+        else:
+            LOGGER.debug('Attempting to verify SSL certificate.')
+            # If user provides a certificate:
+            if data['certificate']:
+                data['verify_certs'] = True
+                data['ca_certs'] = data['certificate']
+            else: # Try to use bundled certifi certificates
+                if getattr(sys, 'frozen', False):
+                    # The application is frozen (compiled)
+                    datadir = os.path.dirname(sys.executable)
+                    data['verify_certs'] = True
+                    data['ca_certs'] = os.path.join(datadir, 'cacert.pem')
+                else:
+                    # Use certifi certificates via certifi.where():
+                    import certifi
+                    data['verify_certs'] = True
+                    data['ca_certs'] = certifi.where()
+    return data
+
+def process_aws_args(data):
+    """Process all AWS client args. Raise exceptions if they are incomplete"""
+    data['aws_key'] = False if 'aws_key' not in data else data['aws_key']
+    data['aws_secret_key'] = False if 'aws_secret_key' not in data else data['aws_secret_key']
+    data['aws_token'] = '' if 'aws_token' not in data else data['aws_token']
+    data['aws_sign_request'] = False if 'aws_sign_request' not in data \
+        else data['aws_sign_request']
+    data['aws_region'] = False if 'aws_region' not in data \
+        else data['aws_region']
+    if data['aws_key'] or data['aws_secret_key'] or data['aws_sign_request']:
+        if not data['aws_region']:
+            raise exceptions.MissingArgument('Missing "aws_region".')
+        if data['aws_key'] or data['aws_secret_key']:
+            if not (data['aws_key'] and data['aws_secret_key']):
+                raise exceptions.MissingArgument('Missing AWS Access Key or AWS Secret Key')
+    return data
+
+def try_boto_session(data):
+    """Try to obtain AWS credentials using boto"""
+    if data['aws_sign_request']:
+        try:
+            from boto3 import session
+            from botocore import exceptions as botoex
+        # We cannot get credentials without the boto3 library, so we cannot continue
+        except ImportError as err:
+            LOGGER.error('Unable to sign AWS requests. Failed to import a module: {0}'.format(err))
+            raise ImportError('Failed to import a module: {0}'.format(err))
+        try:
+            if 'aws_region' in data:
+                session = session.Session(region_name=data['aws_region'])
+            else:
+                session = session.Session()
+            credentials = session.get_credentials()
+            data['aws_key'] = credentials.access_key
+            data['aws_secret_key'] = credentials.secret_key
+            data['aws_token'] = credentials.token
+        # If an attribute doesn't exist, we were not able to retrieve credentials
+        # as expected so we can't continue
+        except AttributeError:
+            LOGGER.debug('Unable to locate AWS credentials')
+            raise botoex.NoCredentialsError
+    return data
+
+def try_aws_auth(data):
+    """Set ``data`` with AWS credentials and the requisite SSL flags if detected"""
+    LOGGER.debug('Checking for AWS settings')
+    has_requests_module = False
+    try:
+        from requests_aws4auth import AWS4Auth
+        has_requests_module = True
+    except ImportError:
+        LOGGER.debug('Not using "requests_aws4auth" python module to connect.')
+    if has_requests_module:
+        if data['aws_key']:
+            LOGGER.info('Configuring client to connect to AWS endpoint')
+            # Override these key values
+            data['use_ssl'] = True
+            data['verify_certs'] = True
+            if data['ssl_no_validate']:
+                data['verify_certs'] = False
+            data['http_auth'] = (
+                AWS4Auth(
+                    data['aws_key'], data['aws_secret_key'],
+                    data['aws_region'], 'es', session_token=data['aws_token'])
+            )
+    return data
+
+def do_version_check(client, skip):
+    """
+    Do a test of the Elasticsearch version, unless ``skip`` is ``True``
+    """
+    if skip:
+        LOGGER.warn(
+            'Skipping Elasticsearch version verification. This is '
+            'acceptable for remote reindex operations.'
+        )
+    else:
+        LOGGER.debug('Checking Elasticsearch endpoint version...')
+        try:
+            # Verify the version is acceptable.
+            check_version(client)
+        except exceptions.CuratorException as err:
+            LOGGER.error('{0}'.format(err))
+            LOGGER.fatal('Curator cannot continue due to version incompatibilites. Exiting')
+            raise exceptions.ClientException
+
+def verify_master_status(client, master_only):
+    """
+    Verify that the client is connected to the elected master node.
+    Raise an exception if it is not.
+    """
+    # Verify "master_only" status, if applicable
+    if master_only:
+        LOGGER.info('Connecting only to local master node...')
+        try:
+            check_master(client, master_only=master_only)
+        except exceptions.ConfigurationError as err:
+            LOGGER.error('master_only check failed: {0}'.format(err))
+            LOGGER.fatal('Curator cannot continue. Exiting.')
+            raise exceptions.ClientException
+    else:
+        LOGGER.debug('Not verifying local master status (master_only: false)')
+
+
+def get_client(**kwargs):
+    """
+    NOTE: AWS IAM parameters `aws_sign_request` and `aws_region` are
+     provided to facilitate request signing. The credentials will be
+     fetched from the local environment as per the AWS documentation:
+     http://amzn.to/2fRCGCt
+
+    AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
+    provided for users that still have their keys included in the Curator config file.
+
+    Return an :class:`elasticsearch6.Elasticsearch` client object using the
+    provided parameters. Any of the keyword arguments the
+    :class:`elasticsearch6.Elasticsearch` client object can receive are valid,
+    such as:
+
+    :arg hosts: A list of one or more Elasticsearch client hostnames or IP
+        addresses to connect to.  Can send a single host.
+    :type hosts: list
+    :arg port: The Elasticsearch client port to connect to.
+    :type port: int
+    :arg url_prefix: `Optional` url prefix, if needed to reach the Elasticsearch
+        API (i.e., it's not at the root level)
+    :type url_prefix: str
+    :arg use_ssl: Whether to connect to the client via SSL/TLS
+    :type use_ssl: bool
+    :arg certificate: Path to SSL/TLS certificate
+    :arg client_cert: Path to SSL/TLS client certificate (public key)
+    :arg client_key: Path to SSL/TLS private key
+    :arg aws_key: AWS IAM Access Key (Only used if the :mod:`requests-aws4auth`
+        python module is installed)
+    :arg aws_secret_key: AWS IAM Secret Access Key (Only used if the
+        :mod:`requests-aws4auth` python module is installed)
+    :arg aws_region: AWS Region (Only used if the :mod:`requests-aws4auth`
+        python module is installed)
+    :arg aws_sign_request: Sign request to AWS (Only used if the :mod:`requests-aws4auth`
+         and :mod:`boto3` python modules are installed)
+     :arg aws_region: AWS Region where the cluster exists (Only used if the :mod:`requests-aws4auth`
+         and :mod:`boto3` python modules are installed)
+    :arg ssl_no_validate: If `True`, do not validate the certificate
+        chain.  This is an insecure option and you will see warnings in the
+        log output.
+    :type ssl_no_validate: bool
+    :arg username: HTTP basic authentication username. Ignored if ``http_auth`` is set.
+    :type username: str
+    :arg password: HTTP basic authentication password. Ignored if ``http_auth`` is set.
+    :type password: str
+    :arg http_auth: Authentication credentials in `user:pass` format.
+    :type http_auth: str
+    :arg timeout: Number of seconds before the client will timeout.
+    :type timeout: int
+    :arg master_only: If `True`, the client will `only` connect if the
+        endpoint is the elected master node of the cluster.  **This option does
+        not work if `hosts` has more than one value.**  It will raise an
+        Exception in that case.
+    :type master_only: bool
+    :arg skip_version_test: If `True`, skip the version check as part of the
+        client connection.
+    :rtype: :class:`elasticsearch6.Elasticsearch`
+    :arg api_key: value to be used in optional X-Api-key header when accessing Elasticsearch
+    :type api_key: str
+    :arg apikey_auth: API Key authentication in `id:api_key` encoded in base64 format.
+    :type apikey_auth: str
+    """
+    # Walk through parsing/testing series of arguments to build the client
+    skip_version_test = kwargs.pop('skip_version_test', False)
+    kwargs = process_url_prefix_arg(kwargs)
+    kwargs = process_host_args(kwargs)
+    kwargs = process_x_api_key_arg(kwargs)
+    kwargs['connection_class'] = elasticsearch6.RequestsHttpConnection
+    kwargs = process_ssl_args(kwargs)
+    kwargs = process_aws_args(kwargs)
+    kwargs = try_boto_session(kwargs)
+    kwargs = try_aws_auth(kwargs)
+    kwargs, master_only = process_master_only_arg(kwargs)
+    kwargs = process_auth_args(kwargs)
+    kwargs = process_apikey_auth_args(kwargs)
+
+    LOGGER.debug("kwargs = {0}".format(kwargs))
+    fail = False
+
+    try:
+        # Creating the class object should be okay
+        LOGGER.info('Instantiating client object')
+        client = elasticsearch6.Elasticsearch(**kwargs)
+        # Test client connectivity (debug log client.info() output)
+        LOGGER.info('Testing client connectivity')
+        LOGGER.debug('Cluster info: {0}'.format(client.info()))
+        LOGGER.info('Successfully created Elasticsearch client object with provided settings')
+    # Catch all TransportError types first
+    except elasticsearch6.TransportError as err:
+        try:
+            reason = err.info['error']['reason']
+        except:
+            reason = err.error
+        LOGGER.error('HTTP {0} error: {1}'.format(err.status_code, reason))
+        fail = True
+    # Catch other potential exceptions
+    except Exception as err:
+        LOGGER.error('Unable to connect to Elasticsearch cluster. Error: {0}'.format(err))
+        fail = True
+    ## failure checks
+    # First level failure check
+    if fail:
+        LOGGER.fatal('Curator cannot proceed. Exiting.')
+        raise exceptions.ClientException
+    # Second level failure check: acceptable version
+    do_version_check(client, skip_version_test)
+    # Third level failure check: master_only
+    verify_master_status(client, master_only)
+    return client
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
+
 def show_dry_run(ilo, action, **kwargs):
     """
     Log dry run output with the action which would have been executed.
