@@ -3,7 +3,11 @@ import time
 import re
 import itertools
 import logging
+<<<<<<< HEAD
 from elasticsearch7.exceptions import NotFoundError, TransportError
+=======
+from elasticsearch6.exceptions import NotFoundError, TransportError
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 from curator import exceptions, utils
 from curator.defaults import settings
 from curator.validators import SchemaCheck, filters

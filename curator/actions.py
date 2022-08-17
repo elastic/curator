@@ -4,7 +4,11 @@ import re
 import time
 from copy import deepcopy
 from datetime import datetime
+<<<<<<< HEAD
 from elasticsearch7.exceptions import ConflictError, RequestError
+=======
+from elasticsearch6.exceptions import ConflictError, RequestError
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 from curator import exceptions, utils
 
 class Alias(object):
@@ -354,7 +358,11 @@ class ClusterRouting(object):
         """
         For now, the cluster routing settings are hardcoded to be ``transient``
 
+<<<<<<< HEAD
         :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+=======
+        :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         :arg routing_type: Type of routing to apply. Either `allocation` or
             `rebalance`
         :arg setting: Currently, the only acceptable value for `setting` is
@@ -373,7 +381,11 @@ class ClusterRouting(object):
         """
         utils.verify_client_object(client)
         #: Instance variable.
+<<<<<<< HEAD
         #: An :class:`elasticsearch7.Elasticsearch` client object
+=======
+        #: An :class:`elasticsearch6.Elasticsearch` client object
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.client = client
         self.loggit = logging.getLogger('curator.actions.cluster_routing')
         #: Instance variable.
@@ -442,7 +454,11 @@ class CreateIndex(object):
     """Create Index Action Class"""
     def __init__(self, client, name, extra_settings={}, ignore_existing=False):
         """
+<<<<<<< HEAD
         :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+=======
+        :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         :arg name: A name, which can contain :py:func:`time.strftime`
             strings
         :arg extra_settings: The `settings` and `mappings` for the index. For
@@ -467,7 +483,11 @@ class CreateIndex(object):
         #: whether to ignore the error if the index already exists.
         self.ignore_existing = ignore_existing
         #: Instance variable.
+<<<<<<< HEAD
         #: An :class:`elasticsearch7.Elasticsearch` client object
+=======
+        #: An :class:`elasticsearch6.Elasticsearch` client object
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.client = client
         self.loggit = logging.getLogger('curator.actions.create_index')
 
@@ -911,7 +931,11 @@ class Rollover(object):
             wait_for_active_shards=1
         ):
         """
+<<<<<<< HEAD
         :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+=======
+        :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         :arg name: The name of the single-index-mapped alias to test for
             rollover conditions.
         :new_index: The new index name
@@ -1124,7 +1148,11 @@ class Reindex(object):
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg request_body: The body to send to
+<<<<<<< HEAD
             :py:meth:`elasticsearch7.Elasticsearch.reindex`, which must be complete and
+=======
+            :py:meth:`elasticsearch6.Elasticsearch.reindex`, which must be complete and
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
             usable, as Curator will do no vetting of the request_body. If it
             fails to function, Curator will return an exception.
         :arg refresh: Whether to refresh the entire target index after the
@@ -1498,7 +1526,11 @@ class Reindex(object):
 
     def do_action(self):
         """
+<<<<<<< HEAD
         Execute :py:meth:`elasticsearch7.Elasticsearch.reindex` operation with the
+=======
+        Execute :py:meth:`elasticsearch6.Elasticsearch.reindex` operation with the
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         provided request_body and arguments.
         """
         try:
@@ -2103,7 +2135,11 @@ class Shrink(object):
         Determine which data node name has the most available free space, and
         meets the other node filters settings.
 
+<<<<<<< HEAD
         :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+=======
+        :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         """
         mvn_avail = 0
         # mvn_total = 0

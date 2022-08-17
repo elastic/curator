@@ -30,9 +30,15 @@ def set_logging(log_opts):
     logging.root.addHandler(loginfo.handler)
     logging.root.setLevel(loginfo.numeric_log_level)
     _ = logging.getLogger('curator.cli')
+<<<<<<< HEAD
     # Set up NullHandler() to handle nested elasticsearch7.trace Logger
     # instance in elasticsearch python client
     logging.getLogger('elasticsearch7.trace').addHandler(logging.NullHandler())
+=======
+    # Set up NullHandler() to handle nested elasticsearch6.trace Logger
+    # instance in elasticsearch python client
+    logging.getLogger('elasticsearch6.trace').addHandler(logging.NullHandler())
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
     if log_opts['blacklist']:
         for bl_entry in ensure_list(log_opts['blacklist']):
             for handler in logging.root.handlers:

@@ -2,7 +2,11 @@ import base64
 from datetime import datetime, timedelta
 from unittest import TestCase
 from mock import MagicMock, Mock, PropertyMock, patch
+<<<<<<< HEAD
 import elasticsearch7
+=======
+import elasticsearch6
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 import yaml
 from . import testvars as testvars
 import botocore
@@ -361,14 +365,22 @@ class TestGetRepository(TestCase):
             curator.get_repository(client, repository=testvars.repo_name))
     def test_get_repository_transporterror_negative(self):
         client = Mock()
+<<<<<<< HEAD
         client.snapshot.get_repository.side_effect = elasticsearch7.TransportError(503,'foo','bar')
+=======
+        client.snapshot.get_repository.side_effect = elasticsearch6.TransportError(503,'foo','bar')
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.assertRaises(
             curator.CuratorException,
             curator.get_repository, client, repository=testvars.repo_name
         )
     def test_get_repository_notfounderror_negative(self):
         client = Mock()
+<<<<<<< HEAD
         client.snapshot.get_repository.side_effect = elasticsearch7.NotFoundError(404,'foo','bar')
+=======
+        client.snapshot.get_repository.side_effect = elasticsearch6.NotFoundError(404,'foo','bar')
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.assertRaises(
             curator.CuratorException,
             curator.get_repository, client, repository=testvars.repo_name
@@ -401,7 +413,11 @@ class TestGetSnapshot(TestCase):
     def test_get_snapshot_notfounderror_negative(self):
         client = Mock()
         client.snapshot.get_repository.return_value = testvars.test_repo
+<<<<<<< HEAD
         client.snapshot.get.side_effect = elasticsearch7.NotFoundError(404, 'Snapshot not found')
+=======
+        client.snapshot.get.side_effect = elasticsearch6.NotFoundError(404, 'Snapshot not found')
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.assertRaises(
             curator.FailedExecution,
             curator.get_snapshot, client,
@@ -521,7 +537,11 @@ class TestCreateRepository(TestCase):
     def test_raises_exception(self):
         client = Mock()
         client.snapshot.get_repository.return_value = {'not_your_repo':{'foo':'bar'}}
+<<<<<<< HEAD
         client.snapshot.create_repository.side_effect = elasticsearch7.TransportError(500, "Error message", {"message":"Error"})
+=======
+        client.snapshot.create_repository.side_effect = elasticsearch6.TransportError(500, "Error message", {"message":"Error"})
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.assertRaises(curator.FailedExecution, curator.create_repository, client, repository="repo", repo_type="fs")
 
 class TestRepositoryExists(TestCase):
@@ -649,7 +669,11 @@ class TestValidateFilters(TestCase):
 class TestVerifyClientObject(TestCase):
 
     def test_is_client_object(self):
+<<<<<<< HEAD
         test = elasticsearch7.Elasticsearch()
+=======
+        test = elasticsearch6.Elasticsearch()
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.assertIsNone(curator.verify_client_object(test))
 
     def test_is_not_client_object(self):
@@ -657,7 +681,11 @@ class TestVerifyClientObject(TestCase):
         self.assertRaises(TypeError, curator.verify_client_object, test)
 
     def test_is_a_subclass_client_object(self):
+<<<<<<< HEAD
         class ElasticsearchSubClass(elasticsearch7.Elasticsearch):
+=======
+        class ElasticsearchSubClass(elasticsearch6.Elasticsearch):
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
             pass
         test = ElasticsearchSubClass()
         self.assertIsNone(curator.verify_client_object(test))
@@ -667,7 +695,11 @@ class TestRollableAlias(TestCase):
         client = Mock()
         client.info.return_value = {'version': {'number': '6.6.3'} }
         client.indices.get_alias.return_value = {}
+<<<<<<< HEAD
         client.indices.get_alias.side_effect = elasticsearch7.NotFoundError
+=======
+        client.indices.get_alias.side_effect = elasticsearch6.NotFoundError
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         self.assertFalse(curator.rollable_alias(client, 'foo'))
     def test_return_false_too_many_indices(self):
         client = Mock()
@@ -1296,7 +1328,11 @@ class TestGetDateMath(TestCase):
         psuedo_random = u'not_random_at_all'
         expected = u'curator_get_datemath_function_' + psuedo_random + u'-hasthemath'
         client.indices.get.side_effect = (
+<<<<<<< HEAD
             elasticsearch7.NotFoundError(
+=======
+            elasticsearch6.NotFoundError(
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
                 404, "simulated error", {u'error':{u'index':expected}})
         )
         self.assertEqual('hasthemath', curator.get_datemath(client, datemath, psuedo_random))
@@ -1304,7 +1340,11 @@ class TestGetDateMath(TestCase):
         client = Mock()
         datemath = u'{hasthemath}'
         client.indices.get.side_effect = (
+<<<<<<< HEAD
             elasticsearch7.NotFoundError(
+=======
+            elasticsearch6.NotFoundError(
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
                 404, "simulated error", {u'error':{u'index':'failure'}})
         )
         self.assertRaises(curator.ConfigurationError, curator.get_datemath, client, datemath)

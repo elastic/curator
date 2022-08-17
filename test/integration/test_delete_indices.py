@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import elasticsearch7
+=======
+import elasticsearch6
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 import curator
 import os
 import time
@@ -22,7 +26,11 @@ port = int(port) if port else 9200
 # '        stats_result: {7}\n'
 # '        epoch: {8}\n')
 
+<<<<<<< HEAD
 global_client = elasticsearch7.Elasticsearch(host=host, port=port)
+=======
+global_client = elasticsearch6.Elasticsearch(host=host, port=port)
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 ILM_KEYS = ['ilm-history-1-000001', 'ilm-history-1']
 
 def exclude_ilm_history(index_list):

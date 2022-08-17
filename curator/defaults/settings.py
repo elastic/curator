@@ -6,7 +6,11 @@ from voluptuous import Any, Boolean, Coerce, Optional
 # Elasticsearch versions supported
 def version_max():
     """Return the maximum Elasticsearch version Curator supports"""
+<<<<<<< HEAD
     return (7, 17, 99)
+=======
+    return (6, 8, 99)
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 def version_min():
     """Return the minimum Elasticsearch version Curator supports"""
     return (7, 0, 0)

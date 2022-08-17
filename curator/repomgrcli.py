@@ -3,7 +3,11 @@ import sys
 import re
 import logging
 import click
+<<<<<<< HEAD
 import elasticsearch7
+=======
+import elasticsearch6
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 from .defaults import settings
 from .exceptions import *
 from .config_utils import process_config
@@ -176,7 +180,11 @@ def _delete(ctx, repository):
     try:
         logger.info('Deleting repository {0}...'.format(repository))
         client.snapshot.delete_repository(repository=repository)
+<<<<<<< HEAD
     except elasticsearch7.NotFoundError:
+=======
+    except elasticsearch6.NotFoundError:
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         logger.error(
             'Unable to delete repository: {0}  Not Found.'.format(repository))
         sys.exit(1)

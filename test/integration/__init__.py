@@ -7,8 +7,13 @@ import sys
 import tempfile
 import time
 from datetime import timedelta, datetime, date
+<<<<<<< HEAD
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.exceptions import ConnectionError, NotFoundError
+=======
+from elasticsearch6 import Elasticsearch
+from elasticsearch6.exceptions import ConnectionError, NotFoundError
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
 from subprocess import Popen, PIPE
 from curator import get_version
 
@@ -83,10 +88,14 @@ class CuratorTestCase(TestCase):
         nodesinfo = self.client.nodes.info()
         nodename = list(nodesinfo['nodes'].keys())[0]
         if 'repo' in nodesinfo['nodes'][nodename]['settings']['path']:
+<<<<<<< HEAD
             if isinstance(nodesinfo['nodes'][nodename]['settings']['path']['repo'], list):
                 self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo'][0]
             else:
                 self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo']
+=======
+            self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo'][0]
+>>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
         else: # Use a random directory if repo is not specified, but log it
             self.logger.warning('path.repo is not configured!')
             self.args['location'] = random_directory()
