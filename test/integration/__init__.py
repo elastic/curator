@@ -83,7 +83,10 @@ class CuratorTestCase(TestCase):
         nodesinfo = self.client.nodes.info()
         nodename = list(nodesinfo['nodes'].keys())[0]
         if 'repo' in nodesinfo['nodes'][nodename]['settings']['path']:
-            self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo'][0]
+            if isinstance(nodesinfo['nodes'][nodename]['settings']['path']['repo'], list):
+                self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo'][0]
+            else:
+                self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo']
         else: # Use a random directory if repo is not specified, but log it
             self.logger.warning('path.repo is not configured!')
             self.args['location'] = random_directory()
