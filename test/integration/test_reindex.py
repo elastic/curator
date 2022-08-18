@@ -147,7 +147,6 @@ class TestActionFileReindex(CuratorTestCase):
         source1 = 'my_source1'
         source2 = 'my_source2'
         dest = 'my_dest'
-        expected = 6
 
         self.create_index(source1)
         self.add_docs(source1)
@@ -189,6 +188,7 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
@@ -242,6 +242,7 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
@@ -272,7 +273,7 @@ class TestActionFileReindex(CuratorTestCase):
             ['--config', self.args['configfile'], self.args['actionfile']],
         )
         # Do our own cleanup here.
-        rclient.indices.delete(index='{0},{1}'.format(source1, source2))
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         # And now the neat trick of verifying that the reindex worked to both 
         # indices, and they preserved their names
         self.assertEqual(expected, self.client.count(index=source1)['count'])
@@ -300,6 +301,7 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
@@ -381,6 +383,7 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
