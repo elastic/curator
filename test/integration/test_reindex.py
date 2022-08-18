@@ -1,4 +1,3 @@
-import elasticsearch
 import curator
 import os
 import json
@@ -92,10 +91,10 @@ class TestActionFileReindex(CuratorTestCase):
             ver = curator.get_version(self.client)
             if ver >= (7, 0, 0):
                 self.client.create(
-                    index=source2, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=source2, id=i, body={"doc" + i :'TEST DOCUMENT'})
             else:
                 self.client.create(
-                    index=source2, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=source2, id=i, body={"doc" + i :'TEST DOCUMENT'})
             # Decorators make this pylint exception necessary
             # pylint: disable=E1123
             self.client.indices.flush(index=source2, force=True)
@@ -126,7 +125,7 @@ class TestActionFileReindex(CuratorTestCase):
         self.create_index(source2)
         for i in ["4", "5", "6"]:
             self.client.create(
-                index=source2, doc_type='log', id=i,
+                index=source2, id=i,
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # Decorators make this pylint exception necessary
@@ -148,14 +147,13 @@ class TestActionFileReindex(CuratorTestCase):
         source1 = 'my_source1'
         source2 = 'my_source2'
         dest = 'my_dest'
-        expected = 6
 
         self.create_index(source1)
         self.add_docs(source1)
         self.create_index(source2)
         for i in ["4", "5", "6"]:
             self.client.create(
-                index=source2, doc_type='log', id=i,
+                index=source2, id=i,
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # Decorators make this pylint exception necessary
@@ -173,7 +171,7 @@ class TestActionFileReindex(CuratorTestCase):
         self.assertEqual(_.exit_code, 0)
     def test_reindex_from_remote(self):
         wait_interval = 1
-        max_wait = 3
+        max_wait = 6
         source1 = 'my_source1'
         source2 = 'my_source2'
         prefix = 'my_'
@@ -190,25 +188,28 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
                 # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
+                rclient.indices.refresh(index=rindex)
+        self.assertEqual(3, rclient.count(index='my_source1')['count'])
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.remote_reindex.format(
-                wait_interval, 
-                max_wait, 
+                wait_interval,
+                max_wait,
                 'http://{0}:{1}'.format(rhost, rport),
-                'REINDEX_SELECTION', 
+                'REINDEX_SELECTION',
                 dest,
                 prefix
             )
@@ -241,17 +242,19 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
                 # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
+                rclient.indices.refresh(index=rindex)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -270,7 +273,7 @@ class TestActionFileReindex(CuratorTestCase):
             ['--config', self.args['configfile'], self.args['actionfile']],
         )
         # Do our own cleanup here.
-        rclient.indices.delete(index='{0},{1}'.format(source1, source2))
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         # And now the neat trick of verifying that the reindex worked to both 
         # indices, and they preserved their names
         self.assertEqual(expected, self.client.count(index=source1)['count'])
@@ -298,17 +301,19 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
                 # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
+                rclient.indices.refresh(index=rindex)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -378,12 +383,15 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        # Remove my_source1 and my_source2 to prevent false positives
+        rclient.indices.delete(index='{0},{1}'.format('my_source1', 'my_source2'), ignore_unavailable=True)
+        rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary

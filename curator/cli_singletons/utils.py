@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import click
+from shutil import get_terminal_size
 from voluptuous import Schema
 from curator.actions import (
     Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, DeleteSnapshots,
@@ -35,7 +36,7 @@ EXCLUDED_OPTIONS = [
 
 def get_width():
     """Determine terminal width"""
-    return dict(max_content_width=click.get_terminal_size()[0])
+    return dict(max_content_width=get_terminal_size()[0])
 
 def json_to_dict(ctx, param, value):
     """Convert JSON to dictionary"""
