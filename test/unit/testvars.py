@@ -192,10 +192,14 @@ synced_fail     = {
                     }
                   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 sync_conflict   = elasticsearch7.ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
 =======
 sync_conflict   = elasticsearch6.ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
 >>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
+=======
+sync_conflict   = elasticsearch7.ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
+>>>>>>> 0c52831 (This works with 7.17.5)
 synced_fails    = {
                     "_shards":{"total":2,"successful":1,"failed":1},
                     "index1":{

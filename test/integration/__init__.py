@@ -8,12 +8,17 @@ import tempfile
 import time
 from datetime import timedelta, datetime, date
 <<<<<<< HEAD
+<<<<<<< HEAD
 from elasticsearch7 import Elasticsearch
 from elasticsearch7.exceptions import ConnectionError, NotFoundError
 =======
 from elasticsearch6 import Elasticsearch
 from elasticsearch6.exceptions import ConnectionError, NotFoundError
 >>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
+=======
+from elasticsearch7 import Elasticsearch
+from elasticsearch7.exceptions import ConnectionError, NotFoundError
+>>>>>>> 0c52831 (This works with 7.17.5)
 from subprocess import Popen, PIPE
 from curator import get_version
 

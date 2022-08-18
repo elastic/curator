@@ -1,8 +1,12 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import elasticsearch7
 =======
 import elasticsearch6
 >>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
+=======
+import elasticsearch7
+>>>>>>> 0c52831 (This works with 7.17.5)
 import curator
 import os
 import json
@@ -261,10 +265,14 @@ class TestActionFileAlias(CuratorTestCase):
                     )
         self.assertRaises(
 <<<<<<< HEAD
+<<<<<<< HEAD
             elasticsearch7.exceptions.NotFoundError,
 =======
             elasticsearch6.exceptions.NotFoundError,
 >>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
+=======
+            elasticsearch7.exceptions.NotFoundError,
+>>>>>>> 0c52831 (This works with 7.17.5)
             self.client.indices.get_alias, alias
         )
         self.assertEqual(0, result.exit_code)

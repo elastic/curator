@@ -194,7 +194,11 @@ class TestActionFileReindex(CuratorTestCase):
             for i in range(0, 3):
                 rclient.create(
                     index=rindex, id=str(counter+1),
+<<<<<<< HEAD
                     body={"doc" + str(i) :'TEST DOCUMENT'},
+=======
+                    document={"doc" + str(i) :'TEST DOCUMENT'},
+>>>>>>> 0c52831 (This works with 7.17.5)
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
