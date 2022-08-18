@@ -194,11 +194,7 @@ class TestActionFileReindex(CuratorTestCase):
             for i in range(0, 3):
                 rclient.create(
                     index=rindex, id=str(counter+1),
-<<<<<<< HEAD
-                    body={"doc" + str(i) :'TEST DOCUMENT'},
-=======
                     document={"doc" + str(i) :'TEST DOCUMENT'},
->>>>>>> 0c52831 (This works with 7.17.5)
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
@@ -387,8 +383,6 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
-        # Remove my_source1 and my_source2 to prevent false positives
-        rclient.indices.delete(index='{0},{1}'.format('my_source1', 'my_source2'), ignore_unavailable=True)
         rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
