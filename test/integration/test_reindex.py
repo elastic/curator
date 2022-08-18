@@ -383,6 +383,8 @@ class TestActionFileReindex(CuratorTestCase):
                 'Unable to connect to host at {0}:{1}'.format(rhost, rport))
         # Build indices remotely.
         counter = 0
+        # Remove my_source1 and my_source2 to prevent false positives
+        rclient.indices.delete(index='{0},{1}'.format('my_source1', 'my_source2'), ignore_unavailable=True)
         rclient.indices.delete(index='{0},{1}'.format(source1, source2), ignore_unavailable=True)
         for rindex in [source1, source2]:
             rclient.indices.create(index=rindex)
