@@ -582,7 +582,7 @@ def get_version(client):
     Return the ES version number as a tuple.
     Omits trailing tags like -dev, or Beta
 
-    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
     :rtype: tuple
     """
     version = client.info()['version']['number']
@@ -598,7 +598,7 @@ def is_master_node(client):
     Return `True` if the connected client node is the elected master node in
     the Elasticsearch cluster, otherwise return `False`.
 
-    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
     :rtype: bool
     """
     my_node_id = list(client.nodes.info('_local')['nodes'])[0]
@@ -609,7 +609,7 @@ def check_version(client):
     """
     Verify version is within acceptable range.  Raise an exception if it is not.
 
-    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
     :rtype: None
     """
     version_number = get_version(client)
@@ -630,7 +630,7 @@ def check_master(client, master_only=False):
     Check if connected client is the elected master node of the cluster.
     If not, cleanly exit with a log message.
 
-    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
     :rtype: None
     """
     if master_only and not is_master_node(client):
@@ -692,7 +692,7 @@ def process_master_only_arg(data):
 
 def process_auth_args(data):
     """
-    Return a valid http_auth tuple for authentication in the elasticsearch7.Elasticsearch
+    Return a valid http_auth tuple for authentication in the elasticsearch8.Elasticsearch
     client object
     """
     http_auth = data['http_auth'] if 'http_auth' in data else None
@@ -724,7 +724,7 @@ def isbase64(data):
 
 def process_apikey_auth_args(data):
     """
-    Return a valid api_key base64 token for API Key authentication in the elasticsearch7.Elasticsearch
+    Return a valid api_key base64 token for API Key authentication in the elasticsearch8.Elasticsearch
     client object
     """
     api_key = data.pop('apikey_auth', None)
@@ -883,9 +883,9 @@ def get_client(**kwargs):
     AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
     provided for users that still have their keys included in the Curator config file.
 
-    Return an :class:`elasticsearch7.Elasticsearch` client object using the
+    Return an :class:`elasticsearch8.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
-    :class:`elasticsearch7.Elasticsearch` client object can receive are valid,
+    :class:`elasticsearch8.Elasticsearch` client object can receive are valid,
     such as:
 
     :arg hosts: A list of one or more Elasticsearch client hostnames or IP
@@ -930,7 +930,7 @@ def get_client(**kwargs):
     :type master_only: bool
     :arg skip_version_test: If `True`, skip the version check as part of the
         client connection.
-    :rtype: :class:`elasticsearch7.Elasticsearch`
+    :rtype: :class:`elasticsearch8.Elasticsearch`
     :arg api_key: value to be used in optional X-Api-key header when accessing Elasticsearch
     :type api_key: str
     :arg apikey_auth: API Key authentication in `id:api_key` encoded in base64 format.
@@ -941,7 +941,7 @@ def get_client(**kwargs):
     kwargs = process_url_prefix_arg(kwargs)
     kwargs = process_host_args(kwargs)
     kwargs = process_x_api_key_arg(kwargs)
-    kwargs['connection_class'] = elasticsearch7.RequestsHttpConnection
+    kwargs['connection_class'] = elasticsearch8.RequestsHttpConnection
     kwargs = process_ssl_args(kwargs)
     kwargs = process_aws_args(kwargs)
     kwargs = try_boto_session(kwargs)
@@ -956,13 +956,13 @@ def get_client(**kwargs):
     try:
         # Creating the class object should be okay
         LOGGER.info('Instantiating client object')
-        client = elasticsearch7.Elasticsearch(**kwargs)
+        client = elasticsearch8.Elasticsearch(**kwargs)
         # Test client connectivity (debug log client.info() output)
         LOGGER.info('Testing client connectivity')
         LOGGER.debug('Cluster info: {0}'.format(client.info()))
         LOGGER.info('Successfully created Elasticsearch client object with provided settings')
     # Catch all TransportError types first
-    except elasticsearch7.TransportError as err:
+    except elasticsearch8.TransportError as err:
         try:
             reason = err.info['error']['reason']
         except:
