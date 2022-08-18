@@ -1134,4 +1134,3 @@ class TestGetDateMath(TestCase):
         )
         self.assertRaises(curator.ConfigurationError, curator.get_datemath, client, datemath)
 
-
