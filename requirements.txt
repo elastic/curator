@@ -1,4 +1,4 @@
-elasticsearch6==6.8.2
+elasticsearch7==7.17.4
 urllib3>=1.26.11,<2
 requests>=2.28.1
 boto3>=1.24.54

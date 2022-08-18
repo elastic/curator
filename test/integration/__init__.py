@@ -7,8 +7,8 @@ import sys
 import tempfile
 import time
 from datetime import timedelta, datetime, date
-from elasticsearch6 import Elasticsearch
-from elasticsearch6.exceptions import ConnectionError, NotFoundError
+from elasticsearch7 import Elasticsearch
+from elasticsearch7.exceptions import ConnectionError, NotFoundError
 from subprocess import Popen, PIPE
 from curator import get_version
 

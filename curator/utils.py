@@ -9,7 +9,7 @@ import sys
 from datetime import timedelta, datetime, date
 import base64
 import yaml
-import elasticsearch6
+import elasticsearch7
 from voluptuous import Schema
 from curator import exceptions
 from curator.defaults import settings
@@ -87,12 +87,12 @@ def rollable_alias(client, alias):
     Ensure that `alias` is an alias, and points to an index that can use the
     ``_rollover`` API.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg alias: An Elasticsearch alias
     """
     try:
         response = client.indices.get_alias(name=alias)
-    except elasticsearch6.exceptions.NotFoundError:
+    except elasticsearch7.exceptions.NotFoundError:
         LOGGER.error('alias "{0}" not found.'.format(alias))
         return False
     # Response should be like:
@@ -127,7 +127,7 @@ def rollable_alias(client, alias):
 
 def verify_client_object(test):
     """
-    Test if `test` is a proper :class:`elasticsearch6.Elasticsearch` client
+    Test if `test` is a proper :class:`elasticsearch7.Elasticsearch` client
     object and raise an exception if it is not.
 
     :arg test: The variable or object to test
@@ -137,7 +137,7 @@ def verify_client_object(test):
     if str(type(test)) == "<class 'mock.Mock'>" or \
         str(type(test)) == "<class 'mock.mock.Mock'>":
         pass
-    elif not isinstance(test, elasticsearch6.Elasticsearch):
+    elif not isinstance(test, elasticsearch7.Elasticsearch):
         raise TypeError(
             'Not a client object. Type: {0}'.format(type(test))
         )
@@ -653,7 +653,7 @@ def get_indices(client):
     """
     Get the current list of indices from the cluster.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: list
     """
     try:
@@ -675,7 +675,7 @@ def get_version(client):
     Return the ES version number as a tuple.
     Omits trailing tags like -dev, or Beta
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: tuple
     """
     version = client.info()['version']['number']
@@ -691,7 +691,7 @@ def is_master_node(client):
     Return `True` if the connected client node is the elected master node in
     the Elasticsearch cluster, otherwise return `False`.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: bool
     """
     my_node_id = list(client.nodes.info('_local')['nodes'])[0]
@@ -702,7 +702,7 @@ def check_version(client):
     """
     Verify version is within acceptable range.  Raise an exception if it is not.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: None
     """
     version_number = get_version(client)
@@ -723,7 +723,7 @@ def check_master(client, master_only=False):
     Check if connected client is the elected master node of the cluster.
     If not, cleanly exit with a log message.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: None
     """
     if master_only and not is_master_node(client):
@@ -785,7 +785,7 @@ def process_master_only_arg(data):
 
 def process_auth_args(data):
     """
-    Return a valid http_auth tuple for authentication in the elasticsearch6.Elasticsearch
+    Return a valid http_auth tuple for authentication in the elasticsearch7.Elasticsearch
     client object
     """
     http_auth = data['http_auth'] if 'http_auth' in data else None
@@ -817,7 +817,7 @@ def isbase64(data):
 
 def process_apikey_auth_args(data):
     """
-    Return a valid api_key base64 token for API Key authentication in the elasticsearch6.Elasticsearch
+    Return a valid api_key base64 token for API Key authentication in the elasticsearch7.Elasticsearch
     client object
     """
     api_key = data.pop('apikey_auth', None)
@@ -976,9 +976,9 @@ def get_client(**kwargs):
     AWS IAM parameters `aws_key`, `aws_secret_key`, and `aws_region` are
     provided for users that still have their keys included in the Curator config file.
 
-    Return an :class:`elasticsearch6.Elasticsearch` client object using the
+    Return an :class:`elasticsearch7.Elasticsearch` client object using the
     provided parameters. Any of the keyword arguments the
-    :class:`elasticsearch6.Elasticsearch` client object can receive are valid,
+    :class:`elasticsearch7.Elasticsearch` client object can receive are valid,
     such as:
 
     :arg hosts: A list of one or more Elasticsearch client hostnames or IP
@@ -1023,7 +1023,7 @@ def get_client(**kwargs):
     :type master_only: bool
     :arg skip_version_test: If `True`, skip the version check as part of the
         client connection.
-    :rtype: :class:`elasticsearch6.Elasticsearch`
+    :rtype: :class:`elasticsearch7.Elasticsearch`
     :arg api_key: value to be used in optional X-Api-key header when accessing Elasticsearch
     :type api_key: str
     :arg apikey_auth: API Key authentication in `id:api_key` encoded in base64 format.
@@ -1034,7 +1034,7 @@ def get_client(**kwargs):
     kwargs = process_url_prefix_arg(kwargs)
     kwargs = process_host_args(kwargs)
     kwargs = process_x_api_key_arg(kwargs)
-    kwargs['connection_class'] = elasticsearch6.RequestsHttpConnection
+    kwargs['connection_class'] = elasticsearch7.RequestsHttpConnection
     kwargs = process_ssl_args(kwargs)
     kwargs = process_aws_args(kwargs)
     kwargs = try_boto_session(kwargs)
@@ -1049,13 +1049,13 @@ def get_client(**kwargs):
     try:
         # Creating the class object should be okay
         LOGGER.info('Instantiating client object')
-        client = elasticsearch6.Elasticsearch(**kwargs)
+        client = elasticsearch7.Elasticsearch(**kwargs)
         # Test client connectivity (debug log client.info() output)
         LOGGER.info('Testing client connectivity')
         LOGGER.debug('Cluster info: {0}'.format(client.info()))
         LOGGER.info('Successfully created Elasticsearch client object with provided settings')
     # Catch all TransportError types first
-    except elasticsearch6.TransportError as err:
+    except elasticsearch7.TransportError as err:
         try:
             reason = err.info['error']['reason']
         except:
@@ -1102,13 +1102,13 @@ def get_repository(client, repository=''):
     """
     Return configuration information for the indicated repository.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: dict
     """
     try:
         return client.snapshot.get_repository(repository=repository)
-    except (elasticsearch6.TransportError, elasticsearch6.NotFoundError) as err:
+    except (elasticsearch7.TransportError, elasticsearch7.NotFoundError) as err:
         raise exceptions.CuratorException(
             'Unable to get repository {0}.  Response Code: {1}  Error: {2} Check Elasticsearch '
             'logs for more information.'.format(repository, err.status_code, err.error)
@@ -1120,7 +1120,7 @@ def get_snapshot(client, repository=None, snapshot=''):
     If no snapshot specified, it will return all snapshots.  If none exist, an
     empty dictionary will be returned.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot: The snapshot name, or a comma-separated list of snapshots
     :rtype: dict
@@ -1130,7 +1130,7 @@ def get_snapshot(client, repository=None, snapshot=''):
     snapname = '_all' if snapshot == '' else snapshot
     try:
         return client.snapshot.get(repository=repository, snapshot=snapshot)
-    except (elasticsearch6.TransportError, elasticsearch6.NotFoundError) as err:
+    except (elasticsearch7.TransportError, elasticsearch7.NotFoundError) as err:
         raise exceptions.FailedExecution(
             'Unable to get information about snapshot {0} from repository: '
             '{1}.  Error: {2}'.format(snapname, repository, err)
@@ -1140,7 +1140,7 @@ def get_snapshot_data(client, repository=None):
     """
     Get ``_all`` snapshots from repository and return a list.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: list
     """
@@ -1148,7 +1148,7 @@ def get_snapshot_data(client, repository=None):
         raise exceptions.MissingArgument('No value for "repository" provided')
     try:
         return client.snapshot.get(repository=repository, snapshot="_all")['snapshots']
-    except (elasticsearch6.TransportError, elasticsearch6.NotFoundError) as err:
+    except (elasticsearch7.TransportError, elasticsearch7.NotFoundError) as err:
         raise exceptions.FailedExecution(
             'Unable to get snapshot information from repository: '
             '{0}. Error: {1}'.format(repository, err)
@@ -1160,7 +1160,7 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
     If no value is provided for `snapshot`, then check all of them.
     Return `snapshot` if it is found to be in progress, or `False`
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot: The snapshot name
     """
@@ -1187,7 +1187,7 @@ def find_snapshot_tasks(client):
     Check if there is snapshot activity in the Tasks API.
     Return `True` if activity is found, or `False`
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: bool
     """
     retval = False
@@ -1204,7 +1204,7 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     """
     Ensure there are no snapshots in progress.  Pause and retry accordingly
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg retry_interval: Number of seconds to delay betwen retries. Default:
         120 (seconds)
@@ -1333,7 +1333,7 @@ def create_repository(client, **kwargs):
     """
     Create repository with repository and body settings
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
 
     :arg repository: The Elasticsearch snapshot repository to use
     :arg repo_type: The type of repository (presently only `fs` and `s3`)
@@ -1384,7 +1384,7 @@ def create_repository(client, **kwargs):
                 'Unable to create repository {0}.  '
                 'A repository with that name already exists.'.format(repository)
             )
-    except elasticsearch6.TransportError as err:
+    except elasticsearch7.TransportError as err:
         raise exceptions.FailedExecution(
             """
             Unable to create repository {0}.  Response Code: {1}.  Error: {2}.
@@ -1398,7 +1398,7 @@ def repository_exists(client, repository=None):
     """
     Verify the existence of a repository
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: bool
     """
@@ -1421,7 +1421,7 @@ def test_repo_fs(client, repository=None):
     """
     Test whether all nodes have write access to the repository
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     """
     try:
@@ -1451,7 +1451,7 @@ def snapshot_running(client):
     """
     Return `True` if a snapshot is in progress, and `False` if not
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: bool
     """
     try:
@@ -1641,7 +1641,7 @@ def health_check(client, **kwargs):
     appears in the output, and has the expected value.
     If multiple keys are provided, all must match for a `True` response.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     """
     LOGGER.debug('KWARGS= "{0}"'.format(kwargs))
     klist = list(kwargs.keys())
@@ -1678,7 +1678,7 @@ def snapshot_check(client, snapshot=None, repository=None):
     a `WARNING` message, `FAILED` is an `ERROR`, message, and all others will be
     a `WARNING` level message.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg snapshot: The name of the snapshot.
     :arg repository: The Elasticsearch snapshot repository to use
     """
@@ -1716,7 +1716,7 @@ def relocate_check(client, index):
     state, and it will return `False` if any primary or replica shard is in
     a different state.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg index: The index to check the index shards state.
     """
     shard_state_data = (
@@ -1744,7 +1744,7 @@ def restore_check(client, index_list):
     stage), it will immediately return `False`, rather than complete iterating
     over the rest of the response.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg index_list: The list of indices to verify having been restored.
     """
     response = {}
@@ -1787,7 +1787,7 @@ def task_check(client, task_id=None):
     If the task is not completed, it will log some information about the task
     and return `False`
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg task_id: A task_id which ostensibly matches a task searchable in the
         tasks API.
     """
@@ -1837,7 +1837,7 @@ def wait_for_it(
     """
     This function becomes one place to do all wait_for_completion type behaviors
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg action: The action name that will identify how to wait
     :arg task_id: If the action provided a task_id, this is where it must be
         declared.
@@ -1954,7 +1954,7 @@ def node_roles(client, node_id):
     """
     Return the list of roles assigned to the node identified by ``node_id``
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: list
     """
     return client.nodes.info()['nodes'][node_id]['roles']
@@ -1963,7 +1963,7 @@ def index_size(client, idx, value='total'):
     """
     Return the sum of either `primaries` or `total` shards for index ``idx``
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :arg idx: An Elasticsearch index
     :arg value: One of either `primaries` or `total`
     :rtype: integer
@@ -1976,7 +1976,7 @@ def single_data_path(client, node_id):
     shards cannot span filesystems.  Return `True` if the node has a single
     filesystem, and `False` otherwise.
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: bool
     """
     return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1
@@ -1986,7 +1986,7 @@ def name_to_node_id(client, name):
     """
     Return the node_id of the node identified by ``name``
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: str
     """
     stats = client.nodes.stats()
@@ -2001,7 +2001,7 @@ def node_id_to_name(client, node_id):
     """
     Return the name of the node identified by ``node_id``
 
-    :arg client: An :class:`elasticsearch6.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch7.Elasticsearch` client object
     :rtype: str
     """
     stats = client.nodes.stats()
@@ -2031,7 +2031,7 @@ def get_datemath(client, datemath, random_element=None):
     LOGGER.debug('Random datemath string for extraction: {0}'.format(datemath_dummy))
     try:
         client.indices.get(index=datemath_dummy)
-    except elasticsearch6.exceptions.NotFoundError as err:
+    except elasticsearch7.exceptions.NotFoundError as err:
         # This is the magic.  Elasticsearch still gave us the formatted
         # index name in the error results.
         faux_index = err.info['error']['index']

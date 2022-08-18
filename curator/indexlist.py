@@ -3,7 +3,7 @@ import time
 import re
 import itertools
 import logging
-from elasticsearch6.exceptions import NotFoundError, TransportError
+from elasticsearch7.exceptions import NotFoundError, TransportError
 from curator import exceptions, utils
 from curator.defaults import settings
 from curator.validators import SchemaCheck, filters

@@ -91,10 +91,10 @@ class TestActionFileReindex(CuratorTestCase):
             ver = curator.get_version(self.client)
             if ver >= (7, 0, 0):
                 self.client.create(
-                    index=source2, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=source2, id=i, body={"doc" + i :'TEST DOCUMENT'})
             else:
                 self.client.create(
-                    index=source2, doc_type='doc', id=i, body={"doc" + i :'TEST DOCUMENT'})
+                    index=source2, id=i, body={"doc" + i :'TEST DOCUMENT'})
             # Decorators make this pylint exception necessary
             # pylint: disable=E1123
             self.client.indices.flush(index=source2, force=True)
@@ -125,7 +125,7 @@ class TestActionFileReindex(CuratorTestCase):
         self.create_index(source2)
         for i in ["4", "5", "6"]:
             self.client.create(
-                index=source2, doc_type='log', id=i,
+                index=source2, id=i,
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # Decorators make this pylint exception necessary
@@ -154,7 +154,7 @@ class TestActionFileReindex(CuratorTestCase):
         self.create_index(source2)
         for i in ["4", "5", "6"]:
             self.client.create(
-                index=source2, doc_type='log', id=i,
+                index=source2, id=i,
                 body={"doc" + i :'TEST DOCUMENT'},
             )
             # Decorators make this pylint exception necessary
@@ -172,7 +172,7 @@ class TestActionFileReindex(CuratorTestCase):
         self.assertEqual(_.exit_code, 0)
     def test_reindex_from_remote(self):
         wait_interval = 1
-        max_wait = 3
+        max_wait = 6
         source1 = 'my_source1'
         source2 = 'my_source2'
         prefix = 'my_'
@@ -193,21 +193,23 @@ class TestActionFileReindex(CuratorTestCase):
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    document={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
                 # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
+                rclient.indices.refresh(index=rindex)
+        self.assertEqual(3, rclient.count(index='my_source1')['count'])
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
             testvars.remote_reindex.format(
-                wait_interval, 
-                max_wait, 
+                wait_interval,
+                max_wait,
                 'http://{0}:{1}'.format(rhost, rport),
-                'REINDEX_SELECTION', 
+                'REINDEX_SELECTION',
                 dest,
                 prefix
             )
@@ -244,13 +246,14 @@ class TestActionFileReindex(CuratorTestCase):
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
                 # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
+                rclient.indices.refresh(index=rindex)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -301,13 +304,14 @@ class TestActionFileReindex(CuratorTestCase):
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
                 # pylint: disable=E1123
                 rclient.indices.flush(index=rindex, force=True)
+                rclient.indices.refresh(index=rindex)
         self.write_config(
             self.args['configfile'], testvars.client_config.format(host, port))
         self.write_config(self.args['actionfile'],
@@ -381,8 +385,8 @@ class TestActionFileReindex(CuratorTestCase):
             rclient.indices.create(index=rindex)
             for i in range(0, 3):
                 rclient.create(
-                    index=rindex, doc_type='log', id=str(counter+1),
-                    body={"doc" + str(counter+i) :'TEST DOCUMENT'},
+                    index=rindex, id=str(counter+1),
+                    body={"doc" + str(i) :'TEST DOCUMENT'},
                 )
                 counter += 1
                 # Decorators make this pylint exception necessary
