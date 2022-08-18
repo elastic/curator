@@ -1,0 +1,10 @@
+# syntax=docker/dockerfile:experimental
+ARG VERSION=7.1.1
+FROM elasticsearch:${VERSION}
+
+COPY --chown=1000:0 eslauncher.sh /
+COPY --chown=1000:0 small.options /usr/share/elasticsearch/config/jvm.options.d
+RUN cp -R /usr/share/elasticsearch /esremote
+RUN chown -R 1000:0 /esremote
+
+ENTRYPOINT exec /eslauncher.sh

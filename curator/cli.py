@@ -24,7 +24,6 @@ CLASS_MAP = {
     'delete_indices' : actions.DeleteIndices,
     'delete_snapshots' : actions.DeleteSnapshots,
     'forcemerge' : actions.ForceMerge,
-    'freeze': actions.Freeze,
     'index_settings' : actions.IndexSettings,
     'open' : actions.Open,
     'reindex' : actions.Reindex,
@@ -33,7 +32,6 @@ CLASS_MAP = {
     'rollover' : actions.Rollover,
     'snapshot' : actions.Snapshot,
     'shrink' : actions.Shrink,
-    'unfreeze' : actions.Unfreeze,
 }
 
 def process_action(client, config, **kwargs):

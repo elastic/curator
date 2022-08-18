@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-from setuptools import setup
 
 # Utility function to read from file.
 def fread(fname):
@@ -22,21 +21,22 @@ def get_version():
     return VERSION
 
 def get_install_requires():
-    res = ['elasticsearch>=7.14.0,<8.0.0' ]
-    res.append('urllib3>=1.26.5,<2')
-    res.append('requests>=2.26.0')
-    res.append('boto3>=1.18.18')
-    res.append('requests_aws4auth>=1.1.1')
-    res.append('click>=7.0,<8.0')
-    res.append('pyyaml==5.4.1')
-    res.append('voluptuous>=0.12.1')
-    res.append('certifi>=2021.5.30')
+    res = ['elasticsearch7==7.17.4' ]
+    res.append('urllib3>=1.26.11,<2')
+    res.append('requests>=2.28.1')
+    res.append('boto3>=1.24.54')
+    res.append('requests_aws4auth>=1.1.2')
+    res.append('click==8.1.3')
+    res.append('pyyaml==6.0.0')
+    res.append('voluptuous>=0.13.1')
+    res.append('certifi>=2022.6.15')
     res.append('six>=1.16.0')
     return res
 
 try:
     ### cx_Freeze ###
     from cx_Freeze import setup, Executable
+
     try:
         import certifi
         cert_file = certifi.where()
@@ -55,17 +55,17 @@ try:
     curator_exe = Executable(
         "run_curator.py",
         base=base,
-        targetName = "curator",
+        target_name = "curator",
     )
     curator_cli_exe = Executable(
         "run_singleton.py",
         base=base,
-        targetName = "curator_cli",
+        target_name = "curator_cli",
     )
     repomgr_exe = Executable(
         "run_es_repo_mgr.py",
         base=base,
-        targetName = "es_repo_mgr",
+        target_name = "es_repo_mgr",
     )
     build_dict = { 
         "build_exe": dict(
@@ -74,42 +74,6 @@ try:
             include_files = [cert_file],
         )
     }
-    if sys.platform == "win32":
-        curator_exe = Executable(
-            "run_curator.py",
-            base=base,
-            targetName = "curator.exe",
-            icon = icon
-        )
-        curator_cli_exe = Executable(
-            "run_singleton.py",
-            base=base,
-            targetName = "curator_cli.exe",
-            icon = icon
-        )
-        repomgr_exe = Executable(
-            "run_es_repo_mgr.py",
-            base=base,
-            targetName = "es_repo_mgr.exe",
-            icon = icon
-        )
-
-        msvcrt = 'vcruntime140.dll'
-        build_dict = { 
-            "build_exe": {
-                "include_files": [cert_file, msvcrt],
-                "include_msvcr": True, 
-                "silent": True,
-            },
-            "bdist_msi": {
-                "upgrade_code": fread("msi_guid.txt"),
-                "all_users": True,
-                "add_to_path": True,
-                "summary_data": {"author": "Elastic", "comments": "version {0}".format(get_version())},
-                "install_icon": icon,
-            }
-        }
-
     setup(
         name = "elasticsearch-curator",
         version = get_version(),
@@ -138,7 +102,6 @@ try:
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
         ],
@@ -147,8 +110,9 @@ try:
         options = build_dict,
         executables = [curator_exe, curator_cli_exe, repomgr_exe]
     )
-    ### end cx_Freeze ###
+
 except ImportError:
+    from setuptools import setup
     setup(
         name = "elasticsearch-curator",
         version = get_version(),
@@ -176,7 +140,6 @@ except ImportError:
             "License :: OSI Approved :: Apache Software License",
             "Operating System :: OS Independent",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
         ],

@@ -1,4 +1,3 @@
-import elasticsearch
 import curator
 import os
 import time

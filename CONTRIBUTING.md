@@ -26,19 +26,8 @@ Want to know how to use the command-line interface (CLI)?
   http://elastic.co/guide at
   http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
 
-Want to lurk about and see what others are doing with Curator?
 
-* The irc channels (#logstash and #elasticsearch on irc.freenode.org) are good
-  places for this
-
-## Got Questions?
-
-Have a problem you want Curator to solve for you?
-
-* You are welcome to join the IRC channel #logstash (or #elasticsearch) on
-irc.freenode.org and ask for help there!
-
-## Have an Idea or Feature Request?
+## Have a Question? Or an Idea or Feature Request?
 
 * File a ticket on [github](https://github.com/elastic/curator/issues)
 

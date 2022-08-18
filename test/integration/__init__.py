@@ -7,8 +7,8 @@ import sys
 import tempfile
 import time
 from datetime import timedelta, datetime, date
-from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch7 import Elasticsearch
+from elasticsearch7.exceptions import ConnectionError, NotFoundError
 from subprocess import Popen, PIPE
 from curator import get_version
 
@@ -79,7 +79,17 @@ class CuratorTestCase(TestCase):
         # is running. This means tests may fail if run against remote instances
         # unless you explicitly set `self.args['location']` to a proper spot
         # on the target machine.
-        self.args['location'] = random_directory()
+        # self.args['location'] = random_directory()
+        nodesinfo = self.client.nodes.info()
+        nodename = list(nodesinfo['nodes'].keys())[0]
+        if 'repo' in nodesinfo['nodes'][nodename]['settings']['path']:
+            if isinstance(nodesinfo['nodes'][nodename]['settings']['path']['repo'], list):
+                self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo'][0]
+            else:
+                self.args['location'] = nodesinfo['nodes'][nodename]['settings']['path']['repo']
+        else: # Use a random directory if repo is not specified, but log it
+            self.logger.warning('path.repo is not configured!')
+            self.args['location'] = random_directory()
         self.args['configdir'] = random_directory()
         self.args['configfile'] = os.path.join(self.args['configdir'], 'curator.yml')
         self.args['actionfile'] = os.path.join(self.args['configdir'], 'actions.yml')
@@ -165,6 +175,11 @@ class CuratorTestCase(TestCase):
             wait_for_completion=True
         )
 
+    def delete_snapshot(self, name):
+        self.client.snapshot.delete(
+            repository=self.args['repository'], snapshot=name
+        )
+
     def create_repository(self):
         body = {'type':'fs', 'settings':{'location':self.args['location']}}
         self.client.snapshot.create_repository(repository=self.args['repository'], body=body)
@@ -172,6 +187,9 @@ class CuratorTestCase(TestCase):
     def delete_repositories(self):
         result = self.client.snapshot.get_repository(repository='_all')
         for repo in result:
+            cleanup = self.client.snapshot.get(repo, '_all')
+            for listitem in cleanup['snapshots']:
+                self.delete_snapshot(listitem['snapshot'])
             self.client.snapshot.delete_repository(repository=repo)
 
     def close_index(self, name):

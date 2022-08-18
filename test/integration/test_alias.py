@@ -1,4 +1,4 @@
-import elasticsearch
+import elasticsearch7
 import curator
 import os
 import json
@@ -256,7 +256,7 @@ class TestActionFileAlias(CuratorTestCase):
                     ],
                     )
         self.assertRaises(
-            elasticsearch.exceptions.NotFoundError,
+            elasticsearch7.exceptions.NotFoundError,
             self.client.indices.get_alias, alias
         )
         self.assertEqual(0, result.exit_code)

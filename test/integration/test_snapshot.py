@@ -1,4 +1,3 @@
-import elasticsearch
 import curator
 import os
 import json
@@ -38,6 +37,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                    )
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name, snapshot['snapshots'][0]['snapshot'])
+
     def test_snapshot_datemath(self):
         self.create_indices(5)
         self.create_repository()
@@ -60,6 +60,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                    )
         self.assertEqual(1, len(snapshot['snapshots']))
         self.assertEqual(snap_name_parsed, snapshot['snapshots'][0]['snapshot'])
+
     def test_snapshot_ignore_empty_list(self):
         self.create_indices(5)
         self.create_repository()
@@ -81,6 +82,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                    )
         self.assertEqual(0, len(snapshot['snapshots']))
         self.assertEquals(0, len(curator.get_indices(self.client)))
+
     def test_snapshot_do_not_ignore_empty_list(self):
         self.create_indices(5)
         self.create_repository()
@@ -102,6 +104,7 @@ class TestActionFileSnapshot(CuratorTestCase):
                    )
         self.assertEqual(0, len(snapshot['snapshots']))
         self.assertEquals(5, len(curator.get_indices(self.client)))
+
     def test_no_repository(self):
         self.create_indices(5)
         self.write_config(
