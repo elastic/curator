@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # First, stop and remove the docker container
-docker stop curator7-es
-docker rm curator7-es
+docker stop curator8-es-local curator8-es-remote
+docker rm curator8-es-local curator8-es-remote
 
 ### Now begins the repo cleanup phase
 
