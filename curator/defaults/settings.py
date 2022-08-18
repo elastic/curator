@@ -6,10 +6,10 @@ from voluptuous import Any, Boolean, Coerce, Optional
 # Elasticsearch versions supported
 def version_max():
     """Return the maximum Elasticsearch version Curator supports"""
-    return (7, 17, 99)
+    return (8, 99, 99)
 def version_min():
     """Return the minimum Elasticsearch version Curator supports"""
-    return (7, 0, 0)
+    return (8, 0, 0)
 
 # Default Config file location
 def config_file():

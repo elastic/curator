@@ -1,9 +1,9 @@
-import elasticsearch7
 import curator
 import os
 import time
 from click import testing as clicktest
 import unittest
+from elasticsearch8 import Elasticsearch
 from . import CuratorTestCase
 from . import testvars as testvars
 
@@ -22,7 +22,7 @@ port = int(port) if port else 9200
 # '        stats_result: {7}\n'
 # '        epoch: {8}\n')
 
-global_client = elasticsearch7.Elasticsearch(host=host, port=port)
+global_client = Elasticsearch(host=host, port=port)
 ILM_KEYS = ['ilm-history-1-000001', 'ilm-history-1']
 
 def exclude_ilm_history(index_list):

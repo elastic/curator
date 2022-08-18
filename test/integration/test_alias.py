@@ -1,9 +1,9 @@
-import elasticsearch7
 import curator
 import os
 import json
 import string, random, tempfile
 import click
+from elasticsearch8.exceptions import NotFoundError
 from click import testing as clicktest
 from mock import patch, Mock
 from datetime import datetime, timedelta
@@ -256,7 +256,7 @@ class TestActionFileAlias(CuratorTestCase):
                     ],
                     )
         self.assertRaises(
-            elasticsearch7.exceptions.NotFoundError,
+            NotFoundError,
             self.client.indices.get_alias, alias
         )
         self.assertEqual(0, result.exit_code)

@@ -1,9 +1,9 @@
-import elasticsearch7
 import curator
 import os
 import json
 import string, random, tempfile
 import time
+from elasticsearch8 import Elasticsearch
 from click import testing as clicktest
 from mock import patch, Mock
 import unittest
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
-global_client = elasticsearch7.Elasticsearch(host=host, port=port)
+global_client = Elasticsearch(host=host, port=port)
 
 EMPTY710ROUTING = {'allocation': {'include': {'_tier_preference': 'data_content'}}}
 

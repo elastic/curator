@@ -30,9 +30,9 @@ def set_logging(log_opts):
     logging.root.addHandler(loginfo.handler)
     logging.root.setLevel(loginfo.numeric_log_level)
     _ = logging.getLogger('curator.cli')
-    # Set up NullHandler() to handle nested elasticsearch7.trace Logger
+    # Set up NullHandler() to handle nested elasticsearch8.trace Logger
     # instance in elasticsearch python client
-    logging.getLogger('elasticsearch7.trace').addHandler(logging.NullHandler())
+    logging.getLogger('elasticsearch8.trace').addHandler(logging.NullHandler())
     if log_opts['blacklist']:
         for bl_entry in ensure_list(log_opts['blacklist']):
             for handler in logging.root.handlers:

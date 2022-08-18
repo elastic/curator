@@ -1,9 +1,9 @@
-import elasticsearch7
+from elasticsearch8 import ConflictError, NotFoundError, TransportError
 
 fake_fail      = Exception('Simulated Failure')
-four_oh_one    = elasticsearch7.TransportError(401, "simulated error")
-four_oh_four   = elasticsearch7.TransportError(404, "simulated error")
-get_alias_fail = elasticsearch7.NotFoundError(404, "simulated error")
+four_oh_one    = TransportError(401, "simulated error")
+four_oh_four   = TransportError(404, "simulated error")
+get_alias_fail = NotFoundError(404, "simulated error")
 named_index    = 'index_name'
 named_indices  = [ "index-2015.01.01", "index-2015.02.01" ]
 open_index     = {'metadata': {'indices' : { named_index : {'state' : 'open'}}}}
@@ -191,7 +191,7 @@ synced_fail     = {
                         ]
                     }
                   }
-sync_conflict   = elasticsearch7.ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
+sync_conflict   = ConflictError(409, u'{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})', synced_fail)
 synced_fails    = {
                     "_shards":{"total":2,"successful":1,"failed":1},
                     "index1":{
