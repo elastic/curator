@@ -105,14 +105,14 @@ IMPORTANT: Read more about Curator and Index Lifecycle Management
 action: delete_indices
 description: "Delete the specified indices"
 options:
-  allow_ilm_indices: true
+  allow_ilm_indices: True
 filters:
 - filtertype: ...
 -------------
 
-The value of this setting must be either `true` or `false`.
+The value of this setting must be either `True` or `False`.
 
-The default value for this setting is `false`.
+The default value for this setting is `False`.
 
 [[option_continue]]
 == continue_if_exception
@@ -469,16 +469,16 @@ NOTE: This setting is only used by the <<close,close action>>, and is
 action: close
 description: "Close selected indices"
 options:
-  ignore_sync_failures: false
+  ignore_sync_failures: False
 filters:
 - filtertype: ...
 -------------
 
-If `ignore_sync_failures` is set to `true`, Curator will ignore failures during
+If `ignore_sync_failures` is set to `True`, Curator will ignore failures during
 the synced flush that normally takes place before closing. This may be useful
 for closing a list of indices which may include active indices.
 
-The default value is `false`.
+The default value is `False`.
 
 [[option_ignore]]
 == ignore_unavailable
@@ -2984,13 +2984,13 @@ filters:
 
 NOTE: This setting is used by the <<shrink,shrink>> action.
 
-This setting must be `true` or `false`.
+This setting must be `True` or `False`.
 
-Setting this to `false` will result in the <<shrink,shrink>> action only
+Setting this to `False` will result in the <<shrink,shrink>> action only
 checking that the index being shrunk has finished being relocated, and
 not continue to wait for the cluster to fully rebalance all shards.
 
-The default value for this setting is `false`.
+The default value for this setting is `False`.
 
 
 [[option_wait_interval]]
