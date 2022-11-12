@@ -14,7 +14,7 @@ from curator import get_version
 
 from . import testvars as testvars
 from unittest import SkipTest, TestCase
-from mock import Mock
+from unittest.mock import Mock
 
 client = None
 

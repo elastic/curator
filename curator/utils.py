@@ -134,7 +134,7 @@ def verify_client_object(test):
     :rtype: None
     """
     # Ignore mock type for testing
-    if str(type(test)) == "<class 'mock.Mock'>" or \
+    if str(type(test)) == "<class 'unittest.mock.Mock'>" or \
         str(type(test)) == "<class 'mock.mock.Mock'>":
         pass
     elif not isinstance(test, elasticsearch.Elasticsearch):

@@ -1,7 +1,7 @@
 import base64
 from datetime import datetime, timedelta
 from unittest import TestCase
-from mock import MagicMock, Mock, PropertyMock, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 import elasticsearch
 import yaml
 from . import testvars as testvars

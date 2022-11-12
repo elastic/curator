@@ -1,5 +1,5 @@
 from unittest import TestCase
-from mock import Mock, patch
+from unittest.mock import Mock, patch
 import elasticsearch
 import curator
 # Get test variables and constants from a single source

@@ -1,7 +1,7 @@
 import sys
 import logging
 from unittest import TestCase
-from mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch, mock_open
 from voluptuous import *
 import curator
 

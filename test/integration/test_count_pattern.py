@@ -5,7 +5,7 @@ import json
 import string, random, tempfile
 import time
 from click import testing as clicktest
-from mock import patch, Mock
+from unittest.mock import patch, Mock
 import unittest
 from . import CuratorTestCase
 from . import testvars as testvars

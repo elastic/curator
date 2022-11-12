@@ -143,7 +143,7 @@ try:
             "Programming Language :: Python :: 3.9",
         ],
         test_suite = "test.run_tests.run_all",
-        tests_require = ["mock", "nose", "coverage", "nosexcover"],
+        tests_require = ["nose", "coverage", "nosexcover"],
         options = build_dict,
         executables = [curator_exe, curator_cli_exe, repomgr_exe]
     )
