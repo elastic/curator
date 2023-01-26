@@ -51,6 +51,19 @@ This release-candidate is a *major* refactoring of the Curator code to work with
   * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
     instance, all AWS ES connection settings and references have been removed.
 
+8.0.0a1 (26 January 2023)
+-------------------------
+
+**Announcement**
+
+  * This release is a *major* refactoring of the Curator code to work with both
+    Elasticsearch 8.x and the Elasticsearch-py Python module of the same major and minor versions.
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist``
+    via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows ZIP
+    releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+    It may be a bit before Python 3.11 support is added, or it could be quite soon.
 
 7.0.0 (x y z)
 -------------

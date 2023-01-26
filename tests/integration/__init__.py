@@ -10,8 +10,6 @@ import tempfile
 import time
 import json
 from datetime import timedelta, datetime, date
-from elasticsearch8 import Elasticsearch
-from elasticsearch8.exceptions import ConnectionError, NotFoundError
 from subprocess import Popen, PIPE
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import ConnectionError as ESConnectionError
