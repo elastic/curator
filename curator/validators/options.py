@@ -1,8 +1,10 @@
+"""Set up voluptuous Schema defaults for various actions"""
 from voluptuous import Schema
 from curator.defaults import option_defaults
 
 ## Methods for building the schema
 def action_specific(action):
+    """Action specific options"""
     options = {
         'alias' : [
             option_defaults.name(action),
@@ -20,7 +22,6 @@ def action_specific(action):
         'close' : [
             option_defaults.delete_aliases(),
             option_defaults.skip_flush(),
-            option_defaults.ignore_sync_failures(),
         ],
         'cluster_routing' : [
             option_defaults.routing_type(),
@@ -65,12 +66,7 @@ def action_specific(action):
             option_defaults.remote_certificate(),
             option_defaults.remote_client_cert(),
             option_defaults.remote_client_key(),
-            option_defaults.remote_aws_key(),
-            option_defaults.remote_aws_secret_key(),
-            option_defaults.remote_aws_region(),
             option_defaults.remote_filters(),
-            option_defaults.remote_url_prefix(),
-            option_defaults.remote_ssl_no_validate(),
             option_defaults.migration_prefix(),
             option_defaults.migration_suffix(),
         ],
@@ -136,8 +132,10 @@ def action_specific(action):
     return options[action]
 
 def get_schema(action):
-    # Appending the options dictionary seems to be the best way, since the
-    # "Required" and "Optional" elements are hashes themselves.
+    """
+    Appending the options dictionary seems to be the best way, since the
+    "Required" and "Optional" elements are hashes themselves.
+    """
     options = {}
     defaults = [
         option_defaults.allow_ilm_indices(),

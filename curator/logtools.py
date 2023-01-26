@@ -15,13 +15,13 @@ def de_dot(dot_string, msg):
             try:
                 retval = {arr[idx-2]: arr[idx-1]}
             except Exception as err:
-                raise LoggingException(err)
+                raise LoggingException(err) from err
         else:
             try:
                 new_d = {arr[idx-2]: retval}
                 retval = new_d
             except Exception as err:
-                raise LoggingException(err)
+                raise LoggingException(err) from err
     return retval
 
 def deepmerge(source, destination):
@@ -90,7 +90,7 @@ class Blacklist(Whitelist):
     def filter(self, record):
         return not Whitelist.filter(self, record)
 
-class LogInfo(object):
+class LogInfo:
     """Logging Class"""
     def __init__(self, cfg):
         cfg['loglevel'] = 'INFO' if not 'loglevel' in cfg else cfg['loglevel']
@@ -99,17 +99,16 @@ class LogInfo(object):
         self.numeric_log_level = getattr(logging, cfg['loglevel'].upper(), None)
         self.format_string = '%(asctime)s %(levelname)-9s %(message)s'
         if not isinstance(self.numeric_log_level, int):
-            raise ValueError('Invalid log level: {0}'.format(cfg['loglevel']))
+            raise ValueError(f"Invalid log level: {cfg['loglevel']}")
 
-        self.handler = logging.StreamHandler(
-            open(cfg['logfile'], 'a') if cfg['logfile'] else sys.stdout
-        )
+        if cfg['logfile']:
+            self.handler = logging.FileHandler(cfg['logfile'])
+        else:
+            self.handler = logging.StreamHandler(stream=sys.stdout)
 
         if self.numeric_log_level == 10: # DEBUG
             self.format_string = (
-                '%(asctime)s %(levelname)-9s %(name)22s '
-                '%(funcName)22s:%(lineno)-4d %(message)s'
-            )
+                '%(asctime)s %(levelname)-9s %(name)22s %(funcName)22s:%(lineno)-4d %(message)s')
 
         if cfg['logformat'] == 'json' or cfg['logformat'] == 'logstash':
             self.handler.setFormatter(LogstashFormatter())

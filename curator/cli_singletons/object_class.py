@@ -2,18 +2,18 @@
 import logging
 import sys
 from voluptuous import Schema
+from es_client.builder import Builder
+from es_client.helpers.utils import prune_nones
 from curator import IndexList, SnapshotList
 from curator.actions import (
-    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, DeleteSnapshots,
-    ForceMerge, IndexSettings, Open, Reindex, Replicas, Restore, Rollover, Shrink,
-    Snapshot
+    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, ForceMerge,
+    IndexSettings, Open, Reindex, Replicas, Rollover, Shrink, Snapshot, DeleteSnapshots, Restore
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
-from curator.validators import SchemaCheck, filters, options
-from curator.utils import get_client, prune_nones, validate_filters
-
-
+from curator.utils import validate_filters
+from curator.validators import SchemaCheck, options
+from curator.validators.filter_functions import validfilters
 
 CLASS_MAP = {
     'alias' :  Alias,
@@ -39,19 +39,21 @@ EXCLUDED_OPTIONS = [
     'continue_if_exception', 'disable_action'
 ]
 
-class cli_action():
+class CLIAction():
     """
     Unified class for all CLI singleton actions
     """
     def __init__(self, action, client_args, option_dict, filter_list, ignore_empty_list, **kwargs):
         self.logger = logging.getLogger('curator.cli_singletons.cli_action.' + action)
+        self.filters = []
         self.action = action
+        self.list_object = None
         self.repository = kwargs['repository'] if 'repository' in kwargs else None
         if action[:5] != 'show_': # Ignore CLASS_MAP for show_indices/show_snapshots
             try:
                 self.action_class = CLASS_MAP[action]
             except KeyError:
-                self.logger.critical('Action must be one of {0}'.format(list(CLASS_MAP.keys())))
+                self.logger.critical('Action must be one of %s', list(CLASS_MAP.keys()))
             self.check_options(option_dict)
         else:
             self.options = option_dict
@@ -61,6 +63,7 @@ class cli_action():
         else:
             self.allow_ilm = False
         if action == 'alias':
+            self.logger.debug('ACTION = ALIAS')
             self.alias = {
                 'name': option_dict['name'],
                 'extra_settings': option_dict['extra_settings'],
@@ -73,19 +76,25 @@ class cli_action():
                     self.alias[k]['filters'] = self.filters
                     if self.allow_ilm:
                         self.alias[k]['filters'].append({'filtertype':'ilm'})
+        # No filters for these actions
         elif action in ['cluster_routing', 'create_index', 'rollover']:
             self.action_kwargs = {}
-            # No filters for these actions
             if action == 'rollover':
-                # Ugh.  Look how I screwed up here with args instead of kwargs,
-                # like EVERY OTHER ACTION seems to have... grr
-                # todo: fix this in Curator 6, as it's an API-level change.
-                self.action_args = (option_dict['name'], option_dict['conditions'])
-                for k in ['new_index', 'extra_settings', 'wait_for_active_shards']:
-                    self.action_kwargs[k] = kwargs[k] if k in kwargs else None
+                self.logger.debug('rollover option_dict = %s', option_dict)
         else:
             self.check_filters(filter_list)
-        self.client = get_client(**client_args)
+
+        builder = Builder(configdict=client_args)
+
+        try:
+            builder.connect()
+        # pylint: disable=broad-except
+        except Exception as exc:
+            raise ConfigurationError(
+                f'Unable to connect to Elasticsearch as configured: {exc}') from exc
+        # If we're here, we'll see the output from GET http(s)://hostname.tld:PORT
+        self.logger.debug('Connection result: %s', builder.client.info())
+        self.client = builder.client
         self.ignore = ignore_empty_list
 
     def prune_excluded(self, option_dict):
@@ -98,7 +107,7 @@ class cli_action():
     def check_options(self, option_dict):
         """Validate provided options"""
         try:
-            self.logger.debug('Validating provided options: {0}'.format(option_dict))
+            self.logger.debug('Validating provided options: %s', option_dict)
             # Kludgy work-around to needing 'repository' in options for these actions
             # but only to pass the schema check.  It's removed again below.
             if self.action in ['delete_snapshots', 'restore']:
@@ -107,29 +116,29 @@ class cli_action():
                 prune_nones(option_dict),
                 options.get_schema(self.action),
                 'options',
-                '{0} singleton action "options"'.format(self.action)
+                f'{self.action} singleton action "options"'
             ).result()
             self.options = self.prune_excluded(_)
             # Remove this after the schema check, as the action class won't need it as an arg
             if self.action in ['delete_snapshots', 'restore']:
                 del self.options['repository']
-        except ConfigurationError as err:
-            self.logger.critical('Unable to parse options: {0}'.format(err))
+        except ConfigurationError as exc:
+            self.logger.critical('Unable to parse options: %s', exc)
             sys.exit(1)
 
     def check_filters(self, filter_dict, loc='singleton', key='filters'):
         """Validate provided filters"""
         try:
-            self.logger.debug('Validating provided filters: {0}'.format(filter_dict))
+            self.logger.debug('Validating provided filters: %s', filter_dict)
             _ = SchemaCheck(
                 filter_dict,
-                Schema(filters.Filters(self.action, location=loc)),
+                Schema(validfilters(self.action, location=loc)),
                 key,
-                '{0} singleton action "{1}"'.format(self.action, key)
+                f'{self.action} singleton action "{key}"'
             ).result()
             self.filters = validate_filters(self.action, _)
-        except ConfigurationError as err:
-            self.logger.critical('Unable to parse filters: {0}'.format(err))
+        except ConfigurationError as exc:
+            self.logger.critical('Unable to parse filters: %s', exc)
             sys.exit(1)
 
     def do_filters(self):
@@ -140,13 +149,13 @@ class cli_action():
         try:
             self.list_object.iterate_filters({'filters':self.filters})
             self.list_object.empty_list_check()
-        except (NoIndices, NoSnapshots) as err:
-            otype = 'index' if isinstance(err, NoIndices) else 'snapshot'
+        except (NoIndices, NoSnapshots) as exc:
+            otype = 'index' if isinstance(exc, NoIndices) else 'snapshot'
             if self.ignore:
-                self.logger.info('Singleton action not performed: empty {0} list'.format(otype))
+                self.logger.info('Singleton action not performed: empty %s list', otype)
                 sys.exit(0)
             else:
-                self.logger.error('Singleton action failed due to empty {0} list'.format(otype))
+                self.logger.error('Singleton action failed due to empty %s list', otype)
                 sys.exit(1)
 
     def get_list_object(self):
@@ -161,13 +170,11 @@ class cli_action():
         action_obj = Alias(name=self.alias['name'], extra_settings=self.alias['extra_settings'])
         for k in ['remove', 'add']:
             if k in self.alias:
-                self.logger.debug(
-                    '{0}ing matching indices {1} alias "{2}"'.format(
-                        'Add' if k == 'add' else 'Remov', # 0 = "Add" or "Remov"
-                        'to' if k == 'add' else 'from', # 1 = "to" or "from"
-                        self.alias['name'] # 2 = the alias name
-                    )
+                msg = (
+                    f"{'Add' if k == 'add' else 'Remov'}ing matching indices "
+                    f"{'to' if k == 'add' else 'from'} alias \"{self.alias['name']}\""
                 )
+                self.logger.debug(msg)
                 self.alias[k]['ilo'] = IndexList(self.client)
                 self.alias[k]['ilo'].iterate_filters({'filters':self.alias[k]['filters']})
                 fltr = getattr(action_obj, k)
@@ -176,26 +183,27 @@ class cli_action():
 
     def do_singleton_action(self, dry_run=False):
         """Execute the (ostensibly) completely ready to run action"""
-        self.logger.debug('Doing the singleton "{0}" action here.'.format(self.action))
+        self.logger.debug('Doing the singleton "%s" action here.', self.action)
         try:
             if self.action == 'alias':
                 action_obj = self.get_alias_obj()
             elif self.action in ['cluster_routing', 'create_index', 'rollover']:
-                action_obj = self.action_class(self.client, *self.action_args, **self.action_kwargs)
+                action_obj = self.action_class(self.client, **self.options)
             else:
                 self.get_list_object()
                 self.do_filters()
-                self.logger.debug('OPTIONS = {0}'.format(self.options))
+                self.logger.debug('OPTIONS = %s', self.options)
                 action_obj = self.action_class(self.list_object, **self.options)
             try:
                 if dry_run:
                     action_obj.do_dry_run()
                 else:
                     action_obj.do_action()
-            except Exception as err:
-                raise err # pass it on?
-        except Exception as err:
+            except Exception as exc:
+                raise Exception from exc # pass it on?
+        # pylint: disable=broad-except
+        except Exception as exc:
             self.logger.critical(
-                'Failed to complete action: {0}.  {1}: {2}'.format(self.action, type(err), err))
+                'Failed to complete action: %s.  %s: %s', self.action, type(exc), exc)
             sys.exit(1)
-        self.logger.info('"{0}" action completed.'.format(self.action))
+        self.logger.info('"%s" action completed.', self.action)

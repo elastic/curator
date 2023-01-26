@@ -48,9 +48,6 @@ def ignore_empty_list():
 def ignore_existing():
     return {Optional('ignore_existing', default=False): Any(bool, All(Any(*string_types), Boolean()))}
 
-def ignore_sync_failures():
-    return {Optional('ignore_sync_failures', default=False): Any(bool, All(Any(*string_types), Boolean()))}
-
 def ignore_unavailable():
     return {Optional('ignore_unavailable', default=False): Any(bool, All(Any(*string_types), Boolean()))}
 
@@ -75,14 +72,15 @@ def key():
 def max_num_segments():
     return {Required('max_num_segments'): All(Coerce(int), Range(min=1, max=32768))}
 
+# pylint: disable=unused-argument
 def max_wait(action):
     # The separation is here in case I want to change defaults later...
-    value = -1
+    defval = -1
     # if action in ['allocation', 'cluster_routing', 'replicas']:
-    #     value = -1
+    #     defval = -1
     # elif action in ['restore', 'snapshot', 'reindex', 'shrink']:
-    #     value = -1
-    return {Optional('max_wait', default=value): Any(-1, Coerce(int), None)}
+    #     defval = -1
+    return {Optional('max_wait', default=defval): Any(-1, Coerce(int), None)}
 
 def migration_prefix():
     return {Optional('migration_prefix', default=''): Any(None, *string_types)}
@@ -140,15 +138,6 @@ def preserve_existing():
 def refresh():
     return {Optional('refresh', default=True): Any(bool, All(Any(*string_types), Boolean()))}
 
-def remote_aws_key():
-    return {Optional('remote_aws_key', default=None): Any(None, *string_types)}
-
-def remote_aws_secret_key():
-    return {Optional('remote_aws_secret_key', default=None): Any(None, *string_types)}
-
-def remote_aws_region():
-    return {Optional('remote_aws_region', default=None): Any(None, *string_types)}
-
 def remote_certificate():
     return {Optional('remote_certificate', default=None): Any(None, *string_types)}
 
@@ -175,12 +164,6 @@ def remote_filters():
         ): Any(list, None)
     }
 
-def remote_ssl_no_validate():
-    return {Optional('remote_ssl_no_validate', default=False): Any(bool, All(Any(*string_types), Boolean()))}
-
-def remote_url_prefix():
-    return {Optional('remote_url_prefix', default=''): Any(None, *string_types)}
-
 def rename_pattern():
     return {Optional('rename_pattern'): Any(*string_types)}
 
@@ -193,33 +176,32 @@ def repository():
 def request_body():
     return {
         Required('request_body'): {
-            Optional('conflicts'): Any(*string_types),
-            Optional('size'): Coerce(int),
+            Optional('conflicts'): Any('proceed', 'abort'),
+            Optional('max_docs'): Coerce(int),
             Required('source'): {
                 Required('index'): Any(Any(*string_types), list),
+                Optional('query'): dict,
                 Optional('remote'): {
                     Optional('host'): Any(*string_types),
-                    Optional('headers'): Any(*string_types),
                     Optional('username'): Any(*string_types),
                     Optional('password'): Any(*string_types),
                     Optional('socket_timeout'): Any(*string_types),
                     Optional('connect_timeout'): Any(*string_types),
+                    Optional('headers'): Any(*string_types),
                 },
                 Optional('size'): Coerce(int),
-                Optional('type'): Any(Any(*string_types), list),
-                Optional('query'): dict,
-                Optional('sort'): dict,
-                Optional('_source'): Any(Any(*string_types), list),
+                Optional('_source'): Any(bool, Boolean()),
             },
             Required('dest'): {
                 Required('index'): Any(*string_types),
-                Optional('type'): Any(Any(*string_types), list),
+                Optional('version_type'): Any('internal', 'external', 'external_gt', 'external_gte'),
                 Optional('op_type'): Any(*string_types),
-                Optional('version_type'): Any(*string_types),
-                Optional('routing'): Any(*string_types),
                 Optional('pipeline'): Any(*string_types),
             },
-            Optional('script'): dict,
+            Optional('script'): {
+                Optional('source'): Any(*string_types),
+                Optional('lang'): Any('painless', 'expression', 'mustache', 'java')
+            },
         }
     }
 
@@ -258,41 +240,41 @@ def slices():
 
 def timeout(action):
     # if action == 'reindex':
-    value = 60
-    return {Optional('timeout', default=value): Any(Coerce(int), None)}
+    defval = 60
+    return {Optional('timeout', default=defval): Any(Coerce(int), None)}
 
 def timeout_override(action):
     if action in ['forcemerge', 'restore', 'snapshot']:
-        value = 21600
+        defval = 21600
     elif action == 'close':
-        value = 180
+        defval = 180
     elif action == 'delete_snapshots':
-        value = 300
+        defval = 300
     else:
-        value = None
+        defval = None
 
     return {
-        Optional('timeout_override', default=value): Any(Coerce(int), None)
+        Optional('timeout_override', default=defval): Any(Coerce(int), None)
     }
 
 def value():
     return {Required('value', default=None): Any(None, *string_types)}
 
 def wait_for_active_shards(action):
-    value = 0
+    defval = 0
     if action in ['reindex', 'shrink']:
-        value = 1
+        defval = 1
     return {
-        Optional('wait_for_active_shards', default=value): Any(
+        Optional('wait_for_active_shards', default=defval): Any(
             Coerce(int), 'all', None)
     }
 
 def wait_for_completion(action):
     # if action in ['reindex', 'restore', 'snapshot']:
-    value = True
+    defval = True
     if action in ['allocation', 'cluster_routing', 'replicas']:
-        value = False
-    return {Optional('wait_for_completion', default=value): Any(bool, All(Any(*string_types), Boolean()))}
+        defval = False
+    return {Optional('wait_for_completion', default=defval): Any(bool, All(Any(*string_types), Boolean()))}
 
 def wait_for_rebalance():
     return {Optional('wait_for_rebalance', default=True): Any(bool, All(Any(*string_types), Boolean()))}
@@ -301,10 +283,10 @@ def wait_interval(action):
     minval = 1
     maxval = 30
     # if action in ['allocation', 'cluster_routing', 'replicas']:
-    value = 3
+    defval = 3
     if action in ['restore', 'snapshot', 'reindex', 'shrink']:
-        value = 9
-    return {Optional('wait_interval', default=value): Any(All(
+        defval = 9
+    return {Optional('wait_interval', default=defval): Any(All(
                 Coerce(int), Range(min=minval, max=maxval)), None)}
 
 def warn_if_no_indices():

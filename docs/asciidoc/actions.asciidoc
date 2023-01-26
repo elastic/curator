@@ -179,7 +179,6 @@ description: "Close selected indices"
 options:
   delete_aliases: false
   skip_flush: false
-  ignore_sync_failures: false
 filters:
 - filtertype: ...
 -------------
@@ -195,7 +194,6 @@ aliases beforehand.
 
 * <<option_delete_aliases,delete_aliases>>
 * <<option_skip_flush,skip_flush>>
-* <<option_ignore_sync_failures,ignore_sync_failures>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -1205,7 +1203,7 @@ read about them and change them accordingly.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.
-    
+
 [[unfreeze]]
 == Unfreeze
 

@@ -458,28 +458,6 @@ an ERROR level message will be logged, and Curator will exit with code 1.
 
 The default value of this setting is `False`
 
-[[option_ignore_sync_failures]]
-== ignore_sync_failures
-
-NOTE: This setting is only used by the <<close,close action>>, and is
-    optional.
-
-[source,yaml]
--------------
-action: close
-description: "Close selected indices"
-options:
-  ignore_sync_failures: false
-filters:
-- filtertype: ...
--------------
-
-If `ignore_sync_failures` is set to `true`, Curator will ignore failures during
-the synced flush that normally takes place before closing. This may be useful
-for closing a list of indices which may include active indices.
-
-The default value is `false`.
-
 [[option_ignore]]
 == ignore_unavailable
 
@@ -1162,13 +1140,13 @@ description: >-
   date math.
 options:
   name: aliasname
-  new_index: "<prefix-{now/d}-1>" 
+  new_index: "<prefix-{now/d}-1>"
   conditions:
     max_age: 1d
   wait_for_active_shards: 1
 -------------
 
-IMPORTANT: A new index name for rollover should still end with a dash followed by an 
+IMPORTANT: A new index name for rollover should still end with a dash followed by an
   incrementable number, e.g. `my_new_index-1`, or if using date math, `<prefix-{now/d}-1>`
   or `<prefix-{now/d}-000001>`
 
