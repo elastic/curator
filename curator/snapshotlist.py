@@ -1,23 +1,24 @@
 """SnapshotList"""
-import time
 import re
 import logging
-from datetime import timedelta, datetime, date
-from curator import exceptions, utils
+from curator.exceptions import ConfigurationError, FailedExecution, MissingArgument, NoSnapshots
+from curator.utils import (
+    absolute_date_range, date_range, fix_epoch, get_date_regex, get_point_of_reference,
+    get_snapshot_data, report_failure, repository_exists, TimestringSearch, verify_client_object
+)
 from curator.defaults import settings
-from curator.validators import SchemaCheck, filters
+from curator.validators import SchemaCheck
+from curator.validators.filter_functions import filterstructure
 
-class SnapshotList(object):
+class SnapshotList:
     """Snapshot list object"""
     def __init__(self, client, repository=None):
-        utils.verify_client_object(client)
+        verify_client_object(client)
         if not repository:
-            raise exceptions.MissingArgument('No value for "repository" provided')
-        if not utils.repository_exists(client, repository):
-            raise exceptions.FailedExecution(
-                'Unable to verify existence of repository '
-                '{0}'.format(repository)
-            )
+            raise MissingArgument('No value for "repository" provided')
+        if not repository_exists(client, repository):
+            raise FailedExecution(
+                f'Unable to verify existence of repository {repository}')
         self.loggit = logging.getLogger('curator.snapshotlist')
         #: An Elasticsearch Client object.
         #: Also accessible as an instance variable.
@@ -39,18 +40,15 @@ class SnapshotList(object):
         #: Raw data dump of all snapshots in the repository at instance creation
         #: time.  **Type:** ``list()`` of ``dict()`` data.
         self.__get_snapshots()
-
+        self.age_keyfield = None
 
     def __actionable(self, snap):
         self.loggit.debug(
-            'Snapshot {0} is actionable and remains in the list.'.format(snap))
+            'Snapshot %s is actionable and remains in the list.', snap)
 
     def __not_actionable(self, snap):
-            self.loggit.debug(
-                'Snapshot {0} is not actionable, removing from '
-                'list.'.format(snap)
-            )
-            self.snapshots.remove(snap)
+        self.loggit.debug('Snapshot %s is not actionable, removing from list.', snap)
+        self.snapshots.remove(snap)
 
     def __excludify(self, condition, exclude, snap, msg=None):
         if condition:
@@ -68,14 +66,14 @@ class SnapshotList(object):
                 text = "Removed from actionable list"
                 self.__not_actionable(snap)
         if msg:
-            self.loggit.debug('{0}: {1}'.format(text, msg))
+            self.loggit.debug('%s: %s', text, msg)
 
     def __get_snapshots(self):
         """
         Pull all snapshots into `snapshots` and populate
         `snapshot_info`
         """
-        self.all_snapshots = utils.get_snapshot_data(self.client, self.repository)
+        self.all_snapshots = get_snapshot_data(self.client, self.repository)
         for list_item in self.all_snapshots:
             if 'snapshot' in list_item.keys():
                 self.snapshots.append(list_item['snapshot'])
@@ -96,7 +94,7 @@ class SnapshotList(object):
     def empty_list_check(self):
         """Raise exception if `snapshots` is empty"""
         if not self.snapshots:
-            raise exceptions.NoSnapshots('snapshot_list object is empty.')
+            raise NoSnapshots('snapshot_list object is empty.')
 
     def working_list(self):
         """
@@ -118,7 +116,7 @@ class SnapshotList(object):
         # Check for empty list before proceeding here to prevent non-iterable
         # condition
         self.empty_list_check()
-        tstamp = utils.TimestringSearch(timestring)
+        tstamp = TimestringSearch(timestring)
         for snapshot in self.working_list():
             epoch = tstamp.get_epoch(snapshot)
             if epoch:
@@ -140,7 +138,7 @@ class SnapshotList(object):
         if source == 'name':
             self.age_keyfield = 'age_by_name'
             if not timestring:
-                raise exceptions.MissingArgument(
+                raise MissingArgument(
                     'source "name" requires the "timestring" keyword argument'
                 )
             self._get_name_based_ages(timestring)
@@ -196,8 +194,7 @@ class SnapshotList(object):
         most_recent_time = 0
         most_recent_snap = ''
         for snapshot in self.snapshots:
-            snaptime = utils.fix_epoch(
-                self.snapshot_info[snapshot]['start_time_in_millis'])
+            snaptime = fix_epoch(self.snapshot_info[snapshot]['start_time_in_millis'])
             if snaptime > most_recent_time:
                 most_recent_snap = snapshot
                 most_recent_time = snaptime
@@ -233,7 +230,7 @@ class SnapshotList(object):
             )
 
         if kind == 'timestring':
-            regex = settings.regex_map()[kind].format(utils.get_date_regex(value))
+            regex = settings.regex_map()[kind].format(get_date_regex(value))
         else:
             regex = settings.regex_map()[kind].format(value)
 
@@ -241,7 +238,7 @@ class SnapshotList(object):
         pattern = re.compile(regex)
         for snapshot in self.working_list():
             match = pattern.search(snapshot)
-            self.loggit.debug('Filter by regex: Snapshot: {0}'.format(snapshot))
+            self.loggit.debug('Filter by regex: Snapshot: %s', snapshot)
             if match:
                 self.__excludify(True, exclude, snapshot)
             else:
@@ -272,33 +269,26 @@ class SnapshotList(object):
         """
         self.loggit.debug('Starting filter_by_age')
         # Get timestamp point of reference, por
-        por = utils.get_point_of_reference(unit, unit_count, epoch)
-        self.loggit.debug('Point of Reference: {0}'.format(por))
+        por = get_point_of_reference(unit, unit_count, epoch)
+        self.loggit.debug('Point of Reference: %s', por)
         if not direction:
-            raise exceptions.MissingArgument('Must provide a value for "direction"')
+            raise MissingArgument('Must provide a value for "direction"')
         if direction not in ['older', 'younger']:
-            raise ValueError(
-                'Invalid value for "direction": {0}'.format(direction)
-            )
+            raise ValueError(f'Invalid value for "direction": {direction}')
         self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][self.age_keyfield]:
                 self.loggit.debug('Removing snapshot {0} for having no age')
                 self.snapshots.remove(snapshot)
                 continue
+            age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
             msg = (
-                'Snapshot "{0}" age ({1}), direction: "{2}", point of '
-                'reference, ({3})'.format(
-                    snapshot,
-                    utils.fix_epoch(self.snapshot_info[snapshot][self.age_keyfield]),
-                    direction,
-                    por
-                )
+                f'Snapshot "{snapshot}" age ({age}), direction: "{direction}", point of '
+                f'reference, ({por})'
             )
             # Because time adds to epoch, smaller numbers are actually older
             # timestamps.
-            snapshot_age = utils.fix_epoch(
-                self.snapshot_info[snapshot][self.age_keyfield])
+            snapshot_age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
             if direction == 'older':
                 agetest = snapshot_age < por
             else: # 'younger'
@@ -322,7 +312,7 @@ class SnapshotList(object):
 
         self.empty_list_check()
         for snapshot in self.working_list():
-            self.loggit.debug('Filter by state: Snapshot: {0}'.format(snapshot))
+            self.loggit.debug('Filter by state: Snapshot: %s', snapshot)
             if self.snapshot_info[snapshot]['state'] == state:
                 self.__excludify(True, exclude, snapshot)
             else:
@@ -369,7 +359,7 @@ class SnapshotList(object):
         """
         self.loggit.debug('Filtering snapshots by count')
         if not count:
-            raise exceptions.MissingArgument('No value for "count" provided')
+            raise MissingArgument('No value for "count" provided')
 
         # Create a copy-by-value working list
         working_list = self.working_list()
@@ -433,22 +423,22 @@ class SnapshotList(object):
         self.loggit.debug('Filtering snapshots by period')
         if period_type not in ['absolute', 'relative']:
             raise ValueError(
-                'Unacceptable value: {0} -- "period_type" must be either '
-                '"absolute" or "relative".'.format(period_type)
+                f'Unacceptable value: {period_type} -- "period_type" must be either '
+                f'"absolute" or "relative".'
             )
-        self.loggit.debug('period_type = {0}'.format(period_type))
+        self.loggit.debug('period_type = %s', period_type)
         if period_type == 'relative':
-            func = utils.date_range
+            func = date_range
             args = [unit, range_from, range_to, epoch]
             kwgs = {'week_starts_on': week_starts_on}
             try:
                 range_from = int(range_from)
                 range_to = int(range_to)
             except ValueError as err:
-                raise exceptions.ConfigurationError(
-                    '"range_from" and "range_to" must be integer values. Error: {0}'.format(err))
+                raise ConfigurationError(
+                    f'"range_from" and "range_to" must be integer values. Error: {err}') from err
         else:
-            func = utils.absolute_date_range
+            func = absolute_date_range
             args = [unit, date_from, date_to]
             kwgs = {
                 'date_from_format': date_from_format,
@@ -456,30 +446,26 @@ class SnapshotList(object):
             }
             for reqd in [date_from, date_to, date_from_format, date_to_format]:
                 if not reqd:
-                    raise exceptions.ConfigurationError(
+                    raise ConfigurationError(
                         'Must provide "date_from", "date_to", '
                         '"date_from_format", and "date_to_format" with '
                         'absolute period_type'
                     )
         try:
             start, end = func(*args, **kwgs)
+        # pylint: disable=broad-except
         except Exception as err:
-            utils.report_failure(err)
+            report_failure(err)
         self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][self.age_keyfield]:
                 self.loggit.debug('Removing snapshot {0} for having no age')
                 self.snapshots.remove(snapshot)
                 continue
-            age = utils.fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
+            age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
             msg = (
-                'Snapshot "{0}" age ({1}), period start: "{2}", period '
-                'end, ({3})'.format(
-                    snapshot,
-                    age,
-                    start,
-                    end
-                )
+                f'Snapshot "{snapshot}" age ({age}), period start: "{start}", period '
+                f'end, ({end})'
             )
             # Because time adds to epoch, smaller numbers are actually older
             # timestamps.
@@ -514,26 +500,19 @@ class SnapshotList(object):
             self.loggit.info('No filters in config.  Returning unaltered object.')
             return
 
-        self.loggit.debug('All filters: {0}'.format(config['filters']))
+        self.loggit.debug('All filters: %s', config['filters'])
         for fltr in config['filters']:
-            self.loggit.debug('Top of the loop: {0}'.format(self.snapshots))
-            self.loggit.debug('Un-parsed filter args: {0}'.format(fltr))
-            self.loggit.debug(
-                'Parsed filter args: {0}'.format(
-                    SchemaCheck(
-                        fltr,
-                        filters.structure(),
-                        'filter',
-                        'SnapshotList.iterate_filters'
-                    ).result()
-                )
-            )
+            self.loggit.debug('Top of the loop: %s', self.snapshots)
+            self.loggit.debug('Un-parsed filter args: %s', fltr)
+            filter_result = SchemaCheck(
+                fltr, filterstructure(), 'filter', 'SnapshotList.iterate_filters').result()
+            self.loggit.debug('Parsed filter args: %s', filter_result)
             method = self.__map_method(fltr['filtertype'])
             # Remove key 'filtertype' from dictionary 'fltr'
             del fltr['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            self.loggit.debug('Filter args: {0}'.format(fltr))
-            self.loggit.debug('Pre-instance: {0}'.format(self.snapshots))
+            self.loggit.debug('Filter args: %s', fltr)
+            self.loggit.debug('Pre-instance: %s', self.snapshots)
             method(**fltr)
-            self.loggit.debug('Post-instance: {0}'.format(self.snapshots))
+            self.loggit.debug('Post-instance: %s', self.snapshots)

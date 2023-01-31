@@ -1,25 +1,32 @@
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
 # not a Python "NoneType"
-client:
-  hosts:
-    - 127.0.0.1
-  port: 9200
-  url_prefix:
-  use_ssl: False
-  certificate:
-  client_cert:
-  client_key:
-  aws_key:
-  aws_secret_key:
-  aws_region:
-  ssl_no_validate: False
-  http_auth:
-  timeout: 30
-  master_only: False
+elasticsearch:
+  client:
+    hosts: https://10.11.12.13:9200
+    cloud_id:
+    bearer_auth:
+    opaque_id:
+    request_timeout: 60
+    http_compress:
+    verify_certs:
+    ca_certs:
+    client_cert:
+    client_key:
+    ssl_assert_hostname:
+    ssl_assert_fingerprint:
+    ssl_version:
+  other_settings:
+    master_only:
+    skip_version_test:
+    username:
+    password:
+    api_key:
+      id:
+      api_key:
 
 logging:
   loglevel: INFO
-  logfile:
+  logfile: /path/to/file.log
   logformat: default
   blacklist: ['elasticsearch', 'urllib3']

@@ -185,20 +185,23 @@ looks like this:
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
 # not a Python "NoneType"
-client:
-  hosts:
-    - 127.0.0.1
-  port: 9200
-  url_prefix:
-  use_ssl: False
-  certificate:
-  client_cert:
-  client_key:
-  ssl_no_validate: False
-  username:
-  password:
-  timeout: 30
-  master_only: False
+elasticsearch:
+  client:
+    hosts:
+      - http://127.0.0.1:9200
+    cloud_id:
+    ca_certs:
+    client_cert:
+    client_key:
+    verify_certs:
+    request_timeout: 30
+  other_settings:
+    master_only: False
+    username:
+    password:
+    api_key:
+      id:
+      api_key:
 
 logging:
   loglevel: INFO
@@ -207,17 +210,27 @@ logging:
   blacklist: ['elasticsearch', 'urllib3']
 -----------
 
-It is a YAML configuration file.  The two root keys must be `client` and
+It is a YAML configuration file.  The two root keys must be `elasticsearch` and
 `logging`.  The subkeys of each of these will be described here.
+
+There are other keys available for the `client` subkey of the `elasticsearch` root key, many of
+which are listed https://es-client.readthedocs.io/en/latest/defaults.html[here].
+The most commonly used ones (listed above) are described as follows:
 
 [[hosts]]
 === hosts
 
-This can be a single value:
+IMPORTANT: All hosts must be in `HTTP[S]://FQDN.DOMAIN.TLD:PORT` form or they will be rejected and
+    Curator will exit with an error. The only exception to this is `HTTPS://FQDN.DOMAIN.TLD`
+    (without port), in which case `:443` is implicit, and is, in fact, appended automatically.
+
+WARNING: If both `cloud_id` and `hosts` keys are populated an exception will be thrown and Curator will exit.
+
+A `hosts` definition can be a single value:
 
 [source,sh]
 -----------
-hosts: 127.0.0.1
+hosts: http://127.0.0.1:9200
 -----------
 
 Or multiple values in the 3 acceptable YAML ways to render sequences, or arrays:
@@ -229,94 +242,46 @@ Flow:
 
 [source,sh]
 -----------
-hosts: [ "10.0.0.1", "10.0.0.2" ]
+hosts: [ "http://10.0.0.1:9200", "http://10.0.0.2:9200" ]
 -----------
 
 Spanning:
 
 [source,sh]
 -----------
-hosts: [ "10.0.0.1",
-    "10.0.0.2" ]
+hosts: [ "http://10.0.0.1:9200",
+    "http://10.0.0.2:9200" ]
 -----------
 
 Block:
 [source,sh]
 -----------
 hosts:
-  - 10.0.0.1
-  - 10.0.0.2
+  - http://10.0.0.1:9200
+  - http://10.0.0.2:9200
 -----------
 
-You can also provide these hosts with optional ports, and bypass the port
-option:
+
+[[cloud_id]]
+=== cloud_id
+
+The value should encapsulated in quotes because of the included colon:
 
 [source,sh]
 -----------
-hosts:
-  - 10.0.0.1:9200
-  - 10.0.0.2:9201
+cloud_id: 'deployment_name:BIG_HASH_VALUE'
 -----------
 
-WARNING: When adding a port to the end of a host or IP, the YAML Flow and
-    Spanning styles require `host:port` to be single `'` or double `"` quote
-    encapsulated or you will receive an error.  The Block style does not have
-    this limitation.
+WARNING: If both `cloud_id` and `hosts` keys are populated an exception will be thrown and Curator will exit.
 
-[[port]]
-=== port
-
-This should be a single value:
-
-[source,sh]
------------
-port: 9200
------------
-
-The default is `9200`.  This value will only be applied to <<hosts,hosts>>
-without a port affixed, e.g. `localhost:9202`.
-
-[[url_prefix]]
-=== url_prefix
-
-This should be a single value or left empty.
-
-[source,sh]
------------
-url_prefix:
------------
-
-In some cases you may be obliged to connect to your Elasticsearch cluster
-through a proxy of some kind. There may be a URL prefix before the API URI
-items, e.g. http://example.com/elasticsearch/ as opposed to
-http://localhost:9200. In such a case, set the `url_prefix` to the
-appropriate value, 'elasticsearch' in this example.
-
-The default is an empty string.
-
-[[use_ssl]]
-=== use_ssl
-
-This should be `True`, `False` or left empty.
-
-[source,sh]
------------
-use_ssl:
------------
-
-If access to your Elasticsearch instance is protected by SSL encryption, you
-must use set `use_ssl` to `True`.
-
-The default is `False`
-
-[[certificate]]
-=== certificate
+[[ca_certs]]
+=== ca_certs
 
 This should be a file path to your CA certificate, or left empty.
 
 [source,sh]
 -----------
-certificate:
+ca_certs:
 -----------
 
 This setting allows the use of a specified CA certificate file to validate the
@@ -364,172 +329,37 @@ SSL key. The key file must be an unencrypted key in PEM format.
 
 include::inc_filepath.asciidoc[]
 
-[[aws_key]]
-=== aws_key
 
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM access key, or left empty.
-
-[source,sh]
------------
-aws_key:
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-IMPORTANT: This feature may be deprecated in a future release. You should consider
-    using <<aws_sign_request,aws_sign_request>> instead.
-
-[[aws_secret_key]]
-=== aws_secret_key
-
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM secret access key, or left empty.
-
-[source,sh]
------------
-aws_secret_key:
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-IMPORTANT: This feature may be deprecated in a future release. You should consider
-    using <<aws_sign_request,aws_sign_request>> instead.
-
-[[aws_region]]
-=== aws_region
-
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS region, or left empty.
-
-[source,sh]
------------
-aws_region:
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-[[aws_sign_request]]
-=== aws_sign_request
-
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: If installing via `pip`, this setting will not work unless the `requests-aws4auth`
-    and `boto3` Python modules have been manually installed first.
-
-WARNING: Credentials found in your environment will replace the data specified in
-    <<aws_key,aws_key>> and <<aws_secret_key,aws_secret_key>>
-
-This should be `True` if you want your requests to be signed with credentials retrieved
-    from your environment. The order in which credentials will be searched for is:
-
-    . Environment variables
-    . Shared credential file (~/.aws/credentials)
-    . AWS config file (~/.aws/config)
-    . Boto2 config file (/etc/boto.cfg and ~/.boto)
-    . Instance metadata service on an Amazon EC2 instance that has an IAM role configured.
-
-The default value is `False`.
-
-[source,sh]
------------
-aws_sign_request: True
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
-
-[[ssl_no_validate]]
-=== ssl_no_validate
+[[verify_certs]]
+=== verify_certs
 
 This should be `True`, `False` or left empty.
 
 [source,sh]
 -----------
-ssl_no_validate:
+verify_certs:
 -----------
 
 If access to your Elasticsearch instance is protected by SSL encryption, you may
-set `ssl_no_validate` to `True` to disable SSL certificate verification.
+set `verify_certs` to `False` to disable SSL certificate verification.
 
 Valid use cases for doing so include the use of self-signed certificates that
 cannot be otherwise verified and would generate error messages.
 
-WARNING: Setting `ssl_no_validate` to `True` will likely result in a warning
+WARNING: Setting `verify_certs` to `False` will likely result in a warning
     message that your SSL certificates are not trusted. This is expected
     behavior.
 
-The default value is `False`.
+The default value is `True`.
 
-[[http_auth]]
-=== http_auth
-
-**NOTE: This setting is now deprecated. Please use `username` and `password` instead.**
-
-This should be a authentication credentials (e.g. `user:pass`), or left empty.
-
-[source,sh]
------------
-http_auth:
------------
-
-This setting allows basic HTTP authentication to an Elasticsearch instance.
-
-The default is empty.
-
-[[username]]
-=== username
-
-The HTTP Basic Authentication username
-
-[[password]]
-=== password
-
-The HTTP Basic Authentication password
-
-[[apikey_auth]]
-=== apikey_auth
-
-This should a base64 encoded token (e.g: `id:api_key`).
-
-[source,sh]
----------
-apikey_auth:
----------
-
-This setting allows API Key authentication to an Elasticsearch instance.
-
-The default is empty.
-
-[[timeout]]
-=== timeout
+[[request_timeout]]
+=== request_timeout
 
 This should be an integer number of seconds, or left empty.
 
 [source,sh]
 -----------
-timeout:
+request_timeout:
 -----------
 
 You can change the default client connection timeout value with this setting.
@@ -562,6 +392,52 @@ WARNING: If `master_only` is `True`, and <<hosts,hosts>> has more than one
     deploying to all nodes in the cluster.
 
 The default value is `False`.
+
+[[username]]
+=== username
+
+The HTTP Basic Authentication username
+
+[[password]]
+=== password
+
+The HTTP Basic Authentication password
+
+[[id]]
+=== id
+
+This should be the `id` portion of an API Key pair.
+
+[source,sh]
+---------
+api_key:
+  id:
+---------
+
+This setting combined with the other subkey `api_key` allows API Key authentication to an
+Elasticsearch instance.
+
+The default is empty.
+
+[[api_key]]
+=== api_key
+
+This should be the `api_key` portion of an API Key pair.
+
+[source,sh]
+---------
+api_key:
+  api_key:
+---------
+
+This setting combined with the other subkey `id` allows API Key authentication to an
+Elasticsearch instance.
+
+The default is empty.
+
+
+
+
 
 [[loglevel]]
 === loglevel

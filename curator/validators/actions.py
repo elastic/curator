@@ -1,4 +1,5 @@
-from voluptuous import All, Any, In, Schema, Optional, Required
+"""Validate actions"""
+from voluptuous import Any, In, Schema, Optional, Required
 from curator.defaults import settings
 from curator.validators import SchemaCheck
 from six import string_types

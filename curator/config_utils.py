@@ -1,27 +1,35 @@
 """Configuration utilty functions"""
 import logging
 from copy import deepcopy
-from voluptuous import Schema
-from curator.validators import SchemaCheck, config_file
-from curator.utils import ensure_list, get_yaml, prune_nones, test_client_options
-from curator.logtools import LogInfo, Whitelist, Blacklist
+import click
+from es_client.helpers.schemacheck import SchemaCheck
+from es_client.helpers.utils import prune_nones, ensure_list
+from curator.defaults.logging_defaults import config_logging
+from curator.logtools import LogInfo, Blacklist
 
-def test_config(config):
-    """Test YAML against the schema"""
-    # Get config from yaml file
-    yaml_config = get_yaml(config)
-    # if the file is empty, which is still valid yaml, set as an empty dict
-    yaml_config = {} if not yaml_config else prune_nones(yaml_config)
-    # Voluptuous can't verify the schema of a dict if it doesn't have keys,
-    # so make sure the keys are at least there and are dict()
-    for k in ['client', 'logging']:
-        if k not in yaml_config:
-            yaml_config[k] = {}
+def check_logging_config(config):
+    """
+    Ensure that the top-level key ``logging`` is in ``config`` before passing it to
+    :class:`~es_client.helpers.schemacheck.SchemaCheck` for value validation.
+    """
+
+    if not isinstance(config, dict):
+        click.echo(
+            f'Must supply logging information as a dictionary. '
+            f'You supplied: "{config}" which is "{type(config)}"'
+            f'Using default logging values.'
+        )
+        log_settings = {}
+    elif not 'logging' in config:
+        click.echo('No "logging" setting in supplied configuration.  Using defaults.')
+        log_settings = {}
+    else:
+        if config['logging']:
+            log_settings = prune_nones(config['logging'])
         else:
-            yaml_config[k] = prune_nones(yaml_config[k])
+            log_settings = {}
     return SchemaCheck(
-        yaml_config, config_file.client(), 'Client Configuration', 'full configuration dictionary'
-    ).result()
+        log_settings, config_logging(), 'Logging Configuration', 'logging').result()
 
 def set_logging(log_opts):
     """Configure global logging options"""
@@ -30,20 +38,13 @@ def set_logging(log_opts):
     logging.root.addHandler(loginfo.handler)
     logging.root.setLevel(loginfo.numeric_log_level)
     _ = logging.getLogger('curator.cli')
-    # Set up NullHandler() to handle nested elasticsearch.trace Logger
+    # Set up NullHandler() to handle nested elasticsearch8.trace Logger
     # instance in elasticsearch python client
-    logging.getLogger('elasticsearch.trace').addHandler(logging.NullHandler())
+    logging.getLogger('elasticsearch8.trace').addHandler(logging.NullHandler())
     if log_opts['blacklist']:
         for bl_entry in ensure_list(log_opts['blacklist']):
             for handler in logging.root.handlers:
                 handler.addFilter(Blacklist(bl_entry))
-
-def process_config(yaml_file):
-    """Process yaml_file and return a valid client configuration"""
-    config = test_config(yaml_file)
-    set_logging(config['logging'])
-    test_client_options(config['client'])
-    return config['client']
 
 def password_filter(data):
     """

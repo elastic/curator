@@ -1,7 +1,7 @@
-from voluptuous import Schema
-from curator.exceptions import ConfigurationError
-import re
+"""Schema checker"""
 import logging
+import re
+from curator.exceptions import ConfigurationError
 
 class SchemaCheck(object):
     def __init__(self, config, schema, test_what, location):
@@ -55,12 +55,12 @@ class SchemaCheck(object):
     def result(self):
         try:
             return self.schema(self.config)
-        except Exception as e:
+        except Exception as err:
             try:
                 # pylint: disable=E1101
-                self.error = e.errors[0]
+                self.error = err.errors[0]
             except:
-                self.error = '{0}'.format(e)
+                self.error = '{0}'.format(err)
             self.__parse_error()
             self.loggit.error('Schema error: {0}'.format(self.error))
             raise ConfigurationError(

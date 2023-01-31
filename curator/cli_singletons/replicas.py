@@ -1,6 +1,6 @@
 """Change Replica Count Singleton"""
 import click
-from curator.cli_singletons.object_class import cli_action
+from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import get_width, validate_filter_json
 
 @click.command(context_settings=get_width())
@@ -39,6 +39,6 @@ def replicas(ctx, count, wait_for_completion, ignore_empty_list, allow_ilm_indic
         'allow_ilm_indices': allow_ilm_indices,
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
-    action = cli_action(
-        ctx.info_name, ctx.obj['config']['client'], manual_options, filter_list, ignore_empty_list)
+    action = CLIAction(
+        ctx.info_name, ctx.obj['config'], manual_options, filter_list, ignore_empty_list)
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])

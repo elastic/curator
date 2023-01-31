@@ -1,15 +1,15 @@
 """Utilities/Helpers for defaults and schemas"""
 from os import path
 from six import string_types
-from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
+from voluptuous import Any, Boolean, Coerce, Optional
 
 # Elasticsearch versions supported
 def version_max():
     """Return the maximum Elasticsearch version Curator supports"""
-    return (7, 99, 99)
+    return (8, 99, 99)
 def version_min():
     """Return the minimum Elasticsearch version Curator supports"""
-    return (5, 0, 0)
+    return (8, 0, 0)
 
 # Default Config file location
 def config_file():
@@ -58,7 +58,6 @@ def index_actions():
         'create_index',
         'delete_indices',
         'forcemerge',
-        'freeze',
         'index_settings',
         'open',
         'reindex',
@@ -66,7 +65,6 @@ def index_actions():
         'rollover',
         'shrink',
         'snapshot',
-        'unfreeze',
     ]
 
 def snapshot_actions():

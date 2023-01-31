@@ -8,23 +8,14 @@ needs.  It is important to note that Curator only requires access to a client
 node in the Elasticsearch cluster to work.  It does not need to be installed on
 one of the nodes in the cluster.
 
-IMPORTANT: If you plan on using SSL/TLS to connect to Elasticsearch, you may
-  encounter issues with older versions of Python and outdated libraries.  The
-  binary packages have been compiled with up-to-date versions for your
-  convenience. See the <<security,security>> page for more information.
-
 * <<pip,pip>>, the easiest way to use and upgrade.
-* <<apt-repository,APT Repository>>, installs a single, binary package!
-* <<yum-repository,YUM Repository>>, installs a single, binary package!
-* <<windows-zip,Windows Zip Package>>
-* <<windows-msi,Windows MSI Installer>>
 * <<python-source,Source Code>>
+* <<docker,Docker>>
 --
 
 [[pip]]
 == pip
-This installation procedure utilizes
-https://pip.pypa.io/en/latest/installing.html[python pip], and requires that the
+This installation procedure utilizes Python `pip` and requires that the
 target machine has internet connectivity.
 
 ---------------------------------
@@ -78,261 +69,25 @@ pip install -U --user elasticsearch-curator==X.Y.Z
 
 &nbsp;
 
-
-[[apt-repository]]
-== APT repository
-
-We use the PGP key
-http://pgp.mit.edu/pks/lookup?op=vindex&search=0xD27D666CD88E42B4[D88E42B4],
-Elastic's Signing Key, with fingerprint
-
-    4609 5ACC 8548 582C 1A26 99A9 D27D 666C D88E 42B4
-
-to sign all our packages. PGP is available from http://pgp.mit.edu.
-
-=== Signing Key
-
-Download and install the Public Signing Key:
-
-[source,sh]
---------------------------------------------------
-wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
---------------------------------------------------
-
-=== Direct Package Download Link
-
-* https://packages.elastic.co/curator/{curator_major}/debian/pool/main/e/elasticsearch-curator/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package (DEB)]
-* https://packages.elastic.co/curator/{curator_major}/debian9/pool/main/e/elasticsearch-curator/elasticsearch-curator_{curator_version}_amd64.deb[Elasticsearch Curator {curator_version} Binary Package for newer Debian 9 based systems (DEB)]
-
-=== Repository Configuration
-
-[IMPORTANT]
-====================================================
-Debian 9 was recently released, and it uses OpenSSL 1.1.0 libraries, where
-earlier releases, including Debian 8, Ubuntu 12.04 - 16.04 LTS, and others
-used OpenSSL 1.0.0 libraries.  As a consequence, a new repository has been
-introduced, in order to preserve the functionality of the old one, without
-causing collisions.
-
-Please use the appropriate package or repository.
-====================================================
-
-Add one of the following -- **noting the correct path, `debian` or `debian9`** --
-in your `/etc/apt/sources.list.d/` directory in a file with a `.list` suffix,
-for example `curator.list`
-
-["source","sh",subs="attributes,callouts"]
---------------------------------------------------
-deb [arch=amd64] https://packages.elastic.co/curator/{curator_major}/debian stable main
---------------------------------------------------
-
-or
-
-["source","sh",subs="attributes,callouts"]
---------------------------------------------------
-deb [arch=amd64] https://packages.elastic.co/curator/{curator_major}/debian9 stable main
---------------------------------------------------
-
-After running `sudo apt-get update`, the repository is ready for use.
-
-[WARNING]
-==================================================
-Use the file edit method described above to add the Curator repository.  Do not
-use `add-apt-repository` as it will add a `deb-src` entry as well, but we do not
-provide a source package. If you have added the `deb-src` entry, you will see an
-error like the following:
-
-    Unable to find expected entry 'main/source/Sources' in Release file (Wrong sources.list entry or malformed file)
-
-Just delete the `deb-src` entry from the `/etc/apt/sources.list.d/curator.list`
-file and the installation should work as expected.
-==================================================
-
-[[apt-binary]]
-=== Binary Package Installation
-
-The APT version of Curator is a binary version.  What this really means is that
-the source is frozen, and all required libraries are bundled with the
-`curator` binary, so there are no conflicts.
-
-The packages resulting from the creation process have been tested on Debian 8,
-and Ubuntu 12.04, 14.04, & 16.04.  It was also tested on Debian 7, but that
-failed due to a libc library mismatch. This binary package may work on other
-similar or derivative variants, but they have not been tested.
-
-[source,sh]
---------------------------------------------------
-sudo apt-get update && sudo apt-get install elasticsearch-curator
---------------------------------------------------
-
-This will install the necessary files into `/opt/elasticsearch-curator` and
-make a symlink at `/usr/bin/curator` that points to the `curator` binary in the
-aforementioned directory.
-
-[[yum-repository]]
-== YUM repository
-
-We use the PGP key
-http://pgp.mit.edu/pks/lookup?op=vindex&search=0xD27D666CD88E42B4[D88E42B4],
-Elastic's Signing Key, with fingerprint
-
-    4609 5ACC 8548 582C 1A26 99A9 D27D 666C D88E 42B4
-
-to sign all our packages. It is available from http://pgp.mit.edu.
-
-=== Signing Key
-
-Download and install the public signing key:
-
-[source,sh]
---------------------------------------------------
-rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
---------------------------------------------------
-
-=== Direct Package Download Link
-
-* https://packages.elastic.co/curator/{curator_major}/centos/6/Packages/elasticsearch-curator-{curator_version}-1.x86_64.rpm[Elasticsearch Curator {curator_version} RHEL/CentOS 6 Binary Package (RPM)]
-* https://packages.elastic.co/curator/{curator_major}/centos/7/Packages/elasticsearch-curator-{curator_version}-1.x86_64.rpm[Elasticsearch Curator {curator_version} RHEL/CentOS 7 Binary Package (RPM)]
-
-=== Repository Configuration
-
-Add the following in your `/etc/yum.repos.d/` directory in a file with a `.repo`
-suffix, for example `curator.repo`
-
-[WARNING]
-========================================
-The repositories are different for CentOS/RHEL 6 and 7 due to library and path
-differences.  Be sure to use the correct version for your system!
-
-RHEL/CentOS 6:
-["source","sh",subs="attributes,callouts"]
---------------------------------------------------
-[curator-{curator_major}]
-name=CentOS/RHEL 6 repository for Elasticsearch Curator {curator_major}.x packages
-baseurl=https://packages.elastic.co/curator/{curator_major}/centos/6
-gpgcheck=1
-gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
-enabled=1
---------------------------------------------------
-
-RHEL/CentOS 7:
-["source","sh",subs="attributes,callouts"]
---------------------------------------------------
-[curator-{curator_major}]
-name=CentOS/RHEL 7 repository for Elasticsearch Curator {curator_major}.x packages
-baseurl=https://packages.elastic.co/curator/{curator_major}/centos/7
-gpgcheck=1
-gpgkey=https://packages.elastic.co/GPG-KEY-elasticsearch
-enabled=1
---------------------------------------------------
-========================================
-
-[[yum-binary]]
-=== Binary Package Installation
-
-The RPM version of Curator is a binary version.  What this really means is that
-the source is frozen, and all required libraries are bundled with the
-`curator` binary, so there are no conflicts.
-
-There are separate binary packages for RedHat variants. The binary packages
-resulting from the creation process have been tested on CentOS 6 & 7, with a
-different binary for each. They may work on similar variants and/or derivatives,
-but they have not been tested.
-
-[source,sh]
-----------------------------------------
-yum install elasticsearch-curator
-----------------------------------------
-
-This will install the necessary files into `/opt/elasticsearch-curator` and
-make a symlink at `/usr/bin/curator` that points to the `curator` binary in the
-aforementioned directory.
-
-[[windows-zip]]
-== Windows Binary Zip Package
-If you do not wish to install and maintain Python on Windows, there is a
-compiled binary version available.  It is in a directory with EXE
-files and all necessary libraries that Python requires.  You can navigate to the
-directory and run the `curator` command just as you otherwise would.
-
-WARNING: If you do have Python installed, do not uncompress the zip file into
-your Python directory.  It can cause library path collisions which will prevent
-Curator from properly functioning.
-
-* https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-amd64.zip[Download Curator]
-** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-amd64.zip.md5.txt[MD5]
-** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-amd64.zip.sha1.txt[SHA1]
-
-
-[[windows-msi]]
-== Windows MSI Installer
-There is now a rudimentary MSI installer available.  In previous releases, you could not run a newer version to install over
-an older version.  The necessary upgrade code was added in version 5.3.0, which means that MSI upgrades will work when installing
-over the top of versions 5.3.0 and up.
-
-The installation will default to `"C:\Program Files\elasticsearch-curator"`.
-The same binaries and libraries found in the Windows Binary Package will be installed
-into this directory.
-
-* https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-amd64.msi[Download Curator Installer]
-** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-amd64.msi.md5.txt[MD5]
-** https://packages.elastic.co/curator/{curator_major}/windows/elasticsearch-curator-{curator_version}-amd64.msi.sha1.txt[SHA1]
-
-
 [[python-source]]
 == Installation from source
 
-Installing or Curator from source is also possible.  In order to do so requires
-that all dependent libraries are installed first.
+Installing or Curator from source tarball (rather than doing a `git clone`) is also possible.
 
-If you have `pip` installed, then you can install from a gzipped file.  If not,
-you have to uncompress the gzipped file and run `python setup.py install`.
-
-That might look like this:
-
-[source,sh]
---------------------------------------
-wget https://github.com/username/project/archive/#.#.#.tar.gz -O package.tar.gz
-tar zxf package.tar.gz
-cd package-#.#.#
-python setup.py install
---------------------------------------
-
-The dependencies are as follows
-
-=== setuptools
-
-Download https://bootstrap.pypa.io/ez_setup.py[ez_setup.py] and run it using the
-target Python version. The script will download the appropriate version and
-install it for you:
-
-[source,sh]
------------
-wget https://bootstrap.pypa.io/ez_setup.py -O - | python
------------
-
-Note that you will need to invoke the command with superuser privileges to
-install to the system Python:
-
-[source,sh]
------------
-wget https://bootstrap.pypa.io/ez_setup.py -O - | sudo python
------------
-
-Alternatively, setuptools may be installed to a user-local path:
-
-[source,sh]
------------
-wget https://bootstrap.pypa.io/ez_setup.py -O - | python - --user
------------
-
-&nbsp;
-
-=== elasticsearch-curator (python module)
-Download and install Curator:
+Download and install Curator from tarball:
 
 . `wget https://github.com/elastic/curator/archive/v`+pass:attributes[{curator_version}].tar.gz -O elasticsearch-curator.tar.gz+
 . `pip install elasticsearch-curator.tar.gz`
 
-or uncompress and run `python setup.py install`.  At this point you could also
-run `run_curator.py` from the source directory as well.
+&nbsp;
+
+[[docker]]
+== Docker
+
+Curator is periodically published to Docker Hub at
+https://hub.docker.com/repository/docker/untergeek/curator/general[`untergeek/curator`].
+
+Download Curator Docker image:
+
+. `docker pull untergeek/curator:`+pass:attributes[{curator_version}]+
+

@@ -1,6 +1,6 @@
 """Delete Index and Delete Snapshot Singletons"""
 import click
-from curator.cli_singletons.object_class import cli_action
+from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import get_width, validate_filter_json
 
 #### Indices ####
@@ -28,9 +28,9 @@ def delete_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
     Delete Indices
     """
     # ctx.info_name is the name of the function or name specified in @click.command decorator
-    action = cli_action(
+    action = CLIAction(
         'delete_indices',
-        ctx.obj['config']['client'],
+        ctx.obj['config'],
         {'allow_ilm_indices':allow_ilm_indices},
         filter_list,
         ignore_empty_list
@@ -73,9 +73,9 @@ def delete_snapshots(
         'allow_ilm_indices': allow_ilm_indices,
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
-    action = cli_action(
+    action = CLIAction(
         'delete_snapshots',
-        ctx.obj['config']['client'],
+        ctx.obj['config'],
         manual_options,
         filter_list,
         ignore_empty_list,

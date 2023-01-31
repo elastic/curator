@@ -1,16 +1,21 @@
-from datetime import timedelta, datetime, date
-import time
+"""Index List Class"""
 import re
 import itertools
 import logging
-from elasticsearch.exceptions import NotFoundError, TransportError
-from curator import exceptions, utils
+from elasticsearch8.exceptions import NotFoundError, TransportError
+from curator.exceptions import ActionError, ConfigurationError, MissingArgument, NoIndices
+from curator.utils import (
+    absolute_date_range, byte_size, chunk_index_list, date_range, ensure_list, fix_epoch,
+    get_date_regex, get_indices, get_point_of_reference, get_unit_count_from_name, report_failure,
+    TimestringSearch, to_csv, verify_client_object
+)
 from curator.defaults import settings
-from curator.validators import SchemaCheck, filters
+from curator.validators import SchemaCheck
+from curator.validators.filter_functions import filterstructure
 
-class IndexList(object):
+class IndexList:
     def __init__(self, client):
-        utils.verify_client_object(client)
+        verify_client_object(client)
         self.loggit = logging.getLogger('curator.indexlist')
         #: An Elasticsearch Client object
         #: Also accessible as an instance variable.
@@ -29,18 +34,17 @@ class IndexList(object):
         #: **Type:** ``list()``
         self.all_indices = []
         self.__get_indices()
+        self.age_keyfield = None
 
     def __actionable(self, idx):
-        self.loggit.debug(
-            'Index {0} is actionable and remains in the list.'.format(idx))
+        self.loggit.debug('Index %s is actionable and remains in the list.', idx)
 
     def __not_actionable(self, idx):
-            self.loggit.debug(
-                'Index {0} is not actionable, removing from list.'.format(idx))
-            self.indices.remove(idx)
+        self.loggit.debug('Index %s is not actionable, removing from list.', idx)
+        self.indices.remove(idx)
 
     def __excludify(self, condition, exclude, index, msg=None):
-        if condition == True:
+        if condition is True:
             if exclude:
                 text = "Removed from actionable list"
                 self.__not_actionable(index)
@@ -55,7 +59,7 @@ class IndexList(object):
                 text = "Removed from actionable list"
                 self.__not_actionable(index)
         if msg:
-            self.loggit.debug('{0}: {1}'.format(text, msg))
+            self.loggit.debug('%s: %s', text, msg)
 
     def __get_indices(self):
         """
@@ -63,7 +67,7 @@ class IndexList(object):
         `index_info`
         """
         self.loggit.debug('Getting all indices')
-        self.all_indices = utils.get_indices(self.client)
+        self.all_indices = get_indices(self.client)
         self.indices = self.all_indices[:]
         if self.indices:
             for index in self.indices:
@@ -76,9 +80,8 @@ class IndexList(object):
         Ensure that `index` is a key in `index_info`. If not, create a
         sub-dictionary structure under that key.
         """
-        self.loggit.debug(
-            'Building preliminary index metadata for {0}'.format(index))
-        if not index in self.index_info:
+        self.loggit.debug('Building preliminary index metadata for %s', index)
+        if index not in self.index_info:
             self.index_info[index] = {
                 "age" : {},
                 "number_of_replicas" : 0,
@@ -123,12 +126,11 @@ class IndexList(object):
                 size = stats['indices'][index]['total']['store']['size_in_bytes']
                 docs = stats['indices'][index]['total']['docs']['count']
                 primary_size = stats['indices'][index]['primaries']['store']['size_in_bytes']
-
-                self.loggit.debug(
-                    'Index: {0}  Size: {1}  Docs: {2}  PrimarySize: {3}'.format(
-                        index, utils.byte_size(size), docs, utils.byte_size(primary_size)
-                    )
+                msg = (
+                    f'Index: {index}  Size: {byte_size(size)}  Docs: {docs} '
+                    f'PrimarySize: {byte_size(primary_size)}'
                 )
+                self.loggit.debug(msg)
                 self.index_info[index]['size_in_bytes'] = size
                 self.index_info[index]['docs'] = docs
                 self.index_info[index]['primary_size_in_bytes'] = primary_size
@@ -138,14 +140,14 @@ class IndexList(object):
             if self.index_info[index]['state'] == 'close':
                 working_list.remove(index)
         if working_list:
-            index_lists = utils.chunk_index_list(working_list)
+            index_lists = chunk_index_list(working_list)
             for l in index_lists:
                 stats_result = {}
 
                 try:
                     stats_result.update(self._get_indices_stats(l))
                 except TransportError as err:
-                    if err.status_code == 413:
+                    if '413' in err.errors:
                         self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                         stats_result = {}
                         stats_result.update(self._bulk_queries(l, self._get_indices_stats))
@@ -153,13 +155,13 @@ class IndexList(object):
                 iterate_over_stats(stats_result)
 
     def _get_indices_stats(self, data):
-        return self.client.indices.stats(index=utils.to_csv(data), metric='store,docs')
+        return self.client.indices.stats(index=to_csv(data), metric='store,docs')
 
     def _bulk_queries(self, data, exec_func):
         slice_number = 10
         query_result = {}
         loop_number = round(len(data)/slice_number) if round(len(data)/slice_number) > 0 else 1
-        self.loggit.debug("Bulk Queries - number requests created: {0}".format(loop_number))
+        self.loggit.debug("Bulk Queries - number requests created: %s", loop_number)
 
         for num in range(0, loop_number):
             if num == (loop_number-1):
@@ -171,7 +173,7 @@ class IndexList(object):
         return query_result
 
     def _get_cluster_state(self, data):
-        return self.client.cluster.state(index=utils.to_csv(data), metric='metadata')['metadata']['indices']
+        return self.client.cluster.state(index=to_csv(data), metric='metadata')['metadata']['indices']
 
     def _get_metadata(self):
         """
@@ -180,13 +182,13 @@ class IndexList(object):
         """
         self.loggit.debug('Getting index metadata')
         self.empty_list_check()
-        index_lists = utils.chunk_index_list(self.indices)
+        index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             working_list = {}
             try:
                 working_list.update(self._get_cluster_state(l))
             except TransportError as err:
-                if err.status_code == 413:
+                if '413' in err.errors:
                     self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                     working_list = {}
                     working_list.update(self._bulk_queries(l, self._get_cluster_state))
@@ -203,18 +205,9 @@ class IndexList(object):
                         alt_wl = self.client.indices.get(index, feature='_settings')[index]
                         wl['settings'] = alt_wl['settings']
 
-                    if 'creation_date' not in wl['settings']['index']:
-                        self.loggit.warn(
-                            'Index: {0} has no "creation_date"! This implies '
-                            'that the index predates Elasticsearch v1.4. For '
-                            'safety, this index will be removed from the '
-                            'actionable list.'.format(index)
-                        )
-                        self.__not_actionable(index)
-                    else:
-                        s['age']['creation_date'] = (
-                            utils.fix_epoch(wl['settings']['index']['creation_date'])
-                        )
+                    s['age']['creation_date'] = (
+                        fix_epoch(wl['settings']['index']['creation_date'])
+                    )
                     s['number_of_replicas'] = (
                         wl['settings']['index']['number_of_replicas']
                     )
@@ -229,7 +222,7 @@ class IndexList(object):
         """Raise exception if `indices` is empty"""
         self.loggit.debug('Checking for empty list')
         if not self.indices:
-            raise exceptions.NoIndices('index_list object is empty.')
+            raise NoIndices('index_list object is empty.')
 
     def working_list(self):
         """
@@ -242,7 +235,7 @@ class IndexList(object):
         return self.indices[:]
 
     def _get_indices_segments(self, data):
-        return self.client.indices.segments(index=utils.to_csv(data))['indices'].copy()
+        return self.client.indices.segments(index=to_csv(data))['indices'].copy()
 
     def _get_segment_counts(self):
         """
@@ -250,13 +243,13 @@ class IndexList(object):
         """
         self.loggit.debug('Getting index segment counts')
         self.empty_list_check()
-        index_lists = utils.chunk_index_list(self.indices)
+        index_lists = chunk_index_list(self.indices)
         for l in index_lists:
             working_list = {}
             try:
                 working_list.update(self._get_indices_segments(l))
             except TransportError as err:
-                if err.status_code == 413:
+                if '413' in err.errors:
                     self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
                     working_list = {}
                     working_list.update(self._bulk_queries(l, self._get_indices_segments))
@@ -283,7 +276,7 @@ class IndexList(object):
         # condition
         self.loggit.debug('Getting ages of indices by "name"')
         self.empty_list_check()
-        ts = utils.TimestringSearch(timestring)
+        ts = TimestringSearch(timestring)
         for index in self.working_list():
             epoch = ts.get_epoch(index)
             if isinstance(epoch, int):
@@ -306,34 +299,28 @@ class IndexList(object):
         )
         self.filter_empty()
         self.loggit.debug(
-            'Getting index date by querying indices for min & max value of '
-            '{0} field'.format(field)
-        )
+            'Getting index date by querying indices for min & max value of %s field', field)
         self.empty_list_check()
-        index_lists = utils.chunk_index_list(self.indices)
-        for l in index_lists:
-            for index in l:
-                body = {
-                    'aggs' : {
-                        'min' : { 'min' : { 'field' : field } },
-                        'max' : { 'max' : { 'field' : field } }
-                    }
+        index_lists = chunk_index_list(self.indices)
+        for lst in index_lists:
+            for index in lst:
+                aggs = {
+                    'min' : { 'min' : { 'field' : field } },
+                    'max' : { 'max' : { 'field' : field } }
                 }
-                response = self.client.search(index=index, size=0, body=body)
-                self.loggit.debug('RESPONSE: {0}'.format(response))
+                response = self.client.search(index=index, size=0, aggs=aggs)
+                self.loggit.debug('RESPONSE: %s', response)
                 if response:
                     try:
-                        r = response['aggregations']
-                        self.loggit.debug('r: {0}'.format(r))
-                        s = self.index_info[index]['age']
-                        s['min_value'] = utils.fix_epoch(r['min']['value'])
-                        s['max_value'] = utils.fix_epoch(r['max']['value'])
-                        self.loggit.debug('s: {0}'.format(s))
-                    except KeyError:
-                        raise exceptions.ActionError(
-                            'Field "{0}" not found in index '
-                            '"{1}"'.format(field, index)
-                            )
+                        res = response['aggregations']
+                        self.loggit.debug('res: %s', res)
+                        data = self.index_info[index]['age']
+                        data['min_value'] = fix_epoch(res['min']['value'])
+                        data['max_value'] = fix_epoch(res['max']['value'])
+                        self.loggit.debug('data: %s', data)
+                    except KeyError as exc:
+                        raise ActionError(
+                            f'Field "{field}" not found in index "{index}"') from exc
 
     def _calculate_ages(self, source=None, timestring=None, field=None,
             stats_result=None
@@ -357,7 +344,7 @@ class IndexList(object):
         self.age_keyfield = source
         if source == 'name':
             if not timestring:
-                raise exceptions.MissingArgument(
+                raise MissingArgument(
                     'source "name" requires the "timestring" keyword argument'
                 )
             self._get_name_based_ages(timestring)
@@ -366,20 +353,16 @@ class IndexList(object):
             pass
         elif source == 'field_stats':
             if not field:
-                raise exceptions.MissingArgument(
+                raise MissingArgument(
                     'source "field_stats" requires the "field" keyword argument'
                 )
             if stats_result not in ['min_value', 'max_value']:
-                raise ValueError(
-                    'Invalid value for "stats_result": {0}'.format(stats_result)
-                )
+                raise ValueError('Invalid value for "stats_result": {stats_result}')
             self.age_keyfield = stats_result
             self._get_field_stats_dates(field=field)
         else:
             raise ValueError(
-                'Invalid source: {0}.  '
-                'Must be one of "name", '
-                '"creation_date", "field_stats".'.format(source)
+                f'Invalid source: {source}. Must be one of "name", "creation_date", "field_stats".'
             )
 
     def _sort_by_age(self, index_list, reverse=True):
@@ -398,9 +381,7 @@ class IndexList(object):
                 temp[index] = self.index_info[index]['age'][self.age_keyfield]
             else:
                 msg = (
-                    '{0} does not have age key "{1}" in IndexList '
-                    ' metadata'.format(index, self.age_keyfield)
-                )
+                    f'{index} does not have age key "{self.age_keyfield}" in IndexList metadata')
                 self.__excludify(True, True, index, msg)
         # Sort alphabetically prior to age sort to keep sorting consistent
         temp_tuple = (
@@ -433,26 +414,24 @@ class IndexList(object):
         """
         self.loggit.debug('Filtering indices by regex')
         if kind not in [ 'regex', 'prefix', 'suffix', 'timestring' ]:
-            raise ValueError('{0}: Invalid value for kind'.format(kind))
+            raise ValueError(f'{kind}: Invalid value for kind')
 
         # Stop here if None or empty value, but zero is okay
         if value == 0:
             pass
         elif not value:
             raise ValueError(
-                '{0}: Invalid value for "value". '
-                'Cannot be "None" type, empty, or False'
-            )
+                'Invalid None value for "value". Cannot be "None" type, empty, or False')
 
         if kind == 'timestring':
-            regex = settings.regex_map()[kind].format(utils.get_date_regex(value))
+            regex = settings.regex_map()[kind].format(get_date_regex(value))
         else:
             regex = settings.regex_map()[kind].format(value)
 
         self.empty_list_check()
         pattern = re.compile(regex)
         for index in self.working_list():
-            self.loggit.debug('Filter by regex: Index: {0}'.format(index))
+            self.loggit.debug('Filter by regex: Index: %s', index)
             match = pattern.search(index)
             if match:
                 self.__excludify(True, exclude, index)
@@ -493,13 +472,11 @@ class IndexList(object):
 
         self.loggit.debug('Filtering indices by age')
         # Get timestamp point of reference, PoR
-        PoR = utils.get_point_of_reference(unit, unit_count, epoch)
+        PoR = get_point_of_reference(unit, unit_count, epoch)
         if not direction:
-            raise exceptions.MissingArgument('Must provide a value for "direction"')
+            raise MissingArgument('Must provide a value for "direction"')
         if direction not in ['older', 'younger']:
-            raise ValueError(
-                'Invalid value for "direction": {0}'.format(direction)
-            )
+            raise ValueError(f'Invalid value for "direction": {direction}')
         self._calculate_ages(
             source=source, timestring=timestring, field=field,
             stats_result=stats_result
@@ -507,41 +484,47 @@ class IndexList(object):
         if unit_count_pattern:
             try:
                 unit_count_matcher = re.compile(unit_count_pattern)
-            except:
+            # pylint: disable=broad-except
+            except Exception as exc:
                 # We got an illegal regex, so won't be able to match anything
+                self.loggit.error(
+                    'Regular expression failure. Will not match unit count. Error: %s', exc)
                 unit_count_matcher = None
         for index in self.working_list():
             try:
                 removeThisIndex = False
                 age = int(self.index_info[index]['age'][self.age_keyfield])
                 msg = (
-                    'Index "{0}" age ({1}), direction: "{2}", point of '
-                    'reference, ({3})'.format(
-                        index,
-                        age,
-                        direction,
-                        PoR
-                    )
+                    f'Index "{index}" age ({age}), direction: "{direction}", point of '
+                    f'reference, ({PoR})'
                 )
                 # Because time adds to epoch, smaller numbers are actually older
                 # timestamps.
                 if unit_count_pattern:
-                    self.loggit.debug('Unit_count_pattern is set, trying to match pattern to index "{0}"'.format(index))
-                    unit_count_from_index = utils.get_unit_count_from_name(index, unit_count_matcher)
+                    self.loggit.debug('Unit_count_pattern is set, trying to match pattern to index "%s"', index)
+                    unit_count_from_index = get_unit_count_from_name(index, unit_count_matcher)
                     if unit_count_from_index:
-                        self.loggit.debug('Pattern matched, applying unit_count of  "{0}"'.format(unit_count_from_index))
-                        adjustedPoR = utils.get_point_of_reference(unit, unit_count_from_index, epoch)
-                        self.loggit.debug('Adjusting point of reference from {0} to {1} based on unit_count of {2} from index name'.format(PoR, adjustedPoR, unit_count_from_index))
+                        self.loggit.debug('Pattern matched, applying unit_count of  "%s"', unit_count_from_index)
+                        adjustedPoR = get_point_of_reference(unit, unit_count_from_index, epoch)
+                        msg = (
+                            f'Adjusting point of reference from {PoR} to {adjustedPoR} '
+                            f'based on unit_count of {unit_count_from_index} from index name'
+                        )
+                        self.loggit.debug(msg)
                     elif unit_count == -1:
                         # Unable to match pattern and unit_count is -1, meaning no fallback, so this
                         # index is removed from the list
-                        self.loggit.debug('Unable to match pattern and no fallback value set. Removing index "{0}" from actionable list'.format(index))
+                        msg = (
+                            f'Unable to match pattern and no fallback value set. '
+                            f'Removing index "{index}" from actionable list'
+                        )
+                        self.loggit.debug(msg)
                         removeThisIndex = True
                         adjustedPoR = PoR # necessary to avoid exception if the first index is excluded
                     else:
                         # Unable to match the pattern and unit_count is set, so fall back to using unit_count
                         # for determining whether to keep this index in the list
-                        self.loggit.debug('Unable to match pattern using fallback value of "{0}"'.format(unit_count))
+                        self.loggit.debug('Unable to match pattern using fallback value of "%s"', unit_count)
                         adjustedPoR = PoR
                 else:
                     adjustedPoR = PoR
@@ -551,9 +534,11 @@ class IndexList(object):
                     agetest = age > adjustedPoR
                 self.__excludify(agetest and not removeThisIndex, exclude, index, msg)
             except KeyError:
-                self.loggit.debug(
-                    'Index "{0}" does not meet provided criteria. '
-                    'Removing from list.'.format(index))
+                msg = (
+                    f'Index "{index}" does not meet provided criteria. '
+                    f'Removing from list.'
+                )
+                self.loggit.debug(msg)
                 self.indices.remove(index)
 
     def filter_by_space(
@@ -606,13 +591,10 @@ class IndexList(object):
         self.loggit.debug('Filtering indices by disk space')
         # Ensure that disk_space is a float
         if not disk_space:
-            raise exceptions.MissingArgument('No value for "disk_space" provided')
+            raise MissingArgument('No value for "disk_space" provided')
 
         if threshold_behavior not in ['greater_than', 'less_than']:
-            raise ValueError(
-                'Invalid value for "threshold_behavior": {0}'.format(
-                    threshold_behavior)
-            )
+            raise ValueError(f'Invalid value for "threshold_behavior": {threshold_behavior}')
 
         disk_space = float(disk_space)
 
@@ -644,9 +626,8 @@ class IndexList(object):
 
             disk_usage += self.index_info[index]['size_in_bytes']
             msg = (
-                '{0}, summed disk usage is {1} and disk limit is {2}.'.format(
-                    index, utils.byte_size(disk_usage), utils.byte_size(disk_limit)
-                )
+                f'{index}, summed disk usage is {byte_size(disk_usage)} and disk limit '
+                f'is {byte_size(disk_limit)}.'
             )
             if threshold_behavior == 'greater_than':
                 self.__excludify((disk_usage > disk_limit),
@@ -687,7 +668,7 @@ class IndexList(object):
         """
         self.loggit.debug('Filtering forceMerged indices')
         if not max_num_segments:
-            raise exceptions.MissingArgument('Missing value for "max_num_segments"')
+            raise MissingArgument('Missing value for "max_num_segments"')
         self.loggit.debug(
             'Cannot get segment count of closed indices.  '
             'Omitting any closed indices.'
@@ -700,10 +681,8 @@ class IndexList(object):
             replicas = int(self.index_info[index]['number_of_replicas'])
             segments = int(self.index_info[index]['segments'])
             msg = (
-                '{0} has {1} shard(s) + {2} replica(s) '
-                'with a sum total of {3} segments.'.format(
-                    index, shards, replicas, segments
-                )
+                f'{index} has {shards} shard(s) + {replicas} replica(s) '
+                f'with a sum total of {segments} segments.'
             )
             expected_count = ((shards + (shards * replicas)) * max_num_segments)
             self.__excludify((segments <= expected_count), exclude, index, msg)
@@ -722,10 +701,7 @@ class IndexList(object):
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['state'] == 'close'
-            self.loggit.debug('Index {0} state: {1}'.format(
-                    index, self.index_info[index]['state']
-                )
-            )
+            self.loggit.debug('Index %s state: %s', index, self.index_info[index]['state'])
             self.__excludify(condition, exclude, index)
 
     def filter_empty(self, exclude=True):
@@ -745,10 +721,7 @@ class IndexList(object):
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['docs'] == 0
-            self.loggit.debug('Index {0} doc count: {1}'.format(
-                    index, self.index_info[index]['docs']
-                )
-            )
+            self.loggit.debug('Index %s doc count: %s', index, self.index_info[index]['docs'])
             self.__excludify(condition, exclude, index)
 
     def filter_opened(self, exclude=True):
@@ -764,10 +737,7 @@ class IndexList(object):
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['state'] == 'open'
-            self.loggit.debug('Index {0} state: {1}'.format(
-                    index, self.index_info[index]['state']
-                )
-            )
+            self.loggit.debug('Index %s state: %s', index, self.index_info[index]['state'])
             self.__excludify(condition, exclude, index)
 
     def filter_allocated(self,
@@ -788,17 +758,15 @@ class IndexList(object):
         self.loggit.debug(
             'Filtering indices with shard routing allocation rules')
         if not key:
-            raise exceptions.MissingArgument('No value for "key" provided')
+            raise MissingArgument('No value for "key" provided')
         if not value:
-            raise exceptions.MissingArgument('No value for "value" provided')
-        if not allocation_type in ['include', 'exclude', 'require']:
-            raise ValueError(
-                'Invalid "allocation_type": {0}'.format(allocation_type)
-            )
+            raise MissingArgument('No value for "value" provided')
+        if allocation_type not in ['include', 'exclude', 'require']:
+            raise ValueError(f'Invalid "allocation_type": {allocation_type}')
         self.empty_list_check()
-        index_lists = utils.chunk_index_list(self.indices)
+        index_lists = chunk_index_list(self.indices)
         for l in index_lists:
-            working_list = self.client.indices.get_settings(index=utils.to_csv(l))
+            working_list = self.client.indices.get_settings(index=to_csv(l))
             if working_list:
                 for index in list(working_list.keys()):
                     try:
@@ -809,15 +777,14 @@ class IndexList(object):
                         has_routing = False
                     # if has_routing:
                     msg = (
-                        '{0}: Routing (mis)match: '
-                        'index.routing.allocation.{1}.{2}={3}.'.format(
-                            index, allocation_type, key, value
-                        )
+                        f'{index}: Routing (mis)match: '
+                        f'index.routing.allocation.{allocation_type}.{key}={value}.'
                     )
-                        # self.indices.remove(index)
+                    # self.indices.remove(index)
                     self.__excludify(has_routing, exclude, index, msg)
 
     def filter_none(self):
+        """The legendary NULL filter"""
         self.loggit.debug('"None" filter selected.  No filtering will be done.')
 
     def filter_by_alias(self, aliases=None, exclude=False):
@@ -846,43 +813,37 @@ class IndexList(object):
             indices will be kept in `indices`.
             Default is `False`
         """
-        self.loggit.debug(
-            'Filtering indices matching aliases: "{0}"'.format(aliases))
+        self.loggit.debug('Filtering indices matching aliases: "%s"', aliases)
         if not aliases:
-            raise exceptions.MissingArgument('No value for "aliases" provided')
-        aliases = utils.ensure_list(aliases)
+            raise MissingArgument('No value for "aliases" provided')
+        aliases = ensure_list(aliases)
         self.empty_list_check()
-        index_lists = utils.chunk_index_list(self.indices)
-        for l in index_lists:
+        index_lists = chunk_index_list(self.indices)
+        for listchunk in index_lists:
             try:
                 # get_alias will either return {} or a NotFoundError.
                 has_alias = list(self.client.indices.get_alias(
-                    index=utils.to_csv(l),
-                    name=utils.to_csv(aliases)
+                    index=to_csv(listchunk),
+                    name=to_csv(aliases)
                 ).keys())
-                self.loggit.debug('has_alias: {0}'.format(has_alias))
+                self.loggit.debug('has_alias: %s', has_alias)
             except NotFoundError:
                 # if we see the NotFoundError, we need to set working_list to {}
                 has_alias = []
-            for index in l:
+            for index in listchunk:
                 if index in has_alias:
-                    isOrNot = 'is'
+                    isness = 'is'
                     condition = True
                 else:
-                    isOrNot = 'is not'
+                    isness = 'is not'
                     condition = False
-                msg = (
-                    '{0} {1} associated with aliases: {2}'.format(
-                        index, isOrNot, aliases
-                    )
-                )
+                msg = f'{index} {isness} associated with aliases: {aliases}'
                 self.__excludify(condition, exclude, index, msg)
 
-    def filter_by_count(
-        self, count=None, reverse=True, use_age=False, pattern=None,
-        source='creation_date', timestring=None, field=None,
-        stats_result='min_value', exclude=True):
-        # pylint: disable=W1401
+    def filter_by_count(self, count=None, reverse=True, use_age=False, pattern=None,
+        source='creation_date', timestring=None, field=None, stats_result='min_value',
+        exclude=True):
+        # pylint: disable=anomalous-backslash-in-string
         """
         Remove indices from the actionable list beyond the number `count`,
         sorted reverse-alphabetically by default.  If you set `reverse` to
@@ -931,41 +892,38 @@ class IndexList(object):
         """
         self.loggit.debug('Filtering indices by count')
         if not count:
-            raise exceptions.MissingArgument('No value for "count" provided')
+            raise MissingArgument('No value for "count" provided')
 
         # Create a copy-by-value working list
         working_list = self.working_list()
         if pattern:
             try:
-                r = re.compile(pattern)
-                if r.groups < 1:
-                    raise exceptions.ConfigurationError('No regular expression group found in {0}'.format(pattern))
-                elif r.groups > 1:
-                    raise exceptions.ConfigurationError('More than 1 regular expression group found in {0}'.format(pattern))
+                regex = re.compile(pattern)
+                if regex.groups < 1:
+                    raise ConfigurationError(f'No regular expression group found in {pattern}')
+                if regex.groups > 1:
+                    raise ConfigurationError(f'More than 1 regular expression group found in {pattern}')
                 # Prune indices not matching the regular expression the object (and filtered_indices)
                 # We do not want to act on them by accident.
-                prune_these = list(filter(lambda x: r.match(x) is None, working_list))
+                prune_these = list(filter(lambda x: regex.match(x) is None, working_list))
                 filtered_indices = working_list
                 for index in prune_these:
-                    msg = (
-                        '{0} does not match regular expression {1}.'.format(
-                            index, pattern
-                        )
-                    )
+                    msg = '{index} does not match regular expression {pattern}.'
                     condition = True
                     exclude = True
                     self.__excludify(condition, exclude, index, msg)
                     # also remove it from filtered_indices
                     filtered_indices.remove(index)
                 # Presort these filtered_indices using the lambda
-                presorted = sorted(filtered_indices, key=lambda x: r.match(x).group(1))
-            except Exception as e:
-                raise exceptions.ActionError('Unable to process pattern: "{0}". Error: {1}'.format(pattern, e))
+                presorted = sorted(filtered_indices, key=lambda x: regex.match(x).group(1))
+            except Exception as exc:
+                raise ActionError(
+                    f'Unable to process pattern: "{pattern}". Error: {exc}') from exc
             # Initialize groups here
             groups = []
             # We have to pull keys k this way, but we don't need to keep them
             # We only need g for groups
-            for _, g in itertools.groupby(presorted, key=lambda x: r.match(x).group(1)):
+            for _, g in itertools.groupby(presorted, key=lambda x: regex.match(x).group(1)):
                 groups.append(list(g))
         else:
             # Since pattern will create a list of lists, and we iterate over that,
@@ -974,7 +932,7 @@ class IndexList(object):
         for group in groups:
             if use_age:
                 if source != 'name':
-                    self.loggit.warn(
+                    self.loggit.warning(
                         'Cannot get age information from closed indices unless '
                         'source="name".  Omitting any closed indices.'
                     )
@@ -993,11 +951,7 @@ class IndexList(object):
 
             idx = 1
             for index in sorted_indices:
-                msg = (
-                    '{0} is {1} of specified count of {2}.'.format(
-                        index, idx, count
-                    )
-                )
+                msg = f'{index} is {idx} of specified count of {count}.'
                 condition = True if idx <= count else False
                 self.__excludify(condition, exclude, index, msg)
                 idx += 1
@@ -1020,23 +974,21 @@ class IndexList(object):
         """
         self.loggit.debug("Filtering indices by number of shards")
         if not number_of_shards:
-            raise exceptions.MissingArgument('No value for "number_of_shards" provided')
+            raise MissingArgument('No value for "number_of_shards" provided')
 
         if shard_filter_behavior not in ['greater_than', 'less_than', 'greater_than_or_equal', 'less_than_or_equal', 'equal']:
             raise ValueError(
-                'Invalid value for "shard_filter_behavior": {0}'.format(
-                    shard_filter_behavior)
-            )
+                f'Invalid value for "shard_filter_behavior": {shard_filter_behavior}')
 
         if number_of_shards < 1 or (shard_filter_behavior == 'less_than' and number_of_shards == 1):
             raise ValueError(
-                'Unacceptable value: {0} -- "number_of_shards" cannot be less than 1. A valid index '
-                'will have at least one shard.'.format(number_of_shards)
+                f'Unacceptable value: {number_of_shards} -- "number_of_shards" cannot be less '
+                f'than 1. A valid index will have at least one shard.'
             )
 
         self.empty_list_check()
         for index in self.working_list():
-            self.loggit.debug('Filter by number of shards: Index: {0}'.format(index))
+            self.loggit.debug('Filter by number of shards: Index: %s', index)
 
             if shard_filter_behavior == 'greater_than':
                 condition = int(self.index_info[index]['number_of_shards']) > number_of_shards
@@ -1102,30 +1054,31 @@ class IndexList(object):
         self.loggit.debug('Filtering indices by period')
         if period_type not in ['absolute', 'relative']:
             raise ValueError(
-                'Unacceptable value: {0} -- "period_type" must be either "absolute" or '
-                '"relative".'.format(period_type)
+                f'Unacceptable value: {period_type} -- "period_type" must be either "absolute" or '
+                f'"relative".'
             )
         if period_type == 'relative':
-            func = utils.date_range
+            func = date_range
             args = [unit, range_from, range_to, epoch]
             kwgs = { 'week_starts_on': week_starts_on }
-            if type(range_from) != type(int()) or type(range_to) != type(int()):
-                raise exceptions.ConfigurationError(
+            if (not isinstance(range_from, int)) or (not isinstance(range_to, int)):
+                raise ConfigurationError(
                     '"range_from" and "range_to" must be integer values')
         else:
-            func = utils.absolute_date_range
+            func = absolute_date_range
             args = [unit, date_from, date_to]
             kwgs = { 'date_from_format': date_from_format, 'date_to_format': date_to_format }
             for reqd in [date_from, date_to, date_from_format, date_to_format]:
                 if not reqd:
-                    raise exceptions.ConfigurationError(
+                    raise ConfigurationError(
                         'Must provide "date_from", "date_to", "date_from_format", and '
                         '"date_to_format" with absolute period_type'
                     )
         try:
             start, end = func(*args, **kwgs)
-        except Exception as e:
-            utils.report_failure(e)
+        # pylint: disable=broad-except
+        except Exception as exc:
+            report_failure(exc)
 
         self._calculate_ages(
             source=source, timestring=timestring, field=field,
@@ -1137,16 +1090,9 @@ class IndexList(object):
                     min_age = int(self.index_info[index]['age']['min_value'])
                     max_age = int(self.index_info[index]['age']['max_value'])
                     msg = (
-                        'Index "{0}", timestamp field "{1}", min_value ({2}), '
-                        'max_value ({3}), period start: "{4}", period '
-                        'end, "{5}"'.format(
-                            index,
-                            field,
-                            min_age,
-                            max_age,
-                            start,
-                            end
-                        )
+                        f'Index "{index}", timestamp field "{field}", min_value ({min_age}), '
+                        f'max_value ({max_age}), period start: "{start}", period '
+                        f'end, "{end}"'
                     )
                     # Because time adds to epoch, smaller numbers are actually older
                     # timestamps.
@@ -1154,13 +1100,8 @@ class IndexList(object):
                 else:
                     age = int(self.index_info[index]['age'][self.age_keyfield])
                     msg = (
-                        'Index "{0}" age ({1}), period start: "{2}", period '
-                        'end, "{3}"'.format(
-                            index,
-                            age,
-                            start,
-                            end
-                        )
+                        f'Index "{index}" age ({age}), period start: "{start}", period '
+                        f'end, "{end}"'
                     )
                     # Because time adds to epoch, smaller numbers are actually older
                     # timestamps.
@@ -1168,8 +1109,7 @@ class IndexList(object):
                 self.__excludify(inrange, exclude, index, msg)
             except KeyError:
                 self.loggit.debug(
-                    'Index "{0}" does not meet provided criteria. '
-                    'Removing from list.'.format(index))
+                    'Index "%s" does not meet provided criteria. Removing from list.', index)
                 self.indices.remove(index)
 
     def filter_ilm(self, exclude=True):
@@ -1182,21 +1122,21 @@ class IndexList(object):
             Default is `True`
         """
         self.loggit.debug('Filtering indices with index.lifecycle.name')
-        index_lists = utils.chunk_index_list(self.indices)
+        index_lists = chunk_index_list(self.indices)
         if index_lists == [['']]:
             self.loggit.debug('Empty working list. No ILM indices to filter.')
             return
         for l in index_lists:
-            working_list = self.client.indices.get_settings(index=utils.to_csv(l))
+            working_list = self.client.indices.get_settings(index=to_csv(l))
             if working_list:
                 for index in list(working_list.keys()):
                     try:
                         subvalue = working_list[index]['settings']['index']['lifecycle']
                         has_ilm = 'name' in subvalue
-                        msg = '{0} has index.lifecycle.name {1}'.format(index, subvalue['name'])
+                        msg = f"{index} has index.lifecycle.name {subvalue['name']}"
                     except KeyError:
                         has_ilm = False
-                        msg = 'index.lifecycle.name is not set for index {0}'.format(index)
+                        msg = f'index.lifecycle.name is not set for index {index}'
                     self.__excludify(has_ilm, exclude, index, msg)
 
     def iterate_filters(self, filter_dict):
@@ -1225,29 +1165,24 @@ class IndexList(object):
             self.loggit.info('No filters in config.  Returning unaltered object.')
             return
 
-        self.loggit.debug('All filters: {0}'.format(filter_dict['filters']))
-        for f in filter_dict['filters']:
-            self.loggit.debug('Top of the loop: {0}'.format(self.indices))
-            self.loggit.debug('Un-parsed filter args: {0}'.format(f))
+        self.loggit.debug('All filters: %s', filter_dict['filters'])
+        for fil in filter_dict['filters']:
+            self.loggit.debug('Top of the loop: %s', self.indices)
+            self.loggit.debug('Un-parsed filter args: %s', fil)
             # Make sure we got at least this much in the configuration
-            self.loggit.debug('Parsed filter args: {0}'.format(
-                    SchemaCheck(
-                        f,
-                        filters.structure(),
-                        'filter',
-                        'IndexList.iterate_filters'
-                    ).result()
-                )
-            )
-            method = self.__map_method(f['filtertype'])
-            del f['filtertype']
+            chk = SchemaCheck(
+                fil, filterstructure(), 'filter', 'IndexList.iterate_filters').result()
+            msg = f'Parsed filter args: {chk}'
+            self.loggit.debug(msg)
+            method = self.__map_method(fil['filtertype'])
+            del fil['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            if f:
-                self.loggit.debug('Filter args: {0}'.format(f))
-                self.loggit.debug('Pre-instance: {0}'.format(self.indices))
-                method(**f)
-                self.loggit.debug('Post-instance: {0}'.format(self.indices))
+            if fil:
+                self.loggit.debug('Filter args: %s', fil)
+                self.loggit.debug('Pre-instance: %s', self.indices)
+                method(**fil)
+                self.loggit.debug('Post-instance: %s', self.indices)
             else:
                 # Otherwise, it's a settingless filter.
                 method()
@@ -1273,13 +1208,13 @@ class IndexList(object):
         self.loggit.debug('Filtering indices by index size')
         # Ensure that disk_space is a float
         if not size_threshold:
-            raise exceptions.MissingArgument('No value for "size_threshold" provided')
+            raise MissingArgument('No value for "size_threshold" provided')
 
         if size_behavior not in ['primary', 'total']:
-            raise ValueError( 'Invalid value for "size_behavior": {0}'.format(size_behavior))
+            raise ValueError(f'Invalid value for "size_behavior": {size_behavior}')
 
         if threshold_behavior not in ['greater_than', 'less_than']:
-            raise ValueError( 'Invalid value for "threshold_behavior": {0}'.format(threshold_behavior))
+            raise ValueError(f'Invalid value for "threshold_behavior": {threshold_behavior}')
 
         index_size_limit = float(size_threshold) * 2**30
 
@@ -1300,9 +1235,8 @@ class IndexList(object):
                 index_size = self.index_info[index]['size_in_bytes']
 
             msg = (
-                '{0}, index size is {1} and size limit is {2}.'.format(
-                    index, utils.byte_size(index_size), utils.byte_size(index_size_limit)
-                )
+                f'{index}, index size is {byte_size(index_size)} and '
+                f'size limit is {byte_size(index_size_limit)}.'
             )
             if threshold_behavior == 'greater_than':
                 self.__excludify((index_size > index_size_limit), exclude, index, msg)
