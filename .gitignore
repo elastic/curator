@@ -10,8 +10,6 @@ oneliners.py
 .eggs
 .idea
 .vscode
-venvs
-Elastic.ico
 build
 cacert.pem
 cover
@@ -19,7 +17,9 @@ cov_html/
 coverage.xml
 dist
 docs/_build
-docs/asciidoc/html_docs
+docs/asciidoc/html_docs/
+docker_test/repo/
+docker_test/scripts/Dockerfile
 elasticsearch_curator.egg-info
 elasticsearch_curator_dev.egg-info
 html_docs/
@@ -29,7 +29,3 @@ nosetests.xml
 samples
 scratch
 test/.DS_Store
-vcruntime140.dll
-wheelhouse
-windows
-docker_test/repo/
