@@ -11,6 +11,7 @@ oneliners.py
 .idea
 .vscode
 build
+cacert.pem
 cover
 coverage.xml
 dist
