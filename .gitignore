@@ -22,6 +22,7 @@ docs/_build
 docs/asciidoc/html_docs
 elasticsearch_curator.egg-info
 elasticsearch_curator_dev.egg-info
+html_docs/
 index.html
 msi_guid.txt
 nosetests.xml

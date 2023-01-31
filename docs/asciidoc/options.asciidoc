@@ -35,9 +35,6 @@ Options are settings used by <<actions,actions>>.
 * <<option_number_of_shards,number_of_shards>>
 * <<option_partial,partial>>
 * <<option_refresh,refresh>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
@@ -1370,125 +1367,6 @@ Read more about this setting at {ref}/docs-reindex.html
 
 The default value is `True`.
 
-[[option_remote_aws_key]]
-== remote_aws_key
-
-NOTE: This option is only used by the <<reindex,Reindex action>> when performing
-a remote reindex operation.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM access key, or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_aws_key: AWS_KEY
-      remote_aws_secret_key: AWS_SECRET_KEY
-      remote_aws_region: us-east-1
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
-
-[[option_remote_aws_region]]
-== remote_aws_region
-
-NOTE: This option is only used by the <<reindex,Reindex action>> when performing
-a remote reindex operation.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS region, or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_aws_key: AWS_KEY
-      remote_aws_secret_key: AWS_SECRET_KEY
-      remote_aws_region: us-east-1
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
-
-[[option_remote_aws_secret_key]]
-== remote_aws_secret_key
-
-NOTE: This option is only used by the <<reindex,Reindex action>> when performing
-a remote reindex operation.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM secret access key, or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_aws_key: AWS_KEY
-      remote_aws_secret_key: AWS_SECRET_KEY
-      remote_aws_region: us-east-1
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
 
 [[option_remote_certificate]]
 == remote_certificate
@@ -2059,9 +1937,6 @@ options:
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
 
 === Reindex From Remote With Filter-Selected Indices
 
@@ -2131,9 +2006,6 @@ options:
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
 
 === Reindex - Migration
 
@@ -2228,9 +2100,6 @@ options:
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
 * <<option_migration_prefix,migration_prefix>>
 * <<option_migration_suffix,migration_suffix>>
 
@@ -2982,8 +2851,8 @@ This setting must be a positive integer between 1 and 30.
 
 This setting specifies how long to wait between checks to see if the action has
 completed or not.  This number should not be larger than the client
-<<timeout,timeout>> or the <<option_timeout_override,timeout_override>>.  As the
-default client <<timeout,timeout>> value for is 30, this should be uncommon.
+<<request_timeout,request_timeout>> or the <<option_timeout_override,timeout_override>>.  As the
+default client <<request_timeout,request_timeout>> value for is 30, this should be uncommon.
 
 The default value for this setting is `9`, meaning 9 seconds between checks.
 

@@ -15,7 +15,6 @@ once created, can only be deleted.
 * <<delete_indices,Delete Indices>>
 * <<delete_snapshots,Delete Snapshots>>
 * <<forcemerge,forceMerge>>
-* <<freeze,Freeze>>
 * <<index_settings,Index Settings>>
 * <<open,Open>>
 * <<reindex,Reindex>>
@@ -24,7 +23,6 @@ once created, can only be deleted.
 * <<rollover,Rollover>>
 * <<shrink,Shrink>>
 * <<snapshot,Snapshot>>
-* <<unfreeze,Unfreeze>>
 --
 
 [[alias]]
@@ -407,7 +405,7 @@ This action deletes the selected indices.
 In clusters which are overcrowded with indices, or a high number of shards per
 node, deletes can take a longer time to process.  In such cases, it may be
 helpful to set a higher timeout than is set in the
-<<configfile, configuration file>>.  You can override that <<timeout,timeout>>
+<<configfile, configuration file>>.  You can override that <<request_timeout,request_timeout>>
 as follows:
 
 [source,yaml]
@@ -533,37 +531,6 @@ filters:
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_forcemerge,here>>.
-
-[[freeze]]
-== Freeze
-
-[source,yaml]
--------------
-action: freeze
-description: "freeze selected indices"
-options:
-  continue_if_exception: False
-filters:
-- filtertype: ...
--------------
-
-NOTE: Empty values and commented lines will result in the default value, if any,
-    being selected.  If a setting is set, but not used by a given action, it
-    will be ignored.
-
-This action freezes the selected indices.
-In order to use this action, it is required to have at least a Basic license.
-See https://www.elastic.co/subscriptions[Subscriptions].
-
-=== Optional settings
-
-* <<option_ignore_empty,ignore_empty_list>>
-* <<option_timeout_override,timeout_override>>
-* <<option_continue,continue_if_exception>>
-* <<option_disable,disable_action>>
-
-TIP: See an example of this action in an <<actionfile,actionfile>>
-    <<ex_freeze,here>>.
 
 
 [[index_settings]]
@@ -699,9 +666,6 @@ this action.  All other options are as follows.
 === Optional settings
 
 * <<option_refresh,refresh>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
@@ -1204,34 +1168,4 @@ read about them and change them accordingly.
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.
 
-[[unfreeze]]
-== Unfreeze
-
-[source,yaml]
--------------
-action: unfreeze
-description: "unfreeze selected indices"
-options:
-  continue_if_exception: False
-filters:
-- filtertype: ...
--------------
-
-NOTE: Empty values and commented lines will result in the default value, if any,
-    being selected.  If a setting is set, but not used by a given action, it
-    will be ignored.
-
-This action unfreezes the selected indices.
-In order to use this action, it is required to have at least a Basic license.
-See https://www.elastic.co/subscriptions[Subscriptions].
-
-=== Optional settings
-
-* <<option_ignore_empty,ignore_empty_list>>
-* <<option_timeout_override,timeout_override>>
-* <<option_continue,continue_if_exception>>
-* <<option_disable,disable_action>>
-
-TIP: See an example of this action in an <<actionfile,actionfile>>
-    <<ex_unfreeze,here>>.
 

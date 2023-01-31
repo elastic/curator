@@ -16,8 +16,8 @@ Want to write your own code to do something Curator doesn't do out of the box?
 Curator ships with both an API and wrapper scripts (which are actually defined
 as entry points).  This allows you to write your own scripts to accomplish
 similar goals, or even new and different things with the
-[Curator API](http://curator.readthedocs.io/), and the
-[Elasticsearch Python API](http://elasticsearch-py.readthedocs.io/).
+[Curator API](http://curator.readthedocs.io/), [es_client](http://esclient.readthedocs.io), and the
+[Elasticsearch Python Client Library](http://elasticsearch-py.readthedocs.io/).
 
 Want to know how to use the command-line interface (CLI)?
 
@@ -58,9 +58,9 @@ change.
 
 ## Contribution Steps
 
-1. Test your changes! Run the test suite ('python setup.py test').  Please note
+1. Test your changes! Run the test suite ('pytest --cov=curator').  Please note
    that this requires an Elasticsearch instance. The tests will try to connect
-   to your local elasticsearch instance and run integration tests against it.
+   to a local elasticsearch instance and run integration tests against it.
    **This will delete all the data stored there!** You can use the env variable
    `TEST_ES_SERVER` to point to a different instance (for example
    'otherhost:9203').

@@ -1,13 +1,13 @@
 [build-system]
-requires = ["flit_core >=3.8,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "elasticsearch-curator"
 authors = [{ name="Elastic", email="info@elastic.co" }]
-# dynamic = ["version", "description"]
+dynamic = ["version"]
 description = "Tending your Elasticsearch indices and snapshots"
-version = "8.0.0a1"
+
 license = { text="Apache-2.0" }
 readme = "README.rst"
 requires-python = ">=3.8"
@@ -29,8 +29,8 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "elasticsearch8==8.6.0",
-    "es_client==8.6.0.post4",
+    "elasticsearch8==8.6.1",
+    "es_client==8.6.1.post1",
     "click==8.1.3",
     "pyyaml==6.0.0",
     "voluptuous>=0.13.1",
@@ -56,10 +56,13 @@ es_repo_mgr = "curator.repomgrcli:repo_mgr_cli"
 "Homepage" = "https://github.com/elastic/curator"
 "Bug Tracker" = "https://github.com/elastic/curator/issues"
 
-[tool.flit.module]
+[tool.hatch.version]
+path = "curator/_version.py"
+
+[tool.hatch.module]
 name = "curator"
 
-[tool.flit.sdist]
+[tool.hatch.build.targets.sdist]
 exclude = [
     "dist",
     "docs",
@@ -78,3 +81,6 @@ testpaths = [
     "tests/integration",
 ]
 
+[tool.distutils.build_exe]
+excludes = ["tcltk", "tkinter", "unittest"]
+zip_include_packages = ["certifi"]

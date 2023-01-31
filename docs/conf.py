@@ -25,10 +25,10 @@ def get_version():
     if mo:
         VERSION = mo.group(1)
     else:
-        raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
+        raise RuntimeError(f"Unable to find version string in {VERSIONFILE}.")
     build_number = os.environ.get('CURATOR_BUILD_NUMBER', None)
     if build_number:
-        return VERSION + "b{}".format(build_number)
+        return VERSION + f"b{build_number}"
     return VERSION
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -47,8 +47,8 @@ sys.path.insert(0, os.path.abspath('../'))
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx']
 
 intersphinx_mapping = {
-	'python': ('https://docs.python.org/3.6', None),
-	'elasticsearch': ('http://elasticsearch-py.readthedocs.io/en/5.4.0', None),
+	'python': ('https://docs.python.org/3.11', None),
+	'elasticsearch': ('http://elasticsearch-py.readthedocs.io/en/8.6.1', None),
 }
 
 autoclass_content = "both"
@@ -66,8 +66,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Elasticsearch Curator'
-copyright = u'2011-2017, Elasticsearch'
+project = 'Elasticsearch Curator'
+copyright = '2011-2023, Elasticsearch'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -212,8 +212,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'ES_Curator.tex', u'Elasticsearch Curator Documentation',
-   u'Aaron Mildenstein', 'manual'),
+  ('index', 'ES_Curator.tex', 'Elasticsearch Curator Documentation',
+   'Aaron Mildenstein', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -242,8 +242,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'curator', u'Elasticsearch Curator Documentation',
-     [u'Aaron Mildenstein'], 1)
+    ('index', 'curator', 'Elasticsearch Curator Documentation',
+     ['Aaron Mildenstein'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -256,8 +256,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Curator', u'Elasticsearch Curator Documentation',
-   u'Aaron Mildenstein', 'Curator', 'One line description of project.',
+  ('index', 'Curator', 'Elasticsearch Curator Documentation',
+   'Aaron Mildenstein', 'Curator', 'One line description of project.',
    'Miscellaneous'),
 ]
 

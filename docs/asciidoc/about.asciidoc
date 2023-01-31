@@ -61,6 +61,7 @@ snapshots, including:
 * <<rollover,rollover>> indices
 * Take a <<snapshot,snapshot>> (backup) of indices
 * <<restore,Restore>> snapshots
+* <<shrink,Shrink>> indices
 
 [[about-cli]]
 == Command-Line Interface (CLI)
@@ -85,7 +86,7 @@ Python API].
 [[license]]
 == License
 
-Copyright (c) 2011–2017 Elasticsearch <http://elastic.co>
+Copyright (c) {copyright_years} Elasticsearch <http://elastic.co>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
