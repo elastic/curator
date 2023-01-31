@@ -1,12 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
 import elasticsearch7
-=======
-import elasticsearch6
->>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
-=======
-import elasticsearch7
->>>>>>> 0c52831 (This works with 7.17.5)
 import curator
 import os
 import json
@@ -24,15 +16,7 @@ logger = logging.getLogger(__name__)
 host, port = os.environ.get('TEST_ES_SERVER', 'localhost:9200').split(':')
 port = int(port) if port else 9200
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 global_client = elasticsearch7.Elasticsearch(host=host, port=port)
-=======
-global_client = elasticsearch6.Elasticsearch(host=host, port=port)
->>>>>>> d4971b9 (Initializing the Curator 6.x branch (#1649))
-=======
-global_client = elasticsearch7.Elasticsearch(host=host, port=port)
->>>>>>> 0c52831 (This works with 7.17.5)
 
 EMPTY710ROUTING = {'allocation': {'include': {'_tier_preference': 'data_content'}}}
 
