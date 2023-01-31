@@ -8,8 +8,6 @@ This section will be updated as more frequently asked questions arise
 * <<faq_doc_error,How can I report an error in the documentation?>>
 * <<faq_partial_delete,Can I delete only certain data from within indices?>>
 * <<faq_strange_chars,Can Curator handle index names with strange characters?>>
-* <<entrypoint-fix,I'm getting `DistributionNotFound` and `entry_point` errors when I try to run Curator.  What am I doing wrong?>>
-* <<faq_unicode,Why am I getting an error message about ASCII encoding?>>
 --
 
 [[faq_doc_error]]
@@ -185,73 +183,5 @@ actions:
 --------
 
 &nbsp;
-
-'''''
-
-[[entrypoint-fix]]
-== Q: I'm getting `DistributionNotFound` and `entry_point` errors when I try to run Curator.  What am I doing wrong?
-
-=== A: You likely need to upgrade `setuptools`
-
-If you are still unable to install, or get strange errors about dependencies you
-know you've installed, or messages mentioning `entry_point`, you may need to
-upgrade the `setuptools` package.  This is especially common with RHEL and
-CentOS installs, and their variants, as they depend on Python 2.6.
-
-If you can run `pip install -U setuptools`, it should correct the problem.
-
-You may also be able to download and install manually:
-
-. `wget https://pypi.python.org/packages/source/s/setuptools/setuptools-15.1.tar.gz -O setuptools-15.1.tar.gz`
-. `pip install setuptools-15.1.tar.gz`
-
-Any dependencies this version of setuptools may require will have to be manually
-acquired and installed for your platform.
-
-For more information about setuptools, see https://pypi.python.org/pypi/setuptools
-
-This fix originally appeared https://github.com/elastic/curator/issues/56#issuecomment-77843587[here].
-
-'''''
-
-[[faq_unicode]]
-== Q: Why am I getting an error message about ASCII encoding?
-
-=== A: You need to change your encoding to UTF-8
-
-If you see messages like this:
-
-[source,sh]
------------
-Click will abort further execution because Python 3 was configured to use ASCII
-as encoding for the environment.  Either run this under Python 2 or consult
-http://click.pocoo.org/python3/ for mitigation steps.
-
-This system lists a couple of UTF-8 supporting locales that
-you can pick from.  The following suitable locales where
-discovered: aa_DJ.utf8, aa_ER.utf8, aa_ET.utf8, ...
------------
-
-You are likely running Curator with Python 3, or the RPM/DEB package, which was
-compiled with Python 3.  Using the command-line library
-http://click.pocoo.org[click] with Python 3 requires your locale to be Unicode.
-You can set this up by exporting the `LC_ALL` environment variable like this:
-
-[source,sh]
------------
-$ export LC_ALL=mylocale.utf8
------------
-
-Where `mylocale.utf8` is one of the listed "suitable locales."
-
-You can also set the locale on the command-line before the Curator command:
-
-[source,sh]
------------
-$ LC_ALL=mylocale.utf8 curator [ARGS] ...
------------
-
-IMPORTANT: If you use `export`, be sure to choose the correct locale as it will
-be set for the duration of your terminal session.
 
 '''''
