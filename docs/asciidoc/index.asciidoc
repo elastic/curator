@@ -1,10 +1,11 @@
-:curator_version: 5.8.4
-:curator_major: 5
-:curator_doc_tree: 5.8
-:es_py_version: 7.12.0
-:es_doc_tree: 7.12
-:stack_doc_tree: 7.12
-:pybuild_ver: 3.9.4
+:curator_version: 6.0.0
+:curator_major: 6
+:curator_doc_tree: 6.0
+:es_py_version: 6.8.2
+:es_doc_tree: 6.8
+:stack_doc_tree: 6.8
+:pybuild_ver: 3.11.1
+:copyright_years: 2011-2023
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/{es_doc_tree}
 :esref: http://www.elastic.co/guide/en/elasticsearch/reference/{stack_doc_tree}
 :fbref: https://www.elastic.co/guide/en/beats/filebeat/{stack_doc_tree}
@@ -25,5 +26,4 @@ include::options.asciidoc[]
 include::filters.asciidoc[]
 include::filter_elements.asciidoc[]
 include::examples.asciidoc[]
-include::security.asciidoc[]
 include::faq.asciidoc[]

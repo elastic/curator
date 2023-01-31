@@ -60,6 +60,31 @@ Options:
 
 You can use <<envvars,environment variables>> in your configuration files.
 
+=== Running Curator from Docker
+
+Running Curator from the command-line using Docker requires only a few additional steps.
+
+Docker-based Curator requires you to map a volume for your configuration files. Neglecting
+to volume map your configuration directory to `/.curator` and attempting to pass options at the
+command-line will not work.
+
+It looks like this:
+
+[source,sh]
+-------
+docker run --rm --name myimagename \
+  -v /PATH/TO/MY/CONFIGS:/.curator \
+  untergeek/curator:mytag          \
+--config /.curator/config.yml /.curator/actionfile.yml
+-------
+
+Both of the files `config.yml` and `actionfile.yml` should already exist in the path
+`/PATH/TO/MY/CONFIGS` before run time.
+
+The `--rm` in the command means that the container (not the image) will be deleted after
+completing execution. You definitely want this as there is no reason to keep creating
+containers for each run. The eventual cleanup from this would be unpleasant.
+
 &nbsp;
 
 [[singleton-cli]]

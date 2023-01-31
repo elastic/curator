@@ -3,22 +3,50 @@
 Changelog
 =========
 
-5.8.5 (* * *)
+6.0.0 (* * *)
 -------------
 
 **Announcement**
 
-  * As mentioned in 5.8.4's release notes, `boto3` deprecates support for 
-    Python 2.7, and now so does Curator.
+  * This release is a simplified release for only ``pip`` and Docker. It only works
+    with Elasticsearch 7.x and is functionally identical to 5.8.4
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v6.x will only work with Elasticsearch v6.x
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
 
 **New**
 
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 6.8.23``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
   * Add filter by size feature. #1612 (IndraGunawan)
-  * Update Elasticsearch client to 7.14.0
+  * Update Elasticsearch client to 6.8.2
 
 **Security Fixes**
 
-  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni)
+  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni) — This dependency is now fully handled by the
+    ``elasticsearch7`` module and not a separate ``urllib3`` import.
 
 5.8.4 (27 April 2021)
 ---------------------
@@ -26,7 +54,7 @@ Changelog
 **Announcement**
 
   * Because Python 2.7 has been EOL for over a year now, many projects are no
-    longer supporting it. This will also be the case for Curator as its 
+    longer supporting it. This will also be the case for Curator as its
     dependencies cease to support Python 2.7. With `boto3` having announced it
     is ceasing support of Python 2.7, deprecated as of 15 Jan 2021, and fully
     unsupported on 15 Jul 2021, Curator will follow these same dates. This
@@ -38,7 +66,7 @@ Changelog
   * Normally I would not include breaking changes, but users have asked for
     Click v7, which changes actions to require hyphens, and not underscores.
     Options can still have underscores, but actions can't--well, not strictly
-    true. You can have underscores, but Click v7 will convert them to hyphens. 
+    true. You can have underscores, but Click v7 will convert them to hyphens.
     This should _only_ affect users of the Curator CLI, and not YAML file
     users, and only the actions: `show-indices`, `show-snapshots`,
     `delete-indices`, `delete-snapshots`. The actual actions are still named
@@ -113,7 +141,7 @@ Changelog
     ``es_repo_mgr``.
   * Removed tests for all 5.x branches of Elasticsearch but the final (5.6).
   * Added tests for missing 7.x branches of Elasticsearch
-  * Remove tests for Python 3.5 
+  * Remove tests for Python 3.5
   * Fix hang of Shrink action in ES 7.x in #1528 (jclegras)
   * Add ``ecs`` as a ``logformat`` option in #1529 (m1keil)
 
@@ -165,7 +193,7 @@ Changelog
   * Add ``skip_flush`` option to the ``close`` action. This should be useful
     when trying to close indices with unassigned shards (e.g. before restore).
     Raised in #1412. (psypuff)
-  * Use ``RequestsHttpConnection`` class, which permits the use of 
+  * Use ``RequestsHttpConnection`` class, which permits the use of
     ``HTTP_PROXY`` and ``HTTPS_PROXY`` environment variables. Raised in #510
     and addressed by #1259 (raynigon) in August of 2018. Subsequent changes,
     however, required some adaptation, and re-submission as a different PR.
@@ -192,7 +220,7 @@ Changelog
     indices #1430 (heyitsmdr)
   * Fix ``index_size`` function to be able to report either for either the
     ``total`` of all shards (default) or just ``primaries``. Added as a keyword
-    arg to preserve existing behavior. This was needed to fix sizing 
+    arg to preserve existing behavior. This was needed to fix sizing
     calculations for the Shrink action, which should only count ``primaries``.
     Raised in #1429 (untergeek).
   * Fix ``allow_ilm_indices`` to work with the ``rollover`` action. Reported in
@@ -212,8 +240,8 @@ Changelog
     #1360. (anandsinghkunwar)
   * Do an empty list check before querying indices for field stats. Fixed by
     (CiXiHuo) in #1448.
-  * Fix "Correctly report task runtime in seconds" while reindexing. Reported 
-    by (jkelastic) in #1335 
+  * Fix "Correctly report task runtime in seconds" while reindexing. Reported
+    by (jkelastic) in #1335
 
 **Documentation**
 
@@ -304,7 +332,7 @@ We do not speak of 5.7.1
 
   * Many thanks to those who submitted documentation fixes, both factual as
     well as typos!
-  
+
 
 5.6.0 (13 November 2018)
 ------------------------
