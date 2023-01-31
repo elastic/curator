@@ -18,6 +18,7 @@ dist
 docs/_build
 docs/asciidoc/html_docs
 docker_test/repo/
+docker_test/scripts/Dockerfile
 elasticsearch_curator.egg-info
 elasticsearch_curator_dev.egg-info
 html_docs/
