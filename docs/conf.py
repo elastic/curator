@@ -1,3 +1,4 @@
+"""Doc building config file"""
 # -*- coding: utf-8 -*-
 #
 # Elasticsearch documentation build configuration file, created by
@@ -11,25 +12,30 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, re
+import sys
+import os
+import re
 
-# Utility function to read from file.
+VERSIONFILE = '../curator/_version.py'
+COPYRIGHT_YEARS = '2011-2023'
+
 def fread(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    """Simple file read function"""
+    return open(os.path.join(os.path.dirname(__file__), fname), encoding='utf-8').read()
 
 def get_version():
-    VERSIONFILE="../curator/_version.py"
+    """Extract the release version number from the file"""
     verstrline = fread(VERSIONFILE).strip()
     vsre = r"^__version__ = ['\"]([^'\"]*)['\"]"
-    mo = re.search(vsre, verstrline, re.M)
-    if mo:
-        VERSION = mo.group(1)
+    match_obj = re.search(vsre, verstrline, re.M)
+    if match_obj:
+        version_num = match_obj.group(1)
     else:
         raise RuntimeError(f"Unable to find version string in {VERSIONFILE}.")
     build_number = os.environ.get('CURATOR_BUILD_NUMBER', None)
     if build_number:
-        return VERSION + f"b{build_number}"
-    return VERSION
+        return version_num + f"b{build_number}"
+    return version_num
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -67,7 +73,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Elasticsearch Curator'
-copyright = '2011-2023, Elasticsearch'
+# pylint: disable=redefined-builtin
+copyright = f'{COPYRIGHT_YEARS}, Elasticsearch'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
