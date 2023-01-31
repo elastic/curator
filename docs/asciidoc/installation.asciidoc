@@ -15,8 +15,9 @@ one of the nodes in the cluster.
 
 [[pip]]
 == pip
-This installation procedure utilizes Python `pip` and requires that the
-target machine has internet connectivity.
+This installation procedure requires a functional Python `pip` executable and requires that the
+target machine has internet connectivity for downloading Curator and the dependencies from
+https://pypi.org[The Python Package Index].
 
 ---------------------------------
 pip install elasticsearch-curator
@@ -40,6 +41,9 @@ by the version you'd like to install, like this:
 -------------------------------------------
 pip install -U elasticsearch-curator==X.Y.Z
 -------------------------------------------
+
+For this release, you would type:
+`pip install -U elasticsearch-curator==`+pass:attributes[{curator_version}]+
 
 === System-wide vs. User-only installation
 
