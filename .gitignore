@@ -16,6 +16,7 @@ cover
 coverage.xml
 dist
 docker_test/repo/
+docker_test/scripts/Dockerfile
 docs/_build
 docs/asciidoc/html_docs
 elasticsearch_curator.egg-info
