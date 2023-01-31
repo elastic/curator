@@ -99,7 +99,6 @@ This release-candidate is a *major* refactoring of the Curator code to work with
   * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
     instance, all AWS ES connection settings and references have been removed.
 
-
 7.0.0 (x y z)
 -------------
 
