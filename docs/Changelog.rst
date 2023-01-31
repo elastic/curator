@@ -3,13 +3,13 @@
 Changelog
 =========
 
-6.0.0 (* * *)
--------------
+6.0.0 (31 January 2023)
+-----------------------
 
 **Announcement**
 
   * This release is a simplified release for only ``pip`` and Docker. It only works
-    with Elasticsearch 7.x and is functionally identical to 5.8.4
+    with Elasticsearch 6.x and is functionally identical to 5.8.4
 
 **Breaking Changes**
 
