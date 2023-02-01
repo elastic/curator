@@ -328,7 +328,7 @@ options:
 
 For the `create_index` action, the <<option_name,name>> option can be in
 Elasticsearch
-{ref}/date-math-index-names.html[date math] format.  This allows index names
+{ref}/api-conventions.html#api-date-math-index-names[date math] format.  This allows index names
 containing dates to use deterministic math to set a date name in the past or the
 future.
 
@@ -337,7 +337,7 @@ create an index named `logstash-2017.03.27`. If you wanted to create
 _tomorrow's_ index, you would use the name `<logstash-{now/d+1d}>`, which adds 1
 day.  This pattern creates an index named `logstash-2017.03.28`.  For many more
 configuration options, read the Elasticsearch
-{ref}/date-math-index-names.html[date math] documentation.
+{ref}/api-conventions.html#api-date-math-index-names[date math] documentation.
 
 === Extra Settings
 
@@ -670,7 +670,6 @@ this action.  All other options are as follows.
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
 * <<option_remote_filters,remote_filters>>
-* <<option_remote_ssl_no_validate,remote_ssl_no_validate>>
 * <<option_remote_url_prefix,remote_url_prefix>>
 * <<option_request_body,request_body>>
 * <<option_requests_per_second,requests_per_second>>
@@ -972,9 +971,8 @@ options:
   index before triggering a rollover.  This _must_ be nested under
   `conditions:`. There is no default value.  If this condition is specified, it
   must have a value, or Curator will generate an error.
-* <<option_max_size,max_size>> **Only supported in Elasticsearch 6.1.0 and up.**
-  The maximum size the index can be before a rollover is triggered.  This _must_
-  be nested under `conditions:`. There is no default value.  If this condition
+* <<option_max_size,max_size>> The maximum size the index can be before a rollover is triggered.
+  This _must_ be nested under `conditions:`. There is no default value.  If this condition
   is specified, it must have a value, or Curator will generate an error.
 
 

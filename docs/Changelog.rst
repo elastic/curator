@@ -3,6 +3,58 @@
 Changelog
 =========
 
+8.0.0 (31 January 2023)
+-----------------------
+
+**Announcement**
+
+This release is a *major* refactoring of the Curator code to work with both Elasticsearch
+8.x and the Elasticsearch-py Python module of the same major and minor versions.
+
+I apologize for the crazy merge messes trying to get this all to work. In the end, I had to delete
+my fork on github and start over clean.
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v8.x will only work with Elasticsearch v8.x
+  * Your old Curator ``config.yml`` file will no longer work as written. There have been more than
+    a few changes necessitated by the updates in the ``elasticsearch8`` Python client library.
+    The client connection code has also been extracted to its own module, ``es_client``. This is
+    actually a good thing, however, as new options for configuring the client connection become
+    possible.
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**Changes**
+
+  * Last minute doc fixes. Mostly updated links to Elasticsearch documentation.
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Revamped almost every integration test
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 8.6.1``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="http://172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * The action classes were broken into their own path, ``curator/actions/filename.py``.
+  * ``curator_cli`` has been updated with more client connection settings, like ``cloud_id``.
+  * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
+    instance, all AWS ES connection settings and references have been removed.
+
 8.0.0rc1 (30 January 2023)
 --------------------------
 
@@ -99,21 +151,95 @@ This release-candidate is a *major* refactoring of the Curator code to work with
   * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
     instance, all AWS ES connection settings and references have been removed.
 
-7.0.0 (x y z)
--------------
+7.0.0 (31 January 2023)
+-----------------------
 
 **Announcement**
 
   * This release is a simplified release for only ``pip`` and Docker. It only works
-    with Elasticsearch 7.x and is functionally identical to 5.8.4 and 5.8.5
+    with Elasticsearch 7.x and is functionally identical to 5.8.4
 
-6.0.0 (x y z)
--------------
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v7.x will only work with Elasticsearch v7.x
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**New**
+
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 7.17.8``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * Add filter by size feature. #1612 (IndraGunawan)
+  * Update Elasticsearch client to 7.17.8
+
+**Security Fixes**
+
+  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni) — This dependency is now fully handled by the
+    ``elasticsearch7`` module and not a separate ``urllib3`` import.
+
+6.0.0 (31 January 2023)
+-----------------------
 
 **Announcement**
 
   * This release is a simplified release for only ``pip`` and Docker. It only works
-    with Elasticsearch 6.x and is functionally identical to 5.8.4 and 5.8.5
+    with Elasticsearch 6.x and is functionally identical to 5.8.4
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v6.x will only work with Elasticsearch v6.x
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**New**
+
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 6.8.23``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * Add filter by size feature. #1612 (IndraGunawan)
+  * Update Elasticsearch client to 6.8.2
+
+**Security Fixes**
+
+  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni) — This dependency is now fully handled by the
+    ``elasticsearch7`` module and not a separate ``urllib3`` import.
 
 5.8.5 (* * *)
 -------------
