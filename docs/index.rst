@@ -16,8 +16,8 @@ snapshots.
 Compatibility
 -------------
 
-The Elasticsearch Curator Python API is compatible with the 5.x Elasticsearch versions, 
-and supports Python versions 2.7, and 3.5+.
+The Elasticsearch Curator Python API is compatible with Elasticsearch version 6.x,
+and supports Python versions 3.8, 3.9, 3.10, and 3.11 officially.
 
 Installation
 ------------
@@ -25,7 +25,7 @@ Installation
 Install the ``elasticsearch-curator`` package with `pip
 <https://pypi.python.org/pypi/elasticsearch-curator>`_::
 
-    pip install elasticsearch-curator
+    pip install elasticsearch-curator==6.0
 
 Example Usage
 -------------
