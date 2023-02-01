@@ -25,7 +25,7 @@ Installation
 Install the ``elasticsearch-curator`` package with `pip
 <https://pypi.python.org/pypi/elasticsearch-curator>`_::
 
-    pip install elasticsearch-curator
+    pip install elasticsearch-curator==7.0
 
 Example Usage
 -------------
