@@ -27,80 +27,80 @@ Action Classes
 
 Alias
 -----
-.. autoclass:: curator.actions.Alias
+.. autoclass:: curator.actions.alias.Alias
    :members:
 
 Allocation
 ----------
-.. autoclass:: curator.actions.Allocation
+.. autoclass:: curator.actions.allocation.Allocation
   :members:
 
 Close
 -----
-.. autoclass:: curator.actions.Close
+.. autoclass:: curator.actions.close.Close
   :members:
 
 ClusterRouting
 --------------
-.. autoclass:: curator.actions.ClusterRouting
+.. autoclass:: curator.actions.cluster_routing.ClusterRouting
   :members:
 
 CreateIndex
 --------------
-.. autoclass:: curator.actions.CreateIndex
+.. autoclass:: curator.actions.create_index.CreateIndex
   :members:
 
 DeleteIndices
 -------------
-.. autoclass:: curator.actions.DeleteIndices
+.. autoclass:: curator.actions.delete_indices.DeleteIndices
    :members:
 
 DeleteSnapshots
 ---------------
-.. autoclass:: curator.actions.DeleteSnapshots
+.. autoclass:: curator.actions.snapshot.DeleteSnapshots
   :members:
 
 ForceMerge
 ----------
-.. autoclass:: curator.actions.ForceMerge
+.. autoclass:: curator.actions.forcemerge.ForceMerge
   :members:
 
 IndexSettings
 --------------
-.. autoclass:: curator.actions.IndexSettings
+.. autoclass:: curator.actions.index_settings.IndexSettings
   :members:
 
 Open
 ----
-.. autoclass:: curator.actions.Open
+.. autoclass:: curator.actions.open.Open
    :members:
 
 Reindex
 --------
-.. autoclass:: curator.actions.Reindex
+.. autoclass:: curator.actions.reindex.Reindex
   :members:
 
 Replicas
 --------
-.. autoclass:: curator.actions.Replicas
+.. autoclass:: curator.actions.replicas.Replicas
   :members:
 
 Restore
 --------
-.. autoclass:: curator.actions.Restore
+.. autoclass:: curator.actions.snapshot.Restore
   :members:
 
 Rollover
 --------
-.. autoclass:: curator.actions.Rollover
+.. autoclass:: curator.actions.rollover.Rollover
   :members:
 
 Shrink
 --------
-.. autoclass:: curator.actions.Shrink
+.. autoclass:: curator.actions.shrink.Shrink
   :members:
 
 Snapshot
 --------
-.. autoclass:: curator.actions.Snapshot
+.. autoclass:: curator.actions.snapshot.Snapshot
   :members:
