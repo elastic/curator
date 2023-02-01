@@ -241,23 +241,6 @@ This release-candidate is a *major* refactoring of the Curator code to work with
   * Use `urllib3` 1.26.5 or higher #1610 (tsaarni) — This dependency is now fully handled by the
     ``elasticsearch7`` module and not a separate ``urllib3`` import.
 
-5.8.5 (* * *)
--------------
-
-**Announcement**
-
-  * As mentioned in 5.8.4's release notes, `boto3` deprecates support for
-    Python 2.7, and now so does Curator.
-
-**New**
-
-  * Add filter by size feature. #1612 (IndraGunawan)
-  * Update Elasticsearch client to 7.14.0
-
-**Security Fixes**
-
-  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni)
-
 5.8.4 (27 April 2021)
 ---------------------
 
