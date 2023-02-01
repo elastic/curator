@@ -39,7 +39,6 @@ Options are settings used by <<actions,actions>>.
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
 * <<option_remote_filters,remote_filters>>
-* <<option_remote_ssl_no_validate,remote_ssl_no_validate>>
 * <<option_remote_url_prefix,remote_url_prefix>>
 * <<option_rename_pattern,rename_pattern>>
 * <<option_rename_replacement,rename_replacement>>
@@ -532,12 +531,12 @@ filters:
 
 When the `ignore_unavailable` option is `False` and an index is missing,
 or if the request is to apply a
-https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#_static_index_settings[static]
+{esref}/index-modules.html#_static_index_settings[static]
 setting and the index is opened, the index setting request will fail.
 The `ignore_unavailable` option allows these indices to be skipped, when set to
 `True`.
 
-NOTE: https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#dynamic-index-settings[Dynamic]
+NOTE: {esref}/index-modules.html#dynamic-index-settings[Dynamic]
 index settings can be applied to either open or closed indices.
 
 [[option_include_aliases]]
@@ -791,7 +790,7 @@ NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
 
 The maximum approximate size an index is allowed to be before triggering a
 rollover.  Sizes must use Elasticsearch approved
-{ref}/common-options.html#byte-units[byte units]. It _must_ be nested under
+{ref}/common-options.html#byte-units[human-readable byte units]. It _must_ be nested under
 `conditions:` There is no default value.  If this condition is specified, it
 must have a value, or Curator will generate an error.
 
@@ -1089,7 +1088,7 @@ options:
   # ...
 -------------
 
-or use Elasticsearch {ref}/date-math-index-names.html[date math]
+or use Elasticsearch {ref}/api-conventions.html#api-date-math-index-names[date math]
 
 [source,yaml]
 -------------
@@ -1528,48 +1527,6 @@ This feature will only work when the `source` `index` is set to
 `REINDEX_SELECTION`.  It will select _remote_ indices matching the filters
 provided, and reindex them to the _local_ cluster as the name provided in the
 `dest` `index`.  In this example, that is `index2`.
-
-
-
-[[option_remote_ssl_no_validate]]
-== remote_ssl_no_validate
-
-This should be `True`, `False` or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_ssl_no_validate: True
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-
-If access to your Elasticsearch instance is protected by SSL encryption, you may
-set `ssl_no_validate` to `True` to disable SSL certificate verification.
-
-Valid use cases for doing so include the use of self-signed certificates that
-cannot be otherwise verified and would generate error messages.
-
-WARNING: Setting `ssl_no_validate` to `True` will likely result in a warning
-    message that your SSL certificates are not trusted. This is expected
-    behavior.
-
-The default value is `False`.
-
 
 
 [[option_remote_url_prefix]]
@@ -2310,7 +2267,7 @@ were `-shrink`, the resulting target index name would be `foo-index-shrink`.
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
 This setting can speed up reindexing operations by using
-{ref}/search-request-body.html#sliced-scroll[Sliced Scroll] to slice on the
+{ref}/paginate-search-results.html#slice-scroll[Sliced Scroll] to slice on the
 \_uid.
 
 [source,yaml]
