@@ -358,7 +358,7 @@ options:
 
 === <<restore,restore>>
 
-See the {ref}/snapshots-restore-snapshot.html#change-index-settings-during-restore[official Elasticsearch Documentation].
+See the {ref}/snapshots-restore-snapshot.html[official Elasticsearch Documentation].
 
 [source,yaml]
 -------------
@@ -1162,13 +1162,13 @@ description: >-
   date math.
 options:
   name: aliasname
-  new_index: "<prefix-{now/d}-1>" 
+  new_index: "<prefix-{now/d}-1>"
   conditions:
     max_age: 1d
   wait_for_active_shards: 1
 -------------
 
-IMPORTANT: A new index name for rollover should still end with a dash followed by an 
+IMPORTANT: A new index name for rollover should still end with a dash followed by an
   incrementable number, e.g. `my_new_index-1`, or if using date math, `<prefix-{now/d}-1>`
   or `<prefix-{now/d}-000001>`
 
