@@ -49,7 +49,7 @@ NOTE: All Beats share a similar ILM configuration. Filebeats is used as a
 Starting with version 7.0, Filebeat uses index lifecycle management by default when it connects to a cluster that supports lifecycle management. Filebeat loads the default policy automatically and applies it to any indices created by Filebeat.
 
 You can view and edit the policy in the Index lifecycle policies UI in Kibana. For more information about working with the UI, see
-{kbref}/index-lifecycle-policies.html[Index lifecyle policies].
+{esref}/index-lifecycle-management.html[Index lifecyle policies].
 
 Read more about Filebeat and ILM {fbref}/ilm.html[here].
 

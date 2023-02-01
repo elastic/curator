@@ -1,4 +1,4 @@
-This setting may be a valid {ref}/date-math-index-names.html[Elasticsearch date math string].
+This setting may be a valid {ref}/api-conventions.html#api-date-math-index-names[Elasticsearch date math string].
 
 A date math name takes the following form:
 

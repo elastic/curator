@@ -456,7 +456,7 @@ indices which do not contain any documents. Indices that are closed are automati
 removed from consideration. They will remain in, or be removed from the actionable list
 based on the value of <<fe_exclude,exclude>>.
 
-By default the indices matched by the empty filter will be excluded since 
+By default the indices matched by the empty filter will be excluded since
 the exclude setting defaults to True. To include matching indices rather than
 exclude, set the exclude setting to False.
 
@@ -503,7 +503,7 @@ remain in, or be removed from the actionable list based on the value of
   exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove any index matching the regular 
+This <<filtertype,filtertype>> will remove any index matching the regular
 expression `^\.kibana.*$` from the list of indices, if present.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
