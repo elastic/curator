@@ -918,7 +918,7 @@ actions:
 
 In this case, the number of replicas will be applied to the restored indices.
 
-For more information see the {ref}/snapshots-restore-snapshot.html#change-index-settings-during-restore[official Elasticsearch Documentation].
+For more information see the {ref}/modules-snapshots.html[official Elasticsearch Documentation].
 
 === Required settings
 
@@ -1081,7 +1081,7 @@ NOTE: Empty values and commented lines will result in the default value, if any,
     will be ignored.
 
 Shrinking an index is a good way to reduce the total shard count in your cluster.
-https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-shrink-index.html#_shrinking_an_index[Several conditions need to be met]
+{ref}/indices-shrink-index.html#_shrinking_an_index[Several conditions need to be met]
 in order for index shrinking to take place:
 
 * The index must be marked as read-only
@@ -1205,7 +1205,7 @@ read about them and change them accordingly.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.
-    
+
 [[unfreeze]]
 == Unfreeze
 

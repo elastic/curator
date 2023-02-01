@@ -1162,13 +1162,13 @@ description: >-
   date math.
 options:
   name: aliasname
-  new_index: "<prefix-{now/d}-1>" 
+  new_index: "<prefix-{now/d}-1>"
   conditions:
     max_age: 1d
   wait_for_active_shards: 1
 -------------
 
-IMPORTANT: A new index name for rollover should still end with a dash followed by an 
+IMPORTANT: A new index name for rollover should still end with a dash followed by an
   incrementable number, e.g. `my_new_index-1`, or if using date math, `<prefix-{now/d}-1>`
   or `<prefix-{now/d}-000001>`
 
@@ -1803,7 +1803,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/snapshots-restore-snapshot.html
+Read more about this setting at {ref}/modules-snapshots.html
 
 There is no default value.
 
@@ -1855,7 +1855,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/snapshots-restore-snapshot.html
+Read more about this setting at {ref}//modules-snapshots.html
 
 There is no default value.
 
@@ -2463,8 +2463,8 @@ were `-shrink`, the resulting target index name would be `foo-index-shrink`.
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
 This setting can speed up reindexing operations by using
-{ref}/search-request-body.html#sliced-scroll[Sliced Scroll] to slice on the
-\_uid.
+{ref}/search-request-scroll.html#sliced-scroll[Sliced Scroll] to slice on the
+`_uid`.
 
 [source,yaml]
 -------------
