@@ -354,7 +354,7 @@ options:
 
 === <<restore,restore>>
 
-See the {ref}/snapshots-restore-snapshot.html#change-index-settings-during-restore[official Elasticsearch Documentation].
+See the {ref}/snapshots-restore-snapshot.html[official Elasticsearch Documentation].
 
 [source,yaml]
 -------------
@@ -790,7 +790,7 @@ NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
 
 The maximum approximate size an index is allowed to be before triggering a
 rollover.  Sizes must use Elasticsearch approved
-{ref}/common-options.html#byte-units[human-readable byte units]. It _must_ be nested under
+{ref}/common-options.html[human-readable byte units]. It _must_ be nested under
 `conditions:` There is no default value.  If this condition is specified, it
 must have a value, or Curator will generate an error.
 
