@@ -54,7 +54,8 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphin
 
 intersphinx_mapping = {
 	'python': ('https://docs.python.org/3.11', None),
-	'elasticsearch8': ('https://elasticsearch-py.readthedocs.io/en/v8.6.1', None)
+	'elasticsearch8': ('https://elasticsearch-py.readthedocs.io/en/v8.6.1', None),
+    'voluptuous': ('http://alecthomas.github.io/voluptuous/docs/_build/html', None)
 }
 
 autoclass_content = "both"

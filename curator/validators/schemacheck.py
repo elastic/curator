@@ -14,21 +14,22 @@ class SchemaCheck(object):
         :arg config: A configuration dictionary.
         :type config: dict
         :arg schema: A voluptuous schema definition
-        :type schema: :class:`voluptuous.Schema`
+        :type schema: :class:`voluptuous.schema_builder.Schema`
         :arg test_what: which configuration block is being validated
         :type test_what: str
-        :arg location: An string to report which configuration sub-block is
-            being tested.
+        :arg location: A string to report which configuration sub-block is being tested.
         :type location: str
         """
         self.loggit = logging.getLogger('curator.validators.SchemaCheck')
         # Set the Schema for validation...
-        self.loggit.debug('Schema: {0}'.format(schema))
-        self.loggit.debug('"{0}" config: {1}'.format(test_what, config))
+        self.loggit.debug('Schema: %s', schema)
+        self.loggit.debug('"%s" config: %s', test_what, config)
         self.config = config
         self.schema = schema
         self.test_what = test_what
         self.location = location
+        self.badvalue = None
+        self.error = None
 
     def __parse_error(self):
         """
@@ -43,13 +44,13 @@ class SchemaCheck(object):
                     key = int(k)
                 except ValueError:
                     key = k
-                if value == None:
+                if value is None:
                     value = data[key]
                     # if this fails, it's caught below
             return value
         try:
             self.badvalue = get_badvalue(str(self.error).split()[-1], self.config)
-        except:
+        except Exception:
             self.badvalue = '(could not determine)'
 
     def result(self):
@@ -59,12 +60,11 @@ class SchemaCheck(object):
             try:
                 # pylint: disable=E1101
                 self.error = err.errors[0]
-            except:
-                self.error = '{0}'.format(err)
+            except Exception:
+                self.error = f'{err}'
             self.__parse_error()
-            self.loggit.error('Schema error: {0}'.format(self.error))
+            self.loggit.error('Schema error: %s', self.error)
             raise ConfigurationError(
-                'Configuration: {0}: Location: {1}: Bad Value: "{2}", {3}. '
-                'Check configuration file.'.format(
-                    self.test_what, self.location, self.badvalue, self.error)
-            )
+                f'Configuration: {self.test_what}: Location: {self.location}: Bad Value: '
+                f'"{self.badvalue}", {self.error}. Check configuration file.'
+            ) from err

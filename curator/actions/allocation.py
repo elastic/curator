@@ -29,7 +29,7 @@ class Allocation:
 
         .. note::
             See:
-            https://www.elastic.co/guide/en/elasticsearch/reference/6.8/shard-allocation-filtering.html
+            https://www.elastic.co/guide/en/elasticsearch/reference/8.6/shard-allocation-filtering.html
         """
         verify_index_list(ilo)
         if not key:

@@ -1,27 +1,40 @@
-"""Validate actions"""
+"""Validate root ``actions`` and individual ``action`` Schemas"""
 from voluptuous import Any, In, Schema, Optional, Required
+from six import string_types
 from curator.defaults import settings
 from curator.validators import SchemaCheck
-from six import string_types
 
-### Schema information ###
-# Actions: root level
 def root():
+    """
+    Return a valid Schema definition which is a dictionary with ``actions`` as a root key with
+    another dictionary as the value.
+    """
     return Schema({ Required('actions'): dict })
 
 def valid_action():
+    """
+    Return a valid Schema definition which is that the value of key ``action`` must be ``In``
+    the value returned by :py:func:`curator.defaults.settings.all_actions`.
+    """
     return {
         Required('action'): Any(
-            In(settings.all_actions()),
-            msg='action must be one of {0}'.format(
-                settings.all_actions()
-            )
+            In(settings.all_actions()), msg=f'action must be one of {settings.all_actions()}'
         )
     }
 
-# Basic action structure
 def structure(data, location):
-    # Validate the action type first, so we can use it for other tests
+    """
+    Return a valid Schema definition which tests ``data``, which is ostensibly an individual action
+    dictionary. If it is a :py:func:`curator.validators.actions.valid_action`, then it will
+    :py:meth:`voluptuous.schema_builder.Schema.update` the base Schema with other options, based on the what the
+    value of ``data['action']`` is.
+
+    :arg data: The configuration dictionary, or sub-dictionary, being validated
+    :type data: dict
+    :arg location: A string to report which configuration sub-block is being tested.
+    :type location: str
+    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    """
     _ = SchemaCheck(
         data,
         Schema(valid_action(), extra=True),
@@ -31,14 +44,9 @@ def structure(data, location):
     # Build a valid schema knowing that the action has already been validated
     retval = valid_action()
     retval.update(
-        {
-            Optional('description', default='No description given'): Any(
-                    str, *string_types
-                )
-        }
+        {Optional('description', default='No description given'): Any(str, *string_types)}
     )
-    retval.update(
-        { Optional('options', default=settings.default_options()): dict } )
+    retval.update({Optional('options', default=settings.default_options()): dict})
     action = data['action']
     if action in [ 'cluster_routing', 'create_index', 'rollover']:
         # The cluster_routing, create_index, and rollover actions should not
@@ -54,7 +62,5 @@ def structure(data, location):
             }
         )
     else:
-        retval.update(
-            { Optional('filters', default=settings.default_filters()): list }
-        )
+        retval.update({Optional('filters', default=settings.default_filters()): list})
     return Schema(retval)

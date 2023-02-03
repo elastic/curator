@@ -2,15 +2,30 @@
 import logging
 from curator.defaults import filter_elements, settings
 
-# pylint: disable=missing-docstring
-
-## Helpers ##
+# pylint: disable=missing-docstring, unused-argument, line-too-long
 
 def _age_elements(action, config):
+    """
+    Sort which filter types that have ``use_age`` are suitable for :py:class:`curator.IndexList`
+    and which are acceptable in :py:class:`curator.SnapshotList`, which are required, and which
+    are not.
+
+    :param action: The name of an action
+    :type action: str
+    :param config: The configuration block for one filter of ``action``
+    :type config: dict
+
+    :returns: A :py:class:`list` containing one or more :py:class:`voluptuous.schema_builder.Optional`
+        or :py:class:`voluptuous.schema_builder.Required` options from
+        :py:mod:`curator.defaults.filter_elements`, defining acceptable values for each for the
+        given ``action``
+    :rtype: list
+    """
     retval = []
     is_req = True
     if config['filtertype'] in ['count', 'space']:
-        is_req = True if 'use_age' in config and config['use_age'] else False
+        # is_req = True if 'use_age' in config and config['use_age'] else False
+        is_req = bool('use_age' in config and config['use_age'])
     retval.append(filter_elements.source(action=action, required=is_req))
     if action in settings.index_actions():
         retval.append(filter_elements.stats_result())
@@ -37,12 +52,19 @@ def _age_elements(action, config):
 ### Schema information ###
 
 def alias(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_alias`
+    """
     return [
         filter_elements.aliases(),
         filter_elements.exclude(),
     ]
 
 def age(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_age` or
+        :py:meth:`curator.SnapshotList.filter_by_age`
+    """
     # Required & Optional
     logger = logging.getLogger('curator.defaults.filtertypes.age')
     retval = [
@@ -54,10 +76,13 @@ def age(action, config):
         filter_elements.exclude(),
     ]
     retval += _age_elements(action, config)
-    logger.debug('AGE FILTER = {0}'.format(retval))
+    logger.debug('AGE FILTER = %s', retval)
     return retval
 
 def allocated(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_allocated`
+    """
     return [
         filter_elements.key(),
         filter_elements.value(),
@@ -66,9 +91,16 @@ def allocated(action, config):
     ]
 
 def closed(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_closed`
+    """
     return [filter_elements.exclude(exclude=True)]
 
 def count(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_count` or
+        :py:meth:`curator.SnapshotList.filter_by_count`
+    """
     retval = [
         filter_elements.count(),
         filter_elements.use_age(),
@@ -79,25 +111,51 @@ def count(action, config):
     retval += _age_elements(action, config)
     return retval
 
+def empty(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_empty`
+    """
+    return [filter_elements.exclude()]
+
 def forcemerged(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_forcemerged`
+    """
     return [
         filter_elements.max_num_segments(),
         filter_elements.exclude(exclude=True),
     ]
 
 def ilm(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_ilm`
+    """
     return [filter_elements.exclude(exclude=True)]
 
 def kibana(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_kibana`
+    """
     return [filter_elements.exclude(exclude=True)]
 
 def none(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_none` or
+        :py:meth:`curator.SnapshotList.filter_none`
+    """
     return []
 
 def opened(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_opened`
+    """
     return [filter_elements.exclude(exclude=True)]
 
 def pattern(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_regex` or
+        :py:meth:`curator.SnapshotList.filter_by_regex`
+    """
     return [
         filter_elements.kind(),
         filter_elements.value(),
@@ -105,6 +163,10 @@ def pattern(action, config):
     ]
 
 def period(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_period` or
+        :py:meth:`curator.SnapshotList.filter_by_period`
+    """
     retval = [
         filter_elements.unit(period=True),
         filter_elements.range_from(),
@@ -124,7 +186,31 @@ def period(action, config):
     retval += _age_elements(action, config)
     return retval
 
+def shards(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_shards`
+    """
+    return [
+        filter_elements.number_of_shards(),
+        filter_elements.shard_filter_behavior(),
+        filter_elements.exclude(),
+    ]
+
+def size(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_size`
+    """
+    return [
+        filter_elements.size_threshold(),
+        filter_elements.threshold_behavior(),
+        filter_elements.size_behavior(),
+        filter_elements.exclude(),
+    ]
+
 def space(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.IndexList.filter_by_space`
+    """
     retval = [
         filter_elements.disk_space(),
         filter_elements.reverse(),
@@ -136,27 +222,10 @@ def space(action, config):
     return retval
 
 def state(action, config):
+    """
+    :returns: Filter elements acceptable for :py:meth:`curator.SnapshotList.filter_by_state`
+    """
     return [
         filter_elements.state(),
-        filter_elements.exclude(),
-    ]
-
-def shards(action, config):
-    return [
-        filter_elements.number_of_shards(),
-        filter_elements.shard_filter_behavior(),
-        filter_elements.exclude(),
-    ]
-
-def empty(action, config):
-    return [
-        filter_elements.exclude(),
-    ]
-
-def size(action, config):
-    return [
-        filter_elements.size_threshold(),
-        filter_elements.threshold_behavior(),
-        filter_elements.size_behavior(),
         filter_elements.exclude(),
     ]
