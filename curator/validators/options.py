@@ -4,7 +4,16 @@ from curator.defaults import option_defaults
 
 ## Methods for building the schema
 def action_specific(action):
-    """Action specific options"""
+    """
+    :param action: The name of an action
+    :type action: str
+
+    :returns: A :py:class:`list` containing one or more :py:class:`voluptuous.schema_builder.Optional`
+        or :py:class:`voluptuous.schema_builder.Required` options from
+        :py:mod:`curator.defaults.option_defaults`, defining acceptable values for each for the
+        given ``action``
+    :rtype: list
+    """
     options = {
         'alias' : [
             option_defaults.name(action),
@@ -46,7 +55,6 @@ def action_specific(action):
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
-        'freeze': [],
         'index_settings' : [
             option_defaults.index_settings(),
             option_defaults.ignore_unavailable(),
@@ -127,14 +135,20 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'unfreeze': [],
     }
     return options[action]
 
 def get_schema(action):
     """
-    Appending the options dictionary seems to be the best way, since the
-    "Required" and "Optional" elements are hashes themselves.
+    Return a :py:class:`voluptuous.schema_builder.Schema` of acceptable options and their default
+    values as returned by :py:mod:`curator.validators.options.action_specific`, passing along the
+    value of ``action``.
+
+    :param action: The name of an action
+    :type action: str
+
+    :returns: ``Schema(options)``
+    :rtype: :py:class:`voluptuous.schema_builder.Schema`
     """
     options = {}
     defaults = [

@@ -389,12 +389,12 @@ class SnapshotList:
             timestring=None, unit=None, week_starts_on='sunday', epoch=None, exclude=False
     ):
         """
-        Match `snapshots` with ages within a given period.
+        Match ``snapshots`` with ages within a given period.
 
         :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
             ``relative``.  ``date_from`` and ``date_to`` are required when using
-            ``period_type='absolute'`. ``range_from`` and ``range_to`` are
-            required with ``period_type='relative'`.
+            ``period_type='absolute'``. ``range_from`` and ``range_to`` are
+            required with ``period_type='relative'``.
         :arg source: Source of snapshot age. Can be 'name', or 'creation_date'.
         :arg range_from: How many ``unit`` (s) in the past/future is the origin?
         :arg range_to: How many ``unit`` (s) in the past/future is the end point?
@@ -414,10 +414,10 @@ class SnapshotList:
             ``sunday``
         :arg epoch: An epoch timestamp used to establish a point of reference
             for calculations. If not provided, the current time will be used.
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            indices from `indices`. If `exclude` is `False`, then only matching
-            indices will be kept in `indices`.
-            Default is `False`
+        :arg exclude: If ``exclude`` is ``True``, this filter will remove matching
+            indices from ``indices``. If ``exclude`` is ``False``, then only matching
+            indices will be kept in ``indices``.
+            Default is ``False``
         """
 
         self.loggit.debug('Filtering snapshots by period')

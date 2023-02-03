@@ -21,7 +21,7 @@ class Reindex:
         """
         :arg ilo: A :class:`curator.indexlist.IndexList` object
         :arg request_body: The body to send to
-            :py:meth:`elasticsearch8.Elasticsearch.reindex`, which must be complete and
+            :py:meth:`elasticsearch.Elasticsearch.reindex`, which must be complete and
             usable, as Curator will do no vetting of the request_body. If it
             fails to function, Curator will return an exception.
         :arg refresh: Whether to refresh the entire target index after the
@@ -334,7 +334,7 @@ class Reindex:
 
     def do_action(self):
         """
-        Execute :py:meth:`elasticsearch8.Elasticsearch.reindex` operation with the
+        Execute :py:meth:`elasticsearch.Elasticsearch.reindex` operation with the
         provided request_body and arguments.
         """
         try:

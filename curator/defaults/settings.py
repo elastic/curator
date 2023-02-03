@@ -5,20 +5,30 @@ from voluptuous import Any, Boolean, Coerce, Optional
 
 # Elasticsearch versions supported
 def version_max():
-    """Return the maximum Elasticsearch version Curator supports"""
+    """
+    :returns: The maximum Elasticsearch version Curator supports: ``(8, 99, 99)``
+    """
     return (8, 99, 99)
 def version_min():
-    """Return the minimum Elasticsearch version Curator supports"""
+    """
+    :returns: The minimum Elasticsearch version Curator supports: ``(8, 99, 99)``
+    """
     return (8, 0, 0)
 
 # Default Config file location
 def config_file():
-    """Return the default config file location"""
+    """
+    :returns: The default configuration file location:
+        ``path.join(path.expanduser('~'), '.curator', 'curator.yml')``
+    """
     return path.join(path.expanduser('~'), '.curator', 'curator.yml')
 
 # Default filter patterns (regular expressions)
 def regex_map():
-    """Return a dictionary of pattern filter 'kind's with their associated regular expression"""
+    """
+    :returns: A dictionary of pattern filter 'kind's with their associated regular expression:
+        ``{'timestring': r'^.*{0}.*$', 'regex': r'{0}', 'prefix': r'^{0}.*$', 'suffix': r'^.*{0}$'}``
+    """
     return {
         'timestring': r'^.*{0}.*$',
         'regex': r'{0}',
@@ -27,30 +37,38 @@ def regex_map():
     }
 
 def date_regex():
-    """Return a dictionary/map of the strftime string characters and their string length"""
+    """
+    :returns: A dictionary/map of the strftime string characters and their string lengths:
+        ``{'Y':'4', 'G':'4', 'y':'2', 'm':'2', 'W':'2', 'V':'2', 'U':'2', 'd':'2', 'H':'2', 'M':'2', 'S':'2', 'j':'3'}``
+    """
     return {
-        'Y' : '4',
-        'G' : '4',
-        'y' : '2',
-        'm' : '2',
-        'W' : '2',
-        'V' : '2',
-        'U' : '2',
-        'd' : '2',
-        'H' : '2',
-        'M' : '2',
-        'S' : '2',
-        'j' : '3',
+        'Y': '4',
+        'G': '4',
+        'y': '2',
+        'm': '2',
+        'W': '2',
+        'V': '2',
+        'U': '2',
+        'd': '2',
+        'H': '2',
+        'M': '2',
+        'S': '2',
+        'j': '3',
     }
 
 # Actions
 
 def cluster_actions():
-    """Return a list of supported cluster actions"""
+    """
+    :returns: A list of supported cluster actions (right now, that's only ``['cluster_routing']``)
+    """
     return ['cluster_routing']
 
 def index_actions():
-    """Return a list of supported index actions"""
+    """
+    :returns: The list of supported index actions:
+        ``[ 'alias', 'allocation', 'close', 'create_index', 'delete_indices', 'forcemerge', 'index_settings', 'open', 'reindex', 'replicas', 'rollover', 'shrink', 'snapshot']``
+    """
     return [
         'alias',
         'allocation',
@@ -68,15 +86,23 @@ def index_actions():
     ]
 
 def snapshot_actions():
-    """Return a list of supported snapshot actions"""
+    """
+    :returns: The list of supported snapshot actions: ``['delete_snapshots', 'restore']``
+    """
     return ['delete_snapshots', 'restore']
 
 def all_actions():
-    """Return a sorted list of all supported actions: cluster, index, and snapshot"""
+    """
+    :returns: A sorted list of all supported actions: cluster, index, and snapshot
+    """
     return sorted(cluster_actions() + index_actions() + snapshot_actions())
 
 def index_filtertypes():
-    """Return a list of supported index filter types"""
+    """
+    :returns: The list of supported index filter types:
+        ``['alias', 'allocated', 'age', 'closed', 'count', 'empty', 'forcemerged', 'ilm', 'kibana', 'none', 'opened', 'pattern', 'period', 'space', 'shards', 'size']``
+    """
+
     return [
         'alias',
         'allocated',
@@ -97,15 +123,22 @@ def index_filtertypes():
     ]
 
 def snapshot_filtertypes():
-    """Return a list of supported snapshot filter types"""
+    """
+    :returns: The list of supported snapshot filter types: ``['age', 'count', 'none', 'pattern', 'period', 'state']``
+    """
     return ['age', 'count', 'none', 'pattern', 'period', 'state']
 
 def all_filtertypes():
-    """Return a sorted list of all supported filter types (both snapshot and index)"""
+    """
+    :returns: A sorted list of all supported filter types (both snapshot and index)
+    """
     return sorted(list(set(index_filtertypes() + snapshot_filtertypes())))
 
 def default_options():
-    """Set default values for these options"""
+    """
+    :returns: The default values for these options:
+        ``{'allow_ilm_indices': False, 'continue_if_exception': False, 'disable_action': False, 'ignore_empty_list': False, 'timeout_override': None}``
+    """
     return {
         'allow_ilm_indices': False,
         'continue_if_exception': False,
@@ -115,11 +148,17 @@ def default_options():
     }
 
 def default_filters():
-    """If no filters are set, add a 'none' filter"""
+    """
+    If no filters are set, add a 'none' filter
+
+    :returns: {'filters': [{'filtertype': 'none'}]}
+    """
     return {'filters': [{'filtertype': 'none'}]}
 
 def structural_filter_elements():
-    """Barebones schemas for initial validation of filters"""
+    """
+    :returns: Barebones schemas for initial validation of filters
+    """
     # pylint: disable=E1120
     return {
         Optional('aliases'): Any(list, *string_types),

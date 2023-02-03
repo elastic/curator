@@ -1,10 +1,7 @@
 .. _utilities:
 
-Utility & Helper Methods
-========================
+``curator.utils``
+#################
 
 .. automodule:: curator.utils
-   :members:
-
-.. autoclass:: curator.SchemaCheck
    :members:
