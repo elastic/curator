@@ -234,13 +234,23 @@ class DeleteSnapshots:
             f'selected snapshots: {self.snapshot_list.snapshots}'
         )
         self.loggit.info(msg)
-        if not safe_to_snap(
-                self.client, repository=self.repository,
-                retry_interval=self.retry_interval, retry_count=self.retry_count
-        ):
-            raise FailedExecution(
-                'Unable to delete snapshot(s) because a snapshot is in '
-                'state "IN_PROGRESS"')
+        ### This check is not necessary after ES 7.16 as it is possible to have
+        ### up to 1000 concurrent snapshots
+        ###
+        ### https://www.elastic.co/guide/en/elasticsearch/reference/8.6/snapshot-settings.html
+        ### snapshot.max_concurrent_operations
+        ### (Dynamic, integer) Maximum number of concurrent snapshot operations. Defaults to 1000.
+        ###
+        ### This limit applies in total to all ongoing snapshot creation, cloning, and deletion
+        ### operations. Elasticsearch will reject any operations that would exceed this limit.
+
+        # if not safe_to_snap(
+        #         self.client, repository=self.repository,
+        #         retry_interval=self.retry_interval, retry_count=self.retry_count
+        # ):
+        #     raise FailedExecution(
+        #         'Unable to delete snapshot(s) because a snapshot is in '
+        #         'state "IN_PROGRESS"')
         try:
             for snap in self.snapshot_list.snapshots:
                 self.loggit.info('Deleting snapshot %s...', snap)

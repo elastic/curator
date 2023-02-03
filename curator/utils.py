@@ -655,6 +655,7 @@ def get_snapshot_data(client, repository=None):
         )
         raise exceptions.FailedExecution(msg)
 
+# This function is only called by safe_to_snap, which is not necessary in ES 7.16+
 def snapshot_in_progress(client, repository=None, snapshot=None):
     """
     Determine whether the provided snapshot in `repository` is ``IN_PROGRESS``.
@@ -699,6 +700,7 @@ def find_snapshot_tasks(client):
                 retval = True
     return retval
 
+### This method is no longer necessary in ES 7.16 and higher
 def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     """
     Ensure there are no snapshots in progress.  Pause and retry accordingly

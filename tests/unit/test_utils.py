@@ -391,45 +391,54 @@ class TestRepositoryFs(TestCase):
         self.assertRaises(curator.ActionError, curator.test_repo_fs, client,
             repository=testvars.repo_name)
 
-class TestSafeToSnap(TestCase):
-    def test_missing_arg(self):
-        client = Mock()
-        self.assertRaises(curator.MissingArgument,
-            curator.safe_to_snap, client
-        )
-    def test_in_progress_fail(self):
-        client = Mock()
-        client.snapshot.get.return_value = testvars.inprogress
-        client.snapshot.get_repository.return_value = testvars.test_repo
-        client.tasks.list.return_value = testvars.no_snap_tasks
-        self.assertFalse(
-            curator.safe_to_snap(
-                client, repository=testvars.repo_name,
-                retry_interval=0, retry_count=1
-            )
-        )
-    def test_ongoing_tasks_fail(self):
-        client = Mock()
-        client.snapshot.get.return_value = testvars.snapshots
-        client.snapshot.get_repository.return_value = testvars.test_repo
-        client.tasks.list.return_value = testvars.snap_task
-        self.assertFalse(
-            curator.safe_to_snap(
-                client, repository=testvars.repo_name,
-                retry_interval=0, retry_count=1
-            )
-        )
-    def test_in_progress_pass(self):
-        client = Mock()
-        client.snapshot.get.return_value = testvars.snapshots
-        client.snapshot.get_repository.return_value = testvars.test_repo
-        client.tasks.list.return_value = testvars.no_snap_tasks
-        self.assertTrue(
-            curator.safe_to_snap(
-                client, repository=testvars.repo_name,
-                retry_interval=0, retry_count=1
-            )
-        )
+### This check is not necessary after ES 7.16 as it is possible to have
+### up to 1000 concurrent snapshots
+###
+### https://www.elastic.co/guide/en/elasticsearch/reference/8.6/snapshot-settings.html
+### snapshot.max_concurrent_operations
+### (Dynamic, integer) Maximum number of concurrent snapshot operations. Defaults to 1000.
+###
+### This limit applies in total to all ongoing snapshot creation, cloning, and deletion
+### operations. Elasticsearch will reject any operations that would exceed this limit.
+# class TestSafeToSnap(TestCase):
+#     def test_missing_arg(self):
+#         client = Mock()
+#         self.assertRaises(curator.MissingArgument,
+#             curator.safe_to_snap, client
+#         )
+#     def test_in_progress_fail(self):
+#         client = Mock()
+#         client.snapshot.get.return_value = testvars.inprogress
+#         client.snapshot.get_repository.return_value = testvars.test_repo
+#         client.tasks.list.return_value = testvars.no_snap_tasks
+#         self.assertFalse(
+#             curator.safe_to_snap(
+#                 client, repository=testvars.repo_name,
+#                 retry_interval=0, retry_count=1
+#             )
+#         )
+#     def test_ongoing_tasks_fail(self):
+#         client = Mock()
+#         client.snapshot.get.return_value = testvars.snapshots
+#         client.snapshot.get_repository.return_value = testvars.test_repo
+#         client.tasks.list.return_value = testvars.snap_task
+#         self.assertFalse(
+#             curator.safe_to_snap(
+#                 client, repository=testvars.repo_name,
+#                 retry_interval=0, retry_count=1
+#             )
+#         )
+#     def test_in_progress_pass(self):
+#         client = Mock()
+#         client.snapshot.get.return_value = testvars.snapshots
+#         client.snapshot.get_repository.return_value = testvars.test_repo
+#         client.tasks.list.return_value = testvars.no_snap_tasks
+#         self.assertTrue(
+#             curator.safe_to_snap(
+#                 client, repository=testvars.repo_name,
+#                 retry_interval=0, retry_count=1
+#             )
+#         )
 
 class TestSnapshotRunning(TestCase):
     def test_true(self):
