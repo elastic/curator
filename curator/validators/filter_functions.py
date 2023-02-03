@@ -1,4 +1,4 @@
-"""Filter functions"""
+"""Functions validating the ``filter`` Schema of an ``action``"""
 import logging
 from voluptuous import Any, In, Required, Schema
 from es_client.helpers.utils import prune_nones
@@ -9,7 +9,12 @@ from curator.validators import SchemaCheck
 logger = logging.getLogger(__name__)
 
 def filtertype():
-    """Define a filtertype"""
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object that uses
+    :py:func:`curator.defaults.settings.all_filtertypes` to populate acceptable values
+
+    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    """
     return {
         Required('filtertype'): Any(
             In(settings.all_filtertypes()),
@@ -18,7 +23,14 @@ def filtertype():
     }
 
 def filterstructure():
-    """Extract structural elements from filter"""
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object that uses the return value from
+    :py:func:`curator.defaults.settings.structural_filter_elements` to populate acceptable values
+    and updates/merges the Schema object with the return value from
+    :py:func:`filtertype`
+
+    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    """
     # This is to first ensure that only the possible keys/filter elements are
     # there, and get a dictionary back to work with.
     retval = settings.structural_filter_elements()
@@ -26,7 +38,22 @@ def filterstructure():
     return Schema(retval)
 
 def singlefilter(action, data):
-    """Get the filter Schema for a single filtertype"""
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object that is created using the return
+    value from :py:func:`filtertype` to create a local variable
+    ``ftype``. The values from ``action`` and ``data`` are used to update ``ftype`` based on
+    matching function names in :py:mod:`curator.validators.filtertypes`.
+
+    :py:func:`curator.defaults.settings.structural_filter_elements` to populate acceptable values
+    and updates/merges the Schema object with the return value from
+    :py:func:`filtertype`
+
+    :arg action: The Curator action name
+    :type action: str
+    :arg data: The filter block of the action
+
+    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    """
     try:
         ftdata = data['filtertype']
     except KeyError as exc:

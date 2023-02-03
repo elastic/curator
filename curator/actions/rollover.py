@@ -12,7 +12,7 @@ class Rollover:
             wait_for_active_shards=1
         ):
         """
-        :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+        :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg name: The name of the single-index-mapped alias to test for
             rollover conditions.
         :new_index: The new index name

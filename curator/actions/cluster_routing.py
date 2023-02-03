@@ -12,7 +12,7 @@ class ClusterRouting:
         """
         For now, the cluster routing settings are hardcoded to be ``transient``
 
-        :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+        :arg client: An :class:`elasticsearch.Elasticsearch` client object
         :arg routing_type: Type of routing to apply. Either `allocation` or
             `rebalance`
         :arg setting: Currently, the only acceptable value for `setting` is
@@ -31,7 +31,7 @@ class ClusterRouting:
         """
         verify_client_object(client)
         #: Instance variable.
-        #: An :class:`elasticsearch8.Elasticsearch` client object
+        #: An :class:`elasticsearch.Elasticsearch` client object
         self.client = client
         self.loggit = logging.getLogger('curator.actions.cluster_routing')
         #: Instance variable.

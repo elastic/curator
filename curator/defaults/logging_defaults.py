@@ -4,7 +4,21 @@ from voluptuous import All, Any, Coerce, Optional, Schema
 
 # Configuration file: logging
 def config_logging():
-    """Logging schema"""
+    """
+    Logging schema with defaults:
+
+    ``loglevel`` = ``INFO``
+
+    ``logfile`` = ``None``
+
+    ``logformat`` = ``default``
+
+    ``blacklist`` = ``['elasticsearch', 'urllib3']``
+
+    :returns: A valid :py:class:`voluptuous.schema_builder.Schema` of all acceptable values with
+        the default values set.
+    :rtype: :py:class:`voluptuous.schema_builder.Schema`
+    """
     return Schema(
         {
             Optional('loglevel', default='INFO'):

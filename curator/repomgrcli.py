@@ -25,7 +25,7 @@ def show_repos(client):
     sys.exit(0)
 
 def get_client(ctx):
-    """Return an :class:`elasticsearch8.Elasticsearch` client object"""
+    """Return an :class:`elasticsearch.Elasticsearch` client object"""
     builder = Builder(configdict=ctx.obj['esconfig'])
     try:
         builder.connect()

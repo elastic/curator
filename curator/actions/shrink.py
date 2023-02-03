@@ -185,7 +185,7 @@ class Shrink:
         Determine which data node name has the most available free space, and
         meets the other node filters settings.
 
-        :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+        :arg client: An :class:`elasticsearch.Elasticsearch` client object
         """
         mvn_avail = 0
         # mvn_total = 0

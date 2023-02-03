@@ -20,7 +20,7 @@ def rollable_alias(client, alias):
     Ensure that `alias` is an alias, and points to an index that can use the
     ``_rollover`` API.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg alias: An Elasticsearch alias
     """
     try:
@@ -58,7 +58,7 @@ def rollable_alias(client, alias):
 
 def verify_client_object(test):
     """
-    Test if `test` is a proper :class:`elasticsearch8.Elasticsearch` client
+    Test if `test` is a proper :class:`elasticsearch.Elasticsearch` client
     object and raise an exception if it is not.
 
     :arg test: The variable or object to test
@@ -565,7 +565,7 @@ def get_indices(client):
     """
     Get the current list of indices from the cluster.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: list
     """
     try:
@@ -600,7 +600,7 @@ def get_repository(client, repository=''):
     """
     Return configuration information for the indicated repository.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: dict
     """
@@ -619,7 +619,7 @@ def get_snapshot(client, repository=None, snapshot=''):
     If no snapshot specified, it will return all snapshots.  If none exist, an
     empty dictionary will be returned.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot: The snapshot name, or a comma-separated list of snapshots
     :rtype: dict
@@ -640,7 +640,7 @@ def get_snapshot_data(client, repository=None):
     """
     Get ``_all`` snapshots from repository and return a list.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: list
     """
@@ -661,7 +661,7 @@ def snapshot_in_progress(client, repository=None, snapshot=None):
     If no value is provided for `snapshot`, then check all of them.
     Return `snapshot` if it is found to be in progress, or `False`
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg snapshot: The snapshot name
     """
@@ -686,7 +686,7 @@ def find_snapshot_tasks(client):
     Check if there is snapshot activity in the Tasks API.
     Return `True` if activity is found, or `False`
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
     retval = False
@@ -703,7 +703,7 @@ def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
     """
     Ensure there are no snapshots in progress.  Pause and retry accordingly
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :arg retry_interval: Number of seconds to delay betwen retries. Default:
         120 (seconds)
@@ -831,7 +831,7 @@ def create_repository(client, **kwargs):
     """
     Create repository with repository and body settings
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
 
     :arg repository: The Elasticsearch snapshot repository to use
     :arg repo_type: The type of repository (presently only `fs` and `s3`)
@@ -896,7 +896,7 @@ def repository_exists(client, repository=None):
     """
     Verify the existence of a repository
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     :rtype: bool
     """
@@ -920,7 +920,7 @@ def test_repo_fs(client, repository=None):
     """
     Test whether all nodes have write access to the repository
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg repository: The Elasticsearch snapshot repository to use
     """
     try:
@@ -947,7 +947,7 @@ def snapshot_running(client):
     """
     Return `True` if a snapshot is in progress, and `False` if not
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
     try:
@@ -1134,7 +1134,7 @@ def health_check(client, **kwargs):
     appears in the output, and has the expected value.
     If multiple keys are provided, all must match for a `True` response.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     """
     LOGGER.debug('KWARGS= "%s"', kwargs)
     klist = list(kwargs.keys())
@@ -1167,7 +1167,7 @@ def snapshot_check(client, snapshot=None, repository=None):
     a `WARNING` message, `FAILED` is an `ERROR`, message, and all others will be
     a `WARNING` level message.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg snapshot: The name of the snapshot.
     :arg repository: The Elasticsearch snapshot repository to use
     """
@@ -1202,7 +1202,7 @@ def relocate_check(client, index):
     state, and it will return `False` if any primary or replica shard is in
     a different state.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg index: The index to check the index shards state.
     """
     shard_state_data = (
@@ -1230,7 +1230,7 @@ def restore_check(client, index_list):
     stage), it will immediately return `False`, rather than complete iterating
     over the rest of the response.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg index_list: The list of indices to verify having been restored.
     """
     response = {}
@@ -1266,7 +1266,7 @@ def task_check(client, task_id=None):
     If the task is not completed, it will log some information about the task
     and return `False`
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg task_id: A task_id which ostensibly matches a task searchable in the
         tasks API.
     """
@@ -1317,7 +1317,7 @@ def wait_for_it(
     """
     This function becomes one place to do all wait_for_completion type behaviors
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg action: The action name that will identify how to wait
     :arg task_id: If the action provided a task_id, this is where it must be
         declared.
@@ -1422,7 +1422,7 @@ def node_roles(client, node_id):
     """
     Return the list of roles assigned to the node identified by ``node_id``
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: list
     """
     return client.nodes.info()['nodes'][node_id]['roles']
@@ -1431,7 +1431,7 @@ def index_size(client, idx, value='total'):
     """
     Return the sum of either `primaries` or `total` shards for index ``idx``
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :arg idx: An Elasticsearch index
     :arg value: One of either `primaries` or `total`
     :rtype: integer
@@ -1444,7 +1444,7 @@ def single_data_path(client, node_id):
     shards cannot span filesystems.  Return `True` if the node has a single
     filesystem, and `False` otherwise.
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: bool
     """
     return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1
@@ -1454,7 +1454,7 @@ def name_to_node_id(client, name):
     """
     Return the node_id of the node identified by ``name``
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: str
     """
     stats = client.nodes.stats()
@@ -1469,7 +1469,7 @@ def node_id_to_name(client, node_id):
     """
     Return the name of the node identified by ``node_id``
 
-    :arg client: An :class:`elasticsearch8.Elasticsearch` client object
+    :arg client: An :class:`elasticsearch.Elasticsearch` client object
     :rtype: str
     """
     stats = client.nodes.stats()
