@@ -2,8 +2,9 @@
 import logging
 # pylint: disable=import-error
 from curator.exceptions import MissingArgument
-from curator.utils import (
-    chunk_index_list, report_failure, show_dry_run, to_csv, wait_for_it, verify_index_list)
+from curator.helpers.testers import verify_index_list
+from curator.helpers.waiters import wait_for_it
+from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 
 class Allocation:
     """Allocation Action Class"""

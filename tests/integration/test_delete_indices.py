@@ -3,7 +3,7 @@
 import os
 import time
 import requests
-from curator.utils import get_indices
+from curator.helpers.getters import get_indices
 from . import CuratorTestCase
 from . import testvars
 

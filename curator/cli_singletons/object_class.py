@@ -11,7 +11,7 @@ from curator.actions import (
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
-from curator.utils import validate_filters
+from curator.helpers.testers import validate_filters
 from curator.validators import SchemaCheck, options
 from curator.validators.filter_functions import validfilters
 

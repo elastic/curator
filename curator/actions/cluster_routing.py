@@ -1,7 +1,9 @@
 """Cluster Routing action class"""
 import logging
 # pylint: disable=import-error
-from curator.utils import report_failure, verify_client_object, wait_for_it
+from curator.helpers.testers import verify_client_object
+from curator.helpers.utils import report_failure
+from curator.helpers.waiters import wait_for_it
 
 class ClusterRouting:
     """ClusterRouting Action Class"""

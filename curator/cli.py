@@ -12,9 +12,10 @@ from curator.exceptions import ConfigurationError, ClientException
 from curator.config_utils import check_logging_config, password_filter, set_logging
 from curator.defaults import settings
 from curator.exceptions import NoIndices, NoSnapshots
+from curator.helpers.getters import get_write_index
+from curator.helpers.testers import validate_actions
 from curator.indexlist import IndexList
 from curator.snapshotlist import SnapshotList
-from curator.utils import validate_actions, get_write_index
 from curator._version import __version__
 
 CLASS_MAP = {

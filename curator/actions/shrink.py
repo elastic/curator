@@ -1,11 +1,12 @@
 """Reindex action class"""
 import logging
-# pylint: disable=import-error, broad-except
+# pylint: disable=broad-except
 from curator.exceptions import ActionError, ConfigurationError
-from curator.utils import (
-        chunk_index_list, health_check, index_size, name_to_node_id, node_id_to_name, node_roles,
-        report_failure, verify_index_list, wait_for_it
-    )
+from curator.helpers.getters import index_size, name_to_node_id, node_id_to_name, node_roles
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import chunk_index_list, report_failure
+from curator.helpers.waiters import health_check, wait_for_it
+
 
 class Shrink:
     """Shrink Action Class"""

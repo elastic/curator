@@ -1,9 +1,9 @@
 """Open index action class"""
 import logging
-# pylint: disable=import-error
 from curator.exceptions import ConfigurationError
-from curator.utils import (
-    report_failure, parse_date_pattern, rollable_alias, verify_client_object)
+from curator.helpers.date_ops import parse_date_pattern
+from curator.helpers.testers import rollable_alias, verify_client_object
+from curator.helpers.utils import report_failure
 
 class Rollover:
     """Rollover Action Class"""

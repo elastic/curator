@@ -1,92 +1,296 @@
 """Utility functions that get things"""
-# :pylint disable=
-from time import sleep
 import logging
-from curator.helpers.getters import get_snapshot_data
-from curator.exceptions import CuratorException, MissingArgument
+from voluptuous import Schema
+from elasticsearch8 import Elasticsearch
+from elasticsearch8.exceptions import NotFoundError
+from es_client.helpers.utils import prune_nones
+from curator.helpers.getters import get_repository
+from curator.exceptions import ConfigurationError, MissingArgument, RepositoryException
+from curator.defaults.settings import index_filtertypes, snapshot_actions, snapshot_filtertypes
+from curator.validators import SchemaCheck, actions, options
+from curator.validators.filter_functions import validfilters
+from curator.helpers.utils import report_failure
 
-### This function is only called by safe_to_snap, which is not necessary in ES 7.16+
-def snapshot_in_progress(client, repository=None, snapshot=None):
+def repository_exists(client, repository=None):
     """
-    Determine whether the provided snapshot in `repository` is ``IN_PROGRESS``.
-    If no value is provided for `snapshot`, then check all of them.
-    Return `snapshot` if it is found to be in progress, or `False`
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param repository: The Elasticsearch snapshot repository to use
 
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object
-    :arg repository: The Elasticsearch snapshot repository to use
-    :arg snapshot: The snapshot name
-    """
-    allsnaps = get_snapshot_data(client, repository=repository)
-    inprogress = (
-        [snap['snapshot'] for snap in allsnaps if 'state' in snap.keys() \
-            and snap['state'] == 'IN_PROGRESS']
-    )
-    if snapshot:
-        retval = snapshot if snapshot in inprogress else False
-    else:
-        if not inprogress:
-            retval = False
-        elif len(inprogress) == 1:
-            retval = inprogress[0]
-        else: # This should not be possible
-            raise CuratorException(f'More than 1 snapshot in progress: {inprogress}')
-    return retval
-
-def find_snapshot_tasks(client):
-    """
-    Check if there is snapshot activity in the Tasks API.
-    Return `True` if activity is found, or `False`
-
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object
-    :rtype: bool
-    """
-    logger = logging.getLogger(__name__)
-    retval = False
-    tasklist = client.tasks.list()
-    for node in tasklist['nodes']:
-        for task in tasklist['nodes'][node]['tasks']:
-            activity = tasklist['nodes'][node]['tasks'][task]['action']
-            if 'snapshot' in activity:
-                logger.debug('Snapshot activity detected: %s', activity)
-                retval = True
-    return retval
-
-### This check is not necessary after ES 7.16 as it is possible to have
-### up to 1000 concurrent snapshots
-###
-### https://www.elastic.co/guide/en/elasticsearch/reference/8.6/snapshot-settings.html
-### snapshot.max_concurrent_operations
-### (Dynamic, integer) Maximum number of concurrent snapshot operations. Defaults to 1000.
-###
-### This limit applies in total to all ongoing snapshot creation, cloning, and deletion
-### operations. Elasticsearch will reject any operations that would exceed this limit.
-def safe_to_snap(client, repository=None, retry_interval=120, retry_count=3):
-    """
-    Ensure there are no snapshots in progress.  Pause and retry accordingly
-
-    :arg client: An :class:`elasticsearch.Elasticsearch` client object
-    :arg repository: The Elasticsearch snapshot repository to use
-    :arg retry_interval: Number of seconds to delay betwen retries. Default:
-        120 (seconds)
-    :arg retry_count: Number of attempts to make. Default: 3
+    :returns: ``True`` if ``repository`` exists, else ``False``
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
     if not repository:
         raise MissingArgument('No value for "repository" provided')
-    for count in range(1, retry_count+1):
-        in_progress = snapshot_in_progress(
-            client, repository=repository
-        )
-        ongoing_task = find_snapshot_tasks(client)
-        if in_progress or ongoing_task:
-            if in_progress:
-                logger.info('Snapshot already in progress: %s', in_progress)
-            elif ongoing_task:
-                logger.info('Snapshot activity detected in Tasks API')
-            logger.info('Pausing %s seconds before retrying...', retry_interval)
-            sleep(retry_interval)
-            logger.info('Retry %s of %s', count, retry_count)
+    try:
+        test_result = get_repository(client, repository)
+        if repository in test_result:
+            logger.debug("Repository %s exists.", repository)
+            response = True
         else:
-            return True
-    return False
+            logger.debug("Repository %s not found...", repository)
+            response = False
+    # pylint: disable=broad-except
+    except Exception as err:
+        logger.debug('Unable to find repository "%s": Error: %s', repository, err)
+        response = False
+    return response
+
+def rollable_alias(client, alias):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param alias: An Elasticsearch alias
+
+    :returns: ``True`` or ``False`` depending on whether ``alias`` is an alias that points to an
+        index that can be used by the ``_rollover`` API.
+    :rtype: bool
+    """
+    logger = logging.getLogger(__name__)
+    try:
+        response = client.indices.get_alias(name=alias)
+    except NotFoundError:
+        logger.error('Alias "%s" not found.', alias)
+        return False
+    # Response should be like:
+    # {'there_should_be_only_one': {'aliases': {'value of "alias" here': {}}}}
+    # where 'there_should_be_only_one' is a single index name that ends in a number, and 'value of
+    # "alias" here' reflects the value of the passed parameter, except where the ``is_write_index``
+    # setting makes it possible to have more than one index associated with a rollover index
+    for idx in response:
+        if 'is_write_index' in response[idx]['aliases'][alias]:
+            if response[idx]['aliases'][alias]['is_write_index']:
+                return True
+    # implied ``else``: If not ``is_write_index``, it has to fit the following criteria:
+    if len(response) > 1:
+        logger.error('"alias" must only reference one index, but points to %s', response)
+        return False
+    index = list(response.keys())[0]
+    rollable = False
+    # In order for `rollable` to be True, the last 2 digits of the index
+    # must be digits, or a hyphen followed by a digit.
+    # NOTE: This is not a guarantee that the rest of the index name is
+    # necessarily correctly formatted.
+    if index[-2:][1].isdigit():
+        if index[-2:][0].isdigit():
+            rollable = True
+        elif index[-2:][0] == '-':
+            rollable = True
+    return rollable
+
+def snapshot_running(client):
+    """
+    Return ``True`` if a snapshot is in progress, and ``False`` if not
+
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :rtype: bool
+    """
+    try:
+        status = client.snapshot.status()['snapshots']
+    # pylint: disable=broad-except
+    except Exception as exc:
+        report_failure(exc)
+    # We will only accept a positively identified False.  Anything else is
+    # suspect. That's why this statement, rather than just ``return status``
+    # pylint: disable=simplifiable-if-expression
+    return False if not status else True
+
+def validate_actions(data):
+    """
+    Validate the ``actions`` configuration dictionary, as imported from actions.yml, for example.
+
+    :param data: The configuration dictionary
+
+    :returns: The validated and sanitized configuration dictionary.
+    :rtype: dict
+    """
+    # data is the ENTIRE schema...
+    clean_config = {}
+    # Let's break it down into smaller chunks...
+    # First, let's make sure it has "actions" as a key, with a subdictionary
+    root = SchemaCheck(data, actions.root(), 'Actions File', 'root').result()
+    # We've passed the first step.  Now let's iterate over the actions...
+    for action_id in root['actions']:
+        # Now, let's ensure that the basic action structure is correct, with
+        # the proper possibilities for 'action'
+        action_dict = root['actions'][action_id]
+        loc = f'Action ID "{action_id}"'
+        valid_structure = SchemaCheck(
+            action_dict, actions.structure(action_dict, loc), 'structure', loc
+        ).result()
+        # With the basic structure validated, now we extract the action name
+        current_action = valid_structure['action']
+        # And let's update the location with the action.
+        loc = f'Action ID "{action_id}", action "{current_action}"'
+        clean_options = SchemaCheck(
+            prune_nones(valid_structure['options']),
+            options.get_schema(current_action),
+            'options',
+            loc
+        ).result()
+        clean_config[action_id] = {
+            'action' : current_action,
+            'description' : valid_structure['description'],
+            'options' : clean_options,
+        }
+        if current_action == 'alias':
+            add_remove = {}
+            for k in ['add', 'remove']:
+                if k in valid_structure:
+                    current_filters = SchemaCheck(
+                        valid_structure[k]['filters'],
+                        Schema(validfilters(current_action, location=loc)),
+                        f'"{k}" filters',
+                        f'{loc}, "filters"'
+                    ).result()
+                    add_remove.update(
+                        {
+                            k: {
+                                'filters' : SchemaCheck(
+                                    current_filters,
+                                    Schema(validfilters(current_action, location=loc)),
+                                    'filters',
+                                    f'{loc}, "{k}", "filters"'
+                                    ).result()
+                                }
+                        }
+                    )
+            # Add/Remove here
+            clean_config[action_id].update(add_remove)
+        elif current_action in ['cluster_routing', 'create_index', 'rollover']:
+            # neither cluster_routing nor create_index should have filters
+            pass
+        else: # Filters key only appears in non-alias actions
+            valid_filters = SchemaCheck(
+                valid_structure['filters'],
+                Schema(validfilters(current_action, location=loc)),
+                'filters',
+                f'{loc}, "filters"'
+            ).result()
+            clean_filters = validate_filters(current_action, valid_filters)
+            clean_config[action_id].update({'filters' : clean_filters})
+        # This is a special case for remote reindex
+        if current_action == 'reindex':
+            # Check only if populated with something.
+            if 'remote_filters' in valid_structure['options']:
+                valid_filters = SchemaCheck(
+                    valid_structure['options']['remote_filters'],
+                    Schema(validfilters(current_action, location=loc)),
+                    'filters',
+                    f'{loc}, "filters"'
+                ).result()
+                clean_remote_filters = validate_filters(current_action, valid_filters)
+                clean_config[action_id]['options'].update({'remote_filters': clean_remote_filters})
+
+    # if we've gotten this far without any Exceptions raised, it's valid!
+    return {'actions': clean_config}
+
+def validate_filters(action, myfilters):
+    """
+    Validate that myfilters are appropriate for the action type, e.g. no
+    index filters applied to a snapshot list.
+
+    :param action: An action name
+    :param myfilters: A list of filters to test.
+
+    :returns: Validated list of filters
+    :rtype: list
+    """
+    # Define which set of filtertypes to use for testing
+    if action in snapshot_actions():
+        filtertypes = snapshot_filtertypes()
+    else:
+        filtertypes = index_filtertypes()
+    for fil in myfilters:
+        if fil['filtertype'] not in filtertypes:
+            raise ConfigurationError(
+                f"\"{fil['filtertype']}\" filtertype is not compatible with action \"{action}\""
+            )
+    # If we get to this point, we're still valid.  Return the original list
+    return myfilters
+
+def verify_client_object(test):
+    """
+    :param test: The variable or object to test
+
+    :returns: ``True`` if ``test`` is a proper :py:class:`elasticsearch.Elasticsearch` client
+        object and raise a :py:class:`TypeError` exception if it is not.
+    :rtype: bool
+    """
+    logger = logging.getLogger(__name__)
+    # Ignore mock type for testing
+    if str(type(test)) == "<class 'mock.Mock'>" or \
+        str(type(test)) == "<class 'mock.mock.Mock'>":
+        pass
+    elif not isinstance(test, Elasticsearch):
+        msg = f'Not a valid client object. Type: {type(test)} was passed'
+        logger.error(msg)
+        raise TypeError(msg)
+
+def verify_index_list(test):
+    """
+    :param test: The variable or object to test
+
+    :returns: ``None`` if ``test`` is a proper :py:class:`curator.indexlist.IndexList` object, else
+        raise a :py:class:`TypeError` exception.
+    :rtype: None
+    """
+    # It breaks if this import isn't local to this function:
+    # ImportError: cannot import name 'IndexList' from partially initialized module
+    # 'curator.indexlist' (most likely due to a circular import)
+    # pylint: disable=import-outside-toplevel
+    from curator.indexlist import IndexList
+    logger = logging.getLogger(__name__)
+    if not isinstance(test, IndexList):
+        msg = f'Not a valid IndexList object. Type: {type(test)} was passed'
+        logger.error(msg)
+        raise TypeError(msg)
+
+def verify_repository(client, repository=None):
+    """
+    Do :py:meth:`elasticsearch.snapshot.verify_repository` call. If it fails, raise a
+    :py:class:`curator.exceptions.RepositoryException`.
+
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param repository: A repository name
+    :rtype: None
+    """
+    logger = logging.getLogger(__name__)
+    try:
+        nodes = client.snapshot.verify_repository(name=repository)['nodes']
+        logger.debug('All nodes can write to the repository')
+        logger.debug('Nodes with verified repository access: %s', nodes)
+    except Exception as err:
+        try:
+            if err.status_code == 404:
+                msg = (
+                    f'--- Repository "{repository}" not found. Error: '
+                    f'{err.meta.status}, {err.error}'
+                )
+            else:
+                msg = (
+                    f'--- Got a {err.meta.status} response from Elasticsearch.  '
+                    f'Error message: {err.error}'
+                )
+        except AttributeError:
+            msg = (f'--- Error message: {err}'.format())
+        report = f'Failed to verify all nodes have repository access: {msg}'
+        raise RepositoryException(report) from err
+
+def verify_snapshot_list(test):
+    """
+    :param test: The variable or object to test
+
+    :returns: ``None`` if ``test`` is a proper :py:class:`curator.snapshotlist.SnapshotList`
+        object, else raise a :py:class:`TypeError` exception.
+    :rtype: None
+    """
+    # It breaks if this import isn't local to this function:
+    # ImportError: cannot import name 'SnapshotList' from partially initialized module
+    # 'curator.snapshotlist' (most likely due to a circular import)
+    # pylint: disable=import-outside-toplevel
+    from curator.snapshotlist import SnapshotList
+    logger = logging.getLogger(__name__)
+    if not isinstance(test, SnapshotList):
+        msg = f'Not a valid SnapshotList object. Type: {type(test)} was passed'
+        logger.error(msg)
+        raise TypeError(msg)

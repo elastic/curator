@@ -2,15 +2,17 @@
 import logging
 import re
 from es_client.helpers.utils import ensure_list
-# pylint: disable=import-error, broad-except
+from curator.helpers.date_ops import parse_datemath, parse_date_pattern
+from curator.helpers.getters import get_indices
+from curator.helpers.testers import (
+    repository_exists, snapshot_running, verify_index_list, verify_repository, verify_snapshot_list
+)
+from curator.helpers.utils import report_failure, to_csv
+from curator.helpers.waiters import wait_for_it
+# pylint: disable=broad-except
 from curator.exceptions import (
-        ActionError, CuratorException, FailedExecution, FailedRestore, FailedSnapshot,
-        MissingArgument, SnapshotInProgress
-    )
-from curator.utils import (
-    get_indices, parse_datemath, parse_date_pattern, report_failure, repository_exists,
-    safe_to_snap, snapshot_running, to_csv, test_repo_fs, verify_index_list,
-    verify_snapshot_list, wait_for_it
+        ActionError, CuratorException, FailedRestore, FailedSnapshot, MissingArgument,
+        SnapshotInProgress
     )
 
 class Snapshot(object):
@@ -147,7 +149,7 @@ class Snapshot(object):
         Snapshot indices in `index_list.indices`, with options passed.
         """
         if not self.skip_repo_fs_check:
-            test_repo_fs(self.client, self.repository)
+            verify_repository(self.client, self.repository)
         if snapshot_running(self.client):
             raise SnapshotInProgress('Snapshot already in progress.')
         try:
@@ -465,7 +467,7 @@ class Restore(object):
         Restore indices with options passed.
         """
         if not self.skip_repo_fs_check:
-            test_repo_fs(self.client, self.repository)
+            verify_repository(self.client, self.repository)
         if snapshot_running(self.client):
             raise SnapshotInProgress('Cannot restore while a snapshot is in progress.')
         try:

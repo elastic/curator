@@ -1,9 +1,9 @@
 """Delete index action class"""
 import logging
 # pylint: disable=import-error
-from curator.utils import (
-    chunk_index_list, get_indices, report_failure, show_dry_run, to_csv, verify_index_list)
-
+from curator.helpers.getters import get_indices
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 
 class DeleteIndices:
     """Delete Indices Action Class"""

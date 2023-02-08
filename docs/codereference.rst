@@ -9,7 +9,8 @@ API and Code Reference
    actions
    indexlist
    snapshotlist
-   utilities
+   helpers
    validators
    defaults
+   exceptions
 

@@ -8,7 +8,7 @@ from es_client.builder import ClientArgs, OtherArgs, Builder
 from es_client.helpers.utils import check_config, get_yaml, prune_nones, verify_url_schema
 from curator.defaults import settings
 from curator.config_utils import check_logging_config, set_logging
-from curator.utils import get_repository
+from curator.helpers.getters import get_repository
 from curator._version import __version__
 from curator.cli_singletons.utils import get_width
 

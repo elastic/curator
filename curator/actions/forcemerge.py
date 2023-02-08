@@ -3,7 +3,8 @@ import logging
 from time import sleep
 # pylint: disable=import-error
 from curator.exceptions import MissingArgument
-from curator.utils import report_failure, show_dry_run, verify_index_list
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import report_failure, show_dry_run
 
 class ForceMerge:
     """ForceMerge Action Class"""

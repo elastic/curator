@@ -3,7 +3,8 @@ import logging
 # pylint: disable=import-error, broad-except
 from elasticsearch8.exceptions import RequestError
 from curator.exceptions import ConfigurationError, FailedExecution
-from curator.utils import parse_date_pattern, report_failure
+from curator.helpers.date_ops import parse_date_pattern
+from curator.helpers.utils import report_failure
 
 class CreateIndex:
     """Create Index Action Class"""

@@ -1,7 +1,38 @@
 """Utility functions that get things"""
 # :pylint disable=
+import logging
 from elasticsearch8 import exceptions as es8exc
 from curator.exceptions import CuratorException, FailedExecution, MissingArgument
+
+def byte_size(num, suffix='B'):
+    """
+    :param num: The number of byte
+    :param suffix: An arbitrary suffix, like ``Bytes``
+
+    :returns: A formatted string indicating the size in bytes, with the proper unit,
+        e.g. KB, MB, GB, TB, etc.
+    :rtype: float
+    """
+    for unit in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']:
+        if abs(num) < 1024.0:
+            return f'{num:3.1f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:.1f}Y{suffix}'
+
+def get_indices(client):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+
+    :returns: The current list of indices from the cluster
+    :rtype: list
+    """
+    logger = logging.getLogger(__name__)
+    try:
+        indices = list(client.indices.get_settings(index='*', expand_wildcards='open,closed'))
+        logger.debug('All indices: %s', indices)
+        return indices
+    except Exception as err:
+        raise FailedExecution(f'Failed to get indices. Error: {err}') from err
 
 def get_repository(client, repository=''):
     """
@@ -63,3 +94,98 @@ def get_snapshot_data(client, repository=None):
             f'{repository}. Error: {err}'
         )
         raise FailedExecution(msg) from err
+
+def get_write_index(client, alias):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param alias: An alias name
+
+    :returns: The the index name associated with the alias that is designated ``is_write_index``
+    :rtype: str
+    """
+    try:
+        response = client.indices.get_alias(index=alias)
+    except Exception as exc:
+        raise CuratorException(f'Alias {alias} not found') from exc
+    # If there are more than one in the list, one needs to be the write index
+    # otherwise the alias is a one to many, and can't do rollover.
+    if len(list(response.keys())) > 1:
+        for index in list(response.keys()):
+            try:
+                if response[index]['aliases'][alias]['is_write_index']:
+                    return index
+            except KeyError as exc:
+                raise FailedExecution(
+                    'Invalid alias: is_write_index not found in 1 to many alias') from exc
+    else:
+        # There's only one, so this is it
+        return list(response.keys())[0]
+
+def index_size(client, idx, value='total'):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param idx: An index name
+    :param value: One of either ``primaries`` or ``total``
+
+    :returns: The sum of either ``primaries`` or ``total`` shards for index ``idx``
+    :rtype: integer
+    """
+    return client.indices.stats(index=idx)['indices'][idx][value]['store']['size_in_bytes']
+
+def name_to_node_id(client, name):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param name: The node ``name``
+
+    :returns: The node_id of the node identified by ``name``
+    :rtype: str
+    """
+    logger = logging.getLogger(__name__)
+    stats = client.nodes.stats()
+    for node in stats['nodes']:
+        if stats['nodes'][node]['name'] == name:
+            logger.debug('Found node_id "%s" for name "%s".', node, name)
+            return node
+    logger.error('No node_id found matching name: "%s"', name)
+    return None
+
+def node_id_to_name(client, node_id):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param node_id: The node ``node_id``
+
+    :returns: The name of the node identified by ``node_id``
+    :rtype: str
+    """
+    logger = logging.getLogger(__name__)
+    stats = client.nodes.stats()
+    name = None
+    if node_id in stats['nodes']:
+        name = stats['nodes'][node_id]['name']
+    else:
+        logger.error('No node_id found matching: "%s"', node_id)
+    logger.debug('Name associated with node_id "%s": %s', node_id, name)
+    return name
+
+def node_roles(client, node_id):
+    """
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param node_id: The node ``node_id``
+
+    :returns: The list of roles assigned to the node identified by ``node_id``
+    :rtype: list
+    """
+    return client.nodes.info()['nodes'][node_id]['roles']
+
+def single_data_path(client, node_id):
+    """
+    In order for a shrink to work, it should be on a single filesystem, as shards cannot span
+    filesystems.
+
+    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param node_id: The node ``node_id``
+
+    :returns: ``True`` if the node has a single filesystem, else ``False``
+    :rtype: bool
+    """
+    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1

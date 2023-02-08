@@ -3,6 +3,7 @@ import sys
 import json
 import logging
 import time
+import ecs_logging
 from curator.exceptions import LoggingException
 
 def de_dot(dot_string, msg):
@@ -33,6 +34,7 @@ def deepmerge(source, destination):
         else:
             destination[key] = value
     return destination
+
 class LogstashFormatter(logging.Formatter):
     """Logstash formatting (JSON)"""
     # The LogRecord attributes we want to carry over to the Logstash message,
@@ -66,19 +68,9 @@ class LogstashFormatter(logging.Formatter):
             result['message'] = available['message']
         return json.dumps(result, sort_keys=True)
 
-class ECSFormatter(LogstashFormatter):
-    """Elastic Common Schema formatting (ECS)"""
-    # Overload LogstashFormatter attribute
-    WANTED_ATTRS = {
-        'levelname': 'log.level',
-        'funcName': 'log.origin.function',
-        'lineno': 'log.origin.file.line',
-        'message': 'log.original',
-        'name': 'log.logger'
-    }
-
 class Whitelist(logging.Filter):
     """How to whitelist logs"""
+    # pylint: disable=super-init-not-called
     def __init__(self, *whitelist):
         self.whitelist = [logging.Filter(name) for name in whitelist]
 
@@ -113,6 +105,6 @@ class LogInfo:
         if cfg['logformat'] == 'json' or cfg['logformat'] == 'logstash':
             self.handler.setFormatter(LogstashFormatter())
         elif cfg['logformat'] == 'ecs':
-            self.handler.setFormatter(ECSFormatter())
+            self.handler.setFormatter(ecs_logging.StdlibFormatter())
         else:
             self.handler.setFormatter(logging.Formatter(self.format_string))

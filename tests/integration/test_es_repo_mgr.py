@@ -3,7 +3,7 @@ import logging
 import os
 from click import testing as clicktest
 from curator import repo_mgr_cli
-from curator.utils import repository_exists
+from curator.helpers.testers import repository_exists
 from . import CuratorTestCase
 from . import testvars
 

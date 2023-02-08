@@ -2,7 +2,8 @@
 import logging
 # pylint: disable=import-error
 from curator.exceptions import ActionError, ConfigurationError, MissingArgument
-from curator.utils import chunk_index_list, report_failure, show_dry_run, to_csv, verify_index_list
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 
 class IndexSettings:
     """Index Settings Action Class"""

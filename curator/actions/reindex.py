@@ -1,14 +1,16 @@
 """Reindex action class"""
 import logging
 from copy import deepcopy
-# pylint: disable=import-error, broad-except
+# pylint: disable=broad-except
 from es_client.builder import ClientArgs, OtherArgs, Builder
 from es_client.helpers.utils import ensure_list, verify_url_schema
 from es_client.exceptions import ConfigurationError
 from curator.exceptions import CuratorException, FailedExecution, NoIndices
 from curator.exceptions import ConfigurationError as CuratorConfigError # Separate from es_client
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import report_failure
+from curator.helpers.waiters import wait_for_it
 from curator import IndexList
-from curator.utils import report_failure, verify_index_list, wait_for_it
 
 class Reindex:
     """Reindex Action Class"""
@@ -19,18 +21,16 @@ class Reindex:
             remote_filters=None, migration_prefix='', migration_suffix=''
     ):
         """
-        :arg ilo: A :class:`curator.indexlist.IndexList` object
+        :arg ilo: A :py:class:`curator.indexlist.IndexList` object
         :arg request_body: The body to send to
-            :py:meth:`elasticsearch.Elasticsearch.reindex`, which must be complete and
-            usable, as Curator will do no vetting of the request_body. If it
-            fails to function, Curator will return an exception.
-        :arg refresh: Whether to refresh the entire target index after the
-            operation is complete. (default: `True`)
+            :py:meth:`elasticsearch.Elasticsearch.reindex`, which must be complete
+            and usable, as Curator will do no vetting of the request_body. If it fails to function,
+            Curator will return an exception.
+        :arg refresh: Whether to refresh the entire target index after the operation is complete.
         :type refresh: bool
-        :arg requests_per_second: The throttle to set on this request in
-            sub-requests per second. ``-1`` means set no throttle as does
-            ``unlimited`` which is the only non-float this accepts. (default:
-            ``-1``)
+        :arg requests_per_second: The throttle to set on this request in sub-requests per second.
+            ``-1`` means set no throttle as does ``unlimited`` which is the only non-float this
+            accepts.
         :arg slices: The number of slices this task  should be divided into. 1
             means the task will not be sliced into subtasks. (default: ``1``)
         :arg timeout: The length in seconds each individual bulk request should
@@ -43,16 +43,13 @@ class Reindex:
         :arg wait_for_completion: Wait (or not) for the operation
             to complete before returning.  (default: `True`)
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for
-            completion.
+        :arg wait_interval: How long in seconds to wait between checks for completion.
         :arg max_wait: Maximum number of seconds to `wait_for_completion`
         :arg remote_certificate: Path to SSL/TLS certificate
         :arg remote_client_cert: Path to SSL/TLS client certificate (public key)
         :arg remote_client_key: Path to SSL/TLS private key
-        :arg migration_prefix: When migrating, prepend this value to the index
-            name.
-        :arg migration_suffix: When migrating, append this value to the index
-            name.
+        :arg migration_prefix: When migrating, prepend this value to the index name.
+        :arg migration_suffix: When migrating, append this value to the index name.
         """
         if remote_filters is None:
             remote_filters = {}
@@ -334,8 +331,8 @@ class Reindex:
 
     def do_action(self):
         """
-        Execute :py:meth:`elasticsearch.Elasticsearch.reindex` operation with the
-        provided request_body and arguments.
+        Execute :py:meth:`elasticsearch.Elasticsearch.reindex` operation with the provided
+        ``request_body`` and arguments.
         """
         try:
             # Loop over all sources (default will only be one)

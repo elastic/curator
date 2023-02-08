@@ -3,6 +3,36 @@
 Changelog
 =========
 
+8.1.0 (? ? ?)
+-------------
+
+**Announcement**
+
+The 8.0.0 release was about getting Curator out the door with all of the functionality users were
+accustomed to in 5.8.4, but with the newer, updated args and methods in ``elasticsearch8``. Very
+little else was changed that didn't need to be. Now comes a few improvements, and more are coming,
+which is why I didn't start with 8.6.0 as my release version.
+
+**Breaking Changes**
+
+  * Broke ``curator.utils`` into several, separate modules under ``curator.helpers``.
+
+    I suppose, technically, that this qualifies as a breaking change from 8.0, but I sincerely
+    doubt I have any users using Curator as an API yet, so I made the change. No functions were
+    renamed, so this isn't as breaking so much as a slight shift in module naming. This gave me
+    headaches, but it needed to be done a long time ago. It was always grating to see the Pylint
+    warnings that the file is longer than 1000 lines, and searching for the module you wanted was
+    way too much scrolling. This also gave me the chance to update the tests and the docstring's
+    formatting for rST docs. Most of this release's changes came from this change.
+
+**Changes**
+
+  * Curator has supported ECS logging for a while, but now that there is an official Python module,
+    Curator is going to use it. Welcome, ``ecs-logging``! As before, just use ``logformat: ecs``,
+    but now it has all of the goodness right there!
+  * rST docs are improved and updated. Check out https://curator.readthedocs.io to see.
+  * Testing multi-architecture Docker builds for ``arm64v8`` and ``amd64``.
+
 8.0.0 (31 January 2023)
 -----------------------
 

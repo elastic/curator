@@ -2,7 +2,9 @@
 import logging
 # pylint: disable=import-error
 from curator.exceptions import ActionError, MissingArgument, NoIndices
-from curator.utils import parse_date_pattern, parse_datemath, report_failure, verify_index_list
+from curator.helpers.date_ops import parse_date_pattern, parse_datemath
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import report_failure
 
 class Alias:
     """Alias Action Class"""

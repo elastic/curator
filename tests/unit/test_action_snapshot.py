@@ -1,8 +1,8 @@
 from unittest import TestCase
-from mock import Mock, patch
+from mock import Mock
 import curator
 # Get test variables and constants from a single source
-from . import testvars as testvars
+from . import testvars
 
 class TestActionSnapshot(TestCase):
     def test_init_raise_bad_index_list(self):

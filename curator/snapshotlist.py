@@ -2,10 +2,13 @@
 import re
 import logging
 from curator.exceptions import ConfigurationError, FailedExecution, MissingArgument, NoSnapshots
-from curator.utils import (
+from curator.helpers.date_ops import (
     absolute_date_range, date_range, fix_epoch, get_date_regex, get_point_of_reference,
-    get_snapshot_data, report_failure, repository_exists, TimestringSearch, verify_client_object
+    TimestringSearch
 )
+from curator.helpers.getters import get_snapshot_data
+from curator.helpers.testers import repository_exists, verify_client_object
+from curator.helpers.utils import report_failure
 from curator.defaults import settings
 from curator.validators import SchemaCheck
 from curator.validators.filter_functions import filterstructure
@@ -20,7 +23,7 @@ class SnapshotList:
             raise FailedExecution(
                 f'Unable to verify existence of repository {repository}')
         self.loggit = logging.getLogger('curator.snapshotlist')
-        #: An Elasticsearch Client object.
+        #: An :class:`elasticsearch.Elasticsearch` client object
         #: Also accessible as an instance variable.
         self.client = client
         #: An Elasticsearch repository.
@@ -29,16 +32,16 @@ class SnapshotList:
         #: Instance variable.
         #: Information extracted from snapshots, such as age, etc.
         #: Populated by internal method `__get_snapshots` at instance creation
-        #: time. **Type:** ``dict()``
+        #: time. **Type:** :py:class:`dict`
         self.snapshot_info = {}
         #: Instance variable.
         #: The running list of snapshots which will be used by an Action class.
         #: Populated by internal methods `__get_snapshots` at instance creation
-        #: time. **Type:** ``list()``
+        #: time. **Type:** :py:class:`list`
         self.snapshots = []
         #: Instance variable.
         #: Raw data dump of all snapshots in the repository at instance creation
-        #: time.  **Type:** ``list()`` of ``dict()`` data.
+        #: time.  **Type:** :py:class:`list` of :py:class:`dict` data.
         self.__get_snapshots()
         self.age_keyfield = None
 

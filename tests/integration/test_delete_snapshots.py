@@ -3,8 +3,8 @@
 import os
 import time
 from curator import IndexList
-from curator.utils import get_snapshot
 from curator.actions.snapshot import Snapshot
+from curator.helpers.getters import get_snapshot
 from . import CuratorTestCase
 from . import testvars
 

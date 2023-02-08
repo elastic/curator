@@ -2,7 +2,8 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
 import time
-from curator.utils import get_indices, parse_date_pattern
+from curator.helpers.date_ops import parse_date_pattern
+from curator.helpers.getters import get_indices
 from . import CuratorTestCase
 from . import testvars
 

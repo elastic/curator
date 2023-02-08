@@ -1,7 +1,7 @@
 """Test date math with indices"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 from datetime import timedelta, datetime
-from curator.utils import parse_datemath
+from curator.helpers.date_ops import parse_datemath
 
 from . import CuratorTestCase
 
