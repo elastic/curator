@@ -31,12 +31,12 @@ class SnapshotList:
         self.repository = repository
         #: Instance variable.
         #: Information extracted from snapshots, such as age, etc.
-        #: Populated by internal method `__get_snapshots` at instance creation
+        #: Populated by internal method ``__get_snapshots`` at instance creation
         #: time. **Type:** :py:class:`dict`
         self.snapshot_info = {}
         #: Instance variable.
         #: The running list of snapshots which will be used by an Action class.
-        #: Populated by internal methods `__get_snapshots` at instance creation
+        #: Populated by internal methods ``__get_snapshots`` at instance creation
         #: time. **Type:** :py:class:`list`
         self.snapshots = []
         #: Instance variable.
@@ -73,8 +73,7 @@ class SnapshotList:
 
     def __get_snapshots(self):
         """
-        Pull all snapshots into `snapshots` and populate
-        `snapshot_info`
+        Pull all snapshots into `snapshots` and populate ``snapshot_info``
         """
         self.all_snapshots = get_snapshot_data(self.client, self.repository)
         for list_item in self.all_snapshots:
@@ -95,14 +94,14 @@ class SnapshotList:
         return methods[ftype]
 
     def empty_list_check(self):
-        """Raise exception if `snapshots` is empty"""
+        """Raise exception if ``snapshots`` is empty"""
         if not self.snapshots:
             raise NoSnapshots('snapshot_list object is empty.')
 
     def working_list(self):
         """
-        Return the current value of `snapshots` as copy-by-value to prevent list
-        stomping during iterations
+        Return the current value of ``snapshots`` as copy-by-value to prevent list stomping during
+        iterations
         """
         # Copy by value, rather than reference to prevent list stomping during
         # iterations
@@ -110,11 +109,10 @@ class SnapshotList:
 
     def _get_name_based_ages(self, timestring):
         """
-        Add a snapshot age to `snapshot_info` based on the age as indicated
-        by the snapshot name pattern, if it matches `timestring`.  This is
-        stored at key ``age_by_name``.
+        Add a snapshot age to ``snapshot_info`` based on the age as indicated by the snapshot name
+        pattern, if it matches ``timestring``.  This is stored at key ``age_by_name``.
 
-        :arg timestring: An strftime pattern
+        :arg timestring: A :py:class:`time.strftime` pattern
         """
         # Check for empty list before proceeding here to prevent non-iterable
         # condition
@@ -129,36 +127,31 @@ class SnapshotList:
 
     def _calculate_ages(self, source='creation_date', timestring=None):
         """
-        This method initiates snapshot age calculation based on the given
-        parameters.  Exceptions are raised when they are improperly configured.
+        This method initiates snapshot age calculation based on the given parameters.  Exceptions
+        are raised when they are improperly configured.
 
-        Set instance variable `age_keyfield` for use later, if needed.
+        Set instance variable ``age_keyfield`` for use later, if needed.
 
-        :arg source: Source of snapshot age. Can be 'name' or 'creation_date'.
-        :arg timestring: An strftime string to match the datestamp in an
-            snapshot name. Only used if ``source`` is ``name``.
+        :arg source: Source of snapshot age. Can be ``name`` or ``creation_date``.
+        :arg timestring: An :py:class:`time.strftime` string to match the datestamp in an snapshot name. Only used
+            if ``source=name``.
         """
         if source == 'name':
             self.age_keyfield = 'age_by_name'
             if not timestring:
-                raise MissingArgument(
-                    'source "name" requires the "timestring" keyword argument'
-                )
+                raise MissingArgument('source "name" requires the "timestring" keyword argument')
             self._get_name_based_ages(timestring)
         elif source == 'creation_date':
             self.age_keyfield = 'start_time_in_millis'
         else:
-            raise ValueError(
-                'Invalid source: {0}.  '
-                'Must be "name", or "creation_date".'.format(source)
-            )
+            raise ValueError(f'Invalid source: {source}. Must be "name", or "creation_date".')
 
     def _sort_by_age(self, snapshot_list, reverse=True):
         """
         Take a list of snapshots and sort them by date.
 
-        By default, the youngest are first with `reverse=True`, but the oldest
-        can be first by setting `reverse=False`
+        By default, the youngest are first with ``reverse=True``, but the oldest can be first by
+        setting ``reverse=False``
         """
         # Do the age-based sorting here.
         # First, build an temporary dictionary with just snapshot and age
@@ -174,9 +167,7 @@ class SnapshotList:
                     self.__excludify(True, True, snap, msg)
             else:
                 msg = (
-                    '{0} does not have age key "{1}" in SnapshotList '
-                    ' metadata'.format(snap, self.age_keyfield)
-                )
+                    f'{snap} does not have age key "{self.age_keyfield}" in SnapshotList metadata')
                 self.__excludify(True, True, snap, msg)
 
         # If reverse is True, this will sort so the youngest snapshots are
@@ -191,7 +182,7 @@ class SnapshotList:
 
     def most_recent(self):
         """
-        Return the most recent snapshot based on `start_time_in_millis`.
+        Return the most recent snapshot based on ``start_time_in_millis``.
         """
         self.empty_list_check()
         most_recent_time = 0
@@ -212,25 +203,21 @@ class SnapshotList:
         :arg kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or
             ``timestring``. This option defines what kind of filter you will be
             building.
-        :arg value: Depends on `kind`. It is the strftime string if `kind` is
-            `timestring`. It's used to build the regular expression for other
-            kinds.
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            snapshots from `snapshots`. If `exclude` is `False`, then only
-            matching snapshots will be kept in `snapshots`.
-            Default is `False`
+        :arg value: Depends on ``kind``. It is the :py:class:`time.strftime` string if ``kind`` is
+            ``timestring``. It's used to build the regular expression for other kinds.
+        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+            ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
+            ``snapshots``. Default is ``False``
         """
         if kind not in ['regex', 'prefix', 'suffix', 'timestring']:
-            raise ValueError('{0}: Invalid value for kind'.format(kind))
+            raise ValueError(f'{kind}: Invalid value for kind')
 
         # Stop here if None or empty value, but zero is okay
         if value == 0:
             pass
         elif not value:
             raise ValueError(
-                '{0}: Invalid value for "value". '
-                'Cannot be "None" type, empty, or False'
-            )
+                f'{value}: Invalid value for "value". Cannot be "None" type, empty, or False')
 
         if kind == 'timestring':
             regex = settings.regex_map()[kind].format(get_date_regex(value))
@@ -248,27 +235,25 @@ class SnapshotList:
                 self.__excludify(False, exclude, snapshot)
 
     def filter_by_age(
-            self, source='creation_date', direction=None,
-            timestring=None, unit=None, unit_count=None, epoch=None, exclude=False
-    ):
+            self, source='creation_date', direction=None, timestring=None, unit=None,
+            unit_count=None, epoch=None, exclude=False):
         """
-        Remove snapshots from `snapshots` by relative age calculations.
+        Remove snapshots from ``snapshots`` by relative age calculations.
 
-        :arg source: Source of snapshot age. Can be 'name', or 'creation_date'.
+        :arg source: Source of snapshot age. Can be ``name``, or ``creation_date``.
         :arg direction: Time to filter, either ``older`` or ``younger``
-        :arg timestring: An strftime string to match the datestamp in an
-            snapshot name. Only used for snapshot filtering by ``name``.
-        :arg unit: One of ``seconds``, ``minutes``, ``hours``, ``days``,
-            ``weeks``, ``months``, or ``years``.
-        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will
-            be calculated out to the relative number of seconds.
-        :arg epoch: An epoch timestamp used in conjunction with ``unit`` and
-            ``unit_count`` to establish a point of reference for calculations.
-            If not provided, the current time will be used.
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            snapshots from `snapshots`. If `exclude` is `False`, then only
-            matching snapshots will be kept in `snapshots`.
-            Default is `False`
+        :arg timestring: A :py:class:`time.strftime` string to match the datestamp in an snapshot
+            name. Only used for snapshot filtering by ``name``.
+        :arg unit: One of ``seconds``, ``minutes``, ``hours``, ``days``, ``weeks``, ``months``, or
+            ``years``.
+        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will be calculated
+            out to the relative number of seconds.
+        :arg epoch: An epoch timestamp used in conjunction with ``unit`` and ``unit_count`` to
+            establish a point of reference for calculations. If not provided, the current time will
+            be used.
+        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+            ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
+            ``snapshots``. Default is ``False``
         """
         self.loggit.debug('Starting filter_by_age')
         # Get timestamp point of reference, por
@@ -281,7 +266,7 @@ class SnapshotList:
         self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][self.age_keyfield]:
-                self.loggit.debug('Removing snapshot {0} for having no age')
+                self.loggit.debug('Removing snapshot %s for having no age', snapshot)
                 self.snapshots.remove(snapshot)
                 continue
             age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
@@ -300,19 +285,17 @@ class SnapshotList:
 
     def filter_by_state(self, state=None, exclude=False):
         """
-        Filter out snapshots not matching ``state``, or in the case of exclude,
-        filter those matching ``state``.
+        Filter out snapshots not matching ``state``, or in the case of exclude, filter those
+        matching ``state``.
 
-        :arg state: The snapshot state to filter for. Must be one of
-            ``SUCCESS``, ``PARTIAL``, ``FAILED``, or ``IN_PROGRESS``.
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            snapshots from `snapshots`. If `exclude` is `False`, then only
-            matching snapshots will be kept in `snapshots`.
-            Default is `False`
+        :arg state: The snapshot state to filter for. Must be one of ``SUCCESS``, ``PARTIAL``,
+            ``FAILED``, or ``IN_PROGRESS``.
+        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+            ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
+            ``snapshots``. Default is ``False``
         """
         if state.upper() not in ['SUCCESS', 'PARTIAL', 'FAILED', 'IN_PROGRESS']:
-            raise ValueError('{0}: Invalid value for state'.format(state))
-
+            raise ValueError(f'{state}: Invalid value for state')
         self.empty_list_check()
         for snapshot in self.working_list():
             self.loggit.debug('Filter by state: Snapshot: %s', snapshot)
@@ -330,43 +313,38 @@ class SnapshotList:
             source='creation_date', timestring=None, exclude=True
     ):
         """
-        Remove snapshots from the actionable list beyond the number `count`,
-        sorted reverse-alphabetically by default.  If you set `reverse` to
-        `False`, it will be sorted alphabetically.
+        Remove snapshots from the actionable list beyond the number ``count``, sorted
+        reverse-alphabetically by default.  If you set ``reverse=False``, it will be sorted
+        alphabetically.
 
-        The default is usually what you will want. If only one kind of snapshot
-        is provided--for example, snapshots matching ``curator-%Y%m%d%H%M%S``--
-        then reverse alphabetical sorting will mean the oldest will remain in
-        the list, because lower numbers in the dates mean older snapshots.
+        The default is usually what you will want. If only one kind of snapshot is provided--for
+        example, snapshots matching ``curator-%Y%m%d%H%M%S``--then reverse alphabetical sorting
+        will mean the oldest will remain in the list, because lower numbers in the dates mean older
+        snapshots.
 
-        By setting `reverse` to `False`, then ``snapshot3`` will be acted on
-        before ``snapshot2``, which will be acted on before ``snapshot1``
+        By setting ``reverse=False``, then ``snapshot3`` will be acted on before ``snapshot2``,
+        which will be acted on before ``snapshot1``
 
-        `use_age` allows ordering snapshots by age. Age is determined by the
-        snapshot creation date (as identified by ``start_time_in_millis``) by
-        default, but you can also specify a `source` of ``name``.  The ``name``
-        `source` requires the timestring argument.
+        ``use_age`` allows ordering snapshots by age. Age is determined by the snapshot creation
+        date (as identified by ``start_time_in_millis``) by default, but you can also specify
+        ``source=name``.  The ``name`` ``source`` requires the timestring argument.
 
-        :arg count: Filter snapshots beyond `count`.
-        :arg reverse: The filtering direction. (default: `True`).
-        :arg use_age: Sort snapshots by age.  ``source`` is required in this
-            case.
-        :arg source: Source of snapshot age. Can be one of ``name``, or
-            ``creation_date``. Default: ``creation_date``
-        :arg timestring: An strftime string to match the datestamp in a
-            snapshot name. Only used if `source` ``name`` is selected.
-        :arg exclude: If `exclude` is `True`, this filter will remove matching
-            snapshots from `snapshots`. If `exclude` is `False`, then only
-            matching snapshots will be kept in `snapshots`.
-            Default is `True`
+        :arg count: Filter snapshots beyond ``count``.
+        :arg reverse: The filtering direction. (default: ``True``).
+        :arg use_age: Sort snapshots by age.  ``source`` is required in this case.
+        :arg source: Source of snapshot age. Can be one of ``name``, or ``creation_date``. Default:
+            ``creation_date``
+        :arg timestring: A :py:class:`time.strftime` string to match the datestamp in a snapshot
+            name. Only used if ``source=name``.
+        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+            ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
+            ``snapshots``. Default is ``True``
         """
         self.loggit.debug('Filtering snapshots by count')
         if not count:
             raise MissingArgument('No value for "count" provided')
-
         # Create a copy-by-value working list
         working_list = self.working_list()
-
         if use_age:
             self._calculate_ages(source=source, timestring=timestring)
             # Using default value of reverse=True in self._sort_by_age()
@@ -374,55 +352,43 @@ class SnapshotList:
         else:
             # Default to sorting by snapshot name
             sorted_snapshots = sorted(working_list, reverse=reverse)
-
         idx = 1
         for snap in sorted_snapshots:
-            msg = (
-                '{0} is {1} of specified count of {2}.'.format(
-                    snap, idx, count
-                )
-            )
+            msg = (f'{snap} is {idx} of specified count of {count}.')
             condition = True if idx <= count else False
             self.__excludify(condition, exclude, snap, msg)
             idx += 1
 
-    def filter_period(
-            self, period_type='relative', source='name', range_from=None, range_to=None,
-            date_from=None, date_to=None, date_from_format=None, date_to_format=None,
-            timestring=None, unit=None, week_starts_on='sunday', epoch=None, exclude=False
-    ):
+    def filter_period(self, period_type='relative', source='name', range_from=None,
+        range_to=None, date_from=None, date_to=None, date_from_format=None, date_to_format=None,
+        timestring=None, unit=None, week_starts_on='sunday', epoch=None, exclude=False):
         """
         Match ``snapshots`` with ages within a given period.
 
-        :arg period_type: Can be either ``absolute`` or ``relative``.  Default is
-            ``relative``.  ``date_from`` and ``date_to`` are required when using
-            ``period_type='absolute'``. ``range_from`` and ``range_to`` are
-            required with ``period_type='relative'``.
-        :arg source: Source of snapshot age. Can be 'name', or 'creation_date'.
+        :arg period_type: Can be either ``absolute`` or ``relative``.  Default is ``relative``.
+            ``date_from`` and ``date_to`` are required when using ``period_type='absolute'``.
+            ``range_from`` and ``range_to`` are required with ``period_type='relative'``.
+        :arg source: Source of snapshot age. Can be ``name``, or ``creation_date``.
         :arg range_from: How many ``unit`` (s) in the past/future is the origin?
         :arg range_to: How many ``unit`` (s) in the past/future is the end point?
         :arg date_from: The simplified date for the start of the range
         :arg date_to: The simplified date for the end of the range.  If this value
             is the same as ``date_from``, the full value of ``unit`` will be
-            extrapolated for the range.  For example, if ``unit`` is ``months``,
+            extrapolated for the range.  For example, if ``unit=months``,
             and ``date_from`` and ``date_to`` are both ``2017.01``, then the entire
             month of January 2017 will be the absolute date range.
-        :arg date_from_format: The strftime string used to parse ``date_from``
-        :arg date_to_format: The strftime string used to parse ``date_to``
-        :arg timestring: An strftime string to match the datestamp in an
+        :arg date_from_format: The :py:class:`time.strftime` string used to parse ``date_from``
+        :arg date_to_format: The :py:class:`time.strftime` string used to parse ``date_to``
+        :arg timestring: An :py:class:`time.strftime` string to match the datestamp in an
             snapshot name. Only used for snapshot filtering by ``name``.
-        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or
-            ``years``.
-        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is
-            ``sunday``
+        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
+        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
         :arg epoch: An epoch timestamp used to establish a point of reference
             for calculations. If not provided, the current time will be used.
-        :arg exclude: If ``exclude`` is ``True``, this filter will remove matching
-            indices from ``indices``. If ``exclude`` is ``False``, then only matching
-            indices will be kept in ``indices``.
-            Default is ``False``
+        :arg exclude: If ``exclude=True``, this filter will remove matching indices from
+            ``indices``. If ``exclude=False``, then only matching indices will be kept in
+            ``indices``. Default is ``False``
         """
-
         self.loggit.debug('Filtering snapshots by period')
         if period_type not in ['absolute', 'relative']:
             raise ValueError(
@@ -451,8 +417,7 @@ class SnapshotList:
                 if not reqd:
                     raise ConfigurationError(
                         'Must provide "date_from", "date_to", '
-                        '"date_from_format", and "date_to_format" with '
-                        'absolute period_type'
+                        '"date_from_format", and "date_to_format" with absolute period_type'
                     )
         try:
             start, end = func(*args, **kwgs)
@@ -477,14 +442,11 @@ class SnapshotList:
 
     def iterate_filters(self, config):
         """
-        Iterate over the filters defined in `config` and execute them.
+        Iterate over the filters defined in ``config`` and execute them.
 
+        :arg config: A dictionary of filters, as extracted from the YAML configuration file.
 
-
-        :arg config: A dictionary of filters, as extracted from the YAML
-            configuration file.
-
-        .. note:: `config` should be a dictionary with the following form:
+        .. note:: ``config`` should be a dictionary with the following form:
         .. code-block:: python
 
                 { 'filters' : [
@@ -502,7 +464,6 @@ class SnapshotList:
         if not 'filters' in config or not config['filters']:
             self.loggit.info('No filters in config.  Returning unaltered object.')
             return
-
         self.loggit.debug('All filters: %s', config['filters'])
         for fltr in config['filters']:
             self.loggit.debug('Top of the loop: %s', self.snapshots)
