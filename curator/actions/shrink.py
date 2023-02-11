@@ -1,11 +1,12 @@
 """Reindex action class"""
 import logging
-# pylint: disable=import-error, broad-except
+# pylint: disable=broad-except
 from curator.exceptions import ActionError, ConfigurationError
-from curator.utils import (
-        chunk_index_list, health_check, index_size, name_to_node_id, node_id_to_name, node_roles,
-        report_failure, verify_index_list, wait_for_it
-    )
+from curator.helpers.getters import index_size, name_to_node_id, node_id_to_name, node_roles
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import chunk_index_list, report_failure
+from curator.helpers.waiters import health_check, wait_for_it
+
 
 class Shrink:
     """Shrink Action Class"""
@@ -17,40 +18,46 @@ class Shrink:
             max_wait=-1
     ):
         """
-        :arg ilo: A :class:`curator.indexlist.IndexList` object
-        :arg shrink_node: The node name to use as the shrink target, or
-            ``DETERMINISTIC``, which will use the values in ``node_filters`` to
-            determine which node will be the shrink node.
-        :arg node_filters: If the value of ``shrink_node`` is ``DETERMINISTIC``,
-            the values in ``node_filters`` will be used while determining which
-            node to allocate the shards on before performing the shrink.
-        :type node_filters: dict, representing the filters
-        :arg number_of_shards: The number of shards the shrunk index should have
-        :arg number_of_replicas: The number of replicas for the shrunk index
-        :arg shrink_prefix: Prepend the shrunk index with this value
-        :arg shrink_suffix: Append the value to the shrunk index (default: `-shrink`)
-        :arg copy_aliases: Whether to copy each source index aliases to target index after
+        :param ilo: An IndexList Object
+        :param shrink_node: The node name to use as the shrink target, or ``DETERMINISTIC``, which
+            will use the values in ``node_filters`` to determine which node will be the shrink
+            node.
+        :param node_filters: If the value of ``shrink_node`` is ``DETERMINISTIC``, the values in
+            ``node_filters`` will be used while determining which node to allocate the shards on
+            before performing the shrink.
+        :param number_of_shards: The number of shards the shrunk index should have
+        :param number_of_replicas: The number of replicas for the shrunk index
+        :param shrink_prefix: Prepend the shrunk index with this value
+        :param shrink_suffix: Append the value to the shrunk index (Default: ``-shrink``)
+        :param copy_aliases: Whether to copy each source index aliases to target index after
             shrinking. The aliases will be added to target index and deleted from source index at
-            the same time(default: `False`)
+            the same time. (Default: ``False``)
+        :param delete_after: Whether to delete each index after shrinking. (Default: ``True``)
+        :param post_allocation: If populated, the ``allocation_type``, ``key``, and ``value`` will
+            be applied to the shrunk index to re-route it.
+        :param extra_settings:  Permitted root keys are ``settings`` and ``aliases``.
+        :param wait_for_active_shards: Wait for this many active shards before returning.
+        :param wait_for_rebalance: Wait for rebalance. (Default: ``True``)
+        :param wait_for_completion: Wait for completion before returning.
+        :param wait_interval: Seconds to wait between completion checks.
+        :param max_wait: Maximum number of seconds to ``wait_for_completion``
+
+        :type ilo: :py:class:`~.curator.indexlist.IndexList`
+        :type shrink_node: str
+        :type node_filters: dict
+        :type number_of_shards: int
+        :type number_of_replicas: int
+        :type shrink_prefix: str
+        :type shrink_suffix: str
         :type copy_aliases: bool
-        :arg delete_after: Whether to delete each index after shrinking. (default: `True`)
         :type delete_after: bool
-        :arg post_allocation: If populated, the `allocation_type`, `key`, and
-            `value` will be applied to the shrunk index to re-route it.
-        :type post_allocation: dict, with keys `allocation_type`, `key`, and `value`
-        :arg wait_for_active_shards: The number of shards expected to be active before returning.
-        :arg extra_settings:  Permitted root keys are `settings` and `aliases`.
+        :type post_allocation: dict
         :type extra_settings: dict
-        :arg wait_for_rebalance: Wait for rebalance. (default: `True`)
+        :type wait_for_active_shards: int
         :type wait_for_rebalance: bool
-        :arg wait_for_active_shards: Wait for active shards before returning.
-        :arg wait_for_completion: Wait (or not) for the operation
-            to complete before returning.  You should not normally change this,
-            ever. (default: `True`)
-        :arg wait_interval: How long in seconds to wait between checks for
-            completion.
-        :arg max_wait: Maximum number of seconds to `wait_for_completion`
         :type wait_for_completion: bool
+        :type wait_interval: int
+        :type max_wait: int
         """
         if node_filters is None:
             node_filters = {}
@@ -62,40 +69,47 @@ class Shrink:
         verify_index_list(ilo)
         if 'permit_masters' not in node_filters:
             node_filters['permit_masters'] = False
-        #: Instance variable. The Elasticsearch Client object derived from `ilo`
-        self.client = ilo.client
-        #: Instance variable. Internal reference to `ilo`
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
         self.index_list = ilo
-        #: Instance variable. Internal reference to `shrink_node`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
+        #: :py:attr:`index_list`
+        self.client = ilo.client
+        #: Object attribute that gets the value of param ``shrink_node``.
         self.shrink_node = shrink_node
-        #: Instance variable. Internal reference to `node_filters`
+        #: Object attribute that gets the value of param ``node_filters``.
         self.node_filters = node_filters
-        #: Instance variable. Internal reference to `shrink_prefix`
+        #: Object attribute that gets the value of param ``shrink_prefix``.
         self.shrink_prefix = shrink_prefix
-        #: Instance variable. Internal reference to `shrink_suffix`
+        #: Object attribute that gets the value of param ``shrink_suffix``.
         self.shrink_suffix = shrink_suffix
-        #: Instance variable. Internal reference to `copy_aliases`
+        #: Object attribute that gets the value of param ``copy_aliases``.
         self.copy_aliases = copy_aliases
-        #: Instance variable. Internal reference to `delete_after`
+        #: Object attribute that gets the value of param ``delete_after``.
         self.delete_after = delete_after
-        #: Instance variable. Internal reference to `post_allocation`
+        #: Object attribute that gets the value of param ``post_allocation``.
         self.post_allocation = post_allocation
-        #: Instance variable. Internal reference to `wait_for_rebalance`
+        #: Object attribute that gets the value of param ``wait_for_rebalance``.
         self.wait_for_rebalance = wait_for_rebalance
-        #: Instance variable. Internal reference to `wait_for_completion`
+        #: Object attribute that gets the value of param ``wait_for_completion``.
         self.wfc = wait_for_completion
-        #: Instance variable. How many seconds to wait between checks for completion.
+        #: Object attribute that gets the value of param ``wait_interval``.
         self.wait_interval = wait_interval
-        #: Instance variable. How long in seconds to `wait_for_completion` before returning with an
-        #: exception. A value of -1 means wait forever.
+        #: Object attribute that gets the value of param ``max_wait``.
         self.max_wait = max_wait
-        #: Instance variable. Internal reference to `number_of_shards`
+        #: Object attribute that gets the value of param ``number_of_shards``.
         self.number_of_shards = number_of_shards
+        #: Object attribute that gets the value of param ``wait_for_active_shards``.
         self.wait_for_active_shards = wait_for_active_shards
+
+        #: Object attribute that represents the target node for shrinking.
         self.shrink_node_name = None
+        #: Object attribute that represents whether :py:attr:`shrink_node_name` is available
         self.shrink_node_avail = None
+        #: Object attribute that represents the node_id of :py:attr:`shrink_node_name`
         self.shrink_node_id = None
 
+        #: Object attribute that gets values from params ``number_of_shards`` and
+        #: ``number_of_replicas``.
         self.settings = {
             'index.number_of_shards' : number_of_shards,
             'index.number_of_replicas' : number_of_replicas,
@@ -182,10 +196,8 @@ class Shrink:
 
     def most_available_node(self):
         """
-        Determine which data node name has the most available free space, and
-        meets the other node filters settings.
-
-        :arg client: An :class:`elasticsearch.Elasticsearch` client object
+        Determine which data node name has the most available free space, and meets the other node
+        filters settings.
         """
         mvn_avail = 0
         # mvn_total = 0
@@ -205,11 +217,9 @@ class Shrink:
                 mvn_name = name
                 mvn_id = node_id
                 mvn_avail = value
-                # mvn_total = nodes[node_id]['fs']['total']['total_in_bytes']
         self.shrink_node_name = mvn_name
         self.shrink_node_id = mvn_id
         self.shrink_node_avail = mvn_avail
-        # self.shrink_node_total = mvn_total
 
     def route_index(self, idx, allocation_type, key, value):
         """Apply the indicated shard routing allocation"""
@@ -357,9 +367,7 @@ class Shrink:
             self.client.indices.update_aliases(actions=alias_actions)
 
     def do_dry_run(self):
-        """
-        Show what a regular run would do, but don't actually do it.
-        """
+        """Show what a regular run would do, but don't actually do it."""
         self.index_list.filter_closed()
         self.index_list.filter_by_shards(number_of_shards=self.number_of_shards)
         self.index_list.empty_list_check()
@@ -398,7 +406,9 @@ class Shrink:
             report_failure(err)
 
     def do_action(self):
-        """Actually do the action"""
+        """
+        :py:meth:`~.elasticsearch.client.IndicesClient.shrink` the indices in :py:attr:`index_list`
+        """
         self.index_list.filter_closed()
         self.index_list.filter_by_shards(number_of_shards=self.number_of_shards)
         self.index_list.empty_list_check()
@@ -415,8 +425,7 @@ class Shrink:
                     # Pre-check ensures disk space available for each pass of the loop
                     self.pre_shrink_check(idx)
                     # Route the index to the shrink node
-                    self.loggit.info(
-                        'Moving shards to shrink node: "%s"', self.shrink_node_name)
+                    self.loggit.info('Moving shards to shrink node: "%s"', self.shrink_node_name)
                     self.route_index(idx, 'require', '_name', self.shrink_node_name)
                     # Ensure a copy of each shard is present
                     self._check_all_shards(idx)

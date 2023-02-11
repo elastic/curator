@@ -207,7 +207,7 @@ logging:
   loglevel: INFO
   logfile:
   logformat: default
-  blacklist: ['elasticsearch', 'urllib3']
+  blacklist: ['elastic_transport', 'urllib3']
 -----------
 
 It is a YAML configuration file.  The two root keys must be `elasticsearch` and
@@ -502,8 +502,11 @@ The `json` or `logstash` formats look like:
 The `ecs` format looks like:
 [source,sh]
 -----------
-{"@timestamp": "2020-02-22T11:55:00.022Z", "log.origin.function": "cli", "log.origin.file.line": 178,
-"log.level": "INFO", "message": "Action #1: ACTIONNAME", "log.logger": "curator.cli"}
+{"@timestamp":"2020-02-22T11:55:00.022Z","log.level":"info","message":"Action #1:
+ACTIONNAME","ecs":{"version":"1.6.0"},"log":{"logger":"curator.cli","origin":
+{"file":{"line":178,"name":"cli.py"},"function":"run"},"original":"Action #1:
+ACTIONNAME"},"process":{"name":"MainProcess","pid":12345,"thread":
+{"id":123456789886543,"name":"MainThread"}}}
 -----------
 
 The default value is `default`.
@@ -516,14 +519,14 @@ empty.
 
 [source,sh]
 -----------
-blacklist: ['elasticsearch', 'urllib3']
+blacklist: ['elastic_transport', 'urllib3']
 -----------
 
-The default value is `['elasticsearch', 'urllib3']`, which will result in
-logs for the `elasticsearch` and `urllib3` Python modules _not_ being output.
+The default value is `['elastic_transport', 'urllib3']`, which will result in
+logs for the `elastic_transport` and `urllib3` Python modules _not_ being output.
 These can be quite verbose, so unless you need them to debug an issue, you
 should accept the default value.
 
 TIP: If you do need to troubleshoot an issue, set `blacklist` to `[]`, which is
 an empty array.  Leaving it unset will result in the default behavior, which is
-to filter out `elasticsearch` and `urllib3` log traffic.
+to filter out `elastic_transport` and `urllib3` log traffic.

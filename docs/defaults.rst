@@ -1,14 +1,44 @@
 .. _defaults:
 
-``curator.defaults``
-####################
+Defaults
+########
 
-.. toctree::
-   :maxdepth: 1
+.. _defaults_fe:
 
-   defaults_fe
-   defaults_ftypes
-   defaults_logging
-   defaults_options
-   defaults_settings
+Filter Elements
+===============
 
+.. automodule:: curator.defaults.filter_elements
+   :members:
+
+.. _defaults_ftypes:
+
+Filter Types
+============
+
+.. automodule:: curator.defaults.filtertypes
+   :members:
+
+.. _defaults_logging:
+
+Logging Defaults
+================
+
+.. automodule:: curator.defaults.logging_defaults
+   :members:
+
+.. _defaults_options:
+
+Option Defaults
+===============
+
+.. automodule:: curator.defaults.option_defaults
+   :members:
+
+.. _defaults_settings:
+
+Settings
+========
+
+.. automodule:: curator.defaults.settings
+   :members:

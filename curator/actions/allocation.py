@@ -2,8 +2,9 @@
 import logging
 # pylint: disable=import-error
 from curator.exceptions import MissingArgument
-from curator.utils import (
-    chunk_index_list, report_failure, show_dry_run, to_csv, wait_for_it, verify_index_list)
+from curator.helpers.testers import verify_index_list
+from curator.helpers.waiters import wait_for_it
+from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 
 class Allocation:
     """Allocation Action Class"""
@@ -12,24 +13,24 @@ class Allocation:
             wait_interval=3, max_wait=-1
         ):
         """
-        :arg ilo: A :class:`curator.indexlist.IndexList` object
-        :arg key: An arbitrary metadata attribute key.  Must match the key
-            assigned to at least some of your nodes to have any effect.
-        :arg value: An arbitrary metadata attribute value.  Must correspond to
-            values associated with `key` assigned to at least some of your nodes
-            to have any effect. If a `None` value is provided, it will remove
-            any setting associated with that `key`.
-        :arg allocation_type: Type of allocation to apply. Default is `require`
-        :arg wait_for_completion: Wait (or not) for the operation
-            to complete before returning.  (default: `False`)
+        :param ilo: An IndexList Object
+        :param key: An arbitrary metadata attribute key.  Must match the key assigned to at least
+        :param value: An arbitrary metadata attribute value.  Must correspond to values associated
+        :param allocation_type: Type of allocation to apply. Default is ``require``
+        :param wait_for_completion: Wait for completion before returning.
+        :param wait_interval: Seconds to wait between completion checks.
+        :param max_wait: Maximum number of seconds to ``wait_for_completion``
+
+        :type ilo: :py:class:`~.curator.indexlist.IndexList`
+        :type key: str
+        :type value: str
+        :type allocation_type: str
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for
-            completion.
-        :arg max_wait: Maximum number of seconds to `wait_for_completion`
+        :type wait_interval: int
+        :type max_wait: int
 
         .. note::
-            See:
-            https://www.elastic.co/guide/en/elasticsearch/reference/8.6/shard-allocation-filtering.html
+            See more about `shard allocation filtering </https://www.elastic.co/guide/en/elasticsearch/reference/8.6/shard-allocation-filtering.html>`_.
         """
         verify_index_list(ilo)
         if not key:
@@ -39,39 +40,32 @@ class Allocation:
                 f'{allocation_type} is an invalid allocation_type.  Must be one of "require", '
                 '"include", "exclude".'
             )
-        #: Instance variable.
-        #: Internal reference to `ilo`
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed as ``ilo``
         self.index_list = ilo
-        #: Instance variable.
-        #: The Elasticsearch Client object derived from `ilo`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
+        #: :py:attr:`index_list`
         self.client = ilo.client
         self.loggit = logging.getLogger('curator.actions.allocation')
-        #: Instance variable.
-        #: Populated at instance creation time. Value is
-        #: ``index.routing.allocation.`` `allocation_type` ``.`` `key` ``.`` `value`
         bkey = f'index.routing.allocation.{allocation_type}.{key}'
+        #: Populated at instance creation time. Value is built from the passed params
+        #: ``allocation_type``, ``key``, and ``value``, e.g.
+        #: ``index.routing.allocation.allocation_type.key.value``
         self.settings = {bkey : value}
-        #: Instance variable.
-        #: Internal reference to `wait_for_completion`
+        #: Object attribute that gets the value of param ``wait_for_completion``
         self.wfc = wait_for_completion
-        #: Instance variable
-        #: How many seconds to wait between checks for completion.
+        #: Object attribute that gets the value of param ``wait_interval``
         self.wait_interval = wait_interval
-        #: Instance variable.
-        #: How long in seconds to `wait_for_completion` before returning with an
-        #: exception. A value of -1 means wait forever.
+        #: Object attribute that gets the value of param ``max_wait``
         self.max_wait = max_wait
 
     def do_dry_run(self):
-        """
-        Log what the output would be, but take no action.
-        """
+        """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'allocation', settings=self.settings)
 
     def do_action(self):
         """
-        Change allocation settings for indices in `index_list.indices` with the
-        settings in `body`.
+        :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` to indices in
+        :py:attr:`index_list` with :py:attr:`settings`.
         """
         self.loggit.debug(
             'Cannot get change shard routing allocation of closed indices.  '
@@ -92,9 +86,7 @@ class Allocation:
                 )
                 if self.wfc:
                     self.loggit.debug(
-                        'Waiting for shards to complete relocation for indices:'
-                        ' %s', to_csv(lst)
-                    )
+                        'Waiting for shards to complete relocation for indices: %s', to_csv(lst))
                     wait_for_it(
                         self.client, 'allocation',
                         wait_interval=self.wait_interval, max_wait=self.max_wait

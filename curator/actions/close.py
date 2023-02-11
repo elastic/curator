@@ -1,45 +1,39 @@
 """Close index action class"""
 import logging
-# pylint: disable=import-error
-from curator.utils import chunk_index_list, report_failure, show_dry_run, to_csv, verify_index_list
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 
 class Close:
     """Close Action Class"""
     def __init__(self, ilo, delete_aliases=False, skip_flush=False):
         """
-        :arg ilo: A :class:`curator.indexlist.IndexList` object
-        :arg delete_aliases: If `True`, will delete any associated aliases
-            before closing indices.
+        :param ilo: An IndexList Object
+        :param delete_aliases: Delete any associated aliases before closing indices.
+        :param skip_flush: Do not flush indices before closing.
+
+        :type ilo: :py:class:`~.curator.indexlist.IndexList`
         :type delete_aliases: bool
-        :arg skip_flush: If `True`, will not flush indices before closing.
         :type skip_flush: bool
         """
         verify_index_list(ilo)
-        #: Instance variable.
-        #: Internal reference to `ilo`
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
         self.index_list = ilo
-        #: Instance variable.
-        #: Internal reference to `delete_aliases`
+        #: The value passed as ``delete_aliases``
         self.delete_aliases = delete_aliases
-        #: Instance variable.
-        #: Internal reference to `skip_flush`
+        #: The value passed as ``skip_flush``
         self.skip_flush = skip_flush
-        #: Instance variable.
-        #: The Elasticsearch Client object derived from `ilo`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
+        #: :py:attr:`index_list`
         self.client = ilo.client
         self.loggit = logging.getLogger('curator.actions.close')
 
-
     def do_dry_run(self):
-        """
-        Log what the output would be, but take no action.
-        """
-        show_dry_run(
-            self.index_list, 'close', **{'delete_aliases':self.delete_aliases})
+        """Log what the output would be, but take no action."""
+        show_dry_run(self.index_list, 'close', **{'delete_aliases':self.delete_aliases})
 
     def do_action(self):
         """
-        Close open indices in `index_list.indices`
+        :py:meth:`~.elasticsearch.client.IndicesClient.close` open indices in :py:attr:`index_list`
         """
         self.index_list.filter_closed()
         self.index_list.empty_list_check()

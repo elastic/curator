@@ -4,7 +4,7 @@ import os
 from unittest.case import SkipTest
 import pytest
 from es_client.builder import ClientArgs, Builder
-from curator.utils import get_indices
+from curator.helpers.getters import get_indices
 from . import CuratorTestCase
 from . import testvars
 

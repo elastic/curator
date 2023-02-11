@@ -6,15 +6,18 @@ from curator.validators import SchemaCheck
 
 def root():
     """
-    Return a valid Schema definition which is a dictionary with ``actions`` as a root key with
+    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which is a dictionary
+    with ``actions`` :py:class:`~.voluptuous.schema_builder.Required` to be the root key with
     another dictionary as the value.
     """
     return Schema({ Required('actions'): dict })
 
 def valid_action():
     """
-    Return a valid Schema definition which is that the value of key ``action`` must be ``In``
-    the value returned by :py:func:`curator.defaults.settings.all_actions`.
+    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which is that the
+    value of key ``action`` is :py:class:`~.voluptuous.schema_builder.Required` to be
+    :py:class:`~.voluptuous.schema_builder.In` the value returned by
+    :py:func:`~.curator.defaults.settings.all_actions`.
     """
     return {
         Required('action'): Any(
@@ -24,16 +27,18 @@ def valid_action():
 
 def structure(data, location):
     """
-    Return a valid Schema definition which tests ``data``, which is ostensibly an individual action
-    dictionary. If it is a :py:func:`curator.validators.actions.valid_action`, then it will
-    :py:meth:`voluptuous.schema_builder.Schema.update` the base Schema with other options, based on the what the
+    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which tests ``data``,
+    which is ostensibly an individual action dictionary. If it is a
+    :py:func:`~.curator.validators.actions.valid_action`, then it will
+    :py:meth:`~.voluptuous.schema_builder.Schema.update` the base
+    :py:class:`~.voluptuous.schema_builder.Schema` with other options, based on the what the
     value of ``data['action']`` is.
 
-    :arg data: The configuration dictionary, or sub-dictionary, being validated
+    :param data: The configuration dictionary, or sub-dictionary, being validated
     :type data: dict
-    :arg location: A string to report which configuration sub-block is being tested.
+    :param location: A string to report which configuration sub-block is being tested.
     :type location: str
-    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    :returns: A :py:class:`~.voluptuous.schema_builder.Schema` object
     """
     _ = SchemaCheck(
         data,

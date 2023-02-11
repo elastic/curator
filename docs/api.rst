@@ -1,4 +1,4 @@
-.. _codereference:
+.. _api:
 
 API and Code Reference
 ######################
@@ -9,7 +9,9 @@ API and Code Reference
    actions
    indexlist
    snapshotlist
-   utilities
+   helpers
    validators
    defaults
+   exceptions
+   other_modules
 

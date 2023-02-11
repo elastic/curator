@@ -12,9 +12,10 @@ from curator.exceptions import ConfigurationError, ClientException
 from curator.config_utils import check_logging_config, password_filter, set_logging
 from curator.defaults import settings
 from curator.exceptions import NoIndices, NoSnapshots
+from curator.helpers.getters import get_write_index
+from curator.helpers.testers import validate_actions
 from curator.indexlist import IndexList
 from curator.snapshotlist import SnapshotList
-from curator.utils import validate_actions, get_write_index
 from curator._version import __version__
 
 CLASS_MAP = {
@@ -38,10 +39,12 @@ CLASS_MAP = {
 
 def process_action(client, config, **kwargs):
     """
-    Do the `action` in the configuration dictionary, using the associated args.
-    Other necessary args may be passed as keyword arguments
+    Do the ``action`` in ``config``, using the associated options and ``kwargs``, if any.
 
-    :arg config: An `action` dictionary.
+    :param config: ``action`` configuration data.
+
+    :type config: dict
+    :rtype: None
     """
     logger = logging.getLogger(__name__)
     # Make some placeholder variables here for readability
@@ -105,7 +108,7 @@ def process_action(client, config, **kwargs):
 
 def run(config, action_file, dry_run=False):
     """
-    Actually run.
+    Called by :py:func:`cli` to execute what was collected at the command-line
     """
     # """Process yaml_file and return a valid client configuration"""
     config_dict = get_yaml(config)

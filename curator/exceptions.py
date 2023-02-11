@@ -69,3 +69,8 @@ class LoggingException(CuratorException):
     """
     Exception raised when Curator cannot either log or configure logging
     """
+
+class RepositoryException(CuratorException):
+    """
+    Exception raised when Curator cannot verify a snapshot repository
+    """

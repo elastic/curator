@@ -384,9 +384,9 @@ def shrink_suffix():
 
 def skip_repo_fs_check():
     """
-    :returns: ``{Optional('skip_repo_fs_check', default=False): Any(bool, All(Any(*string_types), Boolean()))}``
+    :returns: ``{Optional('skip_repo_fs_check', default=True): Any(bool, All(Any(*string_types), Boolean()))}``
     """
-    return {Optional('skip_repo_fs_check', default=False): Any(bool, All(Any(*string_types), Boolean()))}
+    return {Optional('skip_repo_fs_check', default=True): Any(bool, All(Any(*string_types), Boolean()))}
 
 def slices():
     """

@@ -3,8 +3,7 @@ from datetime import datetime
 import click
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import get_width, validate_filter_json
-from curator.utils import byte_size
-
+from curator.helpers.getters import byte_size
 
 #### Indices ####
 

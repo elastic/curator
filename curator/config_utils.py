@@ -2,15 +2,22 @@
 import logging
 from copy import deepcopy
 import click
-from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones, ensure_list
 from curator.defaults.logging_defaults import config_logging
+from curator.validators.schemacheck import SchemaCheck
 from curator.logtools import LogInfo, Blacklist
 
 def check_logging_config(config):
     """
     Ensure that the top-level key ``logging`` is in ``config`` before passing it to
-    :class:`~es_client.helpers.schemacheck.SchemaCheck` for value validation.
+    :py:class:`~.curator.validators.schemacheck.SchemaCheck` for value validation.
+
+    :param config: Logging configuration data
+
+    :type config: dict
+
+    :returns: :py:class:`~.curator.validators.schemacheck.SchemaCheck` validated logging
+        configuration.
     """
 
     if not isinstance(config, dict):
@@ -32,7 +39,14 @@ def check_logging_config(config):
         log_settings, config_logging(), 'Logging Configuration', 'logging').result()
 
 def set_logging(log_opts):
-    """Configure global logging options"""
+    """Configure global logging options
+
+    :param log_opts: Logging configuration data
+
+    :type log_opts: dict
+
+    :rtype: None
+    """
     # Set up logging
     loginfo = LogInfo(log_opts)
     logging.root.addHandler(loginfo.handler)
@@ -48,7 +62,15 @@ def set_logging(log_opts):
 
 def password_filter(data):
     """
-    Return a deepcopy of the dictionary with any password fields hidden
+    Recursively look through all nested structures of ``data`` for the key ``'password'`` and redact
+    the value.
+
+    :param data: Configuration data
+
+    :type data: dict
+
+    :returns: A :py:class:`~.copy.deepcopy` of ``data`` with the value obscured by ``REDACTED``
+        if the key is ``'password'``.
     """
     def iterdict(mydict):
         for key, value in mydict.items():

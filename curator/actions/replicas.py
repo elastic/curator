@@ -1,23 +1,25 @@
 """Index replica count action class"""
 import logging
-# pylint: disable=import-error
 from curator.exceptions import MissingArgument
-from curator.utils import (
-    chunk_index_list, report_failure, show_dry_run, to_csv, verify_index_list, wait_for_it)
+from curator.helpers.testers import verify_index_list
+from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
+from curator.helpers.waiters import wait_for_it
 
 class Replicas:
     """Replica Action Class"""
-    def __init__(
-            self, ilo, count=None, wait_for_completion=False, wait_interval=9, max_wait=-1):
+    def __init__(self, ilo, count=None, wait_for_completion=False, wait_interval=9, max_wait=-1):
         """
-        :arg ilo: A :class:`curator.indexlist.IndexList` object
-        :arg count: The count of replicas per shard
-        :arg wait_for_completion: Wait (or not) for the operation
-            to complete before returning.  (default: `False`)
+        :param ilo: An IndexList Object
+        :param count: The count of replicas per shard
+        :param wait_for_completion: Wait for completion before returning.
+        :param wait_interval: Seconds to wait between completion checks.
+        :param max_wait: Maximum number of seconds to ``wait_for_completion``
+
+        :type ilo: :py:class:`~.curator.indexlist.IndexList`
+        :type count: int
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for
-            completion.
-        :arg max_wait: Maximum number of seconds to `wait_for_completion`
+        :type wait_interval: int
+        :type max_wait: int
         """
         verify_index_list(ilo)
         # It's okay for count to be zero
@@ -25,41 +27,34 @@ class Replicas:
             pass
         elif not count:
             raise MissingArgument('Missing value for "count"')
-        #: Instance variable.
-        #: The Elasticsearch Client object derived from `ilo`
-        self.client = ilo.client
-        #: Instance variable.
-        #: Internal reference to `ilo`
+
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
         self.index_list = ilo
-        #: Instance variable.
-        #: Internally accessible copy of `count`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
+        #: :py:attr:`index_list`
+        self.client = ilo.client
+        #: Object attribute that gets the value of param ``count``.
         self.count = count
-        #: Instance variable.
-        #: Internal reference to `wait_for_completion`
+        #: Object attribute that gets the value of param ``wait_for_completion``.
         self.wfc = wait_for_completion
-        #: Instance variable
-        #: How many seconds to wait between checks for completion.
+        #: Object attribute that gets the value of param ``wait_interval``.
         self.wait_interval = wait_interval
-        #: Instance variable.
-        #: How long in seconds to `wait_for_completion` before returning with an
-        #: exception. A value of -1 means wait forever.
+        #: Object attribute that gets the value of param ``max_wait``.
         self.max_wait = max_wait
         self.loggit = logging.getLogger('curator.actions.replicas')
 
     def do_dry_run(self):
-        """
-        Log what the output would be, but take no action.
-        """
+        """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'replicas', count=self.count)
 
     def do_action(self):
         """
-        Update the replica count of indices in `index_list.indices`
+        Update ``number_of_replicas`` with :py:attr:`count` and
+        :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` to indices in
+        :py:attr:`index_list`
         """
         self.loggit.debug(
-            'Cannot get update replica count of closed indices.  '
-            'Omitting any closed indices.'
-        )
+            'Cannot get update replica count of closed indices. Omitting any closed indices.')
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         msg = (

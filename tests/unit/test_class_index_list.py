@@ -82,7 +82,7 @@ class TestIndexListAgeFilterName(TestCase):
         nomatch = curator.IndexList(client)
         nomatch._get_name_based_ages('%Y-%m-%d')
         self.assertEqual(
-            curator.fix_epoch(
+            curator.helpers.date_ops.fix_epoch(
                 testvars.settings_two['index-2016.03.03']['settings']['index']['creation_date']
             ),
             nomatch.index_info['index-2016.03.03']['age']['creation_date']
