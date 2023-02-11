@@ -29,4 +29,4 @@ logging:
   loglevel: INFO
   logfile: /path/to/file.log
   logformat: default
-  blacklist: ['elasticsearch', 'urllib3']
+  blacklist: ['elastic_transport', 'urllib3']

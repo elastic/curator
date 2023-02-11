@@ -44,6 +44,23 @@ class CLIAction():
     Unified class for all CLI singleton actions
     """
     def __init__(self, action, client_args, option_dict, filter_list, ignore_empty_list, **kwargs):
+        """Class setup
+        :param action: The action name.
+        :param client_args: ``dict`` containing everything needed for
+            :py:class:`~.es_client.builder.Builder` to build an
+            :py:class:`~.elasticsearch.Elasticsearch` client object.
+        :param option_dict: Options for ``action``.
+        :param filter_list: Filters to select indices for ``action``.
+        :param ignore_empty_list: Exit ``0`` even if filters result in no indices for ``action``.
+        :param kwargs: Other keyword args to pass to ``action``.
+
+        :type action: str
+        :type client_args: dict
+        :type option_dict: dict
+        :type filter_list: list
+        :type ignore_empty_list: bool
+        :type kwargs: dict
+        """
         self.logger = logging.getLogger('curator.cli_singletons.cli_action.' + action)
         self.filters = []
         self.action = action

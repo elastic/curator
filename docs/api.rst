@@ -1,4 +1,4 @@
-.. _codereference:
+.. _api:
 
 API and Code Reference
 ######################
@@ -13,4 +13,5 @@ API and Code Reference
    validators
    defaults
    exceptions
+   other_modules
 

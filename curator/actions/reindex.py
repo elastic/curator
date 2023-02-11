@@ -21,92 +21,91 @@ class Reindex:
             remote_filters=None, migration_prefix='', migration_suffix=''
     ):
         """
-        :arg ilo: A :py:class:`curator.indexlist.IndexList` object
-        :arg request_body: The body to send to
-            :py:meth:`elasticsearch.Elasticsearch.reindex`, which must be complete
-            and usable, as Curator will do no vetting of the request_body. If it fails to function,
-            Curator will return an exception.
-        :arg refresh: Whether to refresh the entire target index after the operation is complete.
-        :type refresh: bool
-        :arg requests_per_second: The throttle to set on this request in sub-requests per second.
+        :param ilo: An IndexList Object
+        :param request_body: The body to send to :py:meth:`~.elasticsearch.Elasticsearch.reindex`,
+            which must be complete and usable, as Curator will do no vetting of the request_body.
+            If it fails to function, Curator will return an exception.
+        :param refresh: Whether to refresh the entire target index after the operation is complete.
+        :param requests_per_second: The throttle to set on this request in sub-requests per second.
             ``-1`` means set no throttle as does ``unlimited`` which is the only non-float this
             accepts.
-        :arg slices: The number of slices this task  should be divided into. 1
-            means the task will not be sliced into subtasks. (default: ``1``)
-        :arg timeout: The length in seconds each individual bulk request should
-            wait for shards that are unavailable. (default: ``60``)
-        :arg wait_for_active_shards: Sets the number of shard copies that must
-            be active before proceeding with the reindex operation. (default:
-            ``1``) means the primary shard only. Set to ``all`` for all shard
-            copies, otherwise set to any non-negative value less than or equal
-            to the total number of copies for the shard (number of replicas + 1)
-        :arg wait_for_completion: Wait (or not) for the operation
-            to complete before returning.  (default: `True`)
+        :param slices: The number of slices this task  should be divided into. ``1`` means the task
+            will not be sliced into subtasks. (Default: ``1``)
+        :param timeout: The length in seconds each individual bulk request should wait for shards
+            that are unavailable. (default: ``60``)
+        :param wait_for_active_shards: Sets the number of shard copies that must be active before
+            proceeding with the reindex operation. (Default: ``1``) means the primary shard only.
+            Set to ``all`` for all shard copies, otherwise set to any non-negative value less than
+            or equal to the total number of copies for the shard (number of replicas + 1)
+        :param wait_for_completion: Wait for completion before returning.
+        :param wait_interval: Seconds to wait between completion checks.
+        :param max_wait: Maximum number of seconds to ``wait_for_completion``
+        :param remote_certificate: Path to SSL/TLS certificate
+        :param remote_client_cert: Path to SSL/TLS client certificate (public key)
+        :param remote_client_key: Path to SSL/TLS private key
+        :param migration_prefix: When migrating, prepend this value to the index name.
+        :param migration_suffix: When migrating, append this value to the index name.
+
+        :type ilo: :py:class:`~.curator.indexlist.IndexList`
+        :type request_body: dict
+        :type refresh: bool
+        :type requests_per_second: int
+        :type slices: int
+        :type timeout: int
+        :type wait_for_active_shards: int
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for completion.
-        :arg max_wait: Maximum number of seconds to `wait_for_completion`
-        :arg remote_certificate: Path to SSL/TLS certificate
-        :arg remote_client_cert: Path to SSL/TLS client certificate (public key)
-        :arg remote_client_key: Path to SSL/TLS private key
-        :arg migration_prefix: When migrating, prepend this value to the index name.
-        :arg migration_suffix: When migrating, append this value to the index name.
+        :type wait_interval: int
+        :type max_wait: int
+        :type remote_certificate: str
+        :type remote_cclient_cert: str
+        :type remote_cclient_key: str
+        :type migration_prefix: str
+        :type migration_suffix: str
         """
         if remote_filters is None:
             remote_filters = {}
         self.loggit = logging.getLogger('curator.actions.reindex')
         verify_index_list(ilo)
-        # Normally, we'd check for an empty list here.  But since we can reindex
-        # from remote, we might just be starting with an empty one.
-        # ilo.empty_list_check()
         if not isinstance(request_body, dict):
             raise CuratorConfigError('"request_body" is not of type dictionary')
-        #: Instance variable.
-        #: Internal reference to `request_body`
+        #: Object attribute that gets the value of param ``request_body``.
         self.body = request_body
         self.loggit.debug('REQUEST_BODY = %s', request_body)
-        #: Instance variable.
-        #: The Elasticsearch Client object derived from `ilo`
-        self.client = ilo.client
-        #: Instance variable.
-        #: Internal reference to `ilo`
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
         self.index_list = ilo
-        #: Instance variable.
-        #: Internal reference to `refresh`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
+        #: :py:attr:`index_list`
+        self.client = ilo.client
+        #: Object attribute that gets the value of param ``refresh``.
         self.refresh = refresh
-        #: Instance variable.
-        #: Internal reference to `requests_per_second`
+        #: Object attribute that gets the value of param ``requests_per_second``.
         self.requests_per_second = requests_per_second
-        #: Instance variable.
-        #: Internal reference to `slices`
+        #: Object attribute that gets the value of param ``slices``.
         self.slices = slices
-        #: Instance variable.
-        #: Internal reference to `timeout`, and add "s" for seconds.
+        #: Object attribute that gets the value of param ``timeout``, convert to :py:class:`str`
+        #: and add ``s`` for seconds.
         self.timeout = f'{timeout}s'
-        #: Instance variable.
-        #: Internal reference to `wait_for_active_shards`
+        #: Object attribute that gets the value of param ``wait_for_active_shards``.
         self.wait_for_active_shards = wait_for_active_shards
-        #: Instance variable.
-        #: Internal reference to `wait_for_completion`
+        #: Object attribute that gets the value of param ``wait_for_completion``.
         self.wfc = wait_for_completion
-        #: Instance variable
-        #: How many seconds to wait between checks for completion.
+        #: Object attribute that gets the value of param ``wait_interval``.
         self.wait_interval = wait_interval
-        #: Instance variable.
-        #: How long in seconds to `wait_for_completion` before returning with an
-        #: exception. A value of -1 means wait forever.
+        #: Object attribute that gets the value of param ``max_wait``.
         self.max_wait = max_wait
-        #: Instance variable.
-        #: Internal reference to `migration_prefix`
+        #: Object attribute that gets the value of param ``migration_prefix``.
         self.mpfx = migration_prefix
-        #: Instance variable.
-        #: Internal reference to `migration_suffix`
+        #: Object attribute that gets the value of param ``migration_suffix``.
         self.msfx = migration_suffix
 
-        # This is for error logging later...
+        #: Object attribute that is set ``False`` unless :py:attr:`body` has
+        #: ``{'source': {'remote': {}}}``, then it is set ``True``
         self.remote = False
         if 'remote' in self.body['source']:
             self.remote = True
 
+        #: Object attribute that is set ``False`` unless :py:attr:`body` has
+        #: ``{'dest': {'index': 'MIGRATION'}}``, then it is set ``True``
         self.migration = False
         if self.body['dest']['index'] == 'MIGRATION':
             self.migration = True
@@ -232,19 +231,17 @@ class Reindex:
 
     def get_processed_items(self, task_id):
         """
-        This function calls client.tasks.get with the provided `task_id`.  It will get the value
-        from ``'response.total'`` as the total number of elements processed during reindexing.
-        If the value is not found, it will return -1
+        This function calls :py:func:`~.elasticsearch.client.TasksClient.get` with the provided
+        ``task_id``.  It will get the value from ``'response.total'`` as the total number of
+        elements processed during reindexing. If the value is not found, it will return ``-1``
 
-        :arg task_id: A task_id which ostensibly matches a task searchable in the
-            tasks API.
+        :param task_id: A task_id which ostensibly matches a task searchable in the tasks API.
         """
         try:
             task_data = self.client.tasks.get(task_id=task_id)
         except Exception as exc:
             raise CuratorException(
-                f'Unable to obtain task information for task_id "{task_id}". Exception '
-                f'{exc}'
+                f'Unable to obtain task information for task_id "{task_id}". Exception {exc}'
             ) from exc
         total_processed_items = -1
         task = task_data['task']
@@ -256,7 +253,6 @@ class Reindex:
                 response = task_data['response']
                 total_processed_items = response['total']
                 self.loggit.debug('total_processed_items = %s', total_processed_items)
-
         return total_processed_items
 
     def _post_run_quick_check(self, index_name, task_id):
@@ -290,7 +286,7 @@ class Reindex:
                 )
 
     def sources(self):
-        """Generator for sources & dests"""
+        """Generator for Reindexing ``sources`` & ``dests``"""
         dest = self.body['dest']['index']
         source_list = ensure_list(self.body['source']['index'])
         self.loggit.debug('source_list: %s', source_list)
@@ -307,10 +303,7 @@ class Reindex:
                 yield source, dest
 
     def show_run_args(self, source, dest):
-        """
-        Show what will run
-        """
-
+        """Show what will run"""
         return (
             f'request body: {self._get_request_body(source, dest)} with arguments: '
             f'refresh={self.refresh} '
@@ -322,17 +315,17 @@ class Reindex:
         )
 
     def do_dry_run(self):
-        """
-        Log what the output would be, but take no action.
-        """
+        """Log what the output would be, but take no action."""
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
         for source, dest in self.sources():
             self.loggit.info('DRY-RUN: REINDEX: %s', self.show_run_args(source, dest))
 
     def do_action(self):
         """
-        Execute :py:meth:`elasticsearch.Elasticsearch.reindex` operation with the provided
-        ``request_body`` and arguments.
+        Execute :py:meth:`~.elasticsearch.Elasticsearch.reindex` operation with the
+        ``request_body`` from :py:meth:`_get_request_body` and arguments :py:attr:`refresh`,
+        :py:attr:`requests_per_second`, :py:attr:`slices`, :py:attr:`timeout`,
+        :py:attr:`wait_for_active_shards`, and :py:attr:`wfc`.
         """
         try:
             # Loop over all sources (default will only be one)

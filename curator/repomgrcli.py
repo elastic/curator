@@ -14,18 +14,43 @@ from curator.cli_singletons.utils import get_width
 
 # pylint: disable=unused-argument
 def delete_callback(ctx, param, value):
-    """Callback if delete called"""
+    """Callback if command ``delete`` called
+
+    If the action is ``delete``, this is the :py:class:`click.Parameter` callback function if you
+    used the ``--yes`` flag.
+
+    :param ctx: The Click Context
+    :param param: The parameter name
+    :param value: The value
+
+    :type ctx: :py:class:`~.click.Context`
+    :type param: str
+    :type value: str
+    """
+    # It complains if ``param`` isn't passed as a positional parameter, but this is a one-trick
+    # pony callback. We don't need to know that you selected ``--yes`` as the parameter.
     if not value:
         ctx.abort()
 
 def show_repos(client):
-    """Show all repositories"""
+    """Show all repositories
+
+    :param client: A client connection object
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :rtype: None
+    """
     for repository in sorted(get_repository(client, '*').keys()):
         click.echo(f'{repository}')
     sys.exit(0)
 
 def get_client(ctx):
-    """Return an :class:`elasticsearch.Elasticsearch` client object"""
+    """
+    :param ctx: The :py:class:`click` Context
+    :type ctx: :py:class:`~.click.Context`
+
+    :returns: A client connection object
+    :rtype: :py:class:`~.elasticsearch.Elasticsearch`
+    """
     builder = Builder(configdict=ctx.obj['esconfig'])
     try:
         builder.connect()
@@ -37,7 +62,23 @@ def get_client(ctx):
 
 # pylint: disable=broad-except
 def create_repo(ctx, repo_name=None, repo_type=None, repo_settings=None, verify=False):
-    """Create a snapshot repository from the provided arguments"""
+    """
+    Call :py:meth:`~.elasticsearch.client.SnapshotClient.create_repository` to create a snapshot
+    repository from the provided arguments
+
+    :param ctx: The :py:class:`click` Context
+    :param repo_name: The repository name
+    :param repo_type: The repository name
+    :param repo_settings: Settings to configure the repository
+    :param verify: Whether to verify repository access
+
+    :type ctx: :py:class:`~.click.Context`
+    :type repo_name: str
+    :type repo_type: str
+    :type repo_settings: dict
+    :type verify: bool
+    :rtype: None
+    """
     logger = logging.getLogger('curator.repomgrcli.create_repo')
     esclient = get_client(ctx)
     try:
@@ -72,9 +113,7 @@ def azure(
         ctx, name, client, container, base_path, chunk_size, compress, max_restore_rate,
         max_snapshot_rate, readonly, location_mode, verify
     ):
-    """
-    Create an Azure repository.
-    """
+    """Create an Azure repository."""
     azure_settings = {
         'client': client,
         'container': container,
@@ -105,8 +144,7 @@ def gcs(
         ctx, name, bucket, client, base_path, chunk_size, compress, max_restore_rate,
         max_snapshot_rate, readonly, verify
     ):
-    """
-    Create a Google Cloud Storage repository.
+    """ Create a Google Cloud Storage repository.
     """
     gcs_settings = {
         'bucket': bucket,
@@ -413,7 +451,10 @@ def show(ctx):
 @click.option('--yes', is_flag=True, callback=delete_callback, expose_value=False, prompt='Are you sure you want to delete the repository?')
 @click.pass_context
 def _delete(ctx, name):
-    """Delete an Elasticsearch repository"""
+    """
+    Call :py:meth:`elasticsearch.client.SnapshotClient.delete_repository` to delete an
+    Elasticsearch repository
+    """
     logger = logging.getLogger('curator.repomgrcli._delete')
     client = get_client(ctx)
     try:

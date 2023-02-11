@@ -16,10 +16,17 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
+   about
    usage
-   codereference
+   api
+   testing
+   examples
+   Changelog
+   genindex
+
+
 
 License
 =======

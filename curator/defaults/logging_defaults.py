@@ -7,17 +7,17 @@ def config_logging():
     """
     Logging schema with defaults:
 
-    ``loglevel`` = ``INFO``
+    .. code-block:: yaml
 
-    ``logfile`` = ``None``
+        logging:
+          loglevel: INFO
+          logfile: None
+          logformat: default
+          blacklist: ['elastic_transport', 'urllib3']
 
-    ``logformat`` = ``default``
-
-    ``blacklist`` = ``['elasticsearch', 'urllib3']``
-
-    :returns: A valid :py:class:`voluptuous.schema_builder.Schema` of all acceptable values with
+    :returns: A valid :py:class:`~.voluptuous.schema_builder.Schema` of all acceptable values with
         the default values set.
-    :rtype: :py:class:`voluptuous.schema_builder.Schema`
+    :rtype: :py:class:`~.voluptuous.schema_builder.Schema`
     """
     return Schema(
         {
@@ -28,6 +28,6 @@ def config_logging():
             Optional('logfile', default=None): Any(None, *string_types),
             Optional('logformat', default='default'):
                 Any(None, All(Any(*string_types), Any('default', 'json', 'logstash', 'ecs'))),
-            Optional('blacklist', default=['elasticsearch', 'urllib3']): Any(None, list),
+            Optional('blacklist', default=['elastic_transport', 'urllib3']): Any(None, list),
         }
     )

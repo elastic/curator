@@ -1,13 +1,35 @@
 .. _validators:
 
-``curator.validators``
-######################
+Validators
+##########
 
-.. toctree::
-   :maxdepth: 2
+SchemaCheck
+===========
 
-   validators_schemacheck
-   validators_actions
-   validators_options
-   validators_ffx
-   validators_logconfig
+.. autoclass:: curator.validators.SchemaCheck
+   :members:
+
+Actions
+=======
+
+.. automodule:: curator.validators.actions
+   :members:
+
+Options
+=======
+
+.. automodule:: curator.validators.options
+   :members:
+
+Filter Functions
+================
+
+.. automodule:: curator.validators.filter_functions
+   :members:
+
+Log Config
+==========
+
+.. automodule:: curator.validators.logconfig
+   :members:
+

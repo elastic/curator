@@ -9,6 +9,9 @@ def byte_size(num, suffix='B'):
     :param num: The number of byte
     :param suffix: An arbitrary suffix, like ``Bytes``
 
+    :type num: int
+    :type suffix: str
+
     :returns: A formatted string indicating the size in bytes, with the proper unit,
         e.g. KB, MB, GB, TB, etc.
     :rtype: float
@@ -21,7 +24,10 @@ def byte_size(num, suffix='B'):
 
 def get_indices(client):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_settings`
+
+    :param client: A client connection object
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
 
     :returns: The current list of indices from the cluster
     :rtype: list
@@ -36,8 +42,13 @@ def get_indices(client):
 
 def get_repository(client, repository=''):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get_repository`
+
+    :param client: A client connection object
     :param repository: The Elasticsearch snapshot repository to use
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type repository: str
 
     :returns: Configuration information for ``repository``.
     :rtype: dict
@@ -53,9 +64,15 @@ def get_repository(client, repository=''):
 
 def get_snapshot(client, repository=None, snapshot=''):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get`
+
+    :param client: A client connection object
     :param repository: The Elasticsearch snapshot repository to use
     :param snapshot: The snapshot name, or a comma-separated list of snapshots
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type repository: str
+    :type snapshot: str
 
     :returns: Information about the provided ``snapshot``, a snapshot (or a comma-separated list of
         snapshots). If no snapshot specified, it will collect info for all snapshots.  If none
@@ -77,9 +94,13 @@ def get_snapshot(client, repository=None, snapshot=''):
 def get_snapshot_data(client, repository=None):
     """
     Get all snapshots from repository and return a list.
+    Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get`
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param repository: The Elasticsearch snapshot repository to use
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type repository: str
 
     :returns: The list of all snapshots from ``repository``
     :rtype: list
@@ -97,8 +118,13 @@ def get_snapshot_data(client, repository=None):
 
 def get_write_index(client, alias):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_alias`
+
+    :param client: A client connection object
     :param alias: An alias name
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type alias: str
 
     :returns: The the index name associated with the alias that is designated ``is_write_index``
     :rtype: str
@@ -123,9 +149,15 @@ def get_write_index(client, alias):
 
 def index_size(client, idx, value='total'):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.IndicesClient.stats`
+
+    :param client: A client connection object
     :param idx: An index name
     :param value: One of either ``primaries`` or ``total``
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type idx: str
+    :type value: str
 
     :returns: The sum of either ``primaries`` or ``total`` shards for index ``idx``
     :rtype: integer
@@ -134,8 +166,13 @@ def index_size(client, idx, value='total'):
 
 def name_to_node_id(client, name):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
+
+    :param client: A client connection object
     :param name: The node ``name``
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type name: str
 
     :returns: The node_id of the node identified by ``name``
     :rtype: str
@@ -151,8 +188,13 @@ def name_to_node_id(client, name):
 
 def node_id_to_name(client, node_id):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
+
+    :param client: A client connection object
     :param node_id: The node ``node_id``
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type node_id: str
 
     :returns: The name of the node identified by ``node_id``
     :rtype: str
@@ -169,8 +211,13 @@ def node_id_to_name(client, node_id):
 
 def node_roles(client, node_id):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.NodesClient.info`
+
+    :param client: A client connection object
     :param node_id: The node ``node_id``
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type node_id: str
 
     :returns: The list of roles assigned to the node identified by ``node_id``
     :rtype: list
@@ -180,10 +227,13 @@ def node_roles(client, node_id):
 def single_data_path(client, node_id):
     """
     In order for a shrink to work, it should be on a single filesystem, as shards cannot span
-    filesystems.
+    filesystems. Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param node_id: The node ``node_id``
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type node_id: str
 
     :returns: ``True`` if the node has a single filesystem, else ``False``
     :rtype: bool

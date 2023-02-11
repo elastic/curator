@@ -1,7 +1,7 @@
 .. _snapshotlist:
 
-``curator.SnapshotList``
-########################
+Snapshot List
+#############
 
 Snapshot filtering is performed using the ``filter_`` methods of :py:class:`curator.SnapshotList`
 

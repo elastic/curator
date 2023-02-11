@@ -13,8 +13,13 @@ from curator.helpers.utils import report_failure
 
 def repository_exists(client, repository=None):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get_repository`
+
+    :param client: A client connection object
     :param repository: The Elasticsearch snapshot repository to use
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type repository: str
 
     :returns: ``True`` if ``repository`` exists, else ``False``
     :rtype: bool
@@ -38,8 +43,14 @@ def repository_exists(client, repository=None):
 
 def rollable_alias(client, alias):
     """
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_alias`
+
+    :param client: A client connection object
     :param alias: An Elasticsearch alias
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type alias: str
+
 
     :returns: ``True`` or ``False`` depending on whether ``alias`` is an alias that points to an
         index that can be used by the ``_rollover`` API.
@@ -79,9 +90,14 @@ def rollable_alias(client, alias):
 
 def snapshot_running(client):
     """
+    Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get_repository`
+
     Return ``True`` if a snapshot is in progress, and ``False`` if not
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+
     :rtype: bool
     """
     try:
@@ -99,6 +115,8 @@ def validate_actions(data):
     Validate the ``actions`` configuration dictionary, as imported from actions.yml, for example.
 
     :param data: The configuration dictionary
+
+    :type data: dict
 
     :returns: The validated and sanitized configuration dictionary.
     :rtype: dict
@@ -192,6 +210,9 @@ def validate_filters(action, myfilters):
     :param action: An action name
     :param myfilters: A list of filters to test.
 
+    :type action: str
+    :type myfilters: list
+
     :returns: Validated list of filters
     :rtype: list
     """
@@ -212,8 +233,10 @@ def verify_client_object(test):
     """
     :param test: The variable or object to test
 
-    :returns: ``True`` if ``test`` is a proper :py:class:`elasticsearch.Elasticsearch` client
-        object and raise a :py:class:`TypeError` exception if it is not.
+    :type test: :py:class:`~.elasticsearch.Elasticsearch`
+
+    :returns: ``True`` if ``test`` is a proper :py:class:`~.elasticsearch.Elasticsearch` client
+        object and raise a :py:exc:`TypeError` exception if it is not.
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -230,7 +253,9 @@ def verify_index_list(test):
     """
     :param test: The variable or object to test
 
-    :returns: ``None`` if ``test`` is a proper :py:class:`curator.indexlist.IndexList` object, else
+    :type test: :py:class:`~.curator.IndexList`
+
+    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.indexlist.IndexList` object, else
         raise a :py:class:`TypeError` exception.
     :rtype: None
     """
@@ -247,11 +272,16 @@ def verify_index_list(test):
 
 def verify_repository(client, repository=None):
     """
-    Do :py:meth:`elasticsearch.snapshot.verify_repository` call. If it fails, raise a
-    :py:class:`curator.exceptions.RepositoryException`.
+    Do :py:meth:`~.elasticsearch.snapshot.verify_repository` call. If it fails, raise a
+    :py:exc:`~.curator.exceptions.RepositoryException`.
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
     :param repository: A repository name
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type repository: str
+
     :rtype: None
     """
     logger = logging.getLogger(__name__)
@@ -280,7 +310,9 @@ def verify_snapshot_list(test):
     """
     :param test: The variable or object to test
 
-    :returns: ``None`` if ``test`` is a proper :py:class:`curator.snapshotlist.SnapshotList`
+    :type test: :py:class:`~.curator.SnapshotList`
+
+    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.snapshotlist.SnapshotList`
         object, else raise a :py:class:`TypeError` exception.
     :rtype: None
     """

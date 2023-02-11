@@ -14,21 +14,27 @@ class TimestringSearch(object):
     An object to allow repetitive search against a string, ``searchme``, without
     having to repeatedly recreate the regex.
 
-    :param timestring: An :py:func:`time.strftime` pattern
+    :param timestring: An ``strftime`` pattern
+    :type timestring: :py:func:`~.time.strftime`
     """
     def __init__(self, timestring):
         # pylint: disable=consider-using-f-string
         regex = r'(?P<date>{0})'.format(get_date_regex(timestring))
+
+        #: Object attribute. ``re.compile(regex)`` where
+        #: ``regex = r'(?P<date>{0})'.format(get_date_regex(timestring))``. Uses
+        #: :py:func:`get_date_regex`
         self.pattern = re.compile(regex)
+        #: Object attribute preserving param ``timestring``
         self.timestring = timestring
 
     def get_epoch(self, searchme):
         """
-        :param searchme: A string to be searched for a date pattern that matches
-            ``timestring``
+        :param searchme: A string to be matched against :py:attr:`pattern` that matches
+            :py:attr:`timestring`
 
-        :returns: The epoch timestamp extracted from the ``timestring`` appearing in
-            ``searchme``.
+        :returns: The epoch timestamp extracted from ``searchme`` by regex matching against
+            :py:attr:`pattern`
         :rtype: int
         """
         match = self.pattern.search(searchme)
@@ -51,8 +57,14 @@ def absolute_date_range(
     :param unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
     :param date_from: The simplified date for the start of the range
     :param date_to: The simplified date for the end of the range.
-    :param date_from_format: The :py:func:`time.strftime` string used to parse ``date_from``
-    :param date_to_format: The :py:func:`time.strftime` string used to parse ``date_to``
+    :param date_from_format: The :py:func:`~.time.strftime` string used to parse ``date_from``
+    :param date_to_format: The :py:func:`~.time.strftime` string used to parse ``date_to``
+
+    :type unit: str
+    :type date_from: str
+    :type date_to: str
+    :type date_from_format: str
+    :type date_to_format: str
 
     :returns: The epoch start time and end time of a date range
     :rtype: tuple
@@ -121,6 +133,12 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     :param range_to: Count of ``unit`` in the past/future is the end point?
     :param epoch: An epoch timestamp used to establish a point of reference for calculations.
     :param week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
+
+    :type unit: str
+    :type range_from: int
+    :type range_to: int
+    :type epoch: int
+    :type week_starts_on: str
 
     :returns: The epoch start time and end time of a date range
     :rtype: tuple
@@ -223,7 +241,8 @@ def datetime_to_epoch(mydate):
     """
     Converts datetime into epoch seconds
 
-    :param mydate: A :py:class:`datetime.datetime`
+    :param mydate: A Python datetime
+    :type mydate: :py:class:`~.datetime.datetime`
 
     :returns: An epoch timestamp based on ``mydate``
     :rtype: int
@@ -237,6 +256,7 @@ def fix_epoch(epoch):
     fewer digits long.
 
     :param epoch: An epoch timestamp, in epoch + milliseconds, or microsecond, or even nanoseconds.
+    :type epoch: int
 
     :returns: An epoch timestamp in seconds only, based on ``epoch``
     :rtype: int
@@ -262,9 +282,10 @@ def fix_epoch(epoch):
 
 def get_date_regex(timestring):
     """
-    :param timestring: An :py:func:`time.strftime` pattern
+    :param timestring: An ``strftime`` pattern
+    :type timestring: :py:func:`~.time.strftime`
 
-    :returns: A regex string based on a provided :py:func:`time.strftime` ``timestring``.
+    :returns: A regex string based on a provided :py:func:`~.time.strftime` ``timestring``.
     :rtype: str
     """
     logger = logging.getLogger(__name__)
@@ -286,7 +307,17 @@ def get_date_regex(timestring):
 
 def get_datemath(client, datemath, random_element=None):
     """
-    Return the parsed index name from ``datemath``
+    :param client: A client connection object
+    :param datemath: An elasticsearch datemath string
+    :param random_element: This allows external randomization of the name and is only useful for
+        tests so that you can guarantee the output because you provided the random portion.
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type datemath: :py:class:`~.datemath.datemath`
+    :type random_element: str
+
+    :returns: the parsed index name from ``datemath``
+    :rtype: str
     """
     logger = logging.getLogger(__name__)
     if random_element is None:
@@ -324,11 +355,14 @@ def get_datemath(client, datemath, random_element=None):
 
 def get_datetime(index_timestamp, timestring):
     """
-    :param index_timestamp: The timestamp extracted from an index name
-    :param timestring: An :py:func:`time.strftime` pattern
+    :param index_timestamp: The index timestamp
+    :param timestring: An ``strftime`` pattern
+
+    :type index_timestamp: str
+    :type timestring: :py:func:`~.time.strftime`
 
     :returns: The datetime extracted from the index name, which is the index creation time.
-    :rtype: :py:class:`datetime.datetime`
+    :rtype: :py:class:`~.datetime.datetime`
     """
     # Compensate for week of year by appending '%w' to the timestring
     # and '1' (Monday) to index_timestamp
@@ -362,6 +396,10 @@ def get_point_of_reference(unit, count, epoch=None):
     :param epoch: An epoch timestamp used in conjunction with ``unit`` and ``unit_count`` to
         establish a point of reference for calculations.
 
+    :type unit: str
+    :type unit_count: int
+    :type epoch: int
+
     :returns: A point-of-reference timestamp in epoch + milliseconds by deriving from a ``unit``
         and a ``count``, and an optional reference timestamp, ``epoch``
     :rtype: int
@@ -393,6 +431,9 @@ def get_unit_count_from_name(index_name, pattern):
     :param index_name: An index name
     :param pattern: A regular expression pattern
 
+    :type index_name: str
+    :type pattern: str
+
     :returns: The unit count, if a match is able to be found in the name
     :rtype: int
     """
@@ -410,12 +451,16 @@ def get_unit_count_from_name(index_name, pattern):
 
 def handle_iso_week_number(mydate, timestring, index_timestamp):
     """
-    :param mydate: A :py:class:`datetime.datetime` date
-    :param timestring: An :py:func:`time.strftime` date string
+    :param mydate: A Python datetime
+    :param timestring: An ``strftime`` pattern
     :param index_timestamp: The index timestamp
 
+    :type mydate: :py:class:`~.datetime.datetime`
+    :type timestring: :py:func:`~.time.strftime`
+    :type index_timestamp: str
+
     :returns: The date of the previous week based on ISO week number
-    :rtype: datetime.datetime
+    :rtype: :py:class:`~.datetime.datetime`
     """
     date_iso = mydate.isocalendar()
     # iso_week_str = "{Y:04d}{W:02d}".format(Y=date_iso[0], W=date_iso[1])
@@ -437,6 +482,7 @@ def handle_iso_week_number(mydate, timestring, index_timestamp):
 def isdatemath(data):
     """
     :param data: An expression to validate as being datemath or not
+    :type data: str
 
     :returns: ``True`` if ``data`` is a valid datemath expression, else ``False``
     :rtype: bool
@@ -455,12 +501,12 @@ def isdatemath(data):
 
 def parse_date_pattern(name):
     """
-    Scan and parse ``name`` for :py:func:`time.strftime` strings, replacing them with the
+    Scan and parse ``name`` for :py:func:`~.time.strftime` strings, replacing them with the
     associated value when found, but otherwise returning lowercase values, as uppercase snapshot
     names are not allowed. It will detect if the first character is a ``<``, which would indicate
     ``name`` is going to be using Elasticsearch date math syntax, and skip accordingly.
 
-    The :py:func:`time.strftime` identifiers that Curator currently recognizes as acceptable
+    The :py:func:`~.time.strftime` identifiers that Curator currently recognizes as acceptable
     include:
 
     * ``Y``: A 4 digit year
@@ -473,7 +519,8 @@ def parse_date_pattern(name):
     * ``S``: The 2 digit number of second of the minute
     * ``j``: The 3 digit day of the year
 
-    :param name: A name, which can contain :py:func:`time.strftime` strings
+    :param name: A name, which can contain :py:func:`~.time.strftime` strings
+    :type name: str
 
     :returns: The parsed date pattern
     :rtype: str
@@ -502,11 +549,14 @@ def parse_datemath(client, value):
     """
     Validate that ``value`` looks like proper datemath. If it passes this test, then try to ship it
     to Elasticsearch for real. It may yet fail this test, and if it does, it will raise a
-    :py:class:`curator.exceptions.ConfigurationError` exception. If it passes, return the fully
+    :py:exc:`~.curator.exceptions.ConfigurationError` exception. If it passes, return the fully
     parsed string.
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param value: A string to check for datemath
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type value: str
 
     :returns: A datemath indexname, fully rendered by Elasticsearch
     :rtype: str

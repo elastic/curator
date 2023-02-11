@@ -10,34 +10,33 @@ class IndexSettings:
     def __init__(
             self, ilo, index_settings=None, ignore_unavailable=False, preserve_existing=False):
         """
-        :arg ilo: A :class:`curator.indexlist.IndexList` object
-        :arg index_settings: A dictionary structure with one or more index
-            settings to change.
-        :arg ignore_unavailable: Whether specified concrete indices should be
-            ignored when unavailable (missing or closed)
-        :arg preserve_existing: Whether to update existing settings. If set to
-            ``True`` existing settings on an index remain unchanged. The default
-            is ``False``
+        :param ilo: An IndexList Object
+        :param index_settings: A settings structure with one or more index settings to change.
+        :param ignore_unavailable: Whether specified concrete indices should be ignored when
+            unavailable (missing or closed)
+        :param preserve_existing: Whether to update existing settings. If set to ``True``, existing
+            settings on an index remain unchanged. The default is ``False``
+
+        :type ilo: :py:class:`~.curator.indexlist.IndexList`
+        :type index_settings: dict
+        :type ignore_unavailable: bool
+        :type preserve_existing: bool
         """
         if index_settings is None:
             index_settings = {}
         verify_index_list(ilo)
         if not index_settings:
             raise MissingArgument('Missing value for "index_settings"')
-        #: Instance variable.
-        #: The Elasticsearch Client object derived from `ilo`
-        self.client = ilo.client
-        #: Instance variable.
-        #: Internal reference to `ilo`
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
         self.index_list = ilo
-        #: Instance variable.
-        #: Internal reference to `index_settings`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
+        #: :py:attr:`index_list`
+        self.client = ilo.client
+        #: Object attribute that gets the value of param ``index_settings``.
         self.body = index_settings
-        #: Instance variable.
-        #: Internal reference to `ignore_unavailable`
+        #: Object attribute that gets the value of param ``ignore_unavailable``.
         self.ignore_unavailable = ignore_unavailable
-        #: Instance variable.
-        #: Internal reference to `preserve_settings`
+        #: Object attribute that gets the value of param ``preserve_existing``.
         self.preserve_existing = preserve_existing
 
         self.loggit = logging.getLogger('curator.actions.index_settings')
@@ -101,13 +100,14 @@ class IndexSettings:
                 self.loggit.warning(msg)
 
     def do_dry_run(self):
-        """
-        Log what the output would be, but take no action.
-        """
+        """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'indexsettings', **self.body)
 
     def do_action(self):
-        """Actually do the action"""
+        """
+        :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` in :py:attr:`body` to indices
+        in :py:attr:`index_list`
+        """
         self._settings_check()
         # Ensure that the open indices filter applied in _settings_check()
         # didn't result in an empty list (or otherwise empty)

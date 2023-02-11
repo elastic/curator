@@ -39,10 +39,12 @@ CLASS_MAP = {
 
 def process_action(client, config, **kwargs):
     """
-    Do the `action` in the configuration dictionary, using the associated args.
-    Other necessary args may be passed as keyword arguments
+    Do the ``action`` in ``config``, using the associated options and ``kwargs``, if any.
 
-    :arg config: An `action` dictionary.
+    :param config: ``action`` configuration data.
+
+    :type config: dict
+    :rtype: None
     """
     logger = logging.getLogger(__name__)
     # Make some placeholder variables here for readability
@@ -106,7 +108,7 @@ def process_action(client, config, **kwargs):
 
 def run(config, action_file, dry_run=False):
     """
-    Actually run.
+    Called by :py:func:`cli` to execute what was collected at the command-line
     """
     # """Process yaml_file and return a valid client configuration"""
     config_dict = get_yaml(config)

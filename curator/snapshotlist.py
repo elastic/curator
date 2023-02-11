@@ -23,23 +23,18 @@ class SnapshotList:
             raise FailedExecution(
                 f'Unable to verify existence of repository {repository}')
         self.loggit = logging.getLogger('curator.snapshotlist')
-        #: An :class:`elasticsearch.Elasticsearch` client object
-        #: Also accessible as an instance variable.
+        #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from param ``client``
         self.client = client
-        #: An Elasticsearch repository.
-        #: Also accessible as an instance variable.
+        #: The value passed as ``delete_aliases``
         self.repository = repository
-        #: Instance variable.
         #: Information extracted from snapshots, such as age, etc.
         #: Populated by internal method ``__get_snapshots`` at instance creation
         #: time. **Type:** :py:class:`dict`
         self.snapshot_info = {}
-        #: Instance variable.
         #: The running list of snapshots which will be used by an Action class.
         #: Populated by internal methods ``__get_snapshots`` at instance creation
         #: time. **Type:** :py:class:`list`
         self.snapshots = []
-        #: Instance variable.
         #: Raw data dump of all snapshots in the repository at instance creation
         #: time.  **Type:** :py:class:`list` of :py:class:`dict` data.
         self.__get_snapshots()
@@ -112,7 +107,7 @@ class SnapshotList:
         Add a snapshot age to ``snapshot_info`` based on the age as indicated by the snapshot name
         pattern, if it matches ``timestring``.  This is stored at key ``age_by_name``.
 
-        :arg timestring: A :py:class:`time.strftime` pattern
+        :param timestring: A :py:func:`time.strftime` pattern
         """
         # Check for empty list before proceeding here to prevent non-iterable
         # condition
@@ -132,8 +127,8 @@ class SnapshotList:
 
         Set instance variable ``age_keyfield`` for use later, if needed.
 
-        :arg source: Source of snapshot age. Can be ``name`` or ``creation_date``.
-        :arg timestring: An :py:class:`time.strftime` string to match the datestamp in an snapshot name. Only used
+        :param source: Source of snapshot age. Can be ``name`` or ``creation_date``.
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an snapshot name. Only used
             if ``source=name``.
         """
         if source == 'name':
@@ -200,12 +195,12 @@ class SnapshotList:
         Filter out snapshots not matching the pattern, or in the case of
         exclude, filter those matching the pattern.
 
-        :arg kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or
+        :param kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or
             ``timestring``. This option defines what kind of filter you will be
             building.
-        :arg value: Depends on ``kind``. It is the :py:class:`time.strftime` string if ``kind`` is
+        :param value: Depends on ``kind``. It is the :py:func:`time.strftime` string if ``kind`` is
             ``timestring``. It's used to build the regular expression for other kinds.
-        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+        :param exclude: If ``exclude=True``, this filter will remove matching snapshots from
             ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
             ``snapshots``. Default is ``False``
         """
@@ -240,18 +235,18 @@ class SnapshotList:
         """
         Remove snapshots from ``snapshots`` by relative age calculations.
 
-        :arg source: Source of snapshot age. Can be ``name``, or ``creation_date``.
-        :arg direction: Time to filter, either ``older`` or ``younger``
-        :arg timestring: A :py:class:`time.strftime` string to match the datestamp in an snapshot
+        :param source: Source of snapshot age. Can be ``name``, or ``creation_date``.
+        :param direction: Time to filter, either ``older`` or ``younger``
+        :param timestring: A :py:func:`time.strftime` string to match the datestamp in an snapshot
             name. Only used for snapshot filtering by ``name``.
-        :arg unit: One of ``seconds``, ``minutes``, ``hours``, ``days``, ``weeks``, ``months``, or
+        :param unit: One of ``seconds``, ``minutes``, ``hours``, ``days``, ``weeks``, ``months``, or
             ``years``.
-        :arg unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will be calculated
+        :param unit_count: The number of ``unit`` (s). ``unit_count`` * ``unit`` will be calculated
             out to the relative number of seconds.
-        :arg epoch: An epoch timestamp used in conjunction with ``unit`` and ``unit_count`` to
+        :param epoch: An epoch timestamp used in conjunction with ``unit`` and ``unit_count`` to
             establish a point of reference for calculations. If not provided, the current time will
             be used.
-        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+        :param exclude: If ``exclude=True``, this filter will remove matching snapshots from
             ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
             ``snapshots``. Default is ``False``
         """
@@ -288,9 +283,9 @@ class SnapshotList:
         Filter out snapshots not matching ``state``, or in the case of exclude, filter those
         matching ``state``.
 
-        :arg state: The snapshot state to filter for. Must be one of ``SUCCESS``, ``PARTIAL``,
+        :param state: The snapshot state to filter for. Must be one of ``SUCCESS``, ``PARTIAL``,
             ``FAILED``, or ``IN_PROGRESS``.
-        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+        :param exclude: If ``exclude=True``, this filter will remove matching snapshots from
             ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
             ``snapshots``. Default is ``False``
         """
@@ -329,14 +324,14 @@ class SnapshotList:
         date (as identified by ``start_time_in_millis``) by default, but you can also specify
         ``source=name``.  The ``name`` ``source`` requires the timestring argument.
 
-        :arg count: Filter snapshots beyond ``count``.
-        :arg reverse: The filtering direction. (default: ``True``).
-        :arg use_age: Sort snapshots by age.  ``source`` is required in this case.
-        :arg source: Source of snapshot age. Can be one of ``name``, or ``creation_date``. Default:
-            ``creation_date``
-        :arg timestring: A :py:class:`time.strftime` string to match the datestamp in a snapshot
+        :param count: Filter snapshots beyond ``count``.
+        :param reverse: The filtering direction. (default: ``True``).
+        :param use_age: Sort snapshots by age.  ``source`` is required in this case.
+        :param source: Source of snapshot age. Can be one of ``name``, or ``creation_date``.
+            Default: ``creation_date``
+        :param timestring: A :py:func:`time.strftime` string to match the datestamp in a snapshot
             name. Only used if ``source=name``.
-        :arg exclude: If ``exclude=True``, this filter will remove matching snapshots from
+        :param exclude: If ``exclude=True``, this filter will remove matching snapshots from
             ``snapshots``. If ``exclude=False``, then only matching snapshots will be kept in
             ``snapshots``. Default is ``True``
         """
@@ -365,27 +360,27 @@ class SnapshotList:
         """
         Match ``snapshots`` with ages within a given period.
 
-        :arg period_type: Can be either ``absolute`` or ``relative``.  Default is ``relative``.
+        :param period_type: Can be either ``absolute`` or ``relative``.  Default is ``relative``.
             ``date_from`` and ``date_to`` are required when using ``period_type='absolute'``.
             ``range_from`` and ``range_to`` are required with ``period_type='relative'``.
-        :arg source: Source of snapshot age. Can be ``name``, or ``creation_date``.
-        :arg range_from: How many ``unit`` (s) in the past/future is the origin?
-        :arg range_to: How many ``unit`` (s) in the past/future is the end point?
-        :arg date_from: The simplified date for the start of the range
-        :arg date_to: The simplified date for the end of the range.  If this value
+        :param source: Source of snapshot age. Can be ``name``, or ``creation_date``.
+        :param range_from: How many ``unit`` (s) in the past/future is the origin?
+        :param range_to: How many ``unit`` (s) in the past/future is the end point?
+        :param date_from: The simplified date for the start of the range
+        :param date_to: The simplified date for the end of the range.  If this value
             is the same as ``date_from``, the full value of ``unit`` will be
             extrapolated for the range.  For example, if ``unit=months``,
             and ``date_from`` and ``date_to`` are both ``2017.01``, then the entire
             month of January 2017 will be the absolute date range.
-        :arg date_from_format: The :py:class:`time.strftime` string used to parse ``date_from``
-        :arg date_to_format: The :py:class:`time.strftime` string used to parse ``date_to``
-        :arg timestring: An :py:class:`time.strftime` string to match the datestamp in an
+        :param date_from_format: The :py:func:`time.strftime` string used to parse ``date_from``
+        :param date_to_format: The :py:func:`time.strftime` string used to parse ``date_to``
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an
             snapshot name. Only used for snapshot filtering by ``name``.
-        :arg unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
-        :arg week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
-        :arg epoch: An epoch timestamp used to establish a point of reference
+        :param unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
+        :param week_starts_on: Either ``sunday`` or ``monday``. Default is ``sunday``
+        :param epoch: An epoch timestamp used to establish a point of reference
             for calculations. If not provided, the current time will be used.
-        :arg exclude: If ``exclude=True``, this filter will remove matching indices from
+        :param exclude: If ``exclude=True``, this filter will remove matching indices from
             ``indices``. If ``exclude=False``, then only matching indices will be kept in
             ``indices``. Default is ``False``
         """
@@ -444,7 +439,7 @@ class SnapshotList:
         """
         Iterate over the filters defined in ``config`` and execute them.
 
-        :arg config: A dictionary of filters, as extracted from the YAML configuration file.
+        :param config: A dictionary of filters, as extracted from the YAML configuration file.
 
         .. note:: ``config`` should be a dictionary with the following form:
         .. code-block:: python

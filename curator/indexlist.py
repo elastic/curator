@@ -21,16 +21,17 @@ class IndexList:
     def __init__(self, client):
         verify_client_object(client)
         self.loggit = logging.getLogger('curator.indexlist')
-        #: An :class:`elasticsearch.Elasticsearch` client object. An instance variable.
+        #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from param ``client``
         self.client = client
-        #: Instance variable. Information extracted from indices, such as segment count, age, etc.
-        #: Populated at instance creation time, and by other private helper methods, as needed.
+        #: Information extracted from indices, such as segment count, age, etc.
+        #: Populated at instance creation time by private helper methods.
         #: **Type:** :py:class:`dict`
         self.index_info = {}
-        #: Instance variable. The running list of indices which will be used by an Action class.
-        #: Populated at instance creation time. **Type:** :py:class:`list`
+        #: The running list of indices which will be used by one of the :py:mod:`~.curator.actions`
+        #: classes. Populated at instance creation time by private helper methods. **Type:**
+        #: :py:class:`list`
         self.indices = []
-        #: Instance variable. All indices in the cluster at instance creation time.
+        #: All indices in the cluster at instance creation time.
         #: **Type:** :py:class:`list`
         self.all_indices = []
         self.__get_indices()
@@ -200,7 +201,7 @@ class IndexList:
                         sii['routing'] = wli['settings']['index']['routing']
 
     def empty_list_check(self):
-        """Raise exception if ``indices`` is empty"""
+        """Raise :py:exc:`~.curator.exceptions.NoIndices` if ``indices`` is empty"""
         self.loggit.debug('Checking for empty list')
         if not self.indices:
             raise NoIndices('index_list object is empty.')
@@ -247,7 +248,7 @@ class IndexList:
         Add indices to ``index_info`` based on the age as indicated by the index
         name pattern, if it matches ``timestring``
 
-        :param timestring: An :py:class:`time.strftime` pattern
+        :param timestring: An :py:func:`time.strftime` pattern
         """
         # Check for empty list before proceeding here to prevent non-iterable condition
         self.loggit.debug('Getting ages of indices by "name"')
@@ -301,7 +302,7 @@ class IndexList:
         Set instance variable ``age_keyfield`` for use later, if needed.
 
         :param source: Source of index age. Can be: ``name``, ``creation_date``, or ``field_stats``
-        :param timestring: An :py:class:`time.strftime` string to match the datestamp in an index
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :param field: A timestamp field name.  Only used for ``field_stats`` based calculations.
         :param stats_result: Either ``min_value`` or ``max_value``.  Only used in conjunction with
@@ -358,7 +359,7 @@ class IndexList:
 
         :param kind: Can be one of: ``suffix``, ``prefix``, ``regex``, or ``timestring``. This
             option defines what ``kind`` of filter you will be building.
-        :param value: Depends on ``kind``. It is the :py:class:`time.strftime` string if ``kind``
+        :param value: Depends on ``kind``. It is the :py:func:`time.strftime` string if ``kind``
             is ``timestring``. It's used to build the regular expression for other kinds.
         :param exclude: If ``exclude=True``, this filter will remove matching indices from
             ``indices``. If ``exclude=False``, then only matching indices will be kept in
@@ -396,7 +397,7 @@ class IndexList:
         :param source: Source of index age. Can be one of ``name``, ``creation_date``, or
             ``field_stats``
         :param direction: Time to filter, either ``older`` or ``younger``
-        :param timestring: An :py:class:`time.strftime` string to match the datestamp in an index
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :param unit: One of ``seconds``, ``minutes``, ``hours``, ``days``, ``weeks``, ``months``,
             or ``years``.
@@ -516,7 +517,7 @@ class IndexList:
         :param use_age: Sort indices by age.  ``source`` is required in this case.
         :param source: Source of index age. Can be one of ``name``, ``creation_date``, or
             ``field_stats``. Default: ``creation_date``
-        :param timestring: An :py:class:`time.strftime` string to match the datestamp in an index
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an index
             name. Only used if ``source=name`` is selected.
         :param field: A timestamp field name.  Only used if ``source=field_stats`` is selected.
         :param stats_result: Either ``min_value`` or ``max_value``.  Only used if
@@ -712,7 +713,8 @@ class IndexList:
         for lst in chunk_index_list(self.indices):
             try:
                 # get_alias will either return {} or a NotFoundError.
-                has_alias = list(self.client.indices.get_alias(index=to_csv(lst), name=to_csv(aliases)).keys())
+                has_alias = list(self.client.indices.get_alias(
+                                    index=to_csv(lst), name=to_csv(aliases)).keys())
                 self.loggit.debug('has_alias: %s', has_alias)
             except NotFoundError:
                 # if we see the NotFoundError, we need to set working_list to {}
@@ -761,7 +763,7 @@ class IndexList:
             groups of indices, and include or exclude the ``count`` of each.
         :param source: Source of index age. Can be one of ``name``, ``creation_date``, or
             ``field_stats``. Default: ``creation_date``
-        :param timestring: An :py:class:`time.strftime` string to match the datestamp in an index
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an index
             name. Only used if ``source=name``.
         :param field: A timestamp field name.  Only used if ``source=field_stats``.
         :param stats_result: Either ``min_value`` or ``max_value``.  Only used if
@@ -782,9 +784,10 @@ class IndexList:
                 if regex.groups < 1:
                     raise ConfigurationError(f'No regular expression group found in {pattern}')
                 if regex.groups > 1:
-                    raise ConfigurationError(f'More than 1 regular expression group found in {pattern}')
-                # Prune indices not matching the regular expression the object (and filtered_indices)
-                # We do not want to act on them by accident.
+                    raise ConfigurationError(
+                        f'More than 1 regular expression group found in {pattern}')
+                # Prune indices not matching the regular expression the object
+                # (And filtered_indices) We do not want to act on them by accident.
                 prune_these = list(filter(lambda x: regex.match(x) is None, working_list))
                 filtered_indices = working_list
                 for index in prune_these:
@@ -843,7 +846,8 @@ class IndexList:
         :param shard_filter_behavior: Do you want to filter on ``greater_than``,
             ``greater_than_or_equal``, ``less_than``, ``less_than_or_equal``, or ``equal``?
         :param exclude: If ``exclude=True``, this filter will remove matching indices from
-            ``indices``. If ``exclude=False``, then only matching indices will be kept in ``indices``. Default is ``False``
+            ``indices``. If ``exclude=False``, then only matching indices will be kept in
+            ``indices``. Default is ``False``
         """
         self.loggit.debug("Filtering indices by number of shards")
         if not number_of_shards:
@@ -888,9 +892,9 @@ class IndexList:
             ``date_from``, the full value of ``unit`` will be extrapolated for the range.  For
             example, if ``unit=months``, and ``date_from`` and ``date_to`` are both
             ``2017.01``, then the entire month of January 2017 will be the absolute date range.
-        :param date_from_format: The :py:class:`time.strftime` string used to parse ``date_from``
-        :param date_to_format: The :py:class:`time.strftime` string used to parse ``date_to``
-        :param timestring: An :py:class:`time.strftime` string to match the datestamp in an index
+        :param date_from_format: The :py:func:`time.strftime` string used to parse ``date_from``
+        :param date_to_format: The :py:func:`time.strftime` string used to parse ``date_to``
+        :param timestring: An :py:func:`time.strftime` string to match the datestamp in an index
             name. Only used for index filtering by ``name``.
         :param unit: One of ``hours``, ``days``, ``weeks``, ``months``, or ``years``.
         :param field: A timestamp field name.  Only used for ``field_stats`` based calculations.
@@ -1038,7 +1042,8 @@ class IndexList:
                 method()
 
     def filter_by_size(
-        self, size_threshold=None, threshold_behavior='greater_than', exclude=False, size_behavior='primary'):
+        self, size_threshold=None, threshold_behavior='greater_than', exclude=False,
+        size_behavior='primary'):
         """
         Remove indices from the actionable list based on index size.
 
@@ -1047,9 +1052,10 @@ class IndexList:
         the index is smaller than ``size_threshold``
 
         :param size_threshold: Filter indices over *n* gigabytes
-        :param threshold_behavior: Size to filter, either ``greater_than`` or ``less_than``. Defaults
-            to ``greater_than`` to preserve backwards compatability.
-        :param size_behavior: Size that used to filter, either ``primary`` or ``total``. Defaults to ``primary``
+        :param threshold_behavior: Size to filter, either ``greater_than`` or ``less_than``.
+            Defaults to ``greater_than`` to preserve backwards compatability.
+        :param size_behavior: Size that used to filter, either ``primary`` or ``total``. Defaults
+            to ``primary``
         :param exclude: If ``exclude=True``, this filter will remove matching indices from
             ``indices``. If ``exclude=False``, then only matching indices will be kept in
             ``indices``. Default is ``False``

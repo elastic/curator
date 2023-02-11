@@ -11,13 +11,16 @@ from curator.helpers.utils import chunk_index_list
 
 def health_check(client, **kwargs):
     """
-    This function calls :py:meth:`elasticsearch.client.ClusterClient.health` and, based on the args provided, will return ``True``
-    or ``False`` depending on whether that particular keyword appears in the output, and has the
-    expected value.
+    This function calls `client.cluster.` :py:meth:`~.elasticsearch.client.ClusterClient.health` and, based on the
+    params provided, will return ``True`` or ``False`` depending on whether that particular keyword
+    appears in the output, and has the expected value.
 
     If multiple keys are provided, all must match for a ``True`` response.
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -45,13 +48,17 @@ def health_check(client, **kwargs):
 
 def relocate_check(client, index):
     """
-    This function calls :py:meth:`elasticsearch.client.ClusterClient.state` with a given index to check if all
-    of the shards for that index are in the ``STARTED`` state. It will return ``True`` if all
-    primary and replica shards are in the ``STARTED`` state, and it will return ``False`` if any
-    shard is in a different state.
+    This function calls `client.cluster.` :py:meth:`~.elasticsearch.client.ClusterClient.state`
+    with a given index to check if all of the shards for that index are in the ``STARTED`` state.
+    It will return ``True`` if all primary and replica shards are in the ``STARTED`` state, and it
+    will return ``False`` if any shard is in a different state.
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param index: The index name
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type index: str
+
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -72,14 +79,18 @@ def relocate_check(client, index):
 
 def restore_check(client, index_list):
     """
-    This function calls :py:meth:`elasticsearch.client.IndicesClient.recovery` with the list of indices to check
-    for complete recovery.  It will return ``True`` if recovery of those indices is complete, and
-    ``False`` otherwise.  It is designed to fail fast: if a single shard is encountered that is
-    still recovering (not in ``DONE`` stage), it will immediately return ``False``, rather than
-    complete iterating over the rest of the response.
+    This function calls `client.indices.` :py:meth:`~.elasticsearch.client.IndicesClient.recovery`
+    with the list of indices to check for complete recovery.  It will return ``True`` if recovery
+    of those indices is complete, and ``False`` otherwise.  It is designed to fail fast: if a
+    single shard is encountered that is still recovering (not in ``DONE`` stage), it will
+    immediately return ``False``, rather than complete iterating over the rest of the response.
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param index_list: The list of indices to verify having been restored.
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type index_list: list
+
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -109,15 +120,20 @@ def restore_check(client, index_list):
 
 def snapshot_check(client, snapshot=None, repository=None):
     """
-    This function calls :py:meth:`elasticsearch.client.SnapshotClient.get` and tests to see
+    This function calls `client.snapshot.` :py:meth:`~.elasticsearch.client.SnapshotClient.get` and tests to see
     whether the snapshot is complete, and if so, with what status.  It will log errors according
     to the result. If the snapshot is still ``IN_PROGRESS``, it will return ``False``.  ``SUCCESS``
     will be an ``INFO`` level message, ``PARTIAL`` nets a ``WARNING`` message, ``FAILED`` is an
     ``ERROR``, message, and all others will be a ``WARNING`` level message.
 
-    :param client: An :py:class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param snapshot: The snapshot name
     :param repository: The repository name
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type snapshot: str
+    :type repository: str
+
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -149,12 +165,17 @@ def snapshot_check(client, snapshot=None, repository=None):
 
 def task_check(client, task_id=None):
     """
-    This function calls :py:meth:`elasticsearch.client.TasksClient.get` with the provided
-    ``task_id``.  If the task data contains ``'completed': True``, then it will return ``True``.
-    If the task is not completed, it will log some information about the task and return ``False``
+    This function calls `client.tasks.` :py:meth:`~.elasticsearch.client.TasksClient.get` with the
+    provided ``task_id``.  If the task data contains ``'completed': True``, then it will return
+    ``True``. If the task is not completed, it will log some information about the task and return
+    ``False``
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param task_id: The task id
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type task_id: str
+
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -199,17 +220,23 @@ def wait_for_it(
         wait_interval=9, max_wait=-1
     ):
     """
-    This function becomes one place to do all wait_for_completion type behaviors
+    This function becomes one place to do all ``wait_for_completion`` type behaviors
 
-    :param client: An :class:`elasticsearch.Elasticsearch` client object
+    :param client: A client connection object
     :param action: The action name that will identify how to wait
     :param task_id: If the action provided a task_id, this is where it must be declared.
     :param snapshot: The name of the snapshot.
     :param repository: The Elasticsearch snapshot repository to use
-    :param wait_interval: How frequently the specified "wait" behavior will be polled to check for
-        completion.
-    :param max_wait: Number of seconds will the "wait" behavior persist before giving up and
-        raising an Exception.  The default is -1, meaning it will try forever.
+    :param wait_interval: Seconds to wait between completion checks.
+    :param max_wait: Maximum number of seconds to ``wait_for_completion``
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type action: str
+    :type task_id: str
+    :type snapshot: str
+    :type repository: str
+    :type wait_interval: int
+    :type max_wait: int
     :rtype: None
     """
     logger = logging.getLogger(__name__)

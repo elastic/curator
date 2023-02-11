@@ -1,21 +1,27 @@
-.. _changelog:
+.. _Changelog:
 
 Changelog
 =========
 
-8.1.0 (? ? ?)
--------------
+8.0.1 (10 February 2023)
+------------------------
 
-**Announcement**
+**Announcements**
 
 The 8.0.0 release was about getting Curator out the door with all of the functionality users were
 accustomed to in 5.8.4, but with the newer, updated args and methods in ``elasticsearch8``. Very
 little else was changed that didn't need to be. Now comes a few improvements, and more are coming,
 which is why I didn't start with 8.6.0 as my release version.
 
+  * Now offering multi-architecture Docker builds for ``arm64`` (``v8``) and ``amd64``.
+  * This required the addition of two new scripts at the root level of the project:
+    ``alpine4docker.sh`` and ``post4docker.py``. These scripts are used only when building the
+    Dockerfile. They were needed to make multi-architecture Docker images possible. I'm sure you'll
+    be able to see how they work with a cursory glance.
+
 **Breaking Changes**
 
-  * Broke ``curator.utils`` into several, separate modules under ``curator.helpers``.
+  * I split ``curator.utils`` into several, separate modules under ``curator.helpers``.
 
     I suppose, technically, that this qualifies as a breaking change from 8.0, but I sincerely
     doubt I have any users using Curator as an API yet, so I made the change. No functions were
@@ -31,7 +37,10 @@ which is why I didn't start with 8.6.0 as my release version.
     Curator is going to use it. Welcome, ``ecs-logging``! As before, just use ``logformat: ecs``,
     but now it has all of the goodness right there!
   * rST docs are improved and updated. Check out https://curator.readthedocs.io to see.
-  * Testing multi-architecture Docker builds for ``arm64v8`` and ``amd64``.
+  * Logging turned out to be too verbose due to a shift. Now the ``blacklist`` defaults to
+    ``['elastic_transport', 'urllib3']``. Documentation updated accordingly.
+  * Default behavior is now to not verify snapshot repository access for Snapshot and Restore
+    actions. It was a hacky fix for older versions of Elasticsearch that just shouldn't be needed.
 
 8.0.0 (31 January 2023)
 -----------------------
