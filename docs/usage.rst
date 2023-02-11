@@ -17,10 +17,16 @@ Install the ``elasticsearch-curator`` package with `pip
 
     pip install elasticsearch-curator
 
-Example Usage
-=============
+Command-Line Usage
+==================
 
-::
+The documentation for this is on
+`Elastic's Website </https://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html>`_.
+
+Example API Usage
+=================
+
+.. code-block:: python
 
     import elasticsearch8
     import curator
@@ -39,12 +45,55 @@ Example Usage
 Logging
 =======
 
-Elasticsearch Curator uses the standard `logging library`_ from Python.
-It inherits two loggers from ``elasticsearch-py``: ``elasticsearch`` and
-``elasticsearch.trace``. Clients use the ``elasticsearch`` logger to log
-standard activity, depending on the log level. The ``elasticsearch.trace``
-logger logs requests to the server in JSON format as pretty-printed ``curl``
-commands that you can execute from the command line. The ``elasticsearch.trace``
-logger is not inherited from the base logger and must be activated separately.
+Elasticsearch Curator uses the standard `logging library`_ from Python. It inherits the
+``elastic_transport`` logger from ``elasticsearch-py``. Clients use the ``elastic_transport``
+logger to log standard activity, depending on the log level.
 
+It is recommended to use :py:class:`~.curator.config_utils.set_logging` to enable logging, as this
+has been provided for you.
+
+This is quite simple:
+
+.. code-block:: python
+
+    from curator.config_utils import set_logging
+    import logging
+
+    LOG = {
+      'loglevel': 'INFO',
+      'logfile': None,
+      'logformat': 'default',
+      'blacklist': ['elastic_transport', 'urllib3']
+    }
+
+    set_logging(LOG)
+    logger = logging.getLogger(__name__)
+    logger.info('Sample log message')
+
+That's it! If you were to save this file and run it at the command-line, you would see:
+
+.. code-block:: shell
+
+    $ python logtest.py
+    2023-02-10 20:26:52,262 INFO      Sample log message
+
+Log Settings
+------------
+
+Available settings for ``loglevel`` are: ``NOTSET``, ``DEBUG``, ``INFO``, ``WARNING``, ``ERROR``,
+and ``CRITICAL``.
+
+The setting ``logfile`` must be ``None`` or a path to a writeable file. If ``None``, it will log to
+``STDOUT``.
+
+Available settings for ``logformat`` are: ``default``, ``json``, ``logstash``, and ``ecs``. The
+options ``json`` and ``logstash`` are synonymous. The ``ecs`` option uses
+`the Python ECS Log Formatter`_ and is great if you plan on ingesting your logs into Elasticsearch.
+
+Blacklisting logs by way of the ``blacklist`` setting should remain configured with the defaults
+(``['elastic_transport', 'urllib3']``), unless you are troubleshooting a connection issue. The
+``elastic_transport`` and ``urllib3`` modules logging is exceptionally chatty for inclusion with
+Curator action tracing.
+
+.. _the Python ECS Log Formatter: https://www.elastic.co/guide/en/ecs-logging/python/current/index.html
 .. _logging library: http://docs.python.org/3.11/library/logging.html

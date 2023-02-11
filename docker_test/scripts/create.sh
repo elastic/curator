@@ -123,7 +123,7 @@ echo
 echo "Creation complete. ${LOCAL_NAME} and ${REMOTE_NAME} containers are up using image ${IMAGE}:${VERSION}"
 
 echo
-echo "Please select one of these environment variables to prepend your 'python setup.py test' run:"
+echo "Please select one of these environment variables to prepend your 'pytest' run:"
 echo
 
 for IP in $IPLIST; do

@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 def filtertype():
     """
-    Return a :class:`voluptuous.schema_builder.Schema` object that uses
-    :py:func:`curator.defaults.settings.all_filtertypes` to populate acceptable values
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that uses
+    :py:func:`~.curator.defaults.settings.all_filtertypes` to populate acceptable values
 
-    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    :returns: A :py:class:`~.voluptuous.schema_builder.Schema` object
     """
     return {
         Required('filtertype'): Any(
@@ -24,12 +24,12 @@ def filtertype():
 
 def filterstructure():
     """
-    Return a :class:`voluptuous.schema_builder.Schema` object that uses the return value from
-    :py:func:`curator.defaults.settings.structural_filter_elements` to populate acceptable values
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that uses the return value from
+    :py:func:`~.curator.defaults.settings.structural_filter_elements` to populate acceptable values
     and updates/merges the Schema object with the return value from
     :py:func:`filtertype`
 
-    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    :returns: A :py:class:`~.voluptuous.schema_builder.Schema` object
     """
     # This is to first ensure that only the possible keys/filter elements are
     # there, and get a dictionary back to work with.
@@ -39,20 +39,20 @@ def filterstructure():
 
 def singlefilter(action, data):
     """
-    Return a :class:`voluptuous.schema_builder.Schema` object that is created using the return
-    value from :py:func:`filtertype` to create a local variable
-    ``ftype``. The values from ``action`` and ``data`` are used to update ``ftype`` based on
-    matching function names in :py:mod:`curator.validators.filtertypes`.
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that is created using the return
+    value from :py:func:`filtertype` to create a local variable ``ftype``. The values from
+    ``action`` and ``data`` are used to update ``ftype`` based on matching function names in
+    :py:mod:`~.curator.defaults.filtertypes`.
 
-    :py:func:`curator.defaults.settings.structural_filter_elements` to populate acceptable values
+    :py:func:`~.curator.defaults.settings.structural_filter_elements` to populate acceptable values
     and updates/merges the Schema object with the return value from
     :py:func:`filtertype`
 
-    :arg action: The Curator action name
+    :param action: The Curator action name
     :type action: str
-    :arg data: The filter block of the action
+    :param data: The filter block of the action
 
-    :returns: A :class:`voluptuous.schema_builder.Schema` object
+    :returns: A :py:class:`~.voluptuous.schema_builder.Schema` object
     """
     try:
         ftdata = data['filtertype']

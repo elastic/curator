@@ -1,7 +1,9 @@
 """Cluster Routing action class"""
 import logging
 # pylint: disable=import-error
-from curator.utils import report_failure, verify_client_object, wait_for_it
+from curator.helpers.testers import verify_client_object
+from curator.helpers.utils import report_failure
+from curator.helpers.waiters import wait_for_it
 
 class ClusterRouting:
     """ClusterRouting Action Class"""
@@ -12,37 +14,36 @@ class ClusterRouting:
         """
         For now, the cluster routing settings are hardcoded to be ``transient``
 
-        :arg client: An :class:`elasticsearch.Elasticsearch` client object
-        :arg routing_type: Type of routing to apply. Either `allocation` or
-            `rebalance`
-        :arg setting: Currently, the only acceptable value for `setting` is
-            ``enable``. This is here in case that changes.
-        :arg value: Used only if `setting` is `enable`. Semi-dependent on
-            `routing_type`. Acceptable values for `allocation` and `rebalance`
-            are ``all``, ``primaries``, and ``none`` (string, not `NoneType`).
-            If `routing_type` is `allocation`, this can also be
-            ``new_primaries``, and if `rebalance`, it can be ``replicas``.
-        :arg wait_for_completion: Wait (or not) for the operation
-            to complete before returning.  (default: `False`)
+        :param client: A client connection object
+        :param routing_type: Type of routing to apply. Either ``allocation`` or ``rebalance``
+        :param setting: Currently, the only acceptable value for ``setting`` is ``enable``. This is
+            here in case that changes.
+        :param value: Used only if ``setting`` is ``enable``. Semi-dependent on ``routing_type``.
+            Acceptable values for ``allocation`` and ``rebalance`` are ``all``, ``primaries``, and
+            ``none`` (string, not :py:class:`None`). If ``routing_type`` is ``allocation``, this
+            can also be ``new_primaries``, and if ``rebalance``, it can be ``replicas``.
+        :param wait_for_completion: Wait for completion before returning.
+        :param wait_interval: Seconds to wait between completion checks.
+        :param max_wait: Maximum number of seconds to ``wait_for_completion``
+
+        :type client: :py:class:`~.elasticsearch.Elasticsearch`
+        :type routing_type: str
+        :type setting: str
+        :type value: str
         :type wait_for_completion: bool
-        :arg wait_interval: How long in seconds to wait between checks for
-            completion.
-        :arg max_wait: Maximum number of seconds to `wait_for_completion`
+        :type wait_interval: int
+        :type max_wait: int
         """
         verify_client_object(client)
-        #: Instance variable.
-        #: An :class:`elasticsearch.Elasticsearch` client object
+        #: An :py:class:`~.elasticsearch.Elasticsearch` client object
         self.client = client
         self.loggit = logging.getLogger('curator.actions.cluster_routing')
-        #: Instance variable.
-        #: Internal reference to `wait_for_completion`
+        #: Object attribute that gets the value of param ``wait_for_completion``
         self.wfc = wait_for_completion
-        #: Instance variable
-        #: How many seconds to wait between checks for completion.
+        #: Object attribute that gets the value of param ``wait_interval``
         self.wait_interval = wait_interval
-        #: Instance variable.
-        #: How long in seconds to `wait_for_completion` before returning with an
-        #: exception. A value of -1 means wait forever.
+        #: Object attribute that gets the value of param ``max_wait``. How long in seconds to
+        #: :py:attr:`wfc` before returning with an exception. A value of ``-1`` means wait forever.
         self.max_wait = max_wait
 
         if setting != 'enable':
@@ -58,19 +59,20 @@ class ClusterRouting:
         else:
             raise ValueError(f'Invalid value for "routing_type":{routing_type}.')
         bkey = f'cluster.routing.{routing_type}.{setting}'
+        #: Populated at instance creation time. Value is built from the passed values from params
+        #: ``routing_type`` and ``setting``, e.g. ``cluster.routing.routing_type.setting``
         self.settings = {bkey : value}
 
     def do_dry_run(self):
-        """
-        Log what the output would be, but take no action.
-        """
+        """Log what the output would be, but take no action."""
         self.loggit.info('DRY-RUN MODE.  No changes will be made.')
         msg = f'DRY-RUN: Update cluster routing transient settings: {self.settings}'
         self.loggit.info(msg)
 
     def do_action(self):
         """
-        Change cluster routing settings with the settings in `body`.
+        :py:meth:`~.elasticsearch.client.ClusterClient.put_settings` to the cluster with
+        :py:attr:`settings`.
         """
         self.loggit.info('Updating cluster settings: %s', self.settings)
         try:

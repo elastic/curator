@@ -3,10 +3,19 @@ import sys
 import json
 import logging
 import time
+import ecs_logging
 from curator.exceptions import LoggingException
 
 def de_dot(dot_string, msg):
-    """Turn message and dotted string into a nested dictionary"""
+    """
+    Turn message and dotted string into a nested dictionary. Used by :py:class:`LogstashFormatter`
+
+    :param dot_string: The dotted string
+    :param msg: The message
+
+    :type dot_string: str
+    :type msg: str
+    """
     arr = dot_string.split('.')
     arr.append(msg)
     retval = None
@@ -25,7 +34,18 @@ def de_dot(dot_string, msg):
     return retval
 
 def deepmerge(source, destination):
-    """Merge deeply nested dictionary structures"""
+    """
+    Recursively merge deeply nested dictionary structures, ``source`` into ``destination``
+
+    :param source: Source dictionary
+    :param destination: Destination dictionary
+
+    :type source: dict
+    :type destination: dict
+
+    :returns: destination
+    :rtype: dict
+    """
     for key, value in source.items():
         if isinstance(value, dict):
             node = destination.setdefault(key, {})
@@ -33,6 +53,7 @@ def deepmerge(source, destination):
         else:
             destination[key] = value
     return destination
+
 class LogstashFormatter(logging.Formatter):
     """Logstash formatting (JSON)"""
     # The LogRecord attributes we want to carry over to the Logstash message,
@@ -46,6 +67,11 @@ class LogstashFormatter(logging.Formatter):
     }
 
     def format(self, record):
+        """
+        :param record: The incoming log message
+
+        :rtype: :py:meth:`json.dumps`
+        """
         self.converter = time.gmtime
         timestamp = '%s.%03dZ' % (
             self.formatTime(record, datefmt='%Y-%m-%dT%H:%M:%S'), record.msecs)
@@ -66,19 +92,9 @@ class LogstashFormatter(logging.Formatter):
             result['message'] = available['message']
         return json.dumps(result, sort_keys=True)
 
-class ECSFormatter(LogstashFormatter):
-    """Elastic Common Schema formatting (ECS)"""
-    # Overload LogstashFormatter attribute
-    WANTED_ATTRS = {
-        'levelname': 'log.level',
-        'funcName': 'log.origin.function',
-        'lineno': 'log.origin.file.line',
-        'message': 'log.original',
-        'name': 'log.logger'
-    }
-
 class Whitelist(logging.Filter):
     """How to whitelist logs"""
+    # pylint: disable=super-init-not-called
     def __init__(self, *whitelist):
         self.whitelist = [logging.Filter(name) for name in whitelist]
 
@@ -93,18 +109,26 @@ class Blacklist(Whitelist):
 class LogInfo:
     """Logging Class"""
     def __init__(self, cfg):
+        """Class Setup
+
+        :param cfg: The logging configuration
+        :type: cfg: dict
+        """
         cfg['loglevel'] = 'INFO' if not 'loglevel' in cfg else cfg['loglevel']
         cfg['logfile'] = None if not 'logfile' in cfg else cfg['logfile']
         cfg['logformat'] = 'default' if not 'logformat' in cfg else cfg['logformat']
+        #: Attribute. The numeric equivalent of ``cfg['loglevel']``
         self.numeric_log_level = getattr(logging, cfg['loglevel'].upper(), None)
+        #: Attribute. The logging format string to use.
         self.format_string = '%(asctime)s %(levelname)-9s %(message)s'
+
         if not isinstance(self.numeric_log_level, int):
             raise ValueError(f"Invalid log level: {cfg['loglevel']}")
 
+        #: Attribute. Which logging handler to use
+        self.handler = logging.StreamHandler(stream=sys.stdout)
         if cfg['logfile']:
             self.handler = logging.FileHandler(cfg['logfile'])
-        else:
-            self.handler = logging.StreamHandler(stream=sys.stdout)
 
         if self.numeric_log_level == 10: # DEBUG
             self.format_string = (
@@ -113,6 +137,6 @@ class LogInfo:
         if cfg['logformat'] == 'json' or cfg['logformat'] == 'logstash':
             self.handler.setFormatter(LogstashFormatter())
         elif cfg['logformat'] == 'ecs':
-            self.handler.setFormatter(ECSFormatter())
+            self.handler.setFormatter(ecs_logging.StdlibFormatter())
         else:
             self.handler.setFormatter(logging.Formatter(self.format_string))

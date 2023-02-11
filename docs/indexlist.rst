@@ -1,7 +1,7 @@
 .. _indexlist:
 
-``curator.IndexList``
-#####################
+Index List
+##########
 
 Index filtering is performed using the ``filter_`` methods of :py:class:`curator.IndexList`
 

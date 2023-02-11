@@ -2,7 +2,7 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long, attribute-defined-outside-init
 import os
 import logging
-from curator.utils import get_indices
+from curator.helpers.getters import get_indices
 from . import CuratorTestCase
 from . import testvars
 

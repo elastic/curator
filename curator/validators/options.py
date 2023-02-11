@@ -8,9 +8,10 @@ def action_specific(action):
     :param action: The name of an action
     :type action: str
 
-    :returns: A :py:class:`list` containing one or more :py:class:`voluptuous.schema_builder.Optional`
-        or :py:class:`voluptuous.schema_builder.Required` options from
-        :py:mod:`curator.defaults.option_defaults`, defining acceptable values for each for the
+    :returns: A :py:class:`list` containing one or more
+        :py:class:`~.voluptuous.schema_builder.Optional` or
+        :py:class:`~.voluptuous.schema_builder.Required` options from
+        :py:mod:`~.curator.defaults.option_defaults`, defining acceptable values for each for the
         given ``action``
     :rtype: list
     """
@@ -140,15 +141,13 @@ def action_specific(action):
 
 def get_schema(action):
     """
-    Return a :py:class:`voluptuous.schema_builder.Schema` of acceptable options and their default
-    values as returned by :py:mod:`curator.validators.options.action_specific`, passing along the
-    value of ``action``.
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` of acceptable options and their default
+    values as returned by :py:func:`action_specific`, passing along the value of ``action``.
 
     :param action: The name of an action
     :type action: str
 
-    :returns: ``Schema(options)``
-    :rtype: :py:class:`voluptuous.schema_builder.Schema`
+    :returns: A valid :py:class:`~.voluptuous.schema_builder.Schema` of the options for ``action``
     """
     options = {}
     defaults = [

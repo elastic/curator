@@ -43,11 +43,20 @@ class TestActionDeleteSnapshots(TestCase):
         slo = curator.SnapshotList(client, repository=testvars.repo_name)
         do = curator.DeleteSnapshots(slo)
         self.assertRaises(curator.FailedExecution, do.do_action)
-    def test_not_safe_to_snap_raises_exception(self):
-        client = Mock()
-        client.snapshot.get.return_value = testvars.inprogress
-        client.snapshot.get_repository.return_value = testvars.test_repo
-        client.tasks.list.return_value = testvars.no_snap_tasks
-        slo = curator.SnapshotList(client, repository=testvars.repo_name)
-        do = curator.DeleteSnapshots(slo, retry_interval=0, retry_count=1)
-        self.assertRaises(curator.FailedExecution, do.do_action)
+    ### This check is not necessary after ES 7.16 as it is possible to have
+    ### up to 1000 concurrent snapshots
+    ###
+    ### https://www.elastic.co/guide/en/elasticsearch/reference/8.6/snapshot-settings.html
+    ### snapshot.max_concurrent_operations
+    ### (Dynamic, integer) Maximum number of concurrent snapshot operations. Defaults to 1000.
+    ###
+    ### This limit applies in total to all ongoing snapshot creation, cloning, and deletion
+    ### operations. Elasticsearch will reject any operations that would exceed this limit.
+    # def test_not_safe_to_snap_raises_exception(self):
+    #     client = Mock()
+    #     client.snapshot.get.return_value = testvars.inprogress
+    #     client.snapshot.get_repository.return_value = testvars.test_repo
+    #     client.tasks.list.return_value = testvars.no_snap_tasks
+    #     slo = curator.SnapshotList(client, repository=testvars.repo_name)
+    #     do = curator.DeleteSnapshots(slo, retry_interval=0, retry_count=1)
+    #     self.assertRaises(curator.FailedExecution, do.do_action)
