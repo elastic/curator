@@ -3,6 +3,16 @@
 Changelog
 =========
 
+8.0.2 (? ? ?)
+-------------
+
+**Changes**
+
+  * Added the same CLI flags that the singletons offers. This gives much more flexibility with
+    regards to passing configuration settings as command-line options, particularly for Docker.
+  * Re-created the ``get_client`` function. It now resides in ``curator.helpers.getters`` and will
+    eventually see use in the Reindex class for remote connections.
+
 8.0.1 (10 February 2023)
 ------------------------
 
