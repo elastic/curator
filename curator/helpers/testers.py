@@ -4,12 +4,37 @@ from voluptuous import Schema
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import NotFoundError
 from es_client.helpers.utils import prune_nones
-from curator.helpers.getters import get_repository
+from curator.helpers.getters import get_repository, get_write_index
 from curator.exceptions import ConfigurationError, MissingArgument, RepositoryException
 from curator.defaults.settings import index_filtertypes, snapshot_actions, snapshot_filtertypes
 from curator.validators import SchemaCheck, actions, options
 from curator.validators.filter_functions import validfilters
 from curator.helpers.utils import report_failure
+
+def ilm_policy_check(client, alias):
+    """Test if alias is associated with an ILM policy
+
+    Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_settings`
+
+    :param client: A client connection object
+    :param alias: The alias name
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type alias: str
+    :rtype: bool
+    """
+    logger = logging.getLogger(__name__)
+    # alias = action_obj.options['name']
+    write_index = get_write_index(client, alias)
+    try:
+        idx_settings = client.indices.get_settings(index=write_index)
+        if 'name' in idx_settings[write_index]['settings']['index']['lifecycle']:
+            # logger.info('Alias %s is associated with ILM policy.', alias)
+            # logger.info('Skipping action %s because allow_ilm_indices is false.', idx)
+            return True
+    except KeyError:
+        logger.debug('No ILM policies associated with %s', alias)
+    return False
 
 def repository_exists(client, repository=None):
     """
