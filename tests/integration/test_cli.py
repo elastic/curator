@@ -15,6 +15,17 @@ class TestCLIMethods(CuratorTestCase):
         self.write_config(self.args['actionfile'], testvars.disabled_proto.format('close', 'delete_indices'))
         self.invoke_runner()
         assert 1 == self.result.exit_code
+    def test_cli_client_config(self):
+        self.create_indices(10)
+        self.write_config(self.args['configfile'], testvars.bad_client_config.format(HOST))
+        self.write_config(self.args['actionfile'], testvars.disabled_proto.format('close', 'delete_indices'))
+        self.invoke_runner_alt(hosts='http://127.0.0.1:9200', loglevel='DEBUG', logformat='ecs', logfile=self.args['configfile'])
+        assert 0 == self.result.exit_code
+    def test_cli_unreachable_cloud_id(self):
+        self.create_indices(10)
+        self.write_config(self.args['actionfile'], testvars.disabled_proto.format('close', 'delete_indices'))
+        self.invoke_runner_alt(hosts='http://127.0.0.2:9200', cloud_id='abc:def', username='user', password='pass')
+        assert 1 == self.result.exit_code
     def test_no_config(self):
         # This test checks whether localhost:9200 is provided if no hosts or
         # port are in the configuration. But in testing, sometimes

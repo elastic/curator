@@ -3,6 +3,22 @@
 Changelog
 =========
 
+8.0.2 (15 February 2023)
+------------------------
+
+**Changes**
+
+  * Added the same CLI flags that the singletons offers. This gives much more flexibility with
+    regards to passing configuration settings as command-line options, particularly for Docker.
+  * Re-created the ``get_client`` function. It now resides in ``curator.helpers.getters`` and will
+    eventually see use in the Reindex class for remote connections.
+  * Created a new set of classes to import, validate the schema, and split individual actions into
+    their own sub-object instances. This is primarily to make ``curator/cli.py`` read much more
+    cleanly. No new functionality here, but fewer conditional branches, and hopefully more readable
+    code.
+  * Updated the documentation to show these changes, both the API and the Elastic.co usage docs.
+
+
 8.0.1 (10 February 2023)
 ------------------------
 

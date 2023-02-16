@@ -317,7 +317,7 @@ def source(
 @click.option('--ssl_version', help='Minimum acceptable TLS/SSL version', type=str)
 @click.option('--master-only', help='Only run if the single host provided is the elected master', is_flag=True, default=None)
 @click.option('--skip_version_test', help='Do not check the host version', is_flag=True, default=None)
-@click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
+@click.option('--dry-run', is_flag=True, help='Do not perform any changes. NON-FUNCTIONAL PLACEHOLDER! DO NOT USE!')
 @click.option('--loglevel', help='Log level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']))
 @click.option('--logfile', help='log file')
 @click.option('--logformat', help='Log output format', type=click.Choice(['default', 'logstash', 'json', 'ecs']))

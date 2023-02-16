@@ -50,6 +50,8 @@ Getters
 
 .. autofunction:: byte_size
 
+.. autofunction:: get_client
+
 .. autofunction:: get_indices
 
 .. autofunction:: get_repository
@@ -77,6 +79,8 @@ Testers
 
 .. py:module:: curator.helpers.testers
 
+.. autofunction:: ilm_policy_check
+
 .. autofunction:: repository_exists
 
 .. autofunction:: rollable_alias
@@ -92,6 +96,7 @@ Testers
 .. autofunction:: verify_repository
 
 .. autofunction:: verify_snapshot_list
+
 .. _helpers_utils:
 
 Utils

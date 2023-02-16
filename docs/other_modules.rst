@@ -10,19 +10,75 @@ Other Modules
 
 .. autofunction:: process_action
 
+.. autofunction:: override_logging
+
+.. autofunction:: cli_hostslist
+
+.. autofunction:: ilm_action_skip
+
+.. autofunction:: exception_handler
+
 .. autofunction:: run
 
-.. py:function:: cli(config, dry_run, action_file)
+.. py:function:: cli(ctx, config, hosts, cloud_id, id, api_key, username, password, bearer_auth, opaque_id, request_timeout, http_compress, verify_certs, ca_certs, client_cert, client_key, ssl_assert_hostname, ssl_assert_fingerprint, ssl_version, master_only, skip_version_test, dry_run, loglevel, logfile, logformat, action_file)
 
     This is the :py:class:`click.Command` that initiates everything and connects the command-line to
     the rest of Curator.
 
-    :param config: Path to configuration file. Default: ~/.curator/curator.yml
+    :param ctx: The Click Context
+    :param config: Path to configuration file.
+    :param hosts: Elasticsearch URL to connect to
+    :param cloud_id: Shorthand to connect to Elastic Cloud instance
+    :param id: API Key "id" value
+    :param api_key: API Key "api_key" value
+    :param username: Username used to create "basic_auth" tuple
+    :param password: Password used to create "basic_auth" tuple
+    :param bearer_auth: Bearer Auth Token
+    :param opaque_id: Opaque ID string
+    :param request_timeout: Request timeout in seconds
+    :param http_compress: Enable HTTP compression
+    :param verify_certs: Verify SSL/TLS certificate(s)
+    :param ca_certs: Path to CA certificate file or directory
+    :param client_cert: Path to client certificate file
+    :param client_key: Path to client certificate key
+    :param ssl_assert_hostname: Hostname or IP address to verify on the node's certificate.
+    :param ssl_assert_fingerprint: SHA-256 fingerprint of the node's certificate. If this value is
+        given then root-of-trust verification isn't done and only the node's certificate
+        fingerprint is verified.
+    :param ssl_version: Minimum acceptable TLS/SSL version
+    :param master_only: Only run if the single host provided is the elected master
+    :param skip_version_test: Do not check the host version
     :param dry_run: Do not perform any changes.
+    :param loglevel: Log level
+    :param logfile: Path to log file
+    :param logformat: Log output format
     :param action_file: Path to action file
 
+    :type ctx: :py:class:`~.click.Context`
     :type config: str
+    :type hosts: list
+    :type cloud_id: str
+    :type id: str
+    :type api_key: str
+    :type username: str
+    :type password: str
+    :type bearer_auth: str
+    :type opaque_id: str
+    :type request_timeout: int
+    :type http_compress: bool
+    :type verify_certs: bool
+    :type ca_certs: str
+    :type client_cert: str
+    :type client_key: str
+    :type ssl_assert_hostname: str
+    :type ssl_assert_fingerprint: str
+    :type ssl_version: str
+    :type master_only: bool
+    :type skip_version_test: bool
     :type dry_run: bool
+    :type loglevel: str
+    :type logfile: str
+    :type logformat: str
     :type action_file: str
 
 ``curator.config_utils``
@@ -267,7 +323,7 @@ This inherits from :py:class:`logging.Formatter`, so some of what you see docume
     :param ssl_version: Minimum acceptable TLS/SSL version
     :param master_only: Only run if the single host provided is the elected master
     :param skip_version_test: Do not check the host version
-    :param dry_run: Do not perform any changes.
+    :param dry_run: Do not perform any changes. NON-FUNCTIONAL PLACEHOLDER! DO NOT USE!
     :param loglevel: Log level
     :param logfile: Path to log file
     :param logformat: Log output format

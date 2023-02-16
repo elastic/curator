@@ -9,6 +9,7 @@ API and Code Reference
    actions
    indexlist
    snapshotlist
+   classdef
    helpers
    validators
    defaults
