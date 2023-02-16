@@ -62,6 +62,16 @@ path = "curator/_version.py"
 [tool.hatch.module]
 name = "curator"
 
+[tool.hatch.build]
+include = [
+  "curator/*.py",
+  "curator/actions/*.py",
+  "curator/cli_singletons/*.py",
+  "curator/defaults/*.py",
+  "curator/helpers/*.py",
+  "curator/validators/*.py",
+]
+
 [tool.hatch.build.targets.sdist]
 exclude = [
     "dist",
