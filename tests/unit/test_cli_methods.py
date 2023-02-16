@@ -1,25 +1,23 @@
+"""test_cli_methods"""
 import logging
 from unittest import TestCase
-import curator
-from . import CLITestCase
+from curator.logtools import LogInfo
+# from . import CLITestCase
 from . import testvars
 
 class TestCLI_A(TestCase):
     def test_loginfo_defaults(self):
-        loginfo = curator.LogInfo({})
+        loginfo = LogInfo({})
         self.assertEqual(20, loginfo.numeric_log_level)
         self.assertEqual(testvars.default_format, loginfo.format_string)
     def test_loginfo_debug(self):
-        loginfo = curator.LogInfo({"loglevel": "DEBUG"})
+        loginfo = LogInfo({"loglevel": "DEBUG"})
         self.assertEqual(10, loginfo.numeric_log_level)
         self.assertEqual(testvars.debug_format, loginfo.format_string)
     def test_loginfo_bad_level_raises(self):
-        self.assertRaises(
-            ValueError,
-            curator.LogInfo, {"loglevel": "NOTALOGLEVEL"}
-        )
+        self.assertRaises(ValueError, LogInfo, {"loglevel": "NOTALOGLEVEL"})
     def test_loginfo_logstash_formatter(self):
-        loginfo = curator.LogInfo({"logformat": "logstash"})
+        loginfo = LogInfo({"logformat": "logstash"})
         logging.root.addHandler(loginfo.handler)
         logging.root.setLevel(loginfo.numeric_log_level)
         logger = logging.getLogger('testing')
