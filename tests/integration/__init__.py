@@ -220,3 +220,13 @@ class CuratorTestCase(TestCase):
             )
             return
         self.result = self.runner.invoke(cli, self.runner_args)
+
+    def invoke_runner_alt(self, **kwargs):
+        myargs = []
+        if kwargs:
+            for key, value in kwargs.items():
+                myargs.append(f'--{key}')
+                myargs.append(value)
+            myargs.append(self.args['actionfile'])
+            self.result = self.runner.invoke(cli, myargs)
+

@@ -21,7 +21,7 @@ Command-Line Usage
 ==================
 
 The documentation for this is on
-`Elastic's Website </https://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html>`_.
+`Elastic's Website <https://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html>`_.
 
 Example API Usage
 =================

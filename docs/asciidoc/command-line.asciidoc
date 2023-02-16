@@ -11,7 +11,13 @@
 [[command-line]]
 == Command Line Interface
 
-The command-line arguments are as follows:
+Most common client configuration settings are now available at the command-line.
+
+IMPORTANT: While both the configuration file and the command-line arguments can be used together,
+  it is important to note that command-line options will override file-based configuration of the
+  same setting.
+
+The most basic command-line arguments are as follows:
 
 [source,sh]
 -------
@@ -33,7 +39,7 @@ specified.
 
 `ACTION_FILE.YML` is a YAML <<actionfile, actionfile>>.
 
-Command-line help is never far away:
+For other client configuration options, command-line help is never far away:
 
 [source,sh]
 -------
@@ -52,10 +58,35 @@ Usage: curator [OPTIONS] ACTION_FILE
   See http://elastic.co/guide/en/elasticsearch/client/curator/current
 
 Options:
-  --config PATH  Path to configuration file. Default: ~/.curator/curator.yml
-  --dry-run      Do not perform any changes.
-  --version      Show the version and exit.
-  --help         Show this message and exit.
+  --config PATH                   Path to configuration file.
+  --hosts TEXT                    Elasticsearch URL to connect to
+  --cloud_id TEXT                 Shorthand to connect to Elastic Cloud instance
+  --id TEXT                       API Key "id" value
+  --api_key TEXT                  API Key "api_key" value
+  --username TEXT                 Username used to create "basic_auth" tuple
+  --password TEXT                 Password used to create "basic_auth" tuple
+  --bearer_auth TEXT
+  --opaque_id TEXT
+  --request_timeout FLOAT         Request timeout in seconds
+  --http_compress                 Enable HTTP compression
+  --verify_certs                  Verify SSL/TLS certificate(s)
+  --ca_certs TEXT                 Path to CA certificate file or directory
+  --client_cert TEXT              Path to client certificate file
+  --client_key TEXT               Path to client certificate key
+  --ssl_assert_hostname TEXT      Hostname or IP address to verify on the node's certificate.
+  --ssl_assert_fingerprint TEXT   SHA-256 fingerprint of the node's certificate. If this value is given then root-of-trust
+                                  verification isn't done and only the node's certificate fingerprint is verified.
+  --ssl_version TEXT              Minimum acceptable TLS/SSL version
+  --master-only                   Only run if the single host provided is the elected master
+  --skip_version_test             Do not check the host version
+  --dry-run                       Do not perform any changes.
+  --loglevel [DEBUG|INFO|WARNING|ERROR|CRITICAL]
+                                  Log level
+  --logfile TEXT                  log file
+  --logformat [default|logstash|json|ecs]
+                                  Log output format
+  --version                       Show the version and exit.
+  --help                          Show this message and exit.
 -------
 
 You can use <<envvars,environment variables>> in your configuration files.
@@ -96,43 +127,61 @@ file, though it does support using the client configuration file if you want.
 As an important bonus, the command-line options allow you to override the
 settings in the `curator.yml` file!
 
+IMPORTANT: While both the configuration file and the command-line arguments can be used together,
+  it is important to note that command-line options will override file-based configuration of the
+  same setting.
+
 [source,sh]
 ---------
 $ curator_cli --help
 Usage: curator_cli [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  --config PATH       Path to configuration file. Default:
-                      ~/.curator/curator.yml
-  --host TEXT         Elasticsearch host.
-  --url_prefix TEXT   Elasticsearch http url prefix.
-  --port TEXT         Elasticsearch port.
-  --use_ssl           Connect to Elasticsearch through SSL.
-  --certificate TEXT  Path to certificate to use for SSL validation.
-  --client-cert TEXT  Path to file containing SSL certificate for client auth.
-  --client-key TEXT   Path to file containing SSL key for client auth.
-  --ssl-no-validate   Do not validate SSL certificate
-  --http_auth TEXT    Use Basic Authentication ex: user:pass
-  --timeout INTEGER   Connection timeout in seconds.
-  --master-only       Only operate on elected master node.
-  --dry-run           Do not perform any changes.
-  --loglevel TEXT     Log level
-  --logfile TEXT      log file
-  --logformat TEXT    Log output format [default|logstash|json|ecs].
-  --version           Show the version and exit.
-  --help              Show this message and exit.
+  --config PATH                   Path to configuration file.
+  --hosts TEXT                    Elasticsearch URL to connect to
+  --cloud_id TEXT                 Shorthand to connect to Elastic Cloud instance
+  --id TEXT                       API Key "id" value
+  --api_key TEXT                  API Key "api_key" value
+  --username TEXT                 Username used to create "basic_auth" tuple
+  --password TEXT                 Password used to create "basic_auth" tuple
+  --bearer_auth TEXT
+  --opaque_id TEXT
+  --request_timeout FLOAT         Request timeout in seconds
+  --http_compress                 Enable HTTP compression
+  --verify_certs                  Verify SSL/TLS certificate(s)
+  --ca_certs TEXT                 Path to CA certificate file or directory
+  --client_cert TEXT              Path to client certificate file
+  --client_key TEXT               Path to client certificate key
+  --ssl_assert_hostname TEXT      Hostname or IP address to verify on the node's certificate.
+  --ssl_assert_fingerprint TEXT   SHA-256 fingerprint of the node's certificate. If this value is given then root-of-trust
+                                  verification isn't done and only the node's certificate fingerprint is verified.
+  --ssl_version TEXT              Minimum acceptable TLS/SSL version
+  --master-only                   Only run if the single host provided is the elected master
+  --skip_version_test             Do not check the host version
+  --dry-run                       Do not perform any changes.
+  --loglevel [DEBUG|INFO|WARNING|ERROR|CRITICAL]
+                                  Log level
+  --logfile TEXT                  log file
+  --logformat [default|logstash|json|ecs]
+                                  Log output format
+  --version                       Show the version and exit.
+  --help                          Show this message and exit.
 
 Commands:
+  alias             Add/Remove Indices to/from Alias
   allocation        Shard Routing Allocation
-  close             Close indices
-  delete-indices    Delete indices
-  delete-snapshots  Delete snapshots
-  forcemerge        forceMerge index/shard segments
-  open              Open indices
-  replicas          Change replica count
-  show-indices      Show indices
-  show-snapshots    Show snapshots
-  snapshot          Snapshot indices
+  close             Close Indices
+  delete-indices    Delete Indices
+  delete-snapshots  Delete Snapshots
+  forcemerge        forceMerge Indices (reduce segment count)
+  open              Open Indices
+  replicas          Change Replica Count
+  restore           Restore Indices
+  rollover          Rollover Index associated with Alias
+  show-indices      Show Indices
+  show-snapshots    Show Snapshots
+  shrink            Shrink Indices to --number_of_shards
+  snapshot          Snapshot Indices
 ---------
 
 The option flags for the given commands match those used for the same
