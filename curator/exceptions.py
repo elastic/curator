@@ -74,3 +74,8 @@ class RepositoryException(CuratorException):
     """
     Exception raised when Curator cannot verify a snapshot repository
     """
+
+class SearchableSnapshotException(CuratorException):
+    """
+    Exception raised when Curator finds something out of order with a Searchable Snapshot
+    """

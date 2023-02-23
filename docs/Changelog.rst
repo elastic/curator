@@ -3,6 +3,26 @@
 Changelog
 =========
 
+8.0.3 (22 February 2023)
+------------------------
+
+**Announcements**
+
+A new action called ``cold2frozen`` has been added to Curator. It is not going to be of much use to
+the vast majority of Elasticsearch users as it serves a very narrow use-case. That is, it migrates
+searchable snapshot indices from the cold tier to the frozen tier, but only if they are not
+associated with ILM (Index Lifecycle Management) policies. As escalation into the cold and frozen
+tiers is usually handled by ILM, this is indeed a rare use case.
+
+**Changes**
+
+  * Fixed instruction display for delete repository action of ``es_repo_mgr``
+  * Fix unit tests to import more specifically/cleanly
+  * Fixed Hatch build includes (this was speed-released to PyPI as 8.0.2.post1) as Curator did not
+    function after a pip install.
+  * Added ``cold2frozen`` action, and tests.
+
+
 8.0.2 (15 February 2023)
 ------------------------
 

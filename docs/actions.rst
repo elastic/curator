@@ -48,6 +48,14 @@ Cluster Routing
 
 .. _actions_createindex:
 
+Cold2Frozen
+===========
+
+.. autoclass:: curator.actions.Cold2Frozen
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Create Index
 ============
 

@@ -162,10 +162,7 @@ def process_action(client, action_def, dry_run=False):
             action_def.instantiate('list_obj', client, repository=action_def.options['repository'])
         else:
             action_def.instantiate('list_obj', client)
-        logger.debug('BLOCK1')
-        logger.debug('type is %s', type(action_def.list_obj))
         action_def.list_obj.iterate_filters({'filters': action_def.filters})
-        logger.debug('BLOCK2 -- mykwargs = %s', mykwargs)
         action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
     ### Do the action
     if dry_run:

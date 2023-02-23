@@ -452,8 +452,7 @@ def show(ctx):
 @click.pass_context
 def _delete(ctx, name):
     """
-    Call :py:meth:`elasticsearch.client.SnapshotClient.delete_repository` to delete an
-    Elasticsearch repository
+    Delete an Elasticsearch repository
     """
     logger = logging.getLogger('curator.repomgrcli._delete')
     client = get_client(ctx)

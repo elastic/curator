@@ -52,6 +52,8 @@ Getters
 
 .. autofunction:: get_client
 
+.. autofunction:: get_data_tiers
+
 .. autofunction:: get_indices
 
 .. autofunction:: get_repository
