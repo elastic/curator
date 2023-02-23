@@ -1,22 +1,23 @@
+"""test_action_clusterrouting"""
 from unittest import TestCase
-from mock import Mock, patch
-import curator
+from mock import Mock
+from curator.actions import ClusterRouting
 # Get test variables and constants from a single source
-from . import testvars as testvars
+from . import testvars
 
 class TestActionAllocation(TestCase):
     def test_bad_client(self):
-        self.assertRaises(TypeError, curator.ClusterRouting, 'invalid', setting='enable')
+        self.assertRaises(TypeError, ClusterRouting, 'invalid', setting='enable')
     def test_bad_setting(self):
         client = Mock()
         self.assertRaises(
-            ValueError, curator.ClusterRouting, client, setting='invalid'
+            ValueError, ClusterRouting, client, setting='invalid'
         )
     def test_bad_routing_type(self):
         client = Mock()
         self.assertRaises(
             ValueError,
-            curator.ClusterRouting,
+            ClusterRouting,
             client,
             routing_type='invalid',
             setting='enable'
@@ -25,7 +26,7 @@ class TestActionAllocation(TestCase):
         client = Mock()
         self.assertRaises(
             ValueError,
-            curator.ClusterRouting,
+            ClusterRouting,
             client,
             routing_type='allocation',
             setting='enable',
@@ -35,7 +36,7 @@ class TestActionAllocation(TestCase):
         client = Mock()
         self.assertRaises(
             ValueError,
-            curator.ClusterRouting,
+            ClusterRouting,
             client,
             routing_type='rebalance',
             setting='enable',
@@ -43,7 +44,7 @@ class TestActionAllocation(TestCase):
         )
     def test_do_dry_run(self):
         client = Mock()
-        cro = curator.ClusterRouting(
+        cro = ClusterRouting(
             client,
             routing_type='allocation',
             setting='enable',
@@ -54,7 +55,7 @@ class TestActionAllocation(TestCase):
         client = Mock()
         client.cluster.put_settings.return_value = None
         client.cluster.put_settings.side_effect = testvars.fake_fail
-        cro = curator.ClusterRouting(
+        cro = ClusterRouting(
             client,
             routing_type='allocation',
             setting='enable',
@@ -65,7 +66,7 @@ class TestActionAllocation(TestCase):
         client = Mock()
         client.cluster.put_settings.return_value = None
         client.cluster.health.return_value = {'relocating_shards':0}
-        cro = curator.ClusterRouting(
+        cro = ClusterRouting(
             client,
             routing_type='allocation',
             setting='enable',

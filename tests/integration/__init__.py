@@ -14,7 +14,7 @@ from subprocess import Popen, PIPE
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import ConnectionError as ESConnectionError
 from click import testing as clicktest
-from curator import cli
+from curator.cli import cli
 
 from . import testvars
 from unittest import SkipTest, TestCase

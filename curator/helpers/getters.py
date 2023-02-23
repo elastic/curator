@@ -64,6 +64,29 @@ def get_client(
 
     return builder.client
 
+def get_data_tiers(client):
+    """
+    Get all valid data tiers from the node roles of each node in the cluster by polling each node
+
+    :param client: A client connection object
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+
+    :returns: The available data tiers in ``tier: bool`` form.
+    :rtype: dict
+    """
+    def role_check(role, node_info):
+        if role in node_info['roles']:
+            return True
+        return False
+    info = client.nodes.info()['nodes']
+    retval = {'data_hot': False, 'data_warm': False, 'data_cold': False, 'data_frozen': False}
+    for node in info:
+        for role in ['data_hot', 'data_warm', 'data_cold', 'data_frozen']:
+            # This guarantees we don't overwrite a True with a False. We only add True values
+            if role_check(role, info[node]):
+                retval[role] = True
+    return retval
+
 def get_indices(client):
     """
     Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_settings`

@@ -1,7 +1,7 @@
-:curator_version: 8.0.2
+:curator_version: 8.0.3
 :curator_major: 8
 :curator_doc_tree: 8.0
-:es_py_version: 8.6.1
+:es_py_version: 8.6.2
 :es_doc_tree: 8.6
 :stack_doc_tree: 8.6
 :pybuild_ver: 3.11.1
