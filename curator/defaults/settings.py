@@ -73,6 +73,7 @@ def index_actions():
         'alias',
         'allocation',
         'close',
+        'cold2frozen',
         'create_index',
         'delete_indices',
         'forcemerge',

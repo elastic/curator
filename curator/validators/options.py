@@ -41,6 +41,11 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
+        'cold2frozen' : [
+            option_defaults.c2f_index_settings(),
+            option_defaults.c2f_ignore_index_settings(),
+            option_defaults.wait_for_completion('cold2frozen'),
+        ],
         'create_index' : [
             option_defaults.name(action),
             option_defaults.ignore_existing(),

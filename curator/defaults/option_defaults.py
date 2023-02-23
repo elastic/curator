@@ -42,6 +42,22 @@ def delay():
     """
     return {Optional('delay', default=0): All(Coerce(float), Range(min=0.0, max=3600.0))}
 
+def c2f_index_settings():
+    """
+    Only for the :py:class:`~.curator.actions.Cold2Frozen` action
+
+    :returns: ``{Optional('index_settings'):  Any(None, dict)}``
+    """
+    return {Optional('index_settings', default=None):  Any(None, dict)}
+
+def c2f_ignore_index_settings():
+    """
+    Only for the :py:class:`~.curator.actions.Cold2Frozen` action
+
+    :returns: ``{Optional('ignore_index_settings'):  Any(None, list)}``
+    """
+    return {Optional('ignore_index_settings', default=None):  Any(None, list)}
+
 def copy_aliases():
     """
     :returns: ``{Optional('copy_aliases', default=False): Any(bool, All(Any(*string_types), Boolean()))}``
@@ -445,7 +461,7 @@ def wait_for_completion(action):
         where ``defval`` defaults to True, but changes to False if action is ``allocation``,
         ``cluster_routing``, or ``replicas``.
     """
-    # if action in ['reindex', 'restore', 'snapshot']:
+    # if action in ['cold2frozen', 'reindex', 'restore', 'snapshot']:
     defval = True
     if action in ['allocation', 'cluster_routing', 'replicas']:
         defval = False
