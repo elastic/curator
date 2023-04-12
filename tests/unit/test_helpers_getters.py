@@ -6,8 +6,9 @@ from elastic_transport import ApiResponseMeta
 from elasticsearch8 import NotFoundError, TransportError
 from curator.exceptions import CuratorException, FailedExecution, MissingArgument
 from curator.helpers.getters import (
-    byte_size, get_indices, get_repository, get_snapshot, get_snapshot_data, name_to_node_id,
-    node_id_to_name, node_roles, single_data_path
+    byte_size, get_alias_actions, get_frozen_prefix, get_indices, get_repository, get_snapshot,
+    get_snapshot_data, get_tier_preference, name_to_node_id, node_id_to_name, node_roles,
+    single_data_path
 )
 
 FAKE_FAIL = Exception('Simulated Failure')
@@ -299,3 +300,76 @@ class TestNodeIdToName(TestCase):
         client = Mock()
         client.nodes.stats.return_value = {'nodes':{'my_node_id':{'name':'my_node_name'}}}
         assert None is node_id_to_name(client, 'not_my_node_id')
+
+class TestGetAliasActions(TestCase):
+    """TestGetAliasActions
+
+    Test helpers.getters.get_alias_actions functionality.
+    """
+    def test_get_alias_actions(self):
+        """test_get_alias_actions"""
+        name = 'alias1'
+        aliases = {name: {}}
+        oldidx = 'old'
+        newidx = 'new'
+        expected = [
+            {
+                'remove': {'index': oldidx, 'alias': name}
+            },
+            {
+                'add': {'index': newidx, 'alias': name}
+            }
+        ]
+        assert get_alias_actions(oldidx, newidx, aliases) == expected
+
+class TestGetFrozenPrefix(TestCase):
+    """TestGetFrozenPrefix
+
+    Test helpers.getters.get_frozen_prefix functionality.
+    """
+    def test_get_frozen_prefix1(self):
+        """test_get_frozen_prefix1"""
+        oldidx = 'test-000001'
+        curridx = 'restored-test-000001'
+        assert get_frozen_prefix(oldidx, curridx) == 'partial-restored-'
+    def test_get_frozen_prefix2(self):
+        """test_get_frozen_prefix2"""
+        oldidx = 'test-000001'
+        curridx = 'test-000001'
+        assert get_frozen_prefix(oldidx, curridx) == 'partial-'
+
+class TestGetTierPreference(TestCase):
+    """TestGetTierPreference
+
+    Test helpers.getters.get_tier_preference functionality.
+    """
+    def test_get_tier_preference1(self):
+        """test_get_tier_preference1"""
+        client = Mock()
+        roles = ['data_cold', 'data_frozen', 'data_hot', 'data_warm']
+        client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
+        assert get_tier_preference(client) == 'data_frozen'
+    def test_get_tier_preference2(self):
+        """test_get_tier_preference2"""
+        client = Mock()
+        roles = ['data_cold', 'data_hot', 'data_warm']
+        client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
+        assert get_tier_preference(client) == 'data_cold,data_warm,data_hot'
+    def test_get_tier_preference3(self):
+        """test_get_tier_preference3"""
+        client = Mock()
+        roles = ['data_content']
+        client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
+        assert get_tier_preference(client) == 'data_content'
+    def test_get_tier_preference4(self):
+        """test_get_tier_preference4"""
+        client = Mock()
+        roles = ['data_cold', 'data_frozen', 'data_hot', 'data_warm']
+        client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
+        assert get_tier_preference(client, target_tier='data_cold') == 'data_cold,data_warm,data_hot'
+    def test_get_tier_preference5(self):
+        """test_get_tier_preference5"""
+        client = Mock()
+        roles = ['data_content']
+        client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
+        assert get_tier_preference(client, target_tier='data_hot') == 'data_content'

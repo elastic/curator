@@ -140,6 +140,7 @@ Options:
   --config PATH                   Path to configuration file.
   --hosts TEXT                    Elasticsearch URL to connect to
   --cloud_id TEXT                 Shorthand to connect to Elastic Cloud instance
+  --api_token TEXT                The base64 encoded API Key token
   --id TEXT                       API Key "id" value
   --api_key TEXT                  API Key "api_key" value
   --username TEXT                 Username used to create "basic_auth" tuple

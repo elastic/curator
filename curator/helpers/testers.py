@@ -5,11 +5,45 @@ from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import NotFoundError
 from es_client.helpers.utils import prune_nones
 from curator.helpers.getters import get_repository, get_write_index
-from curator.exceptions import ConfigurationError, MissingArgument, RepositoryException
+from curator.exceptions import (
+    ConfigurationError, MissingArgument, RepositoryException, SearchableSnapshotException)
 from curator.defaults.settings import index_filtertypes, snapshot_actions, snapshot_filtertypes
 from curator.validators import SchemaCheck, actions, options
 from curator.validators.filter_functions import validfilters
 from curator.helpers.utils import report_failure
+
+def has_lifecycle_name(idx_settings):
+    """
+    :param idx_settings: The settings for an index being tested
+    :type idx_settings: dict
+
+    :returns: ``True`` if a lifecycle name exists in settings, else ``False``
+    :rtype: bool
+    """
+    if 'lifecycle' in idx_settings:
+        if 'name' in idx_settings['lifecycle']:
+            return True
+    return False
+
+def is_idx_partial(idx_settings):
+    """
+    :param idx_settings: The settings for an index being tested
+    :type idx_settings: dict
+
+    :returns: ``True`` if store.snapshot.partial exists in settings, else ``False``
+    :rtype: bool
+    """
+    if 'store' in idx_settings:
+        if 'snapshot' in idx_settings['store']:
+            if 'partial' in idx_settings['store']['snapshot']:
+                if idx_settings['store']['snapshot']['partial']:
+                    return True
+                # store.snapshot.partial exists but is False -- Not a frozen tier mount
+                return False
+            # store.snapshot exists, but partial isn't there -- Possibly a cold tier mount
+            return False
+        raise SearchableSnapshotException('Index not a mounted searchable snapshot')
+    raise SearchableSnapshotException('Index not a mounted searchable snapshot')
 
 def ilm_policy_check(client, alias):
     """Test if alias is associated with an ILM policy
