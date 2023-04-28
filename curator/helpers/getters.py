@@ -1,6 +1,7 @@
 """Utility functions that get things"""
 # :pylint disable=
 import logging
+import re
 from elasticsearch8 import exceptions as es8exc
 from es_client.defaults import VERSION_MAX, VERSION_MIN
 from es_client.builder import Builder
@@ -23,6 +24,26 @@ def byte_size(num, suffix='B'):
             return f'{num:3.1f}{unit}{suffix}'
         num /= 1024.0
     return f'{num:.1f}Y{suffix}'
+
+def get_alias_actions(oldidx, newidx, aliases):
+    """
+    :param oldidx: The old index name
+    :param newidx: The new index name
+    :param aliases: The aliases
+
+    :type oldidx: str
+    :type newidx: str
+    :type aliases: dict
+
+    :returns: A list of actions suitable for
+        :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` ``actions`` kwarg.
+    :rtype: list
+    """
+    actions = []
+    for alias in aliases.keys():
+        actions.append({'remove': {'index': oldidx, 'alias': alias}})
+        actions.append({'add': {'index': newidx, 'alias': alias}})
+    return actions
 
 def get_client(
     configdict=None, configfile=None, autoconnect=False, version_min=VERSION_MIN,
@@ -86,6 +107,32 @@ def get_data_tiers(client):
             if role_check(role, info[node]):
                 retval[role] = True
     return retval
+
+def get_frozen_prefix(oldidx, curridx):
+    """
+    Use regular expression magic to extract the prefix from the current index, and then use
+    that with ``partial-`` in front to name the resulting index.
+
+    If there is no prefix, then we just send back ``partial-``
+
+    :param oldidx: The index name before it was mounted in cold tier
+    :param curridx: The current name of the index, as mounted in cold tier
+
+    :type oldidx: str
+    :type curridx: str
+
+    :returns: The prefix to prepend the index name with for mounting as frozen
+    :rtype: str
+    """
+    logger = logging.getLogger(__name__)
+    pattern = f'^(.*){oldidx}$'
+    regexp = re.compile(pattern)
+    match = regexp.match(curridx)
+    prefix = match.group(1)
+    logger.debug('Detected match group for prefix: %s', prefix)
+    if not prefix:
+        return 'partial-'
+    return f'partial-{prefix}'
 
 def get_indices(client):
     """
@@ -180,6 +227,48 @@ def get_snapshot_data(client, repository=None):
             f'{repository}. Error: {err}'
         )
         raise FailedExecution(msg) from err
+
+def get_tier_preference(client, target_tier='data_frozen'):
+    """Do the tier preference thing in reverse order from coldest to hottest
+    Based on the value of ``target_tier``, build out the list to use.
+
+    :param client: A client connection object
+    :param target_tier: The target data tier, e.g. data_warm.
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type target_tier: str
+
+    :returns: A suitable tier preference string in csv format
+    :rtype: str
+    """
+    tiermap = {
+        'data_content': 0,
+        'data_hot': 1,
+        'data_warm': 2,
+        'data_cold': 3,
+        'data_frozen': 4,
+    }
+    tiers = get_data_tiers(client)
+    test_list = []
+    for tier in ['data_hot', 'data_warm', 'data_cold', 'data_frozen']:
+        if tier in tiers and tiermap[tier] <= tiermap[target_tier]:
+            test_list.insert(0, tier)
+    if target_tier == 'data_frozen':
+        # We're migrating to frozen here. If a frozen tier exists, frozen searchable snapshot
+        # mounts should only ever go to the frozen tier.
+        if 'data_frozen' in tiers and tiers['data_frozen']:
+            return 'data_frozen'
+    # If there are no  nodes with the 'data_frozen' role...
+    preflist = []
+    for key in test_list:
+        # This ordering ensures that colder tiers are prioritized
+        if key in tiers and tiers[key]:
+            preflist.append(key)
+    # If all of these are false, then we have no data tiers and must use 'data_content'
+    if not preflist:
+        return 'data_content'
+    # This will join from coldest to hottest as csv string, e.g. 'data_cold,data_warm,data_hot'
+    return ','.join(preflist)
 
 def get_write_index(client, alias):
     """

@@ -3,6 +3,38 @@
 Changelog
 =========
 
+8.0.4 (28 April 2023)
+---------------------
+
+**Announcements**
+
+Allow single-string, base64 API Key tokens in Curator.
+
+To use a base64 API Key token in YAML configuration:
+
+::
+
+  elasticsearch:
+    client:
+      hosts: https://host.example.tld:9243
+    other_args:
+      api_key:
+        token: '<base64 token goes here>'
+
+To use a base64 API Key token at the command-line:
+
+::
+
+  curator --hosts https://host.example.tld:9243 --api_token <base64 token goes here> [OTHER ARGS/OPTIONS]
+
+**NOTE:** In neither of the above examples are the alligator clips necessary (the ``<`` and ``>`` characters).
+
+**Changes**
+
+  * Update ``es_client`` to 8.7.0, which enables the use of the base64 encoded API Key token.
+    This also fixes #1671 via https://github.com/untergeek/es_client/issues/33
+
+
 8.0.3 (22 February 2023)
 ------------------------
 

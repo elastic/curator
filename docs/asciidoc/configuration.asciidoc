@@ -202,6 +202,7 @@ elasticsearch:
     api_key:
       id:
       api_key:
+      token:
 
 logging:
   loglevel: INFO
@@ -435,7 +436,20 @@ Elasticsearch instance.
 
 The default is empty.
 
+[[token]]
+=== token
 
+This should be a base64 encoded representation of an API Key pair.
+
+[source,sh]
+---------
+api_key:
+  token:
+---------
+
+This setting will override any values provided for the `id` or `api_key` subkeys of `api_key`.
+
+The default is empty.
 
 
 

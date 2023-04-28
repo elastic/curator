@@ -16,7 +16,7 @@ Want to write your own code to do something Curator doesn't do out of the box?
 Curator ships with both an API and wrapper scripts (which are actually defined
 as entry points).  This allows you to write your own scripts to accomplish
 similar goals, or even new and different things with the
-[Curator API](http://curator.readthedocs.io/), [es_client](http://esclient.readthedocs.io), and the
+[Curator API](http://curator.readthedocs.io/), [es_client](https://es-client.readthedocs.io), and the
 [Elasticsearch Python Client Library](http://elasticsearch-py.readthedocs.io/).
 
 Want to know how to use the command-line interface (CLI)?

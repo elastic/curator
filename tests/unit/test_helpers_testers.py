@@ -6,11 +6,11 @@ from elastic_transport import ApiResponseMeta
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import AuthenticationException, NotFoundError
 from curator.exceptions import (
-     ConfigurationError, FailedExecution, MissingArgument, RepositoryException)
+     ConfigurationError, FailedExecution, MissingArgument, RepositoryException,
+     SearchableSnapshotException)
 from curator.helpers.testers import (
-    repository_exists, rollable_alias, snapshot_running, validate_filters, verify_client_object,
-    verify_repository
-)
+    has_lifecycle_name, is_idx_partial, repository_exists, rollable_alias, snapshot_running,
+    validate_filters, verify_client_object, verify_repository)
 
 FAKE_FAIL = Exception('Simulated Failure')
 
@@ -239,3 +239,44 @@ class TestVerifyRepository(TestCase):
         with pytest.raises(RepositoryException, match=r'Failed to verify'):
             verify_repository(client, repository=self.REPO_NAME)
 
+class TestHasLifecycleName(TestCase):
+    """TestHasLifecycleName
+
+    Test helpers.testers.has_lifecycle_name functionality
+    """
+    def test_has_lifecycle_name(self):
+        """test_has_lifecycle_name"""
+        testval = {'lifecycle': {'name': 'ilm_policy'}}
+        assert has_lifecycle_name(testval)
+    def test_has_no_lifecycle_name(self):
+        """test_has_no_lifecycle_name"""
+        testval = {'lifecycle': {'nothere': 'nope'}}
+        assert not has_lifecycle_name(testval)
+
+class TestIsIdxPartial(TestCase):
+    """TestIsIdxPartial
+
+    Test helpers.testers.is_idx_partial functionality
+    """
+    def test_is_idx_partial(self):
+        """test_is_idx_partial"""
+        testval = {'store': {'snapshot': {'partial': True}}}
+        assert is_idx_partial(testval)
+    def test_is_idx_partial_false1(self):
+        """test_is_idx_partial_false1"""
+        testval = {'store': {'snapshot': {'partial': False}}}
+        assert not is_idx_partial(testval)
+    def test_is_idx_partial_false2(self):
+        """test_is_idx_partial_false2"""
+        testval = {'store': {'snapshot': {'nothere': 'nope'}}}
+        assert not is_idx_partial(testval)
+    def test_is_idx_partial_raises1(self):
+        """test_is_idx_partial_raises1"""
+        testval = {'store': {'nothere': 'nope'}}
+        with pytest.raises(SearchableSnapshotException, match='not a mounted searchable snapshot'):
+            is_idx_partial(testval)
+    def test_is_idx_partial_raises2(self):
+        """test_is_idx_partial_raises2"""
+        testval = {'nothere': 'nope'}
+        with pytest.raises(SearchableSnapshotException, match='not a mounted searchable snapshot'):
+            is_idx_partial(testval)

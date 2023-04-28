@@ -17,6 +17,7 @@ from curator.cli_singletons.utils import get_width
 @click.option('--config', help='Path to configuration file.', type=click.Path(exists=True), default=settings.config_file())
 @click.option('--hosts', help='Elasticsearch URL to connect to', multiple=True)
 @click.option('--cloud_id', help='Shorthand to connect to Elastic Cloud instance')
+@click.option('--api_token', help='The base64 encoded API Key token', type=str)
 @click.option('--id', help='API Key "id" value', type=str)
 @click.option('--api_key', help='API Key "api_key" value', type=str)
 @click.option('--username', help='Username used to create "basic_auth" tuple')
@@ -41,7 +42,7 @@ from curator.cli_singletons.utils import get_width
 @click.version_option(version=__version__)
 @click.pass_context
 def cli(
-    ctx, config, hosts, cloud_id, id, api_key, username, password, bearer_auth,
+    ctx, config, hosts, cloud_id, api_token, id, api_key, username, password, bearer_auth,
     opaque_id, request_timeout, http_compress, verify_certs, ca_certs, client_cert, client_key,
     ssl_assert_hostname, ssl_assert_fingerprint, ssl_version, master_only, skip_version_test,
     dry_run, loglevel, logfile, logformat
@@ -99,11 +100,12 @@ def cli(
         'password': password,
         'api_key': {
             'id': id,
-            'api_key': api_key
+            'api_key': api_key,
+            'token': api_token,
         }
     })
-    # Remove `api_key` root key if `id` and `api_key` are both None
-    if id is None and api_key is None:
+    # Remove `api_key` root key if `id` and `api_key` and `token` are all None
+    if id is None and api_key is None and api_token is None:
         del cli_other['api_key']
 
     # If hosts are in the config file, but cloud_id is specified at the command-line,
