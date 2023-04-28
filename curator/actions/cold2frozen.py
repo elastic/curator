@@ -1,8 +1,7 @@
 """Snapshot and Restore action classes"""
 import logging
-import re
-from curator.helpers.getters import get_data_tiers
-from curator.helpers.testers import verify_index_list
+from curator.helpers.getters import get_alias_actions, get_frozen_prefix, get_tier_preference
+from curator.helpers.testers import has_lifecycle_name, is_idx_partial, verify_index_list
 from curator.helpers.utils import report_failure
 from curator.exceptions import CuratorException, FailedExecution, SearchableSnapshotException
 
@@ -69,107 +68,6 @@ class Cold2Frozen:
             else:
                 setattr(self, key, value)
 
-    def get_alias_actions(self, oldidx, newidx, aliases):
-        """
-        :param oldidx: The old index name
-        :param newidx: The new index name
-        :param aliases: The aliases
-
-        :type oldidx: str
-        :type newidx: str
-        :type aliases: dict
-
-        :returns: A list of actions suitable for
-            :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` ``actions`` kwarg.
-        :rtype: list
-        """
-        actions = []
-        for alias in aliases.keys():
-            actions.append({'remove': {'index': oldidx, 'alias': alias}})
-            actions.append({'add': {'index': newidx, 'alias': alias}})
-        return actions
-
-    def get_frozen_prefix(self, oldidx, curridx):
-        """
-        Use regular expression magic to extract the prefix from the current index, and then use
-        that with ``partial-`` in front to name the resulting index.
-
-        If there is no prefix, then we just send back ``partial-``
-
-        :param oldidx: The index name before it was mounted in cold tier
-        :param curridx: The current name of the index, as mounted in cold tier
-
-        :type oldidx: str
-        :type curridx: str
-
-        :returns: The prefix to prepend the index name with for mounting as frozen
-        :rtype: str
-        """
-        pattern = f'^(.*){oldidx}$'
-        regexp = re.compile(pattern)
-        match = regexp.match(curridx)
-        prefix = match.group(1)
-        self.loggit.debug('Detected match group for prefix: %s', prefix)
-        if not prefix:
-            return 'partial-'
-        return f'partial-{prefix}'
-
-    def get_tier_preference(self):
-        """Do the tier preference thing in reverse order from coldest to hottest
-
-        :returns: A suitable tier preference string in csv format
-        :rtype: str
-        """
-        tiers = get_data_tiers(self.client)
-        # We're migrating from cold to frozen here. If a frozen tier exists, frozen ss mounts
-        # should only ever go to the frozen tier.
-        if 'data_frozen' in tiers and tiers['data_frozen']:
-            return 'data_frozen'
-        # If there are no  nodes with the 'data_frozen' role...
-        preflist = []
-        for key in ['data_cold', 'data_warm', 'data_hot']:
-            # This ordering ensures that colder tiers are prioritized
-            if key in tiers and tiers[key]:
-                preflist.append(key)
-        # If all of these are false, then we have no data tiers and must use 'data_content'
-        if not preflist:
-            return 'data_content'
-        # This will join from coldest to hottest as csv string, e.g. 'data_cold,data_warm,data_hot'
-        return ','.join(preflist)
-
-    def has_lifecycle_name(self, idx_settings):
-        """
-        :param idx_settings: The settings for an index being tested
-        :type idx_settings: dict
-
-        :returns: ``True`` if a lifecycle name exists in settings, else ``False``
-        :rtype: bool
-        """
-        if 'lifecycle' in idx_settings:
-            if 'name' in idx_settings['lifecycle']:
-                return True
-        return False
-
-    def is_idx_partial(self, idx_settings):
-        """
-        :param idx_settings: The settings for an index being tested
-        :type idx_settings: dict
-
-        :returns: ``True`` if store.snapshot.partial exists in settings, else ``False``
-        :rtype: bool
-        """
-        if 'store' in idx_settings:
-            if 'snapshot' in idx_settings['store']:
-                if 'partial' in idx_settings['store']['snapshot']:
-                    if idx_settings['store']['snapshot']['partial']:
-                        return True
-                    # store.snapshot.partial exists but is False -- Not a frozen tier mount
-                    return False
-                # store.snapshot exists, but partial isn't there -- Possibly a cold tier mount
-                return False
-            raise SearchableSnapshotException('Index not a mounted searchable snapshot')
-        raise SearchableSnapshotException('Index not a mounted searchable snapshot')
-
     def action_generator(self):
         """Yield a dict for use in :py:meth:`do_action` and :py:meth:`do_dry_run`
 
@@ -179,12 +77,12 @@ class Cold2Frozen:
         """
         for idx in self.index_list.indices:
             idx_settings = self.client.indices.get(index=idx)[idx]['settings']['index']
-            if self.has_lifecycle_name(idx_settings):
+            if has_lifecycle_name(idx_settings):
                 self.loggit.critical(
                     'Index %s is associated with an ILM policy and this action will never work on '
                     'an index associated with an ILM policy', idx)
                 raise CuratorException(f'Index {idx} is associated with an ILM policy')
-            if self.is_idx_partial(idx_settings):
+            if is_idx_partial(idx_settings):
                 self.loggit.critical('Index %s is already in the frozen tier', idx)
                 raise SearchableSnapshotException('Index is already in frozen tier')
             snap = idx_settings['store']['snapshot']['snapshot_name']
@@ -192,7 +90,7 @@ class Cold2Frozen:
             repo = idx_settings['store']['snapshot']['repository_name']
             aliases = self.client.indices.get(index=idx)[idx]['aliases']
 
-            prefix = self.get_frozen_prefix(snap_idx, idx)
+            prefix = get_frozen_prefix(snap_idx, idx)
             renamed = f'{prefix}{snap_idx}'
 
             if not self.index_settings:
@@ -200,7 +98,7 @@ class Cold2Frozen:
                     "routing": {
                         "allocation": {
                             "include": {
-                                "_tier_preference": self.get_tier_preference()
+                                "_tier_preference": get_tier_preference(self.client)
                             }
                         }
                     }
@@ -255,7 +153,7 @@ class Cold2Frozen:
                 # Verify it's mounted as a partial now:
                 self.loggit.debug('Verifying new index %s is mounted properly...', newidx)
                 idx_settings = self.client.indices.get(index=newidx)[newidx]
-                if self.is_idx_partial(idx_settings['settings']['index']):
+                if is_idx_partial(idx_settings['settings']['index']):
                     self.loggit.info('Index %s is mounted for frozen tier', newidx)
                 else:
                     raise SearchableSnapshotException(
@@ -267,7 +165,7 @@ class Cold2Frozen:
                 else:
                     self.loggit.debug('Transferring aliases to new index %s', newidx)
                     self.client.indices.update_aliases(
-                        actions=self.get_alias_actions(current_idx, newidx, aliases))
+                        actions=get_alias_actions(current_idx, newidx, aliases))
                     verify = self.client.indices.get(index=newidx)[newidx]['aliases'].keys()
                     if alias_names != verify:
                         self.loggit.error(
