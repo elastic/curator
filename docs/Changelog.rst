@@ -8,9 +8,7 @@ Changelog
 
 **Announcements**
 
-A new pair of actions called ``hot2cold`` and ``hot2frozen`` in the same vein as ``cold2frozen``
-have been added to Curator. Similar usage restrictions: These actions will not work against indices
-associated with an ILM policy. Should not be a common use case.
+Allow single-string, base64 API Key tokens in Curator.
 
 To use a base64 API Key token in YAML configuration:
 
@@ -33,9 +31,9 @@ To use a base64 API Key token at the command-line:
 
 **Changes**
 
-  * Update ``es_client`` to 8.6.2.post1, which enables the use of the base64 encoded API Key token.
+  * Update ``es_client`` to 8.7.0, which enables the use of the base64 encoded API Key token.
     This also fixes #1671 via https://github.com/untergeek/es_client/issues/33
-  * Added ``hot2cold`` and ``hot2frozen`` actions and tests.
+
 
 8.0.3 (22 February 2023)
 ------------------------

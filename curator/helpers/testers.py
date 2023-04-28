@@ -314,8 +314,8 @@ def verify_index_list(test):
 
     :type test: :py:class:`~.curator.IndexList`
 
-    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.indexlist.IndexList` object, else
-        raise a :py:class:`TypeError` exception.
+    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.indexlist.IndexList` object,
+        else raise a :py:class:`TypeError` exception.
     :rtype: None
     """
     # It breaks if this import isn't local to this function:
@@ -361,7 +361,7 @@ def verify_repository(client, repository=None):
                     f'Error message: {err.error}'
                 )
         except AttributeError:
-            msg = (f'--- Error message: {err}'.format())
+            msg = f'--- Error message: {err}'.format()
         report = f'Failed to verify all nodes have repository access: {msg}'
         raise RepositoryException(report) from err
 

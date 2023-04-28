@@ -64,10 +64,13 @@ class CreateIndex:
         :py:meth:`~.elasticsearch.client.IndicesClient.create` index identified by :py:attr:`name`
         with values from :py:attr:`aliases`, :py:attr:`mappings`, and :py:attr:`settings`
         """
-        msg = (f'Creating index "{self.name}" with settings: {self.extra_settings}')
+        msg = f'Creating index "{self.name}" with settings: {self.extra_settings}'
         self.loggit.info(msg)
         try:
-            self.client.indices.create(index=self.name, aliases=self.aliases, mappings=self.mappings, settings=self.settings)
+            self.client.indices.create(
+                index=self.name, aliases=self.aliases, mappings=self.mappings,
+                settings=self.settings
+            )
         # Most likely error is a 400, `resource_already_exists_exception`
         except RequestError as err:
             match_list = ["index_already_exists_exception", "resource_already_exists_exception"]

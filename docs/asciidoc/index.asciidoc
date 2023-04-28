@@ -1,10 +1,10 @@
 :curator_version: 8.0.4
 :curator_major: 8
 :curator_doc_tree: 8.0
-:es_py_version: 8.6.2
-:es_doc_tree: 8.6
-:stack_doc_tree: 8.6
-:pybuild_ver: 3.11.1
+:es_py_version: 8.7.0
+:es_doc_tree: 8.7
+:stack_doc_tree: 8.7
+:pybuild_ver: 3.11.3
 :copyright_years: 2011-2023
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/{es_doc_tree}
 :esref: http://www.elastic.co/guide/en/elasticsearch/reference/{stack_doc_tree}
