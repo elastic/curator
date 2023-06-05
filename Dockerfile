@@ -1,6 +1,7 @@
 FROM python:3.7-alpine3.7 as builder
 
 RUN apk --no-cache upgrade && apk --no-cache add build-base tar musl-utils openssl-dev
+RUN pip3 install --upgrade pip
 RUN pip3 install setuptools cx_Freeze
 
 COPY . .
