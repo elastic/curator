@@ -11,9 +11,9 @@ from curator.helpers.utils import chunk_index_list
 
 def health_check(client, **kwargs):
     """
-    This function calls `client.cluster.` :py:meth:`~.elasticsearch.client.ClusterClient.health` and, based on the
-    params provided, will return ``True`` or ``False`` depending on whether that particular keyword
-    appears in the output, and has the expected value.
+    This function calls `client.cluster.` :py:meth:`~.elasticsearch.client.ClusterClient.health`
+    and, based on the params provided, will return ``True`` or ``False`` depending on whether that
+    particular keyword appears in the output, and has the expected value.
 
     If multiple keys are provided, all must match for a ``True`` response.
 
@@ -120,11 +120,11 @@ def restore_check(client, index_list):
 
 def snapshot_check(client, snapshot=None, repository=None):
     """
-    This function calls `client.snapshot.` :py:meth:`~.elasticsearch.client.SnapshotClient.get` and tests to see
-    whether the snapshot is complete, and if so, with what status.  It will log errors according
-    to the result. If the snapshot is still ``IN_PROGRESS``, it will return ``False``.  ``SUCCESS``
-    will be an ``INFO`` level message, ``PARTIAL`` nets a ``WARNING`` message, ``FAILED`` is an
-    ``ERROR``, message, and all others will be a ``WARNING`` level message.
+    This function calls `client.snapshot.` :py:meth:`~.elasticsearch.client.SnapshotClient.get` and
+    tests to see whether the snapshot is complete, and if so, with what status.  It will log errors
+    according to the result. If the snapshot is still ``IN_PROGRESS``, it will return ``False``.
+    ``SUCCESS`` will be an ``INFO`` level message, ``PARTIAL`` nets a ``WARNING`` message,
+    ``FAILED`` is an ``ERROR``, message, and all others will be a ``WARNING`` level message.
 
     :param client: A client connection object
     :param snapshot: The snapshot name
@@ -200,7 +200,7 @@ def task_check(client, task_id=None):
     descr = task['description']
 
     if completed:
-        completion_time = ((running_time * 1000) + task['start_time_in_millis'])
+        completion_time = (running_time * 1000) + task['start_time_in_millis']
         time_string = strftime('%Y-%m-%dT%H:%M:%SZ', localtime(completion_time/1000))
         logger.info('Task "%s" completed at %s.', descr, time_string)
         retval = True

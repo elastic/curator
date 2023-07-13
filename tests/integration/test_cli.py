@@ -19,7 +19,7 @@ class TestCLIMethods(CuratorTestCase):
         self.create_indices(10)
         self.write_config(self.args['configfile'], testvars.bad_client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.disabled_proto.format('close', 'delete_indices'))
-        self.invoke_runner_alt(hosts='http://127.0.0.1:9200', loglevel='DEBUG', logformat='ecs', logfile=self.args['configfile'])
+        self.invoke_runner_alt(hosts='http://127.0.0.1:9200', loglevel='DEBUG', logformat='ecs')
         assert 0 == self.result.exit_code
     def test_cli_unreachable_cloud_id(self):
         self.create_indices(10)

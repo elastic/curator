@@ -1,8 +1,11 @@
 """Test integrations"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
+import logging
+import pytest
 from curator.exceptions import ConfigurationError
 from curator.helpers.getters import get_indices
+from curator import IndexList
 from . import CuratorTestCase
 from . import testvars
 
@@ -69,3 +72,28 @@ class TestFilters(CuratorTestCase):
         self.invoke_runner()
         # It should skip deleting 'zero', as it has 0 docs
         assert [zero] == get_indices(self.client)
+
+class TestIndexList(CuratorTestCase):
+    """Test some of the IndexList particulars using a live ES instance/cluster"""
+    IDX1 = 'dummy1'
+    IDX2 = 'dummy2'
+    IDX3 = 'my_index'
+
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        # pylint: disable=attribute-defined-outside-init
+        self._caplog = caplog
+    def test_get_index_stats_with_404(self):
+        """Check to ensure that index_stats are being collected if one index is missing"""
+        expected = f'Index was initiallly present, but now is not: {self.IDX2}'
+        self.create_index(self.IDX1)
+        self.create_index(self.IDX2)
+        self.create_index(self.IDX3)
+        ilo = IndexList(self.client)
+        assert ilo.indices == [self.IDX1, self.IDX2, self.IDX3]
+        self.client.indices.delete(index=f'{self.IDX1},{self.IDX2}')
+        with self._caplog.at_level(logging.WARNING):
+            ilo.get_index_stats()
+            # Guarantee we're getting the expected WARNING level message
+            assert self._caplog.records[-1].message == expected
+        assert ilo.indices == [self.IDX3]

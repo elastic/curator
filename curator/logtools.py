@@ -3,6 +3,7 @@ import sys
 import json
 import logging
 import time
+from pathlib import Path
 import ecs_logging
 from curator.exceptions import LoggingException
 
@@ -53,6 +54,11 @@ def deepmerge(source, destination):
         else:
             destination[key] = value
     return destination
+
+def is_docker():
+    """Check if we're running in a docker container"""
+    cgroup = Path('/proc/self/cgroup')
+    return Path('/.dockerenv').is_file() or cgroup.is_file() and 'docker' in cgroup.read_text()
 
 class LogstashFormatter(logging.Formatter):
     """Logstash formatting (JSON)"""
@@ -126,7 +132,10 @@ class LogInfo:
             raise ValueError(f"Invalid log level: {cfg['loglevel']}")
 
         #: Attribute. Which logging handler to use
-        self.handler = logging.StreamHandler(stream=sys.stdout)
+        if is_docker():
+            self.handler = logging.FileHandler('/proc/1/fd/1')
+        else:
+            self.handler = logging.StreamHandler(stream=sys.stdout)
         if cfg['logfile']:
             self.handler = logging.FileHandler(cfg['logfile'])
 
