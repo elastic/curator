@@ -1,6 +1,7 @@
 """Main CLI for Curator"""
 import sys
 import logging
+import pathlib
 import click
 from es_client.builder import ClientArgs, OtherArgs
 from es_client.helpers.utils import get_yaml, check_config, prune_nones, verify_url_schema
@@ -13,6 +14,30 @@ from curator.helpers.getters import get_client
 from curator.helpers.testers import ilm_policy_check
 from curator.cli_singletons.utils import get_width
 from curator._version import __version__
+
+def configfile_callback(ctx, param, value):
+    """Callback to validate whether the provided config file exists and is writeable
+
+    :param ctx: The click context
+    :param param: The click parameter object
+    :param value: The value of the parameter
+
+    :type ctx: Click context
+    :type param: Click object
+    :type value: Any
+
+    :returns: Config file path or None
+    :rtype: str
+    """
+    logger = logging.getLogger(__name__)
+    logger.debug('Click ctx = %s', ctx)
+    logger.debug('Click param = %s', param)
+    logger.debug('Click value = %s', value)
+    path = pathlib.Path(value)
+    if path.is_file():
+        return value
+    logger.warning('Config file not found: %s', value)
+    return None
 
 def override_logging(config, loglevel, logfile, logformat):
     """Get logging config and override from command-line options
@@ -238,7 +263,7 @@ def run(client_args, other_args, action_file, dry_run=False):
 
 # pylint: disable=unused-argument, redefined-builtin
 @click.command(context_settings=get_width())
-@click.option('--config', help='Path to configuration file.', type=click.Path(exists=True), default=settings.config_file())
+@click.option('--config', help='Path to configuration file.', type=str, default=settings.config_file(), callback=configfile_callback)
 @click.option('--hosts', help='Elasticsearch URL to connect to', multiple=True)
 @click.option('--cloud_id', help='Shorthand to connect to Elastic Cloud instance')
 @click.option('--api_token', help='The base64 encoded API Key token', type=str)
@@ -281,9 +306,12 @@ def cli(
     other_args = OtherArgs()
     if config:
         from_yaml = get_yaml(config)
-        raw_config = check_config(from_yaml)
-        client_args.update_settings(raw_config['client'])
-        other_args.update_settings(raw_config['other_settings'])
+    else:
+        # Use empty defaults.
+        from_yaml = {'elasticsearch': {'client': {}, 'other_settings': {}}, 'logging': {}}
+    raw_config = check_config(from_yaml)
+    client_args.update_settings(raw_config['client'])
+    other_args.update_settings(raw_config['other_settings'])
 
     set_logging(check_logging_config(
         {'logging': override_logging(from_yaml, loglevel, logfile, logformat)}))
