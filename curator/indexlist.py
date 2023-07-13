@@ -72,8 +72,8 @@ class IndexList:
         if self.indices:
             for index in self.indices:
                 self.__build_index_info(index)
-            self._get_metadata()
-            self._get_index_stats()
+            self.get_metadata()
+            self.get_index_stats()
 
     def __build_index_info(self, index):
         """
@@ -113,7 +113,17 @@ class IndexList:
         }
         return methods[ftype]
 
-    def _get_index_stats(self):
+    def __remove_missing(self, err):
+        """
+        Remove missing index found in ``err`` from self.indices and return that name
+        """
+        missing = err.info['error']['index']
+        self.loggit.warning('Index was initiallly present, but now is not: %s', missing)
+        self.loggit.debug('Removing %s from active IndexList')
+        self.indices.remove(missing)
+        return missing
+
+    def get_index_stats(self):
         """
         Populate ``index_info`` with index ``size_in_bytes``, ``primary_size_in_bytes`` and doc
         count information for each index.
@@ -143,14 +153,28 @@ class IndexList:
             index_lists = chunk_index_list(working_list)
             for lst in index_lists:
                 stats_result = {}
-                try:
-                    stats_result.update(self._get_indices_stats(lst))
-                except TransportError as err:
-                    if '413' in err.errors:
-                        self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
-                        stats_result = {}
-                        stats_result.update(self._bulk_queries(lst, self._get_indices_stats))
-                iterate_over_stats(stats_result)
+                checking = True
+                while checking:
+                    try:
+                        stats_result.update(self._get_indices_stats(lst))
+                    except NotFoundError as err:
+                        lst.remove(self.__remove_missing(err))
+                        continue
+                    except TransportError as err:
+                        if '413' in err.errors:
+                            msg = (
+                                'Huge Payload 413 Err - '
+                                'Trying to get information via multiple requests'
+                            )
+                            self.loggit.debug(msg)
+                            stats_result = {}
+                            try:
+                                stats_result.update(self._bulk_queries(lst, self._get_indices_stats))
+                            except NotFoundError as err2:
+                                lst.remove(self.__remove_missing(err2))
+                                continue
+                    iterate_over_stats(stats_result)
+                    checking = False
 
     def _get_indices_stats(self, data):
         return self.client.indices.stats(index=to_csv(data), metric='store,docs')
@@ -171,7 +195,7 @@ class IndexList:
     def _get_cluster_state(self, data):
         return self.client.cluster.state(index=to_csv(data), metric='metadata')['metadata']['indices']
 
-    def _get_metadata(self):
+    def get_metadata(self):
         """
         Populate ``index_info`` with index ``size_in_bytes`` and doc count information for each
         index.
@@ -180,11 +204,15 @@ class IndexList:
         self.empty_list_check()
         for lst in chunk_index_list(self.indices):
             working_list = {}
+            # The API called by _get_cluster_state doesn't suffer from the same problems that
+            # _get_indices_stats does. This won't result in an error if an index is suddenly
+            # missing.
             try:
                 working_list.update(self._get_cluster_state(lst))
             except TransportError as err:
                 if '413' in err.errors:
-                    self.loggit.debug('Huge Payload 413 Error - Trying to get information with multiple requests')
+                    msg = 'Huge Payload 413 Err - Trying to get information via multiple requests'
+                    self.loggit.debug(msg)
                     working_list = {}
                     working_list.update(self._bulk_queries(lst, self._get_cluster_state))
             if working_list:
@@ -194,8 +222,8 @@ class IndexList:
                     sii['age']['creation_date'] = (
                         fix_epoch(wli['settings']['index']['creation_date'])
                     )
-                    sii['number_of_replicas'] = (wli['settings']['index']['number_of_replicas'])
-                    sii['number_of_shards'] = (wli['settings']['index']['number_of_shards'])
+                    sii['number_of_replicas'] = wli['settings']['index']['number_of_replicas']
+                    sii['number_of_shards'] = wli['settings']['index']['number_of_shards']
                     sii['state'] = wli['state']
                     if 'routing' in wli['settings']['index']:
                         sii['routing'] = wli['settings']['index']['routing']

@@ -3,6 +3,30 @@
 Changelog
 =========
 
+8.0.5 (13 July 2023)
+--------------------
+
+**Announcements**
+
+Release for Elasticsearch 8.8.2
+
+**Changes**
+
+  * Small PEP formatting changes that were found editing code.
+  * Bump Python version in Dockerfile to 3.11.4
+  * Bump Python dependency versions.
+  * Change ``targetName`` to ``target_name`` in ``setup.py`` for newest version
+    of cx_Freeze. Hat tip to ``@rene-dekker`` in #1681 who made these changes
+    to 5.x and 7.x.
+  * Fix command-line behavior to not fail if the default config file is not
+    present. The newer CLI-based configuration should allow for no config file
+    at all, and now that's fixed.
+  * Initial work done to prevent a race condition where an index is present at IndexList
+    initialization, but is missing by the time index stats collection begins. The resultant
+    404s were causing Curator to shut down and not complete steps.
+  * When running in a Docker container, make Curator log to ``/proc/1/fd/1`` by
+    default, if no value is provided for ``logfile`` (otherwise, use that).
+
 8.0.4 (28 April 2023)
 ---------------------
 
