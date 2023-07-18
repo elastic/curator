@@ -72,6 +72,7 @@ class IndexList:
         if self.indices:
             for index in self.indices:
                 self.__build_index_info(index)
+            self.loggit.debug('FRESH UNPOPULATED: self.index_info = %s', self.index_info)
             self.get_metadata()
             self.get_index_stats()
 
@@ -195,12 +196,38 @@ class IndexList:
     def _get_cluster_state(self, data):
         return self.client.cluster.state(index=to_csv(data), metric='metadata')['metadata']['indices']
 
+    def mitigate_alias(self, index):
+        """
+        Mitigate when an alias is detected instead of an index name
+
+        :param index: The index name that is showing up *instead* of what was expected
+
+        :type index: str
+
+        :returns: No return value:
+        :rtype: None
+        """
+        self.loggit.debug('Correcting an instance where an alias name points to index "%s"', index)
+        data = self.client.indices.get(index=index)
+        aliases = list(data[index]['aliases'])
+        if aliases:
+            for alias in aliases:
+                if alias in self.indices:
+                    self.loggit.warning('Removing alias "%s" from IndexList.indices', alias)
+                    self.indices.remove(alias)
+                if alias in list(self.index_info):
+                    self.loggit.warning('Removing alias "%s" from IndexList.index_info', alias)
+                    del self.index_info[alias]
+        self.loggit.debug('Adding "%s" to IndexList.indices', index)
+        self.indices.append(index)
+        self.loggit.debug('Adding preliminary metadata for "%s" to IndexList.index_info', index)
+        self.__build_index_info(index)
+
     def get_metadata(self):
         """
         Populate ``index_info`` with index ``size_in_bytes`` and doc count information for each
         index.
         """
-        self.loggit.debug('Getting index metadata')
         self.empty_list_check()
         for lst in chunk_index_list(self.indices):
             working_list = {}
@@ -216,8 +243,25 @@ class IndexList:
                     working_list = {}
                     working_list.update(self._bulk_queries(lst, self._get_cluster_state))
             if working_list:
+                self.loggit.debug('working_list.keys() = %s', working_list.keys())
                 for index in list(working_list.keys()):
-                    sii = self.index_info[index]
+                    self.loggit.debug('index = %s', index)
+                    try:
+                        sii = self.index_info[index]
+                    except KeyError:
+                        # What I believe has happened with this race condition is that during
+                        # __build_index_info initially, an index has a name, but is in process
+                        # of being remounted as a searchable snapshot index, and suddenly the
+                        # original index name is an alias, and the _get_cluster_state call returns
+                        # the new, actual index name instead of the alias it had. This is how a
+                        # KeyError can actually happen in this case. The relevant logs showing
+                        # this behavior are in issue #1682
+                        self.loggit.warning(
+                            'Index %s was not present at IndexList initialization, and may be '
+                            'behind an alias', index
+                        )
+                        self.mitigate_alias(index)
+                        sii = self.index_info[index]
                     wli = working_list[index]
                     sii['age']['creation_date'] = (
                         fix_epoch(wli['settings']['index']['creation_date'])

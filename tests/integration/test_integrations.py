@@ -97,3 +97,25 @@ class TestIndexList(CuratorTestCase):
             # Guarantee we're getting the expected WARNING level message
             assert self._caplog.records[-1].message == expected
         assert ilo.indices == [self.IDX3]
+    def test_get_metadata_with_keyerror(self):
+        """Check to ensure that metadata is being collected if a new index shows up"""
+        expected1 = f'Removing alias "{self.IDX2}" from IndexList.index_info'
+        expected2 = f'Removing alias "{self.IDX2}" from IndexList.indices'
+        expected3 = (
+            f'Index {self.IDX3} was not present at IndexList initialization, '
+            f'and may be behind an alias'
+        )
+        alias = {self.IDX2: {}}
+        self.create_index(self.IDX1)
+        self.create_index(self.IDX2)
+        ilo = IndexList(self.client)
+        assert ilo.indices == [self.IDX1, self.IDX2]
+        self.client.indices.delete(index=self.IDX2)
+        self.client.indices.create(index=self.IDX3, aliases=alias)
+        with self._caplog.at_level(logging.WARNING):
+            ilo.get_metadata()
+            # Guarantee we're getting the expected WARNING level messages
+            assert self._caplog.records[-3].message == expected3
+            assert self._caplog.records[-2].message == expected2
+            assert self._caplog.records[-1].message == expected1
+        assert ilo.indices == [self.IDX1, self.IDX3]
