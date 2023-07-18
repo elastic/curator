@@ -3,6 +3,15 @@
 Changelog
 =========
 
+8.0.6 (18 July 2023)
+--------------------
+
+**Breakfix Release**
+
+  * Small breakfix change to catch a similar rare race condition patched in
+    8.0.5 covering the ``get_index_stats()`` method of IndexList. This patch
+    covers the ``get_metadata()`` method and closes #1682.
+
 8.0.5 (13 July 2023)
 --------------------
 
