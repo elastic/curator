@@ -3,6 +3,21 @@
 Changelog
 =========
 
+8.0.6.post1 (18 July 2023)
+--------------------------
+
+**Breakfix Patch**
+
+No code was changed in this release, only Python dependencies. If you are using
+``pip`` to install Curator, chances are good you won't need this release.
+
+This release was necessary after Docker refused to build a viable container using
+PyYAML 6.0.0, which will not build with the new Cython 3, released on Friday,
+July 14, 2023. A speedy fix was released as PyYAML 6.0.1 to address this.
+
+The current 8.0.6 Docker image uses these fixes. This version will be published
+to PyPI, but not otherwise released as its own version.
+
 8.0.6 (18 July 2023)
 --------------------
 
