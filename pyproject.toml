@@ -29,10 +29,10 @@ keywords = [
 ]
 dependencies = [
     "elasticsearch8==8.8.2",
-    "es_client==8.8.2",
+    "es_client==8.8.2.post1",
     "ecs-logging==2.0.2",
     "click==8.1.4",
-    "pyyaml==6.0.0",
+    "pyyaml==6.0.1",
     "voluptuous>=0.13.1",
     "certifi>=2023.5.7",
     "six>=1.16.0",
