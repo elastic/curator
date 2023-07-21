@@ -23,9 +23,10 @@ class TestShowDryRun(TestCase):
         """
         client = Mock()
         client.info.return_value = {'version': {'number': '8.0.0'} }
+        client.cat.indices.return_value = testvars.state_two
         client.indices.get_settings.return_value = testvars.settings_two
-        client.cluster.state.return_value = testvars.clu_state_two
         client.indices.stats.return_value = testvars.stats_two
+        client.indices.exists_alias.return_value = False
         client.field_stats.return_value = testvars.fieldstats_two
         ilst = IndexList(client)
         assert None is show_dry_run(ilst, 'test_action')

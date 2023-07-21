@@ -3,6 +3,59 @@
 Changelog
 =========
 
+8.0.7 (21 July 2023)
+--------------------
+
+**Announcements**
+
+Functionally, there are no changes in this release. However...
+
+This release ends the practice of collecting all stats and metadata at
+IndexList initiation. This should make execution much faster for users with
+enormous clusters with hundreds to thousands of indices. In the past, this was
+handled at IndexList instantiation by making a cluster state API call. This is
+rather heavy, and can be so much data as to slow down Curator for minutes on
+clusters with hundreds to thousands of shards. This is all changed in this
+release.
+
+For example, the pattern filter requires no index metadata, as it only works
+against the index name. If you use a pattern filter first, the actionable list
+of indices is reduced. Then if you need to filter based on age using the
+``creation_date``, the age filter will call ``get_index_settings`` to pull the
+necessary data for that filter to complete. Some filters will not work against
+closed indices. Those filters will automatically call ``get_index_state`` to
+get the open/close status of the indices in the actionable list. The disk space
+filter will require the index state as it won't work on closed indices, and
+will call ``get_index_stats`` to pull the size_in_bytes stats.
+
+Additionally, the cat API is used to get index state (open/close), now, as it
+is the only API call besides the cluster state which can inform on this matter.
+Not calling for a huge dump of the entire cluster state should drastically
+reduce memory requirements, though that may vary for some users still after all
+of the index data is polled, depending on what filters are used.
+
+There is a potential caveat to all this rejoicing, however. Searchable snapshot
+behavior with ILM policies usually keeps indices out of Curator's vision. You
+need to manually tell Curator to allow it to work on ILM enabled indices. But
+for some users who need to restore a snapshot to remove PII or other data from
+an index, it can't be in ILM anymore. This has caused some headaches. For
+example, if you are tracking an index in the hot tier named 'index1' and it is
+in process of being migrated to the cold tier as a searchable snapshot, it may
+suddenly disappear from the system as 'index1' and suddenly re-appear as
+'restored-index1'. The original index may now be an alias that points to the
+newly mounted cold-tier index. Before this version, Curator would choke if it
+encountered this scenario. In fact, one user saw it repeatedly. See the last
+comment of issue 1682 in the GitHub repository for more information.
+
+To combat this, many repeated checks for index integrity have become necessary.
+This also involves verifying that indices in the IndexList are not actually
+aliases. Elasticsearch provides ``exists`` tests for these, but they cannot be
+performed in bulk. They are, however, very lightweight. But network turnaround
+times could make large clusters slower. For this reason, it is highly
+recommended that regex filters be used first, early, and often, before using
+any other filters. This will reduce the number of indices Curator has to check
+and/or verify during execution, which will speed things up drastically.
+
 8.0.6.post1 (18 July 2023)
 --------------------------
 

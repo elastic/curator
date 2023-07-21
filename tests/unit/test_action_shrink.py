@@ -1,4 +1,5 @@
 """test_action_shrink"""
+# pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long, protected-access, attribute-defined-outside-init
 from unittest import TestCase
 from mock import Mock
 from curator.actions import Shrink
@@ -15,13 +16,15 @@ class TestActionShrink_extra_settings(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.ilo = IndexList(self.client)
     def test_extra_settings_1(self):
         self.builder()
-        self.assertRaises(ConfigurationError, Shrink, self.ilo, extra_settings={'settings':{'foobar'}})
+        self.assertRaises(
+            ConfigurationError, Shrink, self.ilo, extra_settings={'settings':{'foobar'}})
     def test_extra_settings_2(self):
         self.builder()
         self.assertRaises(ConfigurationError, Shrink, self.ilo, extra_settings={'foobar'})
@@ -30,9 +33,10 @@ class TestActionShrink_data_node(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.node_name = 'node_name'
         self.node_id = 'my_node'
         self.client.nodes.stats.return_value = {'nodes':{self.node_id:{'name':self.node_name}}}
@@ -51,9 +55,10 @@ class TestActionShrink_exclude_node(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.node_name = 'node_name'
         self.ilo = IndexList(self.client)
     def test_positive(self):
@@ -72,9 +77,10 @@ class TestActionShrink_qualify_single_node(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.node_name = 'node_name'
         self.node_id = 'my_node'
         self.client.nodes.stats.return_value = {'nodes':{self.node_id:{'name':self.node_name}}}
@@ -106,9 +112,10 @@ class TestActionShrink_most_available_node(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.node_name = 'node_name'
         self.node_id = 'my_node'
         self.byte_count = 123456
@@ -127,9 +134,10 @@ class TestActionShrink_route_index(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.ilo = IndexList(self.client)
         self.shrink = Shrink(self.ilo)
     def test_raises(self):
@@ -142,9 +150,10 @@ class TestActionShrink_dry_run(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.node_name = 'node_name'
         self.node_id = 'my_node'
         self.byte_count = 123456
@@ -154,14 +163,12 @@ class TestActionShrink_dry_run(TestCase):
         self.builder()
         self.client.nodes.info.return_value = {'nodes':{self.node_id:{'roles':['data']}}}
         self.client.indices.get.return_value = {testvars.named_index:{'settings':{'index':{'number_of_shards': 2}}}}
-        self.client.indices.exists.return_value = False
         shrink = Shrink(self.ilo, shrink_node=self.node_name, post_allocation={'allocation_type':'require', 'key':'_name', 'value':self.node_name})
         self.assertIsNone(shrink.do_dry_run())
     def test_dry_run_raises(self):
         self.builder()
         self.client.nodes.info.return_value = {'nodes':{self.node_id:{'roles':['data']}}}
         self.client.indices.get.side_effect = testvars.fake_fail
-        self.client.indices.exists.return_value = False
         shrink = Shrink(self.ilo, shrink_node=self.node_name)
         self.assertRaises(Exception, shrink.do_dry_run)
 
@@ -170,9 +177,10 @@ class TestActionShrink_various(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = {'version': {'number': '8.0.0'} }
+        self.client.cat.indices.return_value = testvars.state_one
         self.client.indices.get_settings.return_value = testvars.settings_one
-        self.client.cluster.state.return_value = testvars.clu_state_one
         self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
         self.node_name = 'node_name'
         self.node_id = 'my_node'
         self.byte_count = 1239132959

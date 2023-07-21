@@ -1,4 +1,5 @@
 """test_action_delete_indices"""
+# pylint: disable=missing-function-docstring, missing-class-docstring, protected-access, attribute-defined-outside-init
 from unittest import TestCase
 from mock import Mock
 from curator.actions import DeleteIndices
@@ -8,74 +9,52 @@ from curator import IndexList
 from . import testvars
 
 class TestActionDeleteIndices(TestCase):
+    VERSION = {'version': {'number': '8.0.0'} }
+    def builder(self):
+        self.client = Mock()
+        self.client.info.return_value = self.VERSION
+        self.client.cat.indices.return_value = testvars.state_one
+        self.client.indices.get_settings.return_value = testvars.settings_one
+        self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
+        self.ilo = IndexList(self.client)
+    def builder4(self):
+        self.client = Mock()
+        self.client.info.return_value = self.VERSION
+        self.client.cat.indices.return_value = testvars.state_four
+        self.client.indices.get_settings.return_value = testvars.settings_four
+        self.client.indices.stats.return_value = testvars.stats_four
+        self.client.indices.exists_alias.return_value = False
+        self.client.indices.delete.return_value = None
+        self.ilo = IndexList(self.client)
     def test_init_raise(self):
         self.assertRaises(TypeError, DeleteIndices, 'invalid')
     def test_init_raise_bad_master_timeout(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = IndexList(client)
-        self.assertRaises(TypeError, DeleteIndices, ilo, 'invalid')
+        self.builder()
+        self.assertRaises(TypeError, DeleteIndices, self.ilo, 'invalid')
     def test_init(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = IndexList(client)
-        do = DeleteIndices(ilo)
-        self.assertEqual(ilo, do.index_list)
-        self.assertEqual(client, do.client)
+        self.builder()
+        dio = DeleteIndices(self.ilo)
+        self.assertEqual(self.ilo, dio.index_list)
+        self.assertEqual(self.client, dio.client)
     def test_do_dry_run(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.delete.return_value = None
-        ilo = IndexList(client)
-        do = DeleteIndices(ilo)
-        self.assertIsNone(do.do_dry_run())
+        self.builder4()
+        dio = DeleteIndices(self.ilo)
+        self.assertIsNone(dio.do_dry_run())
     def test_do_action(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.delete.return_value = None
-        ilo = IndexList(client)
-        do = DeleteIndices(ilo)
-        self.assertIsNone(do.do_action())
+        self.builder4()
+        dio = DeleteIndices(self.ilo)
+        self.assertIsNone(dio.do_action())
     def test_do_action_not_successful(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.delete.return_value = None
-        ilo = IndexList(client)
-        do = DeleteIndices(ilo)
-        self.assertIsNone(do.do_action())
+        self.builder4()
+        dio = DeleteIndices(self.ilo)
+        self.assertIsNone(dio.do_action())
     def test_do_action_raises_exception(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.delete.return_value = None
-        client.indices.delete.side_effect = testvars.fake_fail
-        ilo = IndexList(client)
-        do = DeleteIndices(ilo)
-        self.assertRaises(FailedExecution, do.do_action)
+        self.builder4()
+        self.client.indices.delete.side_effect = testvars.fake_fail
+        dio = DeleteIndices(self.ilo)
+        self.assertRaises(FailedExecution, dio.do_action)
     def test_verify_result_positive(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.delete.return_value = None
-        ilo = IndexList(client)
-        do = DeleteIndices(ilo)
-        self.assertTrue(do._verify_result([],2))
+        self.builder4()
+        dio = DeleteIndices(self.ilo)
+        self.assertTrue(dio._verify_result([],2))

@@ -1,4 +1,5 @@
-"""test_action_optn"""
+"""test_action_open"""
+# pylint: disable=missing-function-docstring, missing-class-docstring, protected-access, attribute-defined-outside-init
 from unittest import TestCase
 from mock import Mock
 from curator.actions import Open
@@ -8,50 +9,37 @@ from curator import IndexList
 from . import testvars
 
 class TestActionOpen(TestCase):
+    VERSION = {'version': {'number': '8.0.0'} }
+    def builder(self):
+        self.client = Mock()
+        self.client.info.return_value = self.VERSION
+        self.client.cat.indices.return_value = testvars.state_four
+        self.client.indices.get_settings.return_value = testvars.settings_four
+        self.client.indices.stats.return_value = testvars.stats_four
+        self.client.indices.exists_alias.return_value = False
+        self.client.indices.open.return_value = None
+        self.ilo = IndexList(self.client)
     def test_init_raise(self):
         self.assertRaises(TypeError, Open, 'invalid')
     def test_init(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = IndexList(client)
-        oo = Open(ilo)
-        self.assertEqual(ilo, oo.index_list)
-        self.assertEqual(client, oo.client)
+        self.builder()
+        opn = Open(self.ilo)
+        self.assertEqual(self.ilo, opn.index_list)
+        self.assertEqual(self.client, opn.client)
     def test_do_dry_run(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.open.return_value = None
-        ilo = IndexList(client)
-        ilo.filter_opened()
-        oo = Open(ilo)
-        self.assertEqual(['c-2016.03.05'], oo.index_list.indices)
-        self.assertIsNone(oo.do_dry_run())
+        self.builder()
+        self.ilo.filter_opened()
+        opn = Open(self.ilo)
+        self.assertEqual(['c-2016.03.05'], opn.index_list.indices)
+        self.assertIsNone(opn.do_dry_run())
     def test_do_action(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.open.return_value = None
-        ilo = IndexList(client)
-        ilo.filter_opened()
-        oo = Open(ilo)
-        self.assertEqual(['c-2016.03.05'], oo.index_list.indices)
-        self.assertIsNone(oo.do_action())
+        self.builder()
+        self.ilo.filter_opened()
+        opn = Open(self.ilo)
+        self.assertEqual(['c-2016.03.05'], opn.index_list.indices)
+        self.assertIsNone(opn.do_action())
     def test_do_action_raises_exception(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_four
-        client.cluster.state.return_value = testvars.clu_state_four
-        client.indices.stats.return_value = testvars.stats_four
-        client.indices.open.return_value = None
-        client.indices.open.side_effect = testvars.fake_fail
-        ilo = IndexList(client)
-        oo = Open(ilo)
-        self.assertRaises(FailedExecution, oo.do_action)
+        self.builder()
+        self.client.indices.open.side_effect = testvars.fake_fail
+        opn = Open(self.ilo)
+        self.assertRaises(FailedExecution, opn.do_action)

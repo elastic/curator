@@ -30,6 +30,7 @@ class TestCLICreateIndex(CuratorTestCase):
         assert not get_indices(self.client)
         self.invoke_runner()
         ilo = IndexList(self.client)
+        ilo.get_index_settings()
         aliases = self.client.indices.get_alias(name=alias)
         mapping = self.client.indices.get_mapping(index=idx)
         assert [idx] == ilo.indices

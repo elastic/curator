@@ -1,7 +1,6 @@
 """Test integrations"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
-import logging
 import pytest
 from curator.exceptions import ConfigurationError
 from curator.helpers.getters import get_indices
@@ -85,26 +84,33 @@ class TestIndexList(CuratorTestCase):
         self._caplog = caplog
     def test_get_index_stats_with_404(self):
         """Check to ensure that index_stats are being collected if one index is missing"""
-        expected = f'Index was initiallly present, but now is not: {self.IDX2}'
+        # expected = f'Index was initiallly present, but now is not: {self.IDX2}'
         self.create_index(self.IDX1)
         self.create_index(self.IDX2)
         self.create_index(self.IDX3)
         ilo = IndexList(self.client)
         assert ilo.indices == [self.IDX1, self.IDX2, self.IDX3]
         self.client.indices.delete(index=f'{self.IDX1},{self.IDX2}')
-        with self._caplog.at_level(logging.WARNING):
-            ilo.get_index_stats()
-            # Guarantee we're getting the expected WARNING level message
-            assert self._caplog.records[-1].message == expected
+        ilo.get_index_stats()
+        # with self._caplog.at_level(logging.WARNING):
+        #     ilo.get_index_stats()
+        #     # Guarantee we're getting the expected WARNING level message
+        #     assert self._caplog.records[-1].message == expected
         assert ilo.indices == [self.IDX3]
-    def test_get_metadata_with_keyerror(self):
-        """Check to ensure that metadata is being collected if a new index shows up"""
-        expected1 = f'Removing alias "{self.IDX2}" from IndexList.index_info'
-        expected2 = f'Removing alias "{self.IDX2}" from IndexList.indices'
-        expected3 = (
-            f'Index {self.IDX3} was not present at IndexList initialization, '
-            f'and may be behind an alias'
-        )
+    def test_get_index_state(self):
+        """Check to ensure that open/close status is properly being recognized"""
+        self.create_index(self.IDX1)
+        self.create_index(self.IDX2)
+        ilo = IndexList(self.client)
+        ilo.get_index_state()
+        assert ilo.indices == [self.IDX1, self.IDX2]
+        assert ilo.index_info[self.IDX1]['state'] == 'open'
+        assert ilo.index_info[self.IDX2]['state'] == 'open'
+        self.client.indices.close(index=self.IDX2)
+        ilo.get_index_state()
+        assert ilo.index_info[self.IDX2]['state'] == 'close'
+    def test_get_index_state_alias(self):
+        """Check to ensure that open/close status catches an alias"""
         alias = {self.IDX2: {}}
         self.create_index(self.IDX1)
         self.create_index(self.IDX2)
@@ -112,10 +118,37 @@ class TestIndexList(CuratorTestCase):
         assert ilo.indices == [self.IDX1, self.IDX2]
         self.client.indices.delete(index=self.IDX2)
         self.client.indices.create(index=self.IDX3, aliases=alias)
-        with self._caplog.at_level(logging.WARNING):
-            ilo.get_metadata()
-            # Guarantee we're getting the expected WARNING level messages
-            assert self._caplog.records[-3].message == expected3
-            assert self._caplog.records[-2].message == expected2
-            assert self._caplog.records[-1].message == expected1
+        ilo.get_index_state()
         assert ilo.indices == [self.IDX1, self.IDX3]
+    def test_population_check_missing_index(self):
+        """If index_info is missing an index, test to ensure it is populated with the zero value"""
+        key = 'docs'
+        self.create_index(self.IDX1)
+        ilo = IndexList(self.client)
+        assert ilo.indices == [self.IDX1]
+        del ilo.index_info[self.IDX1]
+        assert not ilo.index_info
+        ilo.population_check(self.IDX1, key)
+        assert ilo.index_info[self.IDX1][key] == 0
+    def test_population_check_missing_key(self):
+        """If index_info is missing an index, test to ensure it is populated with the zero value"""
+        key = 'docs'
+        self.create_index(self.IDX1)
+        ilo = IndexList(self.client)
+        ilo.get_index_stats()
+        assert ilo.indices == [self.IDX1]
+        assert ilo.index_info[self.IDX1][key] == 0
+        del ilo.index_info[self.IDX1][key]
+        ilo.population_check(self.IDX1, key)
+        assert ilo.index_info[self.IDX1][key] == 0
+    def test_not_needful(self):
+        """Check if get_index_stats can be skipped if already populated
+        
+        THIS IS LITERALLY FOR CODE COVERAGE, so a ``continue`` line in the function is tested.
+        """
+        key = 'docs'
+        self.create_index(self.IDX1)
+        ilo = IndexList(self.client)
+        ilo.get_index_stats()
+        ilo.get_index_stats() # This time index_info is already populated and it will skip
+        assert ilo.index_info[self.IDX1][key] == 0
