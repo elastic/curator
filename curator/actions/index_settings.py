@@ -77,6 +77,10 @@ class IndexSettings:
         # Detect if even one index is open.  Save all found to open_index_list.
         open_index_list = []
         open_indices = False
+        # This action requires index settings and state to be present
+        # Calling these here should not cause undue problems, even if it's a repeat call
+        self.index_list.get_index_state()
+        self.index_list.get_index_settings()
         for idx in self.index_list.indices:
             if self.index_list.index_info[idx]['state'] == 'open':
                 open_index_list.append(idx)

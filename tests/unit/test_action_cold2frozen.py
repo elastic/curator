@@ -1,4 +1,5 @@
 """test_action_cold2frozen"""
+# pylint: disable=attribute-defined-outside-init
 from unittest import TestCase
 from mock import Mock
 import pytest
@@ -10,6 +11,16 @@ from . import testvars
 
 class TestActionCold2Frozen(TestCase):
     """TestActionCold2Frozen"""
+    VERSION = {'version': {'number': '8.0.0'} }
+    def builder(self):
+        """Environment builder"""
+        self.client = Mock()
+        self.client.info.return_value = self.VERSION
+        self.client.cat.indices.return_value = testvars.state_one
+        self.client.indices.get_settings.return_value = testvars.settings_one
+        self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.exists_alias.return_value = False
+        self.ilo = IndexList(self.client)
     def test_init_raise_bad_index_list(self):
         """test_init_raise_bad_index_list"""
         self.assertRaises(TypeError, Cold2Frozen, 'invalid')
@@ -17,18 +28,13 @@ class TestActionCold2Frozen(TestCase):
             Cold2Frozen('not_an_IndexList')
     def test_init_add_kwargs(self):
         """test_init_add_kwargs"""
-        client = Mock()
+        self.builder()
         testval = {'key': 'value'}
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = IndexList(client)
-        c2f = Cold2Frozen(ilo, index_settings=testval)
+        c2f = Cold2Frozen(self.ilo, index_settings=testval)
         assert c2f.index_settings == testval
-
     def test_action_generator1(self):
         """test_action_generator1"""
+        self.builder()
         settings_ss   = {
             testvars.named_index: {
                 'aliases': {'my_alias': {}},
@@ -52,16 +58,10 @@ class TestActionCold2Frozen(TestCase):
                 }
             }
         }
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.get.return_value = settings_ss
+        self.client.indices.get.return_value = settings_ss
         roles = ['data_content']
-        client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
-        ilo = IndexList(client)
-        c2f = Cold2Frozen(ilo)
+        self.client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
+        c2f = Cold2Frozen(self.ilo)
         snap = 'snapname'
         repo = 'reponame'
         renamed = f'partial-{testvars.named_index}'
@@ -86,24 +86,20 @@ class TestActionCold2Frozen(TestCase):
         c2f.do_dry_run() # Do this here as it uses the same generator output.
     def test_action_generator2(self):
         """test_action_generator2"""
+        self.builder()
         settings_ss   = {
             testvars.named_index: {
                 'settings': {'index': {'lifecycle': {'name': 'guaranteed_fail'}}}
             }
         }
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.get.return_value = settings_ss
-        ilo = IndexList(client)
-        c2f = Cold2Frozen(ilo)
+        self.client.indices.get.return_value = settings_ss
+        c2f = Cold2Frozen(self.ilo)
         with pytest.raises(CuratorException, match='associated with an ILM policy'):
             for result in c2f.action_generator():
                 _ = result
     def test_action_generator3(self):
         """test_action_generator3"""
+        self.builder()
         settings_ss   = {
             testvars.named_index: {
                 'settings': {
@@ -114,14 +110,8 @@ class TestActionCold2Frozen(TestCase):
                 }
             }
         }
-        client = Mock()
-        client.info.return_value = {'version': {'number': '8.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.get.return_value = settings_ss
-        ilo = IndexList(client)
-        c2f = Cold2Frozen(ilo)
+        self.client.indices.get.return_value = settings_ss
+        c2f = Cold2Frozen(self.ilo)
         with pytest.raises(SearchableSnapshotException, match='Index is already in frozen tier'):
             for result in c2f.action_generator():
                 _ = result

@@ -1,4 +1,5 @@
 """test_action_restore"""
+# pylint: disable=missing-function-docstring, missing-class-docstring, protected-access, attribute-defined-outside-init
 from unittest import TestCase
 from mock import Mock
 from curator.actions import Restore

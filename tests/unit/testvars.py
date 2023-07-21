@@ -206,9 +206,10 @@ synced_fails    = {
                     },
                   }
 
+state_one  = [{'index': named_index, 'status': 'open'}]
+
 settings_one   = {
     named_index: {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -224,9 +225,13 @@ settings_one   = {
 
 settings_1_get_aliases = { named_index: { "aliases" : { 'my_alias' : { } } } }
 
+state_two = [
+    {'index': 'index-2016.03.03', 'status': 'open'},
+    {'index': 'index-2016.03.04', 'status': 'open'}
+]
+
 settings_two  = {
     'index-2016.03.03': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -239,7 +244,6 @@ settings_two  = {
         }
     },
     'index-2016.03.04': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -258,9 +262,13 @@ settings_2_get_aliases = {
     "index-2016.03.04": { "aliases" : { 'my_alias' : { } } },
 }
 
+state_2_closed  = [
+    {'index': 'index-2016.03.03', 'status': 'close'},
+    {'index': 'index-2016.03.04', 'status': 'open'},
+]
+
 settings_2_closed = {
     'index-2016.03.03': {
-        'state': 'close',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -273,7 +281,6 @@ settings_2_closed = {
         }
     },
     'index-2016.03.04': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -287,38 +294,15 @@ settings_2_closed = {
     }
 }
 
-settings_two_no_cd  = {
-    'index-2016.03.03': {
-        'state': 'open',
-        'aliases': ['my_alias'],
-        'mappings': {},
-        'settings': {
-            'index': {
-                'number_of_replicas': '1', 'uuid': 'random_uuid_string_here',
-                'number_of_shards': '5', 'creation_date': '1456963200172',
-                'routing': {'allocation': {'include': {'tag': 'foo'}}},
-                'version': {'created': '2020099'}, 'refresh_interval': '5s'
-            }
-        }
-    },
-    'index-2016.03.04': {
-        'state': 'open',
-        'aliases': ['my_alias'],
-        'mappings': {},
-        'settings': {
-            'index': {
-                'number_of_replicas': '1', 'uuid': 'another_random_uuid_string',
-                'number_of_shards': '5',
-                'routing': {'allocation': {'include': {'tag': 'bar'}}},
-                'version': {'created': '2020099'}, 'refresh_interval': '5s'
-            }
-        }
-    }
-}
+state_four  = [
+    {'index': 'a-2016.03.03', 'status': 'open'},
+    {'index': 'b-2016.03.04', 'status': 'open'},
+    {'index': 'c-2016.03.05', 'status': 'close'},
+    {'index': 'd-2016.03.06', 'status': 'open'},
+]
 
 settings_four  = {
     'a-2016.03.03': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -331,7 +315,6 @@ settings_four  = {
         }
     },
     'b-2016.03.04': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -344,7 +327,6 @@ settings_four  = {
         }
     },
     'c-2016.03.05': {
-        'state': 'close',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -357,7 +339,6 @@ settings_four  = {
         }
     },
     'd-2016.03.06': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -371,9 +352,13 @@ settings_four  = {
     }
 }
 
+state_named  = [
+    {'index': 'index-2015.01.01', 'status': 'open'},
+    {'index': 'index-2015.02.01', 'status': 'open'},
+]
+
 settings_named = {
     'index-2015.01.01': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -386,7 +371,6 @@ settings_named = {
         }
     },
     'index-2015.02.01': {
-        'state': 'open',
         'aliases': ['my_alias'],
         'mappings': {},
         'settings': {
@@ -397,32 +381,6 @@ settings_named = {
                 'version': {'created': '2020099'}, 'refresh_interval': '5s'
             }
         }
-    }
-}
-
-clu_state_one  = {
-    'metadata': {
-        'indices': settings_one
-    }
-}
-clu_state_two  = {
-    'metadata': {
-        'indices': settings_two
-    }
-}
-cs_two_closed  = {
-    'metadata': {
-        'indices': settings_2_closed
-    }
-}
-clu_state_two_no_cd  = {
-    'metadata': {
-        'indices': settings_two_no_cd
-    }
-}
-clu_state_four = {
-    'metadata': {
-        'indices': settings_four
     }
 }
 

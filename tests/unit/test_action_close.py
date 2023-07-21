@@ -1,5 +1,5 @@
 """Alias unit tests"""
-# pylint: disable=missing-function-docstring, missing-class-docstring, invalid-name, line-too-long
+# pylint: disable=missing-function-docstring, missing-class-docstring, invalid-name, line-too-long, attribute-defined-outside-init
 from unittest import TestCase
 from mock import Mock
 from curator import IndexList
@@ -8,83 +8,55 @@ from curator.actions.close import Close
 from . import testvars
 
 class TestActionClose(TestCase):
+    VERSION = {'version': {'number': '5.0.0'} }
+    def builder(self):
+        self.client = Mock()
+        self.client.info.return_value = self.VERSION
+        self.client.cat.indices.return_value = testvars.state_one
+        self.client.indices.get_settings.return_value = testvars.settings_one
+        self.client.indices.stats.return_value = testvars.stats_one
+        self.client.indices.flush_synced.return_value = testvars.synced_pass
+        self.client.indices.exists_alias.return_value = False
+        self.client.indices.close.return_value = None
+        self.ilo = IndexList(self.client)
     def test_init_raise(self):
         self.assertRaises(TypeError, Close, 'invalid')
     def test_init(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        ilo = IndexList(client)
-        co = Close(ilo)
-        self.assertEqual(ilo, co.index_list)
-        self.assertEqual(client, co.client)
+        self.builder()
+        self.client.indices.flush_synced.return_value = None
+        self.client.indices.close.return_value = None
+        clo = Close(self.ilo)
+        self.assertEqual(self.ilo, clo.index_list)
+        self.assertEqual(self.client, clo.client)
     def test_do_dry_run(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.flush_synced.return_value = testvars.synced_pass
-        client.indices.close.return_value = None
-        ilo = IndexList(client)
-        co = Close(ilo)
-        self.assertIsNone(co.do_dry_run())
+        self.builder()
+        self.ilo = IndexList(self.client)
+        clo = Close(self.ilo)
+        self.assertIsNone(clo.do_dry_run())
     def test_do_action(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.flush_synced.return_value = testvars.synced_pass
-        client.indices.close.return_value = None
-        ilo = IndexList(client)
-        co = Close(ilo)
-        self.assertIsNone(co.do_action())
+        self.builder()
+        self.ilo = IndexList(self.client)
+        clo = Close(self.ilo)
+        self.assertIsNone(clo.do_action())
     def test_do_action_with_delete_aliases(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.flush_synced.return_value = testvars.synced_pass
-        client.indices.close.return_value = None
-        ilo = IndexList(client)
-        co = Close(ilo, delete_aliases=True)
-        self.assertIsNone(co.do_action())
+        self.builder()
+        self.ilo = IndexList(self.client)
+        clo = Close(self.ilo, delete_aliases=True)
+        self.assertIsNone(clo.do_action())
     def test_do_action_with_skip_flush(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.flush_synced.return_value = testvars.synced_pass
-        client.indices.close.return_value = None
-        ilo = IndexList(client)
-        co = Close(ilo, skip_flush=True)
-        self.assertIsNone(co.do_action())
+        self.builder()
+        self.ilo = IndexList(self.client)
+        clo = Close(self.ilo, skip_flush=True)
+        self.assertIsNone(clo.do_action())
     def test_do_action_raises_exception(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.flush_synced.return_value = testvars.synced_pass
-        client.indices.close.return_value = None
-        client.indices.close.side_effect = testvars.fake_fail
-        ilo = IndexList(client)
-        co = Close(ilo)
-        self.assertRaises(FailedExecution, co.do_action)
+        self.builder()
+        self.client.indices.close.side_effect = testvars.fake_fail
+        self.ilo = IndexList(self.client)
+        clo = Close(self.ilo)
+        self.assertRaises(FailedExecution, clo.do_action)
     def test_do_action_delete_aliases_with_exception(self):
-        client = Mock()
-        client.info.return_value = {'version': {'number': '5.0.0'} }
-        client.indices.get_settings.return_value = testvars.settings_one
-        client.cluster.state.return_value = testvars.clu_state_one
-        client.indices.stats.return_value = testvars.stats_one
-        client.indices.flush_synced.return_value = testvars.synced_pass
-        client.indices.close.return_value = None
-        ilo = IndexList(client)
-        client.indices.delete_alias.side_effect = testvars.fake_fail
-        co = Close(ilo, delete_aliases=True)
-        self.assertIsNone(co.do_action())
+        self.builder()
+        self.ilo = IndexList(self.client)
+        self.client.indices.delete_alias.side_effect = testvars.fake_fail
+        clo = Close(self.ilo, delete_aliases=True)
+        self.assertIsNone(clo.do_action())
