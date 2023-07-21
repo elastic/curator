@@ -15,7 +15,7 @@ class TestActionFileforceMerge(CuratorTestCase):
         self.create_index(idx)
         self.add_docs(idx)
         ilo1 = IndexList(self.client)
-        ilo1._get_segment_counts()
+        ilo1.get_segment_counts()
         assert 3 == ilo1.index_info[idx]['segments']
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.forcemerge_test.format(count, 0.9))
@@ -26,7 +26,7 @@ class TestActionFileforceMerge(CuratorTestCase):
         # 3 checks before giving up and reporting the result.
         for _ in range(0, 3):
             self.client.indices.refresh(index=idx)
-            ilo2._get_segment_counts()
+            ilo2.get_segment_counts()
             if ilo2.index_info[idx]['segments'] == count:
                 break
             sleep(1)
@@ -43,7 +43,7 @@ class TestCLIforceMerge(CuratorTestCase):
         self.create_index(idx)
         self.add_docs(idx)
         ilo1 = IndexList(self.client)
-        ilo1._get_segment_counts()
+        ilo1.get_segment_counts()
         assert 3 == ilo1.index_info[idx]['segments']
         args = self.get_runner_args()
         args += [
@@ -60,7 +60,7 @@ class TestCLIforceMerge(CuratorTestCase):
         # This is forcing 3 checks before giving up and reporting the result.
         for _ in range(0, 3):
             self.client.indices.refresh(index=idx)
-            ilo2._get_segment_counts()
+            ilo2.get_segment_counts()
             if ilo2.index_info[idx]['segments'] == count:
                 break
             sleep(1)

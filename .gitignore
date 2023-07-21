@@ -25,6 +25,7 @@ elasticsearch_curator.egg-info
 elasticsearch_curator_dev.egg-info
 html_docs/
 index.html
+pytest.ini
 samples
 scratch
 test/.DS_Store
