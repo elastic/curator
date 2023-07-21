@@ -3,6 +3,31 @@
 Changelog
 =========
 
+8.0.8 (21 July 2023)
+--------------------
+
+**Announcements**
+
+Small change to further reduce memory usage by not creating unused data
+structures.
+
+This revealed a glitch with dry-runs that would eventually have been reported.
+
+**Changes**
+
+  * Don't populate IndexList.index_info until required by a filter. In other
+    words, stop populating the zero values as part of instantiation.
+  * This uncovered an oversight with the 8.0.7 release. Certain actions, if
+    taken with no filters, or only a pattern filter, would never ever populate
+    the index_info. This wasn't a huge problem, unless you were using the
+    dry-run flag. The dry-run output requires the index_info to be present for
+    each index. In 8.0.7, where the empty structure was already in place, a
+    dry-run wouldn't fail, but it also wouldn't show any data. This is fixed.
+  * A few tests also needed updating. They were using contrived scenarios to
+    test certain conditions. Now these tests are manually grabbing necessary
+    metadata so they can pass.
+
+
 8.0.7 (21 July 2023)
 --------------------
 
