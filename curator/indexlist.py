@@ -69,11 +69,9 @@ class IndexList:
         self.loggit.debug('Getting all indices')
         self.all_indices = get_indices(self.client)
         self.indices = self.all_indices[:]
-        if self.indices:
-            for index in self.indices:
-                self.__build_index_info(index)
-            # self.get_index_settings()
-            # self.get_index_stats()
+        # if self.indices:
+        #     for index in self.indices:
+        #         self.__build_index_info(index)
 
     def __build_index_info(self, index):
         """
@@ -128,10 +126,6 @@ class IndexList:
             'size_in_bytes' : 0,
             'state' : '',
         }
-
-    # def _get_cluster_state(self, data):
-    #     return self.client.cluster.state(
-    #         index=to_csv(data), metric='metadata')['metadata']['indices']
 
     def _get_indices_segments(self, data):
         return self.client.indices.segments(index=to_csv(data))['indices'].copy()

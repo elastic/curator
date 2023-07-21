@@ -69,7 +69,12 @@ def show_dry_run(ilo, action, **kwargs):
     logger.info(msg)
     indices = sorted(ilo.indices)
     for idx in indices:
-        index_closed = ilo.index_info[idx]['state'] == 'close'
+        # Dry runs need index state, so we collect it here if it's not present.
+        try:
+            index_closed = ilo.index_info[idx]['state'] == 'close'
+        except KeyError:
+            ilo.get_index_state()
+            index_closed = ilo.index_info[idx]['state'] == 'close'
         var = ' (CLOSED)' if index_closed else ''
         msg = f'DRY-RUN: {action}: {idx}{var} with arguments: {kwargs}'
         logger.info(msg)

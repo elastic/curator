@@ -92,6 +92,8 @@ class TestIndexListOtherMethods(TestCase):
     def test_get_segmentcount(self):
         self.builder(key='1')
         self.client.indices.segments.return_value = testvars.shards
+        # Ordinarily get_index_state is run before get_segment_counts, so we do so manually here.
+        self.ilo.get_index_state()
         self.ilo.get_segment_counts()
         self.assertEqual(71, self.ilo.index_info[testvars.named_index]['segments'])
 
@@ -106,6 +108,8 @@ class TestIndexListAgeFilterName(TestCase):
         self.ilo = IndexList(self.client)
     def test_get_name_based_ages_match(self):
         self.builder()
+        self.ilo.get_index_state()
+        self.ilo.get_index_settings()
         self.ilo._get_name_based_ages('%Y.%m.%d')
         self.assertEqual(1456963200, self.ilo.index_info['index-2016.03.03']['age']['name'])
     def test_get_name_based_ages_no_match(self):
@@ -256,6 +260,8 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual(['index-2016.03.03','index-2016.03.04'], sorted(self.ilo.indices))
     def test_creation_date_older_than_now_raises(self):
         self.builder()
+        self.ilo.get_index_state()
+        self.ilo.get_index_settings()
         self.ilo.index_info['index-2016.03.03']['age'].pop('creation_date')
         self.ilo.index_info['index-2016.03.04']['age'].pop('creation_date')
         self.ilo.filter_by_age(
@@ -270,6 +276,8 @@ class TestIndexListFilterByAge(TestCase):
         self.assertEqual([], sorted(self.ilo.indices))
     def test_creation_date_younger_than_now_raises(self):
         self.builder()
+        self.ilo.get_index_state()
+        self.ilo.get_index_settings()
         self.ilo.index_info['index-2016.03.03']['age'].pop('creation_date')
         self.ilo.index_info['index-2016.03.04']['age'].pop('creation_date')
         self.ilo.filter_by_age(
@@ -802,6 +810,8 @@ class TestIndexListPeriodFilterName(TestCase):
         range_to = 0
         expected = []
         self.builder()
+        self.ilo.get_index_state()
+        self.ilo.get_index_settings()
         self.ilo.index_info['index-2016.03.03']['age'].pop('creation_date')
         self.ilo.index_info['index-2016.03.04']['age'].pop('creation_date')
         self.ilo.filter_period(unit=self.unit, range_from=range_from, range_to=range_to,
