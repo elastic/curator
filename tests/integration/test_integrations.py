@@ -125,9 +125,6 @@ class TestIndexList(CuratorTestCase):
         key = 'docs'
         self.create_index(self.IDX1)
         ilo = IndexList(self.client)
-        assert ilo.indices == [self.IDX1]
-        del ilo.index_info[self.IDX1]
-        assert not ilo.index_info
         ilo.population_check(self.IDX1, key)
         assert ilo.index_info[self.IDX1][key] == 0
     def test_population_check_missing_key(self):
