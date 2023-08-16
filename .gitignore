@@ -25,6 +25,7 @@ html_docs/
 index.html
 msi_guid.txt
 nosetests.xml
+pytest.ini
 samples
 scratch
 test/.DS_Store

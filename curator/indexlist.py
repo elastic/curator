@@ -204,7 +204,7 @@ class IndexList(object):
                         wl['settings'] = alt_wl['settings']
 
                     if 'creation_date' not in wl['settings']['index']:
-                        self.loggit.warn(
+                        self.loggit.warning(
                             'Index: {0} has no "creation_date"! This implies '
                             'that the index predates Elasticsearch v1.4. For '
                             'safety, this index will be removed from the '
@@ -974,7 +974,7 @@ class IndexList(object):
         for group in groups:
             if use_age:
                 if source != 'name':
-                    self.loggit.warn(
+                    self.loggit.warning(
                         'Cannot get age information from closed indices unless '
                         'source="name".  Omitting any closed indices.'
                     )

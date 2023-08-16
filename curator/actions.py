@@ -57,7 +57,7 @@ class Alias(object):
             # Add a warning if there are no indices to add, if so set in options
             if warn_if_no_indices:
                 self.warn_if_no_indices = True
-                self.loggit.warn(
+                self.loggit.warning(
                     'No indices found after processing filters. '
                     'Nothing to add to {0}'.format(self.name)
                 )
@@ -91,7 +91,7 @@ class Alias(object):
             # Add a warning if there are no indices to add, if so set in options
             if warn_if_no_indices:
                 self.warn_if_no_indices = True
-                self.loggit.warn(
+                self.loggit.warning(
                     'No indices found after processing filters. '
                     'Nothing to remove from {0}'.format(self.name)
                 )
@@ -326,7 +326,7 @@ class Close(object):
                         self.client.indices.delete_alias(index=lst_as_csv, name='_all')
                         self.loggit.debug('Deleted aliases from: {0}'.format(lst))
                     except Exception as err:
-                        self.loggit.warn(
+                        self.loggit.warning(
                             'Some indices may not have had aliases.  Exception:'
                             ' {0}'.format(err)
                         )
@@ -337,7 +337,7 @@ class Close(object):
                         if not self.ignore_sync_failures:
                             raise ConflictError(err.status_code, err.error, err.info)
                         else:
-                            self.loggit.warn(
+                            self.loggit.warning(
                                 'Ignoring flushed sync failures: '
                                 '{0} {1}'.format(err.error, err.info)
                             )
@@ -495,7 +495,7 @@ class CreateIndex(object):
         except RequestError as err:
             match_list = ["index_already_exists_exception", "resource_already_exists_exception"]
             if err.error in match_list and self.ignore_existing:
-                self.loggit.warn('Index %s already exists.' % self.name)
+                self.loggit.warning('Index %s already exists.' % self.name)
             else:
                 raise exceptions.FailedExecution('Index %s already exists.' % self.name)
         except Exception as err:
@@ -751,7 +751,7 @@ class IndexSettings(object):
                 # Act here if the case is different for some settings.
                 pass
             else:
-                self.loggit.warn(
+                self.loggit.warning(
                     '"{0}" is not a setting Curator recognizes and may or may '
                     'not work.'.format(k)
                 )
@@ -1518,7 +1518,7 @@ class Reindex(object):
                     self._post_run_quick_check(dest, response['task'])
 
                 else:
-                    self.loggit.warn(
+                    self.loggit.warning(
                         '"wait_for_completion" set to {0}.  Remember '
                         'to check task_id "{1}" for successful completion '
                         'manually.'.format(self.wfc, response['task'])
@@ -1682,7 +1682,7 @@ class Snapshot(object):
                 )
                 self.report_state()
             else:
-                self.loggit.warn(
+                self.loggit.warning(
                     '"wait_for_completion" set to {0}.'
                     'Remember to check for successful completion '
                     'manually.'.format(self.wait_for_completion)
@@ -1752,7 +1752,7 @@ class Restore(object):
         self.name = name if name else most_recent
         # Stop here now, if it's not a successful snapshot.
         if slo.snapshot_info[self.name]['state'] == 'PARTIAL' and partial:
-            self.loggit.warn(
+            self.loggit.warning(
                 'Performing restore of snapshot in state PARTIAL.')
         elif slo.snapshot_info[self.name]['state'] != 'SUCCESS':
             raise exceptions.CuratorException(
@@ -1918,7 +1918,7 @@ class Restore(object):
                 )
                 self.report_state()
             else:
-                self.loggit.warn(
+                self.loggit.warning(
                     '"wait_for_completion" set to {0}. '
                     'Remember to check for successful completion '
                     'manually.'.format(self.wfc)
@@ -2061,7 +2061,7 @@ class Shrink(object):
             self.loggit.info('Skipping node "{0}": master node'.format(name))
             return False
         elif 'master' in roles and self.node_filters['permit_masters']:
-            self.loggit.warn(
+            self.loggit.warning(
                 'Not skipping node "{0}" which is a master node (not recommended), but '
                 'permit_masters is True'.format(name)
             )
@@ -2152,7 +2152,7 @@ class Shrink(object):
         if not dry_run:
             raise exceptions.ActionError(error_msg)
         else:
-            self.loggit.warn('DRY-RUN: {0}'.format(error_msg))
+            self.loggit.warning('DRY-RUN: {0}'.format(error_msg))
 
     def _block_writes(self, idx):
         block = {'index.blocks.write': True}
