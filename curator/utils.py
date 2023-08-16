@@ -793,7 +793,7 @@ def process_auth_args(data):
     password = data.pop('password', False)
     if http_auth:
         # No change to http_auth
-        LOGGER.warn(
+        LOGGER.warning(
             'Use of "http_auth" is deprecated. Please use "username" and "password" instead.')
     elif username and password:
         http_auth = (username, password)
@@ -934,7 +934,7 @@ def do_version_check(client, skip):
     Do a test of the Elasticsearch version, unless ``skip`` is ``True``
     """
     if skip:
-        LOGGER.warn(
+        LOGGER.warning(
             'Skipping Elasticsearch version verification. This is '
             'acceptable for remote reindex operations.'
         )
@@ -1699,13 +1699,13 @@ def snapshot_check(client, snapshot=None, repository=None):
         LOGGER.info(
             'Snapshot {0} successfully completed.'.format(snapshot))
     elif state == 'PARTIAL':
-        LOGGER.warn(
+        LOGGER.warning(
             'Snapshot {0} completed with state PARTIAL.'.format(snapshot))
     elif state == 'FAILED':
         LOGGER.error(
             'Snapshot {0} completed with state FAILED.'.format(snapshot))
     else:
-        LOGGER.warn(
+        LOGGER.warning(
             'Snapshot {0} completed with state: {0}'.format(snapshot))
     return True
 

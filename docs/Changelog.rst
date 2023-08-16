@@ -3,6 +3,20 @@
 Changelog
 =========
 
+7.0.1 (16 August 2023)
+----------------------
+
+**Changes**
+
+  * This release brings some Python modules up to current releases, namely:
+      * ``certifi>=2023.5.7``
+      * ``click==8.1.4``
+      * ``elasticsearch7==7.17.9``
+      * ``pyyaml==6.0.1``
+  * The PyYAML change is notable as the Cython 3.0 upgrade caused it to no longer work.
+    Version 6.0.1 fixes that, enabling Curator to build again.
+  * ``cx_Freeze`` changed some configurations to be more Pythonic. #1681 fixes that.
+
 7.0.0 (31 January 2023)
 -----------------------
 

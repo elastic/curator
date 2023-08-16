@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG PYVER=3.11.1
+ARG PYVER=3.11.4
 ARG ALPTAG=3.17
 FROM python:${PYVER}-alpine${ALPTAG} as builder
 
