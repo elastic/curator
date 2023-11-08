@@ -1,7 +1,7 @@
 """Alias unit tests"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, invalid-name, line-too-long, attribute-defined-outside-init
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 from curator import IndexList
 from curator.exceptions import MissingArgument
 from curator.actions.allocation import Allocation

@@ -14,7 +14,7 @@ HOST = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
 
 # class TestLoggingModules(CuratorTestCase):
 #     def test_logger_without_null_handler(self):
-#         from mock import patch, Mock
+#         from unittest.mock import patch, Mock
 #         mock = Mock()
 #         modules = {'logger': mock, 'logger.NullHandler': mock.module}
 #         self.write_config(

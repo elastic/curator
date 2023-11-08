@@ -1,6 +1,6 @@
 """Unit testing for helpers.creators functions"""
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 import pytest
 from elastic_transport import ApiResponseMeta
 from elasticsearch8 import NotFoundError, TransportError

@@ -1,6 +1,6 @@
 """Unit tests for create_index action"""
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 from curator.actions import CreateIndex
 from curator.exceptions import ConfigurationError, FailedExecution
 # Get test variables and constants from a single source

@@ -1,7 +1,7 @@
 """Unit tests for utils"""
 from unittest import TestCase
 import pytest
-from mock import Mock
+from unittest.mock import Mock
 from curator.exceptions import ActionTimeout, ConfigurationError, CuratorException, MissingArgument
 from curator.helpers.waiters import (
     health_check, restore_check, snapshot_check,task_check, wait_for_it)

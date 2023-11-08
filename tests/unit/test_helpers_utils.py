@@ -1,7 +1,7 @@
 """Unit tests for utils"""
 from unittest import TestCase
 # import pytest
-from mock import Mock
+from unittest.mock import Mock
 # from curator.exceptions import MissingArgument
 from curator.indexlist import IndexList
 from curator.helpers.utils import chunk_index_list, show_dry_run, to_csv
