@@ -1,8 +1,8 @@
 """Validate root ``actions`` and individual ``action`` Schemas"""
 from voluptuous import Any, In, Schema, Optional, Required
 from six import string_types
+from es_client.helpers.schemacheck import SchemaCheck
 from curator.defaults import settings
-from curator.validators import SchemaCheck
 
 def root():
     """

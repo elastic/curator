@@ -1,11 +1,12 @@
 """Index Rollover Singleton"""
 import click
+from es_client.helpers.config import context_settings
 from es_client.helpers.utils import prune_nones
 from curator.cli_singletons.object_class import CLIAction
-from curator.cli_singletons.utils import get_width, json_to_dict
+from curator.cli_singletons.utils import json_to_dict
 
 # pylint: disable=line-too-long
-@click.command(context_settings=get_width())
+@click.command(context_settings=context_settings())
 @click.option('--name', type=str, help='Alias name', required=True)
 @click.option('--max_age', type=str, help='max_age condition value (see documentation)')
 @click.option('--max_docs', type=str, help='max_docs condition value (see documentation)')

@@ -1,11 +1,11 @@
-:curator_version: 8.0.8
+:curator_version: 8.0.9
 :curator_major: 8
 :curator_doc_tree: 8.0
-:es_py_version: 8.8.2
-:es_doc_tree: 8.8
-:stack_doc_tree: 8.8
-:pybuild_ver: 3.11.4
-:copyright_years: 2011-2023
+:es_py_version: 8.12.0
+:es_doc_tree: 8.12
+:stack_doc_tree: 8.12
+:pybuild_ver: 3.11.7
+:copyright_years: 2011-2024
 :ref:  http://www.elastic.co/guide/en/elasticsearch/reference/{es_doc_tree}
 :esref: http://www.elastic.co/guide/en/elasticsearch/reference/{stack_doc_tree}
 :fbref: https://www.elastic.co/guide/en/beats/filebeat/{stack_doc_tree}

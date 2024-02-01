@@ -1,10 +1,11 @@
 """Snapshot Singleton"""
 import click
+from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
-from curator.cli_singletons.utils import get_width, validate_filter_json
+from curator.cli_singletons.utils import validate_filter_json
 
 # pylint: disable=line-too-long
-@click.command(context_settings=get_width())
+@click.command(context_settings=context_settings())
 @click.option('--repository', type=str, required=True, help='Snapshot repository')
 @click.option('--name', type=str, help='Snapshot name', show_default=True, default='curator-%Y%m%d%H%M%S')
 @click.option('--ignore_unavailable', is_flag=True, show_default=True, help='Ignore unavailable shards/indices.')

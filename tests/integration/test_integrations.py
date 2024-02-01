@@ -2,7 +2,7 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
 import pytest
-from curator.exceptions import ConfigurationError
+from es_client.exceptions import FailedValidation
 from curator.helpers.getters import get_indices
 from curator import IndexList
 from . import CuratorTestCase
@@ -37,7 +37,7 @@ class TestFilters(CuratorTestCase):
         self.create_index('dummy')
         self.client.indices.put_alias(index='dummy', name=alias)
         self.invoke_runner()
-        assert isinstance(self.result.exception, ConfigurationError)
+        assert isinstance(self.result.exception, FailedValidation)
         assert 2 == len(get_indices(self.client))
     def test_field_stats_skips_empty_index(self):
         delete_field_stats = ('---\n'

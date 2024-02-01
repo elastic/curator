@@ -28,14 +28,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "elasticsearch8==8.8.2",
-    "es_client==8.8.2.post1",
-    "ecs-logging==2.0.2",
-    "click==8.1.4",
-    "pyyaml==6.0.1",
-    "voluptuous>=0.13.1",
-    "certifi>=2023.5.7",
-    "six>=1.16.0",
+    "es_client==8.12.3"
 ]
 
 [project.optional-dependencies]
@@ -49,7 +42,7 @@ doc = ["sphinx", "sphinx_rtd_theme"]
 
 [project.scripts]
 curator = "curator.cli:cli"
-curator_cli = "curator.curator_cli:main"
+curator_cli = "curator.singletons:curator_cli"
 es_repo_mgr = "curator.repomgrcli:repo_mgr_cli"
 
 [project.urls]
@@ -93,7 +86,7 @@ dependencies = [
 
 [tool.hatch.envs.test.scripts]
 step0 = "$(docker_test/scripts/destroy.sh 2&>1 /dev/null)"
-step1 = "step0 ; echo 'Starting test environment in Docker...' ; $(AUTO_EXPORT=y docker_test/scripts/create.sh 8.6.1 2&>1 /dev/null)"
+step1 = "step0 ; echo 'Starting test environment in Docker...' ; $(AUTO_EXPORT=y docker_test/scripts/create.sh 8.12.1 2&>1 /dev/null)"
 step2 = "step1 ; source docker_test/curatortestenv; echo 'Running tests:'"
 step3 = "step2 ; pytest ; EXITCODE=$?"
 step4 = "step3 ; echo 'Tests complete! Destroying Docker test environment...' "
@@ -103,7 +96,7 @@ run = "run-coverage --no-cov"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.9", "3.10", "3.11"]
-version = ["8.0.5"]
+version = ["8.0.9"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "curator"]

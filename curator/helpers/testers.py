@@ -3,12 +3,13 @@ import logging
 from voluptuous import Schema
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import NotFoundError
+from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator.helpers.getters import get_repository, get_write_index
 from curator.exceptions import (
     ConfigurationError, MissingArgument, RepositoryException, SearchableSnapshotException)
 from curator.defaults.settings import index_filtertypes, snapshot_actions, snapshot_filtertypes
-from curator.validators import SchemaCheck, actions, options
+from curator.validators import actions, options
 from curator.validators.filter_functions import validfilters
 from curator.helpers.utils import report_failure
 

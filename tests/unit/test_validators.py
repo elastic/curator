@@ -1,8 +1,9 @@
 """Test filter and schema validators"""
 from unittest import TestCase
 from voluptuous import Schema
+from es_client.exceptions import FailedValidation
+from es_client.helpers.schemacheck import SchemaCheck
 from curator.exceptions import ConfigurationError
-from curator.validators import SchemaCheck
 from curator.validators.filter_functions import validfilters, singlefilter
 
 
@@ -167,7 +168,7 @@ class TestFilterTypes(TestCase):
             'filters',
             'testing'
         )
-        self.assertRaises(ConfigurationError, schema.result)
+        self.assertRaises(FailedValidation, schema.result)
     def test_space_field_stats_age(self):
         action = 'delete_indices'
         config = [
@@ -198,7 +199,7 @@ class TestFilterTypes(TestCase):
             'filters',
             'testing'
         )
-        self.assertRaises(ConfigurationError, schema.result)
+        self.assertRaises(FailedValidation, schema.result)
     def test_space_creation_date_age(self):
         action = 'delete_indices'
         config = [

@@ -1,7 +1,7 @@
 """Test CLI functionality"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
-from curator.exceptions import ConfigurationError
+from es_client.exceptions import FailedValidation
 from curator.helpers.getters import get_indices
 from . import CuratorTestCase
 from . import testvars
@@ -24,7 +24,7 @@ class TestCLIMethods(CuratorTestCase):
     def test_cli_unreachable_cloud_id(self):
         self.create_indices(10)
         self.write_config(self.args['actionfile'], testvars.disabled_proto.format('close', 'delete_indices'))
-        self.invoke_runner_alt(hosts='http://127.0.0.2:9200', cloud_id='abc:def', username='user', password='pass')
+        self.invoke_runner_alt(cloud_id='abc:def', username='user', password='pass')
         assert 1 == self.result.exit_code
     def test_no_config(self):
         # This test checks whether localhost:9200 is provided if no hosts or
@@ -36,7 +36,7 @@ class TestCLIMethods(CuratorTestCase):
         if HOST == 'http://127.0.0.1:9200':
             localtest = True
         self.create_indices(10)
-        self.write_config(self.args['configfile'], ' \n') # Empty file.
+        self.write_config(self.args['configfile'], '---\n') # Empty YAML file.
         self.write_config(self.args['actionfile'], testvars.disabled_proto.format('close', 'delete_indices'))
         self.invoke_runner()
         if localtest:
@@ -65,12 +65,12 @@ class TestCLIMethods(CuratorTestCase):
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.optionless_proto.format(' '))
         self.invoke_runner()
-        assert isinstance(self.result.exception, ConfigurationError)
+        assert isinstance(self.result.exception, FailedValidation)
     def test_no_action(self):
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.actionless_proto)
         self.invoke_runner()
-        assert isinstance(self.result.exception, ConfigurationError)
+        assert isinstance(self.result.exception, FailedValidation)
     def test_dry_run(self):
         self.create_indices(10)
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
