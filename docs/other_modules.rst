@@ -10,10 +10,6 @@ Other Modules
 
 .. autofunction:: process_action
 
-.. autofunction:: override_logging
-
-.. autofunction:: cli_hostslist
-
 .. autofunction:: ilm_action_skip
 
 .. autofunction:: exception_handler
@@ -81,34 +77,6 @@ Other Modules
     :type logformat: str
     :type action_file: str
 
-``curator.config_utils``
-========================
-
-.. py:module:: curator.config_utils
-
-.. autofunction:: check_logging_config
-
-.. autofunction:: set_logging
-
-.. autofunction:: password_filter
-
-``curator.logtools``
-====================
-
-.. py:module:: curator.logtools
-
-.. autofunction:: de_dot
-
-.. autofunction:: deepmerge
-
-.. autoclass:: LogInfo
-
-``curator.logtools.LogstashFormatter``
---------------------------------------
-
-This inherits from :py:class:`logging.Formatter`, so some of what you see documented is inherited.
-
-.. autoclass:: LogstashFormatter
 
 ``curator.repomgrcli``
 ======================

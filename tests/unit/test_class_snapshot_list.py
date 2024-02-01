@@ -2,6 +2,7 @@
 from unittest import TestCase
 from mock import Mock
 import yaml
+from es_client.exceptions import FailedValidation
 from curator import SnapshotList
 from curator.exceptions import ConfigurationError, FailedExecution, MissingArgument, NoSnapshots
 # Get test variables and constants from a single source
@@ -307,7 +308,7 @@ class TestIterateFiltersSnaps(TestCase):
         slo = SnapshotList(client, repository=testvars.repo_name)
         config = {'filters': [{'no_filtertype':'fail'}]}
         self.assertRaises(
-            ConfigurationError, slo.iterate_filters, config)
+            FailedValidation, slo.iterate_filters, config)
     def test_invalid_filtertype_class(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshots
@@ -315,7 +316,7 @@ class TestIterateFiltersSnaps(TestCase):
         slo = SnapshotList(client, repository=testvars.repo_name)
         config = {'filters': [{'filtertype':12345.6789}]}
         self.assertRaises(
-            ConfigurationError, slo.iterate_filters, config)
+            FailedValidation, slo.iterate_filters, config)
     def test_invalid_filtertype(self):
         client = Mock()
         client.snapshot.get.return_value = testvars.snapshots
@@ -323,7 +324,7 @@ class TestIterateFiltersSnaps(TestCase):
         slo = SnapshotList(client, repository=testvars.repo_name)
         config = yaml.load(testvars.invalid_ft, Loader=yaml.FullLoader)['actions'][1]
         self.assertRaises(
-            ConfigurationError,
+            FailedValidation,
             slo.iterate_filters, config
         )
     def test_age_filtertype(self):

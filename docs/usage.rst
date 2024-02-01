@@ -46,17 +46,18 @@ Logging
 =======
 
 Elasticsearch Curator uses the standard `logging library`_ from Python. It inherits the
-``elastic_transport`` logger from ``elasticsearch-py``. Clients use the ``elastic_transport``
-logger to log standard activity, depending on the log level.
+``ecs-logging`` formatting module from ``es_client``, which inherits the ``elastic_transport``
+logger from ``elasticsearch8``. Clients use the ``elastic_transport`` logger to log standard
+activity, depending on the log level.
 
-It is recommended to use :py:class:`~.curator.config_utils.set_logging` to enable logging, as this
-has been provided for you.
+It is recommended to use :py:class:`~.es_client.helpers.logging.set_logging` to enable
+logging, as this has been provided for you.
 
 This is quite simple:
 
 .. code-block:: python
 
-    from curator.config_utils import set_logging
+    from es_client.helpers.logging import set_logging
     import logging
 
     LOG = {
@@ -86,9 +87,9 @@ and ``CRITICAL``.
 The setting ``logfile`` must be ``None`` or a path to a writeable file. If ``None``, it will log to
 ``STDOUT``.
 
-Available settings for ``logformat`` are: ``default``, ``json``, ``logstash``, and ``ecs``. The
-options ``json`` and ``logstash`` are synonymous. The ``ecs`` option uses
-`the Python ECS Log Formatter`_ and is great if you plan on ingesting your logs into Elasticsearch.
+Available settings for ``logformat`` are: ``default``, ``json``, and ``ecs``. The ``ecs`` option
+uses `the Python ECS Log Formatter`_ and is great if you plan on ingesting your logs into
+Elasticsearch.
 
 Blacklisting logs by way of the ``blacklist`` setting should remain configured with the defaults
 (``['elastic_transport', 'urllib3']``), unless you are troubleshooting a connection issue. The

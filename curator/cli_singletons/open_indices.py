@@ -1,9 +1,10 @@
 """Open (closed) Index Singleton"""
 import click
+from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
-from curator.cli_singletons.utils import get_width, validate_filter_json
+from curator.cli_singletons.utils import validate_filter_json
 
-@click.command(name='open', context_settings=get_width())
+@click.command(name='open', context_settings=context_settings())
 @click.option(
     '--ignore_empty_list',
     is_flag=True,

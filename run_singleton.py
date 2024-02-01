@@ -19,11 +19,11 @@ Be sure to substitute your unicode variant for en_US.utf8
 """
 import sys
 import click
-from curator.singletons import cli
+from curator.singletons import curator_cli
 
 if __name__ == '__main__':
     try:
-        cli(obj={})
+        curator_cli()
     except RuntimeError as err:
         click.echo(f'{err}')
         sys.exit(1)

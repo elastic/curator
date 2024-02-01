@@ -3,6 +3,33 @@
 Changelog
 =========
 
+8.0.9 (31 January 2024)
+-----------------------
+
+**Announcements**
+
+Curator is improving command-line options using new defaults and helpers from
+from the ``es_client`` module. This will make things appear a bit cleaner at
+the command-line as well as normalize command-line structure between projects
+using ``es_client``. No more reimplementing the same code in 5 different
+projects!
+
+**Changes**
+
+  * Fix Docker logging per #1694. It should detect whether that path exists and
+    that the process has write permissions before blindly attempting to use it.
+  * If ``--config`` is not specified Curator will now assume you either mean to
+    use CLI options exclusively or look for a config in the default location.
+    Curator will not halt on the absence of ``--config`` any more, per #1698
+  * Increment Dockerfile settings to ``python:3.11.7-alpine3.18``
+  * Some command-line options are hidden by default now but remain usable. The
+    help output explains how to see the full list, if needed.
+  * Dependency bumps
+      * As ``es_client`` covers all of the same upstream dependencies that were
+        necessary in previous releases, all local dependencies have been erased
+        in favor of that one.  For this release, that is ``es_client==8.12.3``
+
+
 8.0.8 (21 July 2023)
 --------------------
 

@@ -1,10 +1,11 @@
 """Shrink Index Singleton"""
 import click
+from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
-from curator.cli_singletons.utils import get_width, json_to_dict, validate_filter_json
+from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 
 # pylint: disable=line-too-long
-@click.command(context_settings=get_width())
+@click.command(context_settings=context_settings())
 @click.option('--shrink_node', default='DETERMINISTIC', type=str, help='Named node, or DETERMINISTIC', show_default=True)
 @click.option('--node_filters', help='JSON version of node_filters (see documentation)', callback=json_to_dict)
 @click.option('--number_of_shards', default=1, type=int, help='Shrink to this many shards per index')

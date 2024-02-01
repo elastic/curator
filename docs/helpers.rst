@@ -41,6 +41,7 @@ Date Ops
 
 .. autofunction:: parse_datemath
 
+
 .. _helpers_getters:
 
 Getters
@@ -50,9 +51,11 @@ Getters
 
 .. autofunction:: byte_size
 
-.. autofunction:: get_client
+.. autofunction:: get_alias_actions
 
 .. autofunction:: get_data_tiers
+
+.. autofunction:: get_frozen_prefix
 
 .. autofunction:: get_indices
 
@@ -61,6 +64,8 @@ Getters
 .. autofunction:: get_snapshot
 
 .. autofunction:: get_snapshot_data
+
+.. autofunction:: get_tier_preference
 
 .. autofunction:: get_write_index
 

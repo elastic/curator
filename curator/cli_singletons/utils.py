@@ -1,12 +1,7 @@
 """Singleton Utils Module"""
 import json
-from shutil import get_terminal_size
 from click import BadParameter
 from es_client.helpers.utils import ensure_list
-
-def get_width():
-    """Determine terminal width"""
-    return dict(max_content_width=get_terminal_size()[0])
 
 # Click functions require ctx and param to be passed positionally even if not used
 # pylint: disable=unused-argument

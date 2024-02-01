@@ -4,6 +4,7 @@ from unittest import TestCase
 from copy import deepcopy
 from mock import Mock
 import yaml
+from es_client.exceptions import FailedValidation
 from curator.exceptions import ActionError, ConfigurationError, FailedExecution, MissingArgument, NoIndices
 from curator.helpers.date_ops import fix_epoch
 from curator import IndexList
@@ -551,12 +552,12 @@ class TestIterateFiltersIndex(TestCase):
         self.builder(key='4')
         config = {'filters': [{'no_filtertype':'fail'}]}
         self.assertRaises(
-            ConfigurationError, self.ilo.iterate_filters, config)
+            FailedValidation, self.ilo.iterate_filters, config)
     def test_invalid_filtertype(self):
         self.builder(key='4')
         config = {'filters': [{'filtertype':12345.6789}]}
         self.assertRaises(
-            ConfigurationError, self.ilo.iterate_filters, config)
+            FailedValidation, self.ilo.iterate_filters, config)
     def test_pattern_filtertype(self):
         self.builder(key='4')
         config = yaml.load(testvars.pattern_ft, Loader=yaml.FullLoader)['actions'][1]
@@ -614,7 +615,7 @@ class TestIterateFiltersIndex(TestCase):
     def test_unknown_filtertype_raises(self):
         self.builder()
         config = yaml.load(testvars.invalid_ft, Loader=yaml.FullLoader)['actions'][1]
-        self.assertRaises(ConfigurationError, self.ilo.iterate_filters, config)
+        self.assertRaises(FailedValidation, self.ilo.iterate_filters, config)
     def test_ilm_filtertype_exclude(self):
         self.builder()
         # If we don't deepcopy, then it munges the settings for future references.

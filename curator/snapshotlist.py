@@ -1,6 +1,7 @@
 """SnapshotList"""
 import re
 import logging
+from es_client.helpers.schemacheck import SchemaCheck
 from curator.exceptions import ConfigurationError, FailedExecution, MissingArgument, NoSnapshots
 from curator.helpers.date_ops import (
     absolute_date_range, date_range, fix_epoch, get_date_regex, get_point_of_reference,
@@ -10,7 +11,6 @@ from curator.helpers.getters import get_snapshot_data
 from curator.helpers.testers import repository_exists, verify_client_object
 from curator.helpers.utils import report_failure
 from curator.defaults import settings
-from curator.validators import SchemaCheck
 from curator.validators.filter_functions import filterstructure
 
 class SnapshotList:

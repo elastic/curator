@@ -1,10 +1,11 @@
 """Delete Index and Delete Snapshot Singletons"""
 import click
+from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
-from curator.cli_singletons.utils import get_width, validate_filter_json
+from curator.cli_singletons.utils import validate_filter_json
 
 #### Indices ####
-@click.command(context_settings=get_width())
+@click.command(context_settings=context_settings())
 @click.option(
     '--ignore_empty_list',
     is_flag=True,
@@ -38,7 +39,7 @@ def delete_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])
 
 #### Snapshots ####
-@click.command(context_settings=get_width())
+@click.command(context_settings=context_settings())
 @click.option('--repository', type=str, required=True, help='Snapshot repository name')
 @click.option('--retry_count', type=int, help='Number of times to retry (max 3)')
 @click.option('--retry_interval', type=int, help='Time in seconds between retries')
