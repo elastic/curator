@@ -146,7 +146,8 @@ class TestCLIDeleteRepository(CuratorTestCase):
 class TestCLIShowRepositories(CuratorTestCase):
     def test_show_repository(self):
         self.create_repository()
-        self.write_config(self.args['configfile'], testvars.client_conf_logfile.format(HOST, os.devnull))
+        self.write_config(
+            self.args['configfile'], testvars.client_conf_logfile.format(HOST, os.devnull))
         test = clicktest.CliRunner()
         result = test.invoke(
             repo_mgr_cli,
@@ -155,4 +156,5 @@ class TestCLIShowRepositories(CuratorTestCase):
                 'show'
             ]
         )
-        assert self.args['repository'] == result.output.rstrip()
+        # The splitlines()[-1] allows me to only capture the last line and ignore other output
+        assert self.args['repository'] == result.output.splitlines()[-1]

@@ -1,10 +1,11 @@
 """Snapshot Restore Singleton"""
 import click
+from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
-from curator.cli_singletons.utils import get_width, json_to_dict, validate_filter_json
+from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 
 # pylint: disable=line-too-long
-@click.command(context_settings=get_width())
+@click.command(context_settings=context_settings())
 @click.option('--repository', type=str, required=True, help='Snapshot repository')
 @click.option('--name', type=str, help='Snapshot name', required=False, default=None)
 @click.option('--index', multiple=True, help='Index name to restore. (Can invoke repeatedly for multiple indices)')

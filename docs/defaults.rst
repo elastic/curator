@@ -19,13 +19,6 @@ Filter Types
 .. automodule:: curator.defaults.filtertypes
    :members:
 
-.. _defaults_logging:
-
-Logging Defaults
-================
-
-.. automodule:: curator.defaults.logging_defaults
-   :members:
 
 .. _defaults_options:
 

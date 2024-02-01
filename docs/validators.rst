@@ -3,12 +3,6 @@
 Validators
 ##########
 
-SchemaCheck
-===========
-
-.. autoclass:: curator.validators.SchemaCheck
-   :members:
-
 Actions
 =======
 
@@ -26,10 +20,3 @@ Filter Functions
 
 .. automodule:: curator.validators.filter_functions
    :members:
-
-Log Config
-==========
-
-.. automodule:: curator.validators.logconfig
-   :members:
-

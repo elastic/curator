@@ -2,26 +2,45 @@
 from os import path
 from six import string_types
 from voluptuous import Any, Boolean, Coerce, Optional
+from curator.exceptions import CuratorException
 
-# Elasticsearch versions supported
-def version_max():
+CURATOR_DOCS = 'https://www.elastic.co/guide/en/elasticsearch/client/curator'
+CLICK_DRYRUN = {
+    'dry-run': {'help': 'Do not perform any changes.', 'is_flag': True},
+}
+
+# Click specifics
+
+def footer(version, tail='index.html'):
     """
-    :returns: The maximum Elasticsearch version Curator supports: ``(8, 99, 99)``
+    Generate a footer linking to Curator docs based on Curator version
+
+    :param version: The Curator version
+
+    :type version: str
+    
+    :returns: An epilog/footer suitable for Click
     """
-    return (8, 99, 99)
-def version_min():
-    """
-    :returns: The minimum Elasticsearch version Curator supports: ``(8, 99, 99)``
-    """
-    return (8, 0, 0)
+    if not isinstance(version, str):
+        raise CuratorException('Parameter version is not a string: {type(version)}')
+    majmin = ''
+    try:
+        ver = version.split('.')
+        majmin = f'{ver[0]}.{ver[1]}'
+    except Exception as exc:
+        msg = f'Could not determine Curator version from provided value: {version}'
+        raise CuratorException(msg) from exc
+    return f'Learn more at {CURATOR_DOCS}/{majmin}/{tail}'
 
 # Default Config file location
-def config_file():
+def default_config_file():
     """
     :returns: The default configuration file location:
         ``path.join(path.expanduser('~'), '.curator', 'curator.yml')``
     """
-    return path.join(path.expanduser('~'), '.curator', 'curator.yml')
+    default = path.join(path.expanduser('~'), '.curator', 'curator.yml')
+    if path.isfile(default):
+        return default
 
 # Default filter patterns (regular expressions)
 def regex_map():

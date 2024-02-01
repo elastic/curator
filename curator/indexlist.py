@@ -3,6 +3,7 @@ import re
 import itertools
 import logging
 from elasticsearch8.exceptions import NotFoundError, TransportError
+from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import ensure_list
 from curator.defaults import settings
 from curator.exceptions import ActionError, ConfigurationError, MissingArgument, NoIndices
@@ -13,7 +14,6 @@ from curator.helpers.date_ops import (
 from curator.helpers.getters import byte_size, get_indices
 from curator.helpers.testers import verify_client_object
 from curator.helpers.utils import chunk_index_list, report_failure, to_csv
-from curator.validators import SchemaCheck
 from curator.validators.filter_functions import filterstructure
 
 class IndexList:
@@ -312,7 +312,9 @@ class IndexList:
     def get_index_state(self):
         """
         For each index in self.indices, populate ``index_info`` with:
+
             state (open or closed)
+        
         from the cat API
         """
         self.loggit.debug('Getting index state -- BEGIN')

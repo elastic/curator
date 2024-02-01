@@ -1,11 +1,8 @@
 """Utility functions that get things"""
-# :pylint disable=
 import logging
 import re
 from elasticsearch8 import exceptions as es8exc
-from es_client.defaults import VERSION_MAX, VERSION_MIN
-from es_client.builder import Builder
-from curator.exceptions import ClientException, CuratorException, FailedExecution, MissingArgument
+from curator.exceptions import CuratorException, FailedExecution, MissingArgument
 
 def byte_size(num, suffix='B'):
     """
@@ -44,46 +41,6 @@ def get_alias_actions(oldidx, newidx, aliases):
         actions.append({'remove': {'index': oldidx, 'alias': alias}})
         actions.append({'add': {'index': newidx, 'alias': alias}})
     return actions
-
-def get_client(
-    configdict=None, configfile=None, autoconnect=False, version_min=VERSION_MIN,
-    version_max=VERSION_MAX):
-    """Get an Elasticsearch Client using :py:class:`es_client.Builder`
-
-    Build a client out of settings from `configfile` or `configdict`
-    If neither `configfile` nor `configdict` is provided, empty defaults will be used.
-    If both are provided, `configdict` will be used, and `configfile` ignored.
-
-    :param configdict: A configuration dictionary
-    :param configfile: A configuration file
-    :param autoconnect: Connect to client automatically
-    :param verion_min: Minimum acceptable version of Elasticsearch (major, minor, patch)
-    :param verion_max: Maximum acceptable version of Elasticsearch (major, minor, patch)
-
-    :type configdict: dict
-    :type configfile: str
-    :type autoconnect: bool
-    :type version_min: tuple
-    :type version_max: tuple
-
-    :returns: A client connection object
-    :rtype: :py:class:`~.elasticsearch.Elasticsearch`
-    """
-    logger = logging.getLogger(__name__)
-    logger.info('Creating client object and testing connection')
-
-    builder = Builder(
-        configdict=configdict, configfile=configfile, autoconnect=autoconnect,
-        version_min=version_min, version_max=version_max
-    )
-
-    try:
-        builder.connect()
-    except Exception as exc:
-        logger.critical('Exception encountered: %s', exc)
-        raise ClientException from exc
-
-    return builder.client
 
 def get_data_tiers(client):
     """

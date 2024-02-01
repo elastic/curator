@@ -1,10 +1,10 @@
 """Functions validating the ``filter`` Schema of an ``action``"""
 import logging
 from voluptuous import Any, In, Required, Schema
+from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator.defaults import settings, filtertypes
 from curator.exceptions import ConfigurationError
-from curator.validators import SchemaCheck
 
 logger = logging.getLogger(__name__)
 
