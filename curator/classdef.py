@@ -1,6 +1,6 @@
 """Other Classes"""
 import logging
-from es_client.exceptions import ConfigurationError as ESclient_ConfigError
+from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import password_filter
 from es_client.helpers.utils import get_yaml
 from curator import IndexList, SnapshotList
@@ -62,7 +62,7 @@ class ActionsFile:
         """
         try:
             return validate_actions(get_yaml(action_file))
-        except (ESclient_ConfigError, UnboundLocalError) as err:
+        except (FailedValidation, UnboundLocalError) as err:
             self.logger.critical('Configuration Error: %s', err)
             raise ConfigurationError from err
 

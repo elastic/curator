@@ -1,7 +1,7 @@
 """Test CLI functionality"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
-from es_client.exceptions import FailedValidation
+from curator.exceptions import ConfigurationError
 from curator.helpers.getters import get_indices
 from . import CuratorTestCase
 from . import testvars
@@ -65,12 +65,12 @@ class TestCLIMethods(CuratorTestCase):
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.optionless_proto.format(' '))
         self.invoke_runner()
-        assert isinstance(self.result.exception, FailedValidation)
+        assert isinstance(self.result.exception, ConfigurationError)
     def test_no_action(self):
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.actionless_proto)
         self.invoke_runner()
-        assert isinstance(self.result.exception, FailedValidation)
+        assert isinstance(self.result.exception, ConfigurationError)
     def test_dry_run(self):
         self.create_indices(10)
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))

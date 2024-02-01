@@ -27,7 +27,7 @@ projects!
   * Dependency bumps
       * As ``es_client`` covers all of the same upstream dependencies that were
         necessary in previous releases, all local dependencies have been erased
-        in favor of that one.  For this release, that is ``es_client==8.12.2``
+        in favor of that one.  For this release, that is ``es_client==8.12.3``
 
 
 8.0.8 (21 July 2023)

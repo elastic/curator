@@ -3,6 +3,7 @@ import logging
 import sys
 from voluptuous import Schema
 from es_client.builder import Builder
+from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator import IndexList, SnapshotList
@@ -102,9 +103,8 @@ class CLIAction():
         else:
             self.check_filters(filter_list)
 
-        builder = Builder(configdict=client_args)
-
         try:
+            builder = Builder(configdict=client_args)
             builder.connect()
         # pylint: disable=broad-except
         except Exception as exc:
@@ -140,7 +140,7 @@ class CLIAction():
             # Remove this after the schema check, as the action class won't need it as an arg
             if self.action in ['delete_snapshots', 'restore']:
                 del self.options['repository']
-        except ConfigurationError as exc:
+        except FailedValidation as exc:
             self.logger.critical('Unable to parse options: %s', exc)
             sys.exit(1)
 
@@ -155,7 +155,7 @@ class CLIAction():
                 f'{self.action} singleton action "{key}"'
             ).result()
             self.filters = validate_filters(self.action, _)
-        except Exception as exc:
+        except FailedValidation as exc:
             self.logger.critical('Unable to parse filters: %s', exc)
             sys.exit(1)
 
