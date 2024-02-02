@@ -3,6 +3,18 @@
 Changelog
 =========
 
+8.0.10 (1 February 2024)
+------------------------
+
+**Changes**
+
+The upstream dependency, ``es_client``, needed to be patched to address a
+Docker logging permission issue. This release only version bumps that
+dependency:
+
+  * ``es_client==8.12.4``
+
+
 8.0.9 (31 January 2024)
 -----------------------
 
