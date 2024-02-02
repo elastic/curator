@@ -1,6 +1,6 @@
 """test_class_snapshot_list"""
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 import yaml
 from es_client.exceptions import FailedValidation
 from curator import SnapshotList

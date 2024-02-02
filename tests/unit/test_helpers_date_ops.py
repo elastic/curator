@@ -2,7 +2,7 @@
 from unittest import TestCase
 from datetime import datetime
 import pytest
-from mock import Mock
+from unittest.mock import Mock
 from elasticsearch8 import NotFoundError
 from elastic_transport import ApiResponseMeta
 from curator.exceptions import ConfigurationError

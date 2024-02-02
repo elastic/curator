@@ -33,7 +33,6 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "mock",
     "requests",
     "pytest >=7.2.1",
     "pytest-cov",
@@ -78,7 +77,6 @@ exclude = [
 [tool.hatch.envs.test]
 dependencies = [
     "coverage[toml]",
-    "mock",
     "requests",
     "pytest >=7.2.1",
     "pytest-cov",

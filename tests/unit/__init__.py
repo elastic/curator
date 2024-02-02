@@ -4,7 +4,7 @@ import tempfile
 import random
 import string
 from unittest import SkipTest, TestCase
-from mock import Mock
+from unittest.mock import Mock
 from .testvars import *
 
 class CLITestCase(TestCase):

@@ -1,6 +1,6 @@
 """test_action_clusterrouting"""
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 from curator.actions import ClusterRouting
 # Get test variables and constants from a single source
 from . import testvars
