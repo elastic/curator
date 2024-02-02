@@ -611,15 +611,15 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 === Relative Periods
 A relative period will be reckoned relative to execution time, unless an
 <<fe_epoch,epoch>> timestamp is provided.  Reckoning is truncated to the most
-recent whole unit, where a <<fe_unit,unit>> can be one of `seconds`, `minutes`,
-`hours`, `days`, `weeks`, `months`, or `years`.  For example, if I selected
-`hours` as my `unit`, and I began execution at 02:35, then the point of reckoning
-would be 02:00. This is relatively easy with `days`, `months`, and `years`, but
-slightly more complicated with `weeks`. Some users may wish to reckon weeks by
-the ISO standard, which starts weeks on Monday. Others may wish to use Sunday
-as the first day of the week.  Both are acceptable options with the `period`
-filter. The default behavior for `weeks` is to have Sunday be the start of the
-week. This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
+recent whole unit, where a <<fe_unit,unit>> can be one of `hours`, `days`, `weeks`, 
+`months`, or `years`.  For example, if I selected `hours` as my `unit`, and I 
+began execution at 02:35, then the point of reckoning would be 02:00. This is 
+relatively easy with `days`, `months`, and `years`, but slightly more complicated 
+with `weeks`. Some users may wish to reckon weeks by the ISO standard, which 
+starts weeks on Monday. Others may wish to use Sunday as the first day of the 
+week.  Both are acceptable options with the `period` filter. The default behavior 
+for `weeks` is to have Sunday be the start of the week. This can be overridden 
+with <<fe_week_starts_on,week_starts_on>> as follows:
 
 [source,yaml]
 -------------
