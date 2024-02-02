@@ -21,6 +21,8 @@ To match all indices _except_ those starting with `logstash-`:
  exclude: True
 -------------
 
+Note: Internally _regex_ pattern is constructed from prefix value as `^{0}.*$`. Special characters should be escaped with backslash to match literally.
+
 === suffix
 
 To match all indices ending with `-prod`:
@@ -41,6 +43,8 @@ To match all indices _except_ those ending with `-prod`:
  value: -prod
  exclude: True
 -------------
+
+Note: Internally _regex_ pattern is constructed from suffix value as `^.*{0}$`. Specials character should be escaped with backslash to match literally.
 
 === timestring
 
