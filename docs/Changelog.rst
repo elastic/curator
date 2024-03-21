@@ -3,6 +3,13 @@
 Changelog
 =========
 
+8.0.12 (20 March 2024)
+----------------------
+
+**Bugfix**
+
+  * ``six`` dependency erroneously removed from ``es_client``. It's back in ``es_client==8.12.8``
+
 8.0.11 (20 March 2024)
 ----------------------
 
