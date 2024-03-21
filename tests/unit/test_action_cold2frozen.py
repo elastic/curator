@@ -1,7 +1,7 @@
 """test_action_cold2frozen"""
 # pylint: disable=attribute-defined-outside-init
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 import pytest
 from curator.actions import Cold2Frozen
 from curator.exceptions import CuratorException, SearchableSnapshotException

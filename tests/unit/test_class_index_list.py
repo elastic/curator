@@ -2,7 +2,7 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long, attribute-defined-outside-init, protected-access
 from unittest import TestCase
 from copy import deepcopy
-from mock import Mock
+from unittest.mock import Mock
 import yaml
 from es_client.exceptions import FailedValidation
 from curator.exceptions import ActionError, ConfigurationError, FailedExecution, MissingArgument, NoIndices

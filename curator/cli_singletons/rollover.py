@@ -1,12 +1,11 @@
 """Index Rollover Singleton"""
 import click
-from es_client.helpers.config import context_settings
 from es_client.helpers.utils import prune_nones
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import json_to_dict
 
 # pylint: disable=line-too-long
-@click.command(context_settings=context_settings())
+@click.command()
 @click.option('--name', type=str, help='Alias name', required=True)
 @click.option('--max_age', type=str, help='max_age condition value (see documentation)')
 @click.option('--max_docs', type=str, help='max_docs condition value (see documentation)')
@@ -35,7 +34,7 @@ def rollover(
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = CLIAction(
-        ctx.info_name, ctx.obj['config'], manual_options, [], True,
+        ctx.info_name, ctx.obj['configdict'], manual_options, [], True,
         extra_settings=extra_settings,
         new_index=new_index,
         wait_for_active_shards=wait_for_active_shards

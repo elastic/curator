@@ -1,7 +1,7 @@
 """test_action_snapshot"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long, protected-access, attribute-defined-outside-init
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 from curator.actions import Snapshot
 from curator.exceptions import ActionError, CuratorException, FailedExecution, FailedSnapshot, MissingArgument, SnapshotInProgress
 from curator import IndexList

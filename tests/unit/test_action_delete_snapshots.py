@@ -1,6 +1,6 @@
 """test_action_delete_snapshots"""
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 from curator.actions import DeleteSnapshots
 from curator.exceptions import FailedExecution
 from curator import SnapshotList

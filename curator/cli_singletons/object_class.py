@@ -45,10 +45,10 @@ class CLIAction():
     """
     Unified class for all CLI singleton actions
     """
-    def __init__(self, action, client_args, option_dict, filter_list, ignore_empty_list, **kwargs):
+    def __init__(self, action, configdict, option_dict, filter_list, ignore_empty_list, **kwargs):
         """Class setup
         :param action: The action name.
-        :param client_args: ``dict`` containing everything needed for
+        :param configdict: ``dict`` containing everything needed for
             :py:class:`~.es_client.builder.Builder` to build an
             :py:class:`~.elasticsearch.Elasticsearch` client object.
         :param option_dict: Options for ``action``.
@@ -57,7 +57,7 @@ class CLIAction():
         :param kwargs: Other keyword args to pass to ``action``.
 
         :type action: str
-        :type client_args: dict
+        :type configdict: dict
         :type option_dict: dict
         :type filter_list: list
         :type ignore_empty_list: bool
@@ -102,9 +102,8 @@ class CLIAction():
                 self.logger.debug('rollover option_dict = %s', option_dict)
         else:
             self.check_filters(filter_list)
-
         try:
-            builder = Builder(configdict=client_args)
+            builder = Builder(configdict=configdict)
             builder.connect()
         # pylint: disable=broad-except
         except Exception as exc:
@@ -212,13 +211,10 @@ class CLIAction():
                 self.do_filters()
                 self.logger.debug('OPTIONS = %s', self.options)
                 action_obj = self.action_class(self.list_object, **self.options)
-            try:
-                if dry_run:
-                    action_obj.do_dry_run()
-                else:
-                    action_obj.do_action()
-            except Exception as exc:
-                raise Exception from exc # pass it on?
+            if dry_run:
+                action_obj.do_dry_run()
+            else:
+                action_obj.do_action()
         # pylint: disable=broad-except
         except Exception as exc:
             self.logger.critical(

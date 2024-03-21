@@ -34,7 +34,6 @@ An example is listed below:
 
        [project.optional-dependencies]
        test = [
-           "mock",
            "requests",
            "pytest >=7.2.1",
            "pytest-cov",
@@ -45,7 +44,7 @@ before running the following:
 
 .. code-block:: shell
 
-       pip install -U mock requests pytest pytest-cov
+       pip install -U requests pytest pytest-cov
 
 It should be simpler to run the regular method, but if you have some reason to do this manually,
 those are the steps.

@@ -1,7 +1,7 @@
 """Unit tests for utils"""
 from unittest import TestCase
 import pytest
-from mock import Mock
+from unittest.mock import Mock
 from elastic_transport import ApiResponseMeta
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import AuthenticationException, NotFoundError

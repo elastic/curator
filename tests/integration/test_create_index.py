@@ -85,3 +85,25 @@ class TestCLICreateIndex(CuratorTestCase):
         self.invoke_runner()
         assert [idx] == get_indices(self.client)
         assert 0 == self.result.exit_code
+    def test_incorrect_mapping_fail_with_propper_error(self):
+        config = (
+            '---\n'
+            'actions:\n'
+            '  1:\n'
+            '    description: "Create index as named"\n'
+            '    action: create_index\n'
+            '    options:\n'
+            '      name: {0}\n'
+            '      extra_settings:\n'
+            '        mappings:\n'
+            '          properties:\n'
+            '            name: ["test"]\n'
+        )
+        idx = 'testing'
+        self.write_config(
+            self.args['configfile'], testvars.none_logging_config.format(HOST))
+        self.write_config(self.args['actionfile'], config.format(idx))
+        self.invoke_runner()
+        assert not get_indices(self.client)
+        assert 'mapper_parsing_exception' in self.result.stdout
+        assert 1 == self.result.exit_code

@@ -1,11 +1,13 @@
 """Test Alias action"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, invalid-name, line-too-long
 import os
+import logging
 from datetime import datetime, timedelta
 import pytest
 from elasticsearch8.exceptions import NotFoundError
 from . import CuratorTestCase
 from . import testvars
+LOGGER = logging.getLogger('test_alias')
 
 HOST = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
 
@@ -231,9 +233,10 @@ class TestCLIAlias(CuratorTestCase):
             '--remove', '{"filtertype":"pattern","kind":"prefix","value":"my"}',
             '--warn_if_no_indices'
         ]
-        assert 0 == self.run_subprocess(args, logname='TestCLIAlias.test_warn_if_no_indices')
+        LOGGER.debug('ARGS = %s', args)
+        assert 0 == self.run_subprocess(args)
         expected = {idx1: {'aliases': {alias: {}}}, idx2: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        assert expected == dict(self.client.indices.get_alias(name=alias))
     def test_exit_1_on_empty_list(self):
         """test_exit_1_on_empty_list"""
         alias = 'testalias'
@@ -246,4 +249,4 @@ class TestCLIAlias(CuratorTestCase):
             '--add', '{"filtertype":"pattern","kind":"prefix","value":"dum","exclude":false}',
             '--remove', '{"filtertype":"pattern","kind":"prefix","value":"my","exclude":false}',
         ]
-        assert 1 == self.run_subprocess(args, logname='TestCLIAlias.test_warn_if_no_indices')
+        assert 1 == self.run_subprocess(args, logname='TestCLIAlias.test_exit_1_on_empty_list')

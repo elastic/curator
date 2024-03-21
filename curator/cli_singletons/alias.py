@@ -1,11 +1,10 @@
 """Alias Singleton"""
 import logging
 import click
-from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 
-@click.command(context_settings=context_settings())
+@click.command()
 @click.option('--name', type=str, help='Alias name', required=True)
 @click.option(
     '--add',
@@ -51,7 +50,7 @@ def alias(ctx, name, add, remove, warn_if_no_indices, extra_settings, allow_ilm_
     ignore_empty_list = warn_if_no_indices
     action = CLIAction(
         ctx.info_name,
-        ctx.obj['config'],
+        ctx.obj['configdict'],
         manual_options,
         [], # filter_list is empty in our case
         ignore_empty_list,
