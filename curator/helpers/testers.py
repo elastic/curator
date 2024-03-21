@@ -301,8 +301,7 @@ def verify_client_object(test):
     """
     logger = logging.getLogger(__name__)
     # Ignore mock type for testing
-    if str(type(test)) == "<class 'mock.Mock'>" or \
-        str(type(test)) == "<class 'mock.mock.Mock'>":
+    if str(type(test)) == "<class 'unittest.mock.Mock'>":
         pass
     elif not isinstance(test, Elasticsearch):
         msg = f'Not a valid client object. Type: {type(test)} was passed'

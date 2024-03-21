@@ -3,6 +3,44 @@
 Changelog
 =========
 
+8.0.11 (20 March 2024)
+----------------------
+
+**Announcement**
+
+  * With the advent of ``es_client==8.12.5``, environment variables can now be used to automatically
+    populate command-line options. The ``ESCLIENT_`` prefix just needs to prepend the capitalized
+    option name, and any hyphens need to be replaced by underscores. ``--http-compress True`` is
+    automatically settable by having ``ESCLIENT_HTTP_COMPRESS=1``. Boolean values are 1, 0, True,
+    or False (case-insensitive). Options like ``hosts`` which can have multiple values just need to
+    have whitespace between the values, e.g. 
+    ``ESCLIENT_HOSTS='http://127.0.0.1:9200 http://localhost:9200'``. It splits perfectly. This is
+    tremendous news for the containerization/k8s community. You won't have to have all of the
+    options spelled out any more. Just have the environment variables assigned.
+  * Also, log blacklisting has made it to the command-line as well. It similarly can be set via
+    environment variable, e.g. ``ESCLIENT_BLACKLIST='elastic_transport urllib3'``, or by multiple
+    ``--blacklist`` entries at the command line.
+  * ``es_client`` has simplified things such that I can clean up arg sprawl in the command line
+    scripts.
+
+**Changes**
+
+Lots of pending pull requests have been merged. Thank you to the community
+members who took the time to contribute to Curator's code.
+
+  * DOCFIX - Update date math section to use ``y`` instead of ``Y`` (#1510)
+  * DOCFIX - Update period filtertype description (#1550)
+  * add .dockerignore to increase build speed (#1604)
+  * DOCFIX - clarification on prefix and suffix kinds (#1558)
+    The provided documentation was adapted and edited.
+  * Use builtin unittest.mock (#1695)
+      * Had to also update ``helpers.testers.verify_client_object``.
+  * Display proper error when mapping incorrect (#1526) - @namreg
+    Also assisting with this is @alexhornblake in #1537
+    Apologies for needing to adapt the code manually since it's been so long.
+  * Version bumps:
+      * ``es_client==8.12.6``
+
 8.0.10 (1 February 2024)
 ------------------------
 

@@ -1,10 +1,9 @@
 """Allocation Singleton"""
 import click
-from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
-@click.command(context_settings=context_settings())
+@click.command()
 @click.option('--key', type=str, required=True, help='Node identification tag')
 @click.option('--value', type=str, default=None, help='Value associated with --key')
 @click.option('--allocation_type', type=click.Choice(['require', 'include', 'exclude']))
@@ -72,5 +71,5 @@ def allocation(
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = CLIAction(
-        ctx.info_name, ctx.obj['config'], manual_options, filter_list, ignore_empty_list)
+        ctx.info_name, ctx.obj['configdict'], manual_options, filter_list, ignore_empty_list)
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])

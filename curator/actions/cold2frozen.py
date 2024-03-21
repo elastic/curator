@@ -127,56 +127,85 @@ class Cold2Frozen:
             )
             self.loggit.info(msg)
 
-
-    def do_action(self):
+    def mount_index(self, newidx, kwargs):
         """
         Call :py:meth:`~.elasticsearch.client.SearchableSnapshotsClient.mount` to mount the indices
         in :py:attr:`ilo` in the Frozen tier.
+        """
+        try:
+            self.loggit.debug('Mounting new index %s in frozen tier...', newidx)
+            self.client.searchable_snapshots.mount(**kwargs)
+        # pylint: disable=broad-except
+        except Exception as err:
+            report_failure(err)
 
-        Verify index looks good
+    def verify_mount(self, newidx):
+        """
+        Verify that newidx is a mounted index
+        """
+        self.loggit.debug('Verifying new index %s is mounted properly...', newidx)
+        idx_settings = self.client.indices.get(index=newidx)[newidx]
+        if is_idx_partial(idx_settings['settings']['index']):
+            self.loggit.info('Index %s is mounted for frozen tier', newidx)
+        else:
+            report_failure(SearchableSnapshotException(
+                f'Index {newidx} not a mounted searchable snapshot'))
 
+    def update_aliases(self, current_idx, newidx, aliases):
+        """
         Call :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` to update each new
         frozen index with the aliases from the old cold-tier index.
 
         Verify aliases look good.
+        """
+        alias_names = aliases.keys()
+        if not alias_names:
+            self.loggit.warning('No aliases associated with index %s', current_idx)
+        else:
+            self.loggit.debug('Transferring aliases to new index %s', newidx)
+            self.client.indices.update_aliases(
+                actions=get_alias_actions(current_idx, newidx, aliases))
+            verify = self.client.indices.get(index=newidx)[newidx]['aliases'].keys()
+            if alias_names != verify:
+                self.loggit.error(
+                    'Alias names do not match! %s does not match: %s', alias_names, verify)
+                report_failure(FailedExecution('Aliases failed to transfer to new index'))
 
+    def cleanup(self, current_idx, newidx):
+        """
         Call :py:meth:`~.elasticsearch.client.IndicesClient.delete` to delete the cold tier index.
         """
+        self.loggit.debug('Deleting old index: %s', current_idx)
         try:
-            for kwargs in self.action_generator():
-                aliases = kwargs.pop('aliases')
-                current_idx = kwargs.pop('current_idx')
-                newidx = kwargs['renamed_index']
-                # Actually do the mount
-                self.loggit.debug('Mounting new index %s in frozen tier...', newidx)
-                self.client.searchable_snapshots.mount(**kwargs)
-                # Verify it's mounted as a partial now:
-                self.loggit.debug('Verifying new index %s is mounted properly...', newidx)
-                idx_settings = self.client.indices.get(index=newidx)[newidx]
-                if is_idx_partial(idx_settings['settings']['index']):
-                    self.loggit.info('Index %s is mounted for frozen tier', newidx)
-                else:
-                    raise SearchableSnapshotException(
-                        f'Index {newidx} not a mounted searchable snapshot')
-                # Update Aliases
-                alias_names = aliases.keys()
-                if not alias_names:
-                    self.loggit.warning('No aliases associated with index %s', current_idx)
-                else:
-                    self.loggit.debug('Transferring aliases to new index %s', newidx)
-                    self.client.indices.update_aliases(
-                        actions=get_alias_actions(current_idx, newidx, aliases))
-                    verify = self.client.indices.get(index=newidx)[newidx]['aliases'].keys()
-                    if alias_names != verify:
-                        self.loggit.error(
-                            'Alias names do not match! %s does not match: %s', alias_names, verify)
-                        raise FailedExecution('Aliases failed to transfer to new index')
-                # Clean up old index
-                self.loggit.debug('Deleting old index: %s', current_idx)
-                self.client.indices.delete(index=current_idx)
-                self.loggit.info(
-                    'Successfully migrated %s to the frozen tier as %s', current_idx, newidx)
-
+            self.client.indices.delete(index=current_idx)
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)
+        self.loggit.info(
+            'Successfully migrated %s to the frozen tier as %s', current_idx, newidx)
+
+    def do_action(self):
+        """
+        Do the actions outlined:
+
+        Mount
+        Verify
+        Update Aliases
+        Cleanup
+        """
+        for kwargs in self.action_generator():
+            aliases = kwargs.pop('aliases')
+            current_idx = kwargs.pop('current_idx')
+            newidx = kwargs['renamed_index']
+
+            # Mount the index
+            self.mount_index(newidx, kwargs)
+
+            # Verify it's mounted as a partial now:
+            self.verify_mount(newidx)
+
+            # Update Aliases
+            self.update_aliases(current_idx, newidx, aliases)
+
+            # Clean up old index
+            self.cleanup(current_idx, newidx)

@@ -28,7 +28,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.12.4"
+    "es_client==8.12.6"
 ]
 
 [project.optional-dependencies]
@@ -94,7 +94,7 @@ run = "run-coverage --no-cov"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["3.9", "3.10", "3.11"]
-version = ["8.0.9"]
+version = ["8.0.11"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "curator"]

@@ -2,8 +2,9 @@
 import sys
 import logging
 import click
-from es_client.defaults import LOGGING_SETTINGS
-from es_client.helpers.config import cli_opts, context_settings, get_args, get_client, get_config
+from es_client.defaults import OPTION_DEFAULTS
+from es_client.helpers.config import (
+    cli_opts, context_settings, generate_configdict, get_client, get_config, options_from_dict)
 from es_client.helpers.logging import configure_logging
 from es_client.helpers.utils import option_wrapper, prune_nones
 from curator.exceptions import ClientException
@@ -129,24 +130,17 @@ def process_action(client, action_def, dry_run=False):
         logger.debug('Doing the action here.')
         action_def.action_cls.do_action()
 
-def run(client_args, other_args, action_file, dry_run=False):
+def run(ctx: click.Context) -> None:
     """
+    :param ctx: The Click command context 
+
+    :type ctx: :py:class:`Context <click.Context>`
+
     Called by :py:func:`cli` to execute what was collected at the command-line
-
-    :param client_args: The ClientArgs arguments object
-    :param other_args: The OtherArgs arguments object
-    :param action_file: The action configuration file
-    :param dry_run: Do not perform any changes
-
-    :type client_args: :py:class:`~.es_client.ClientArgs`
-    :type other_args: :py:class:`~.es_client.OtherArgs`
-    :type action_file: str
-    :type dry_run: bool
     """
     logger = logging.getLogger(__name__)
-
-    logger.debug('action_file: %s', action_file)
-    all_actions = ActionsFile(action_file)
+    logger.debug('action_file: %s', ctx.params['action_file'])
+    all_actions = ActionsFile(ctx.params['action_file'])
     for idx in sorted(list(all_actions.actions.keys())):
         action_def = all_actions.actions[idx]
         ### Skip to next action if 'disabled'
@@ -160,7 +154,7 @@ def run(client_args, other_args, action_file, dry_run=False):
 
         # Override the timeout, if specified, otherwise use the default.
         if action_def.timeout_override:
-            client_args.request_timeout = action_def.timeout_override
+            ctx.obj['client_args'].request_timeout = action_def.timeout_override
 
         # Create a client object for each action...
         logger.info('Creating client object and testing connection')
@@ -168,8 +162,8 @@ def run(client_args, other_args, action_file, dry_run=False):
         try:
             client = get_client(configdict={
                 'elasticsearch': {
-                    'client': prune_nones(client_args.asdict()),
-                    'other_settings': prune_nones(other_args.asdict())
+                    'client': prune_nones(ctx.obj['client_args'].asdict()),
+                    'other_settings': prune_nones(ctx.obj['other_args'].asdict())
                 }
             })
         except ClientException as exc:
@@ -187,7 +181,7 @@ def run(client_args, other_args, action_file, dry_run=False):
         msg = f'Trying Action ID: {idx}, "{action_def.action}": {action_def.description}'
         try:
             logger.info(msg)
-            process_action(client, action_def, dry_run=dry_run)
+            process_action(client, action_def, dry_run=ctx.params['dry_run'])
         # pylint: disable=broad-except
         except Exception as err:
             exception_handler(action_def, err)
@@ -196,31 +190,8 @@ def run(client_args, other_args, action_file, dry_run=False):
 
 # pylint: disable=unused-argument, redefined-builtin, too-many-arguments, too-many-locals, line-too-long
 @click.command(context_settings=context_settings(), epilog=footer(__version__, tail='command-line.html'))
-@click_opt_wrap(*cli_opts('config'))
-@click_opt_wrap(*cli_opts('hosts'))
-@click_opt_wrap(*cli_opts('cloud_id'))
-@click_opt_wrap(*cli_opts('api_token'))
-@click_opt_wrap(*cli_opts('id'))
-@click_opt_wrap(*cli_opts('api_key'))
-@click_opt_wrap(*cli_opts('username'))
-@click_opt_wrap(*cli_opts('password'))
-@click_opt_wrap(*cli_opts('bearer_auth'))
-@click_opt_wrap(*cli_opts('opaque_id'))
-@click_opt_wrap(*cli_opts('request_timeout'))
-@click_opt_wrap(*cli_opts('http_compress', onoff=ONOFF))
-@click_opt_wrap(*cli_opts('verify_certs', onoff=ONOFF))
-@click_opt_wrap(*cli_opts('ca_certs'))
-@click_opt_wrap(*cli_opts('client_cert'))
-@click_opt_wrap(*cli_opts('client_key'))
-@click_opt_wrap(*cli_opts('ssl_assert_hostname'))
-@click_opt_wrap(*cli_opts('ssl_assert_fingerprint'))
-@click_opt_wrap(*cli_opts('ssl_version'))
-@click_opt_wrap(*cli_opts('master-only', onoff=ONOFF))
-@click_opt_wrap(*cli_opts('skip_version_test', onoff=ONOFF))
+@options_from_dict(OPTION_DEFAULTS)
 @click_opt_wrap(*cli_opts('dry-run', settings=CLICK_DRYRUN))
-@click_opt_wrap(*cli_opts('loglevel', settings=LOGGING_SETTINGS))
-@click_opt_wrap(*cli_opts('logfile', settings=LOGGING_SETTINGS))
-@click_opt_wrap(*cli_opts('logformat', settings=LOGGING_SETTINGS))
 @click.argument('action_file', type=click.Path(exists=True), nargs=1)
 @click.version_option(__version__, '-v', '--version', prog_name="curator")
 @click.pass_context
@@ -228,7 +199,7 @@ def cli(
     ctx, config, hosts, cloud_id, api_token, id, api_key, username, password, bearer_auth,
     opaque_id, request_timeout, http_compress, verify_certs, ca_certs, client_cert, client_key,
     ssl_assert_hostname, ssl_assert_fingerprint, ssl_version, master_only, skip_version_test,
-    dry_run, loglevel, logfile, logformat, action_file
+    loglevel, logfile, logformat, blacklist, dry_run, action_file
 ):
     """
     Curator for Elasticsearch indices
@@ -244,8 +215,8 @@ def cli(
         curator_cli -h
     """
     ctx.obj = {}
-    ctx.obj['dry_run'] = dry_run
-    cfg = get_config(ctx.params, default_config_file())
-    configure_logging(cfg, ctx.params)
-    client_args, other_args = get_args(ctx.params, cfg)
-    run(client_args, other_args, action_file, dry_run)
+    ctx.obj['default_config'] = default_config_file()
+    get_config(ctx)
+    configure_logging(ctx)
+    generate_configdict(ctx)
+    run(ctx)
