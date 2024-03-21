@@ -1,10 +1,9 @@
 """Open (closed) Index Singleton"""
 import click
-from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
-@click.command(name='open', context_settings=context_settings())
+@click.command(name='open')
 @click.option(
     '--ignore_empty_list',
     is_flag=True,
@@ -30,7 +29,7 @@ def open_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = CLIAction(
         ctx.info_name,
-        ctx.obj['config'],
+        ctx.obj['configdict'],
         {'allow_ilm_indices':allow_ilm_indices},
         filter_list,
         ignore_empty_list

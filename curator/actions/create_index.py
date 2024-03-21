@@ -74,10 +74,14 @@ class CreateIndex:
         # Most likely error is a 400, `resource_already_exists_exception`
         except RequestError as err:
             match_list = ["index_already_exists_exception", "resource_already_exists_exception"]
-            if err.error in match_list and self.ignore_existing:
-                self.loggit.warning('Index %s already exists.', self.name)
+            if err.error in match_list:
+                if self.ignore_existing:
+                    self.loggit.warning('Index %s already exists.', self.name)
+                else:
+                    raise FailedExecution(f'Index {self.name} already exists.') from err
             else:
-                raise FailedExecution(f'Index {self.name} already exists.') from err
+                msg = f'Unable to create index "{self.name}". Error: {err.error}'
+                raise FailedExecution(msg) from err
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)
