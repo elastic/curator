@@ -1,10 +1,9 @@
 """ForceMerge Singleton"""
 import click
-from es_client.helpers.config import context_settings
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
-@click.command(context_settings=context_settings())
+@click.command()
 @click.option(
     '--max_num_segments',
     type=int,
@@ -44,5 +43,5 @@ def forcemerge(ctx, max_num_segments, delay, ignore_empty_list, allow_ilm_indice
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
     action = CLIAction(
-        ctx.info_name, ctx.obj['config'], manual_options, filter_list, ignore_empty_list)
+        ctx.info_name, ctx.obj['configdict'], manual_options, filter_list, ignore_empty_list)
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])

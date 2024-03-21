@@ -6,7 +6,7 @@ import click
 from elasticsearch8 import ApiError, NotFoundError
 from es_client.defaults import LOGGING_SETTINGS, SHOW_OPTION
 from es_client.builder import Builder
-from es_client.helpers.config import cli_opts, context_settings, get_config, get_args
+from es_client.helpers.config import cli_opts, context_settings, generate_configdict, get_config
 from es_client.helpers.logging import configure_logging
 from es_client.helpers.utils import option_wrapper, prune_nones
 from curator.defaults.settings import CLICK_DRYRUN, default_config_file, footer
@@ -57,7 +57,7 @@ def get_client(ctx):
     :returns: A client connection object
     :rtype: :py:class:`~.elasticsearch.Elasticsearch`
     """
-    builder = Builder(configdict=ctx.obj['esconfig'])
+    builder = Builder(configdict=ctx.obj['configdict'])
     try:
         builder.connect()
     # pylint: disable=broad-except
@@ -350,21 +350,13 @@ def repo_mgr_cli(
         es_repo_mgr show-all-options
     """
     ctx.obj = {}
-    # Ensure a passable ctx object
-    ctx.ensure_object(dict)
     ctx.obj['dry_run'] = dry_run
-    cfg = get_config(ctx.params, default_config_file())
-    configure_logging(cfg, ctx.params)
+    ctx.obj['default_config'] = default_config_file()
+    get_config(ctx)
+    configure_logging(ctx)
     logger = logging.getLogger('curator.repomgrcli')
-    client_args, other_args = get_args(ctx.params, cfg)
-    ctx.obj['esconfig'] = {
-        'elasticsearch': {
-            'client': prune_nones(client_args.asdict()),
-            'other_settings': prune_nones(other_args.asdict())
-        }
-    }
+    generate_configdict(ctx)
     logger.debug('Exiting initial command function...')
-    
 
 @repo_mgr_cli.command(
     'show-all-options',

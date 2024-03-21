@@ -1,7 +1,7 @@
 """test_action_delete_indices"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access, attribute-defined-outside-init
 from unittest import TestCase
-from mock import Mock
+from unittest.mock import Mock
 from curator.actions import DeleteIndices
 from curator.exceptions import FailedExecution
 from curator import IndexList
