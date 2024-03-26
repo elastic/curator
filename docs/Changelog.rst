@@ -3,6 +3,16 @@
 Changelog
 =========
 
+8.0.13 (26 March 2024)
+----------------------
+
+**Bugfix**
+
+  * An issue was discovered in ``es_client`` that caused default values from command-line options
+    which should not have been set to override settings in configuration files.
+    ``es_client==8.12.9`` corrects this. Reported in #1708, hat tip to @rgaduput for reporting this
+    bug.
+
 8.0.12 (20 March 2024)
 ----------------------
 
