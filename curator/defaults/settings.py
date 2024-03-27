@@ -1,6 +1,6 @@
 """Utilities/Helpers for defaults and schemas"""
 from os import path
-from six import string_types
+string_types = (six,)
 from voluptuous import Any, Boolean, Coerce, Optional
 from curator.exceptions import CuratorException
 

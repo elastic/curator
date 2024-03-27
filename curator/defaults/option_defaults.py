@@ -1,5 +1,5 @@
 """Action Option Schema definitions"""
-from six import string_types
+string_types = (six,)
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 # pylint: disable=line-too-long,missing-docstring

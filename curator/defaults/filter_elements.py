@@ -2,7 +2,7 @@
 
 All member functions return a :class:`voluptuous.schema_builder.Schema` object
 """
-from six import string_types
+string_types = (six,)
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 from curator.defaults import settings
 
