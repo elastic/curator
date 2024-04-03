@@ -76,6 +76,12 @@ class CLIAction():
             self.check_options(option_dict)
         else:
             self.options = option_dict
+
+        # Pop out search_pattern if it's there
+        self.search_pattern = '_all'
+        if 'search_pattern' in self.options:
+            self.search_pattern = self.options.pop('search_pattern')
+
         # Extract allow_ilm_indices so it can be handled separately.
         if 'allow_ilm_indices' in self.options:
             self.allow_ilm = self.options.pop('allow_ilm_indices')

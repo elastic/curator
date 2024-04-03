@@ -5,6 +5,7 @@ from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 
 # pylint: disable=line-too-long
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--shrink_node', default='DETERMINISTIC', type=str, help='Named node, or DETERMINISTIC', show_default=True)
 @click.option('--node_filters', help='JSON version of node_filters (see documentation)', callback=json_to_dict)
 @click.option('--number_of_shards', default=1, type=int, help='Shrink to this many shards per index')
@@ -25,8 +26,8 @@ from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 @click.option('--filter_list', callback=validate_filter_json, help='JSON array of filters selecting indices to act on.', required=True)
 @click.pass_context
 def shrink(
-        ctx, shrink_node, node_filters, number_of_shards, number_of_replicas, shrink_prefix,
-        shrink_suffix, copy_aliases, delete_after, post_allocation, extra_settings,
+        ctx, search_pattern, shrink_node, node_filters, number_of_shards, number_of_replicas,
+        shrink_prefix, shrink_suffix, copy_aliases, delete_after, post_allocation, extra_settings,
         wait_for_active_shards, wait_for_rebalance, wait_for_completion, wait_interval, max_wait,
         ignore_empty_list, allow_ilm_indices, filter_list
     ):
@@ -34,6 +35,7 @@ def shrink(
     Shrink Indices to --number_of_shards
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'shrink_node': shrink_node,
         'node_filters': node_filters,
         'number_of_shards': number_of_shards,

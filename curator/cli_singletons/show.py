@@ -11,6 +11,7 @@ from curator._version import __version__
 
 # pylint: disable=line-too-long
 @click.command(epilog=footer(__version__, tail='singleton-cli.html#_show_indicessnapshots'))
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--verbose', help='Show verbose output.', is_flag=True, show_default=True)
 @click.option('--header', help='Print header if --verbose', is_flag=True, show_default=True)
 @click.option('--epoch', help='Print time as epoch if --verbose', is_flag=True, show_default=True)
@@ -18,7 +19,9 @@ from curator._version import __version__
 @click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', default=False, show_default=True)
 @click.option('--filter_list', callback=validate_filter_json, default='{"filtertype":"none"}', help='JSON string representing an array of filters.')
 @click.pass_context
-def show_indices(ctx, verbose, header, epoch, ignore_empty_list, allow_ilm_indices, filter_list):
+def show_indices(
+        ctx, search_pattern, verbose, header, epoch, ignore_empty_list, allow_ilm_indices,
+        filter_list):
     """
     Show Indices
     """
@@ -26,7 +29,7 @@ def show_indices(ctx, verbose, header, epoch, ignore_empty_list, allow_ilm_indic
     action = CLIAction(
         'show_indices',
         ctx.obj['configdict'],
-        {'allow_ilm_indices': allow_ilm_indices},
+        {'search_pattern': search_pattern, 'allow_ilm_indices': allow_ilm_indices},
         filter_list,
         ignore_empty_list
     )

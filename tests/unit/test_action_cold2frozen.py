@@ -38,7 +38,6 @@ class TestActionCold2Frozen(TestCase):
         settings_ss   = {
             testvars.named_index: {
                 'aliases': {'my_alias': {}},
-                'mappings': {},
                 'settings': {
                     'index': {
                         'creation_date': '1456963200172',
@@ -58,7 +57,9 @@ class TestActionCold2Frozen(TestCase):
                 }
             }
         }
-        self.client.indices.get.return_value = settings_ss
+
+        self.client.indices.get_settings.return_value = settings_ss
+        self.client.indices.get_alias.return_value = settings_ss
         roles = ['data_content']
         self.client.nodes.info.return_value = {'nodes': {'nodename': {'roles': roles}}}
         c2f = Cold2Frozen(self.ilo)
@@ -92,7 +93,7 @@ class TestActionCold2Frozen(TestCase):
                 'settings': {'index': {'lifecycle': {'name': 'guaranteed_fail'}}}
             }
         }
-        self.client.indices.get.return_value = settings_ss
+        self.client.indices.get_settings.return_value = settings_ss
         c2f = Cold2Frozen(self.ilo)
         with pytest.raises(CuratorException, match='associated with an ILM policy'):
             for result in c2f.action_generator():
@@ -110,7 +111,7 @@ class TestActionCold2Frozen(TestCase):
                 }
             }
         }
-        self.client.indices.get.return_value = settings_ss
+        self.client.indices.get_settings.return_value = settings_ss
         c2f = Cold2Frozen(self.ilo)
         with pytest.raises(SearchableSnapshotException, match='Index is already in frozen tier'):
             for result in c2f.action_generator():

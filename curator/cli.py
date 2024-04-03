@@ -86,14 +86,22 @@ def process_action(client, action_def, dry_run=False):
     logger = logging.getLogger(__name__)
     logger.debug('Configuration dictionary: %s', action_def.action_dict)
     mykwargs = {}
+    search_pattern = '_all'
 
+    logger.critical('INITIAL Action kwargs: %s', mykwargs)
     # Add some settings to mykwargs...
     if action_def.action == 'delete_indices':
         mykwargs['master_timeout'] = 30
 
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(action_def.options))
+
+    # Pop out the search_pattern option, if present.
+    if 'search_pattern' in mykwargs:
+        search_pattern = mykwargs.pop('search_pattern')
+
     logger.debug('Action kwargs: %s', mykwargs)
+    logger.critical('Post search_pattern Action kwargs: %s', mykwargs)
 
     ### Set up the action ###
     logger.debug('Running "%s"', action_def.action.upper())
@@ -120,8 +128,9 @@ def process_action(client, action_def, dry_run=False):
             mykwargs.pop('repository') # We don't need to send this value to the action
             action_def.instantiate('list_obj', client, repository=action_def.options['repository'])
         else:
-            action_def.instantiate('list_obj', client)
+            action_def.instantiate('list_obj', client, search_pattern=search_pattern)
         action_def.list_obj.iterate_filters({'filters': action_def.filters})
+        logger.critical('Pre Instantiation Action kwargs: %s', mykwargs)
         action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
     ### Do the action
     if dry_run:

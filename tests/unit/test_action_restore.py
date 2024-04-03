@@ -100,6 +100,7 @@ class TestActionRestore(TestCase):
         client.info.return_value = {'version': {'number': '5.0.0'} }
         client.snapshot.get.return_value = testvars.snapshot
         client.snapshot.get_repository.return_value = testvars.test_repo
+        client.cat.indices.return_value = testvars.state_named
         client.indices.get_settings.return_value = testvars.settings_named
         slo = SnapshotList(client, repository=testvars.repo_name)
         ro = Restore(slo)
@@ -109,6 +110,7 @@ class TestActionRestore(TestCase):
         client.info.return_value = {'version': {'number': '5.0.0'} }
         client.snapshot.get.return_value = testvars.snapshots
         client.snapshot.get_repository.return_value = testvars.test_repo
+        client.cat.indices.return_value = testvars.state_one
         client.indices.get_settings.return_value = testvars.settings_one
         slo = SnapshotList(client, repository=testvars.repo_name)
         ro = Restore(
@@ -121,6 +123,7 @@ class TestActionRestore(TestCase):
         client.snapshot.get_repository.return_value = testvars.test_repo
         client.snapshot.status.return_value = testvars.nosnap_running
         client.snapshot.verify_repository.return_value = testvars.verified_nodes
+        client.cat.indices.return_value = testvars.state_named
         client.indices.get_settings.return_value = testvars.settings_named
         client.indices.recovery.return_value = testvars.recovery_output
         slo = SnapshotList(client, repository=testvars.repo_name)
