@@ -22,6 +22,7 @@ def action_specific(action):
             option_defaults.extra_settings(),
         ],
         'allocation' : [
+            option_defaults.search_pattern(),
             option_defaults.key(),
             option_defaults.value(),
             option_defaults.allocation_type(),
@@ -30,6 +31,7 @@ def action_specific(action):
             option_defaults.max_wait(action),
         ],
         'close' : [
+            option_defaults.search_pattern(),
             option_defaults.delete_aliases(),
             option_defaults.skip_flush(),
         ],
@@ -42,6 +44,7 @@ def action_specific(action):
             option_defaults.max_wait(action),
         ],
         'cold2frozen' : [
+            option_defaults.search_pattern(),
             option_defaults.c2f_index_settings(),
             option_defaults.c2f_ignore_index_settings(),
             option_defaults.wait_for_completion('cold2frozen'),
@@ -51,22 +54,28 @@ def action_specific(action):
             option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
-        'delete_indices' : [],
+        'delete_indices' : [
+            option_defaults.search_pattern(),
+        ],
         'delete_snapshots' : [
             option_defaults.repository(),
             option_defaults.retry_interval(),
             option_defaults.retry_count(),
         ],
         'forcemerge' : [
+            option_defaults.search_pattern(),
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
         'index_settings' : [
+            option_defaults.search_pattern(),
             option_defaults.index_settings(),
             option_defaults.ignore_unavailable(),
             option_defaults.preserve_existing(),
         ],
-        'open' : [],
+        'open' : [
+            option_defaults.search_pattern(),
+        ],
         'reindex' : [
             option_defaults.request_body(),
             option_defaults.refresh(),
@@ -85,6 +94,7 @@ def action_specific(action):
             option_defaults.migration_suffix(),
         ],
         'replicas' : [
+            option_defaults.search_pattern(),
             option_defaults.count(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
@@ -114,6 +124,7 @@ def action_specific(action):
             option_defaults.skip_repo_fs_check(),
         ],
         'snapshot' : [
+            option_defaults.search_pattern(),
             option_defaults.repository(),
             option_defaults.name(action),
             option_defaults.ignore_unavailable(),
@@ -125,6 +136,7 @@ def action_specific(action):
             option_defaults.skip_repo_fs_check(),
         ],
         'shrink' : [
+            option_defaults.search_pattern(),
             option_defaults.shrink_node(),
             option_defaults.node_filters(),
             option_defaults.number_of_shards(),
