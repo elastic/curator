@@ -153,6 +153,7 @@ defined by `wait_interval`.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_allocation_type,allocation_type>>
 * <<option_value,value>>
 * <<option_wfc,wait_for_completion>>
@@ -191,6 +192,7 @@ aliases beforehand.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_delete_aliases,delete_aliases>>
 * <<option_skip_flush,skip_flush>>
 * <<option_ignore_empty,ignore_empty_list>>
@@ -347,6 +349,7 @@ NOTE: If unset, the default behavior is to ensure that the `index.refresh_interv
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_wfc,wait_for_completion>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
@@ -511,6 +514,7 @@ filters:
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -613,6 +617,7 @@ filters:
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_delay,delay>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
@@ -683,6 +688,7 @@ settings, and to be able to verify configurational integrity in the YAML file,
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -714,6 +720,7 @@ This action opens the selected indices.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -836,6 +843,7 @@ defined by `wait_interval`.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_wfc,wait_for_completion>>
 * <<option_max_wait,max_wait>>
 * <<option_wait_interval,wait_interval>>
@@ -1174,6 +1182,7 @@ as needed.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_continue,continue_if_exception>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_copy_aliases,copy_aliases>>
@@ -1233,6 +1242,7 @@ read about them and change them accordingly.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_name,name>>
 * <<option_ignore,ignore_unavailable>>
 * <<option_include_gs,include_global_state>>

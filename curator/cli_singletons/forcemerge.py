@@ -4,6 +4,7 @@ from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option(
     '--max_num_segments',
     type=int,
@@ -32,11 +33,14 @@ from curator.cli_singletons.utils import validate_filter_json
     help='JSON array of filters selecting indices to act on.',
     required=True)
 @click.pass_context
-def forcemerge(ctx, max_num_segments, delay, ignore_empty_list, allow_ilm_indices, filter_list):
+def forcemerge(
+        ctx, search_pattern, max_num_segments, delay, ignore_empty_list, allow_ilm_indices,
+        filter_list):
     """
     forceMerge Indices (reduce segment count)
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'max_num_segments': max_num_segments,
         'delay': delay,
         'allow_ilm_indices': allow_ilm_indices,

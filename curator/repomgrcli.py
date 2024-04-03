@@ -86,10 +86,13 @@ def create_repo(ctx, repo_name=None, repo_type=None, repo_settings=None, verify=
     :rtype: None
     """
     logger = logging.getLogger('curator.repomgrcli.create_repo')
-    esclient = get_client(ctx)
+    client = get_client(ctx)
+    request_body = {
+        'type': repo_type,
+        'settings': repo_settings
+    }
     try:
-        esclient.snapshot.create_repository(
-            name=repo_name, settings=repo_settings, type=repo_type, verify=verify)
+        client.snapshot.create_repository(name=repo_name, body=request_body, verify=verify)
     except ApiError as exc:
         if exc.meta.status >= 500:
             logger.critical('Server-side error!')

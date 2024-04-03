@@ -4,6 +4,7 @@ from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--key', type=str, required=True, help='Node identification tag')
 @click.option('--value', type=str, default=None, help='Value associated with --key')
 @click.option('--allocation_type', type=click.Choice(['require', 'include', 'exclude']))
@@ -47,6 +48,7 @@ from curator.cli_singletons.utils import validate_filter_json
 @click.pass_context
 def allocation(
         ctx,
+        search_pattern,
         key,
         value,
         allocation_type,
@@ -61,6 +63,7 @@ def allocation(
     Shard Routing Allocation
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'key': key,
         'value': value,
         'allocation_type': allocation_type,

@@ -2,7 +2,8 @@
 import logging
 import re
 from elasticsearch8 import exceptions as es8exc
-from curator.exceptions import CuratorException, FailedExecution, MissingArgument
+from curator.exceptions import (
+    ConfigurationError, CuratorException, FailedExecution, MissingArgument)
 
 def byte_size(num, suffix='B'):
     """
@@ -65,35 +66,9 @@ def get_data_tiers(client):
                 retval[role] = True
     return retval
 
-def get_frozen_prefix(oldidx, curridx):
+def get_indices(client, search_pattern='_all'):
     """
-    Use regular expression magic to extract the prefix from the current index, and then use
-    that with ``partial-`` in front to name the resulting index.
-
-    If there is no prefix, then we just send back ``partial-``
-
-    :param oldidx: The index name before it was mounted in cold tier
-    :param curridx: The current name of the index, as mounted in cold tier
-
-    :type oldidx: str
-    :type curridx: str
-
-    :returns: The prefix to prepend the index name with for mounting as frozen
-    :rtype: str
-    """
-    logger = logging.getLogger(__name__)
-    pattern = f'^(.*){oldidx}$'
-    regexp = re.compile(pattern)
-    match = regexp.match(curridx)
-    prefix = match.group(1)
-    logger.debug('Detected match group for prefix: %s', prefix)
-    if not prefix:
-        return 'partial-'
-    return f'partial-{prefix}'
-
-def get_indices(client):
-    """
-    Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_settings`
+    Calls :py:meth:`~.elasticsearch.client.CatClient.indices`
 
     :param client: A client connection object
     :type client: :py:class:`~.elasticsearch.Elasticsearch`
@@ -102,12 +77,20 @@ def get_indices(client):
     :rtype: list
     """
     logger = logging.getLogger(__name__)
+    indices = []
     try:
-        indices = list(client.indices.get_settings(index='*', expand_wildcards='open,closed'))
-        logger.debug('All indices: %s', indices)
-        return indices
+        # Doing this in two stages because IndexList also calls for these args, and the unit tests
+        # need to Mock this call the same exact way.
+        resp = client.cat.indices(
+            index=search_pattern, expand_wildcards='open,closed', h='index,status', format='json')
     except Exception as err:
         raise FailedExecution(f'Failed to get indices. Error: {err}') from err
+    if not resp:
+        return indices
+    for entry in resp:
+        indices.append(entry['index'])
+    logger.debug('All indices: %s', indices)
+    return indices
 
 def get_repository(client, repository=''):
     """
@@ -274,6 +257,45 @@ def index_size(client, idx, value='total'):
     :rtype: integer
     """
     return client.indices.stats(index=idx)['indices'][idx][value]['store']['size_in_bytes']
+
+def meta_getter(client, idx, get=None):
+    """Meta Getter
+    Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_settings` or
+    :py:meth:`~.elasticsearch.client.IndicesClient.get_alias`
+
+    :param client: A client connection object
+    :param idx: An Elasticsearch index
+    :param get: The kind of get to perform, e.g. settings or alias
+
+    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    :type idx: str
+    :type get: str
+
+    :returns: The settings from the get call to the named index
+    :rtype: dict
+    """
+    logger = logging.getLogger(__name__)
+    acceptable = ['settings', 'alias']
+    if not get:
+        raise ConfigurationError('"get" can not be a NoneType')
+    if get not in acceptable:
+        raise ConfigurationError(f'"get" must be one of {acceptable}')
+    retval = {}
+    try:
+        if get == 'settings':
+            retval = client.indices.get_settings(index=idx)[idx]['settings']['index']
+        elif get == 'alias':
+            retval = client.indices.get_alias(index=idx)[idx]['aliases']
+    except es8exc.NotFoundError as missing:
+        logger.error('Index %s was not found!', idx)
+        raise es8exc.NotFoundError from missing
+    except KeyError as err:
+        logger.error('Key not found: %s', err)
+        raise KeyError from err
+    # pylint: disable=broad-except
+    except Exception as exc:
+        logger.error('Exception encountered: %s', exc)
+    return retval
 
 def name_to_node_id(client, name):
     """

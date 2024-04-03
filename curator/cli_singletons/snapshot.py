@@ -5,6 +5,7 @@ from curator.cli_singletons.utils import validate_filter_json
 
 # pylint: disable=line-too-long
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--repository', type=str, required=True, help='Snapshot repository')
 @click.option('--name', type=str, help='Snapshot name', show_default=True, default='curator-%Y%m%d%H%M%S')
 @click.option('--ignore_unavailable', is_flag=True, show_default=True, help='Ignore unavailable shards/indices.')
@@ -19,7 +20,7 @@ from curator.cli_singletons.utils import validate_filter_json
 @click.option('--filter_list', callback=validate_filter_json, help='JSON array of filters selecting indices to act on.', required=True)
 @click.pass_context
 def snapshot(
-        ctx, repository, name, ignore_unavailable, include_global_state, partial,
+        ctx, search_pattern, repository, name, ignore_unavailable, include_global_state, partial,
         skip_repo_fs_check, wait_for_completion, wait_interval, max_wait, ignore_empty_list,
         allow_ilm_indices, filter_list
     ):
@@ -27,6 +28,7 @@ def snapshot(
     Snapshot Indices
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'name': name,
         'repository': repository,
         'ignore_unavailable': ignore_unavailable,

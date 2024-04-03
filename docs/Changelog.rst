@@ -3,6 +3,42 @@
 Changelog
 =========
 
+8.0.14 (2 April 2024)
+---------------------
+
+**Announcement**
+
+  * A long awaited feature has been added, stealthily. It's fully in the documentation, but I do
+    not yet plan to make a big announcement about it. In actions that search through indices, you
+    can now specify a ``search_pattern`` to limit the number of indices that will be filtered. If
+    no search pattern is specified, the behavior will be the same as it ever was: it will search
+    through ``_all`` indices. The actions that support this option are: allocation, close,
+    cold2frozen, delete_indices, forcemerge, index_settings, open, replicas, shrink, and snapshot.
+
+**Bugfix**
+
+  * A mixup with naming conventions from the PII redacter tool got in the way of the cold2frozen
+    action completing properly.
+
+**Changes**
+
+  * Version bump: ``es_client==8.13.0``
+      * With the version bump to ``es_client`` comes a necessary change to calls to create a
+        repository. In https://github.com/elastic/elasticsearch-specification/pull/2255 it became
+        clear that using ``type`` and ``settings`` as it has been was insufficient for repository
+        settings, so we go back to using a request ``body`` as in older times. This change affects
+        ``esrepomgr`` in one place, and otherwise only in snapshot/restore testing.
+  * Added the curator.helpers.getters.meta_getter to reduce near duplicate functions.
+  * Changed curator.helpers.getters.get_indices to use the _cat API to pull indices. The primary
+    driver for this is that it avoids pulling in the full mapping and index settings when all we
+    really need to return is a list of index names. This should help keep memory from ballooning
+    quite as much. The function also now allows for a search_pattern kwarg to search only for
+    indices matching a pattern. This will also potentially make the initial index return list much
+    smaller, and the list of indices needing to be filtered that much smaller.
+  * Tests were added to ensure that the changes for ``get_indices`` work everywhere.
+  * Tests were added to ensure that the new ``search_pattern`` did not break anything, and does
+    behave as expected.
+
 8.0.13 (26 March 2024)
 ----------------------
 

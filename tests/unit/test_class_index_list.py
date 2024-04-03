@@ -52,7 +52,7 @@ class TestIndexListClientAndInit(TestCase):
         self.assertRaises(TypeError, IndexList, client)
     def test_init_get_indices_exception(self):
         self.builder()
-        self.client.indices.get_settings.side_effect = testvars.fake_fail
+        self.client.cat.indices.side_effect = testvars.fake_fail
         self.assertRaises(FailedExecution, IndexList, self.client)
     def test_init(self):
         self.builder()

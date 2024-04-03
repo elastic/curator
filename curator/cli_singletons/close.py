@@ -4,6 +4,7 @@ from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--delete_aliases', is_flag=True, help='Delete all aliases from indices to be closed')
 @click.option('--skip_flush', is_flag=True, help='Skip flush phase for indices to be closed')
 @click.option(
@@ -24,11 +25,14 @@ from curator.cli_singletons.utils import validate_filter_json
     required=True
 )
 @click.pass_context
-def close(ctx, delete_aliases, skip_flush, ignore_empty_list, allow_ilm_indices, filter_list):
+def close(
+        ctx, search_pattern, delete_aliases, skip_flush, ignore_empty_list, allow_ilm_indices,
+        filter_list):
     """
     Close Indices
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'skip_flush': skip_flush,
         'delete_aliases': delete_aliases,
         'allow_ilm_indices': allow_ilm_indices,
