@@ -4,6 +4,7 @@ from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--count', type=int, required=True, help='Number of replicas (max 10)')
 @click.option(
     '--wait_for_completion/--no-wait_for_completion',
@@ -29,11 +30,14 @@ from curator.cli_singletons.utils import validate_filter_json
     required=True
 )
 @click.pass_context
-def replicas(ctx, count, wait_for_completion, ignore_empty_list, allow_ilm_indices, filter_list):
+def replicas(
+        ctx, search_pattern, count, wait_for_completion, ignore_empty_list, allow_ilm_indices,
+        filter_list):
     """
     Change Replica Count
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'count': count,
         'wait_for_completion': wait_for_completion,
         'allow_ilm_indices': allow_ilm_indices,

@@ -380,6 +380,12 @@ def cluster_routing_value():
     """
     return {Required('value'): Any('all', 'primaries', 'none', 'new_primaries', 'replicas')}
 
+def search_pattern():
+    """
+    :returns: ``{Optional('search_pattern', default='_all'): Any(*string_types)}``
+    """
+    return {Optional('search_pattern', default='_all'): Any(*string_types)}
+
 def shrink_node():
     """
     :returns: ``{Required('shrink_node'): Any(*string_types)}``

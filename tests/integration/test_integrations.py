@@ -149,3 +149,13 @@ class TestIndexList(CuratorTestCase):
         ilo.get_index_stats()
         ilo.get_index_stats() # This time index_info is already populated and it will skip
         assert ilo.index_info[self.IDX1][key] == 0
+    def test_search_pattern_1(self):
+        """Check to see if providing a search_pattern limits the index list"""
+        pattern = 'd*'
+        self.create_index(self.IDX1)
+        self.create_index(self.IDX2)
+        self.create_index(self.IDX3)
+        ilo1 = IndexList(self.client)
+        ilo2 = IndexList(self.client, search_pattern=pattern)
+        assert ilo1.indices == [self.IDX1, self.IDX2, self.IDX3]
+        assert ilo2.indices == [self.IDX1, self.IDX2]

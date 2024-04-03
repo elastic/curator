@@ -178,8 +178,11 @@ class CuratorTestCase(TestCase):
         )
 
     def create_repository(self):
-        args = {'location': self.args['location']}
-        self.client.snapshot.create_repository(name=self.args['repository'], type='fs', settings=args)
+        request_body = {
+            'type': 'fs',
+            'settings': {'location': self.args['location']}
+        }
+        self.client.snapshot.create_repository(name=self.args['repository'], body=request_body)
 
     def delete_repositories(self):
         result = self.client.snapshot.get_repository(name='*')

@@ -150,16 +150,7 @@ class ActionDef:
             wrapper = getattr(self, attribute)
         except AttributeError as exc:
             raise AttributeError(f'Bad Attribute: {attribute}. Exception: {exc}') from exc
-        # setattr(self, attribute, self.get_obj_instance(wrapper, *args, **kwargs))
-        ### DEBUG
-        from curator.exceptions import NoIndices
-        try:
-            setattr(self, attribute, self.get_obj_instance(wrapper, *args, **kwargs))
-        except NoIndices as noidx:
-            raise NoIndices from noidx
-        except Exception as exc:
-            raise AttributeError(f'Set Attribute FAILURE: {attribute}. Exception: {exc}. Args: {args} Kwargs: {kwargs}') from exc
-        ### END DEBUG
+        setattr(self, attribute, self.get_obj_instance(wrapper, *args, **kwargs))
 
     def get_obj_instance(self, wrapper, *args, **kwargs):
         """Get the class instance wrapper identified by ``wrapper``
@@ -186,17 +177,8 @@ class ActionDef:
         Set :py:attr:`list_obj` to :py:class:`~.curator.SnapshotList` when
         :py:attr:`~.curator.classdef.ActionDef.action` is ``delete_snapshots`` or ``restore``
         """
-        # self.action_cls = Wrapper(CLASS_MAP[self.action])
-        ### DEBUGGING
-        try:
-            self.action_cls = Wrapper(CLASS_MAP[self.action])
-        except Exception as exc:
-            msg = (
-                f"Failed to set self.action_cls to Wrapper(CLASS_MAP[self.action]). "
-                f"Exception: {exc}"
-            )
-            raise BaseException(msg) from exc
-        ### END DEBUGGING
+
+        self.action_cls = Wrapper(CLASS_MAP[self.action])
         if self.action == 'alias':
             self.set_alias_extras()
         if self.action in ['delete_snapshots', 'restore']:
@@ -215,34 +197,10 @@ class ActionDef:
             'timeout_override' : 'timeout_override'
         }
         for key in self.action_dict['options']:
-            # if key in attmap:
-            #     setattr(self, attmap[key], self.action_dict['options'][key])
-            # else:
-            #     self.options[key] = self.action_dict['options'][key]
-            ### DEBUGGING
-            logger = logging.getLogger(__name__)
             if key in attmap:
-                try:
-                    setattr(self, attmap[key], self.action_dict['options'][key])
-                except Exception as exc:
-                    logger.critical('setattr FAIL for %s', key)
-                    msg = (
-                        f"Failed to setattr attmap[key] ({attmap[key]}) to "
-                        f"self.action_dict['options'][key] ({self.action_dict['options'][key]}) "
-                        f"Exception: {exc}"
-                    )
-                    raise BaseException(msg) from exc
+                setattr(self, attmap[key], self.action_dict['options'][key])
             else:
-                try:
-                    self.options[key] = self.action_dict['options'][key]
-                except Exception as exc:
-                    msg = (
-                        f"Failed to set self.options[key] ({self.options[key]}) to "
-                        f"self.action_dict['options'][key] ({self.action_dict['options'][key]}) "
-                        f"Exception: {exc}"
-                    )
-                    raise BaseException(msg) from exc
-            ### END DEBUGGING
+                self.options[key] = self.action_dict['options'][key]
 
     def set_root_attrs(self):
         """

@@ -5,6 +5,7 @@ from curator.cli_singletons.utils import validate_filter_json
 
 #### Indices ####
 @click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option(
     '--ignore_empty_list',
     is_flag=True,
@@ -23,7 +24,7 @@ from curator.cli_singletons.utils import validate_filter_json
     required=True
 )
 @click.pass_context
-def delete_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
+def delete_indices(ctx, search_pattern, ignore_empty_list, allow_ilm_indices, filter_list):
     """
     Delete Indices
     """
@@ -31,7 +32,7 @@ def delete_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
     action = CLIAction(
         'delete_indices',
         ctx.obj['configdict'],
-        {'allow_ilm_indices':allow_ilm_indices},
+        {'search_pattern': search_pattern, 'allow_ilm_indices':allow_ilm_indices},
         filter_list,
         ignore_empty_list
     )

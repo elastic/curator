@@ -1,6 +1,6 @@
 """Snapshot and Restore action classes"""
 import logging
-from curator.helpers.getters import get_alias_actions, get_frozen_prefix, get_tier_preference
+from curator.helpers.getters import get_alias_actions, get_tier_preference, meta_getter
 from curator.helpers.testers import has_lifecycle_name, is_idx_partial, verify_index_list
 from curator.helpers.utils import report_failure
 from curator.exceptions import CuratorException, FailedExecution, SearchableSnapshotException
@@ -76,7 +76,8 @@ class Cold2Frozen:
         :rtype: dict
         """
         for idx in self.index_list.indices:
-            idx_settings = self.client.indices.get(index=idx)[idx]['settings']['index']
+            idx_settings = meta_getter(self.client, idx, get='settings')
+            self.loggit.debug('Index %s has settings: %s', idx, idx_settings)
             if has_lifecycle_name(idx_settings):
                 self.loggit.critical(
                     'Index %s is associated with an ILM policy and this action will never work on '
@@ -85,13 +86,16 @@ class Cold2Frozen:
             if is_idx_partial(idx_settings):
                 self.loggit.critical('Index %s is already in the frozen tier', idx)
                 raise SearchableSnapshotException('Index is already in frozen tier')
+
             snap = idx_settings['store']['snapshot']['snapshot_name']
             snap_idx = idx_settings['store']['snapshot']['index_name']
             repo = idx_settings['store']['snapshot']['repository_name']
-            aliases = self.client.indices.get(index=idx)[idx]['aliases']
+            msg = f'Index {idx} Snapshot name: {snap}, Snapshot index: {snap_idx}, repo: {repo}'
+            self.loggit.debug(msg)
 
-            prefix = get_frozen_prefix(snap_idx, idx)
-            renamed = f'{prefix}{snap_idx}'
+            aliases = meta_getter(self.client, idx, get='alias')
+
+            renamed = f'partial-{idx}'
 
             if not self.index_settings:
                 self.index_settings = {
@@ -187,7 +191,7 @@ class Cold2Frozen:
     def do_action(self):
         """
         Do the actions outlined:
-
+        Extract values from generated kwargs
         Mount
         Verify
         Update Aliases

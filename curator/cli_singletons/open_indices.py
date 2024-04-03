@@ -4,6 +4,7 @@ from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
 
 @click.command(name='open')
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option(
     '--ignore_empty_list',
     is_flag=True,
@@ -22,7 +23,7 @@ from curator.cli_singletons.utils import validate_filter_json
     required=True
 )
 @click.pass_context
-def open_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
+def open_indices(ctx, search_pattern, ignore_empty_list, allow_ilm_indices, filter_list):
     """
     Open Indices
     """
@@ -30,7 +31,7 @@ def open_indices(ctx, ignore_empty_list, allow_ilm_indices, filter_list):
     action = CLIAction(
         ctx.info_name,
         ctx.obj['configdict'],
-        {'allow_ilm_indices':allow_ilm_indices},
+        {'search_pattern': search_pattern, 'allow_ilm_indices':allow_ilm_indices},
         filter_list,
         ignore_empty_list
     )

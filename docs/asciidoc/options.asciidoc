@@ -48,6 +48,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_retry_count,retry_count>>
 * <<option_retry_interval,retry_interval>>
 * <<option_routing_type,routing_type>>
+* <<option_search_pattern,search_pattern>>
 * <<option_setting,setting>>
 * <<option_shrink_node,shrink_node>>
 * <<option_slices,slices>>
@@ -2150,6 +2151,30 @@ The value of this setting must be either `allocation` or `rebalance`
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+[[option_search_pattern]]
+== search_pattern
+
+NOTE: This setting is only used by the
+  <<allocation>>, <<close>>, <<cold2frozen>>, <<delete_indices>>, <<forcemerge>>,
+  <<index_settings>>, <<open>>, <<replicas>>, <<shrink>>, and <<snapshot>> actions.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete selected indices"
+options:
+  search_pattern: 'index-*'
+filters:
+- filtertype: ...
+-------------
+
+The value of this option can be a comma-separated list of data streams, indices, and aliases used
+to limit the request. Supports wildcards (*). To target all data streams and indices, omit this
+parameter or use * or _all. If using wildcards it is highly recommended to encapsulate the entire
+search pattern in single quotes, e.g. `search_pattern: 'a*,b*,c*'`
+
+The default value is `_all`.
 
 [[option_setting]]
 == setting

@@ -47,7 +47,7 @@ class Alias:
         :type ilo: :py:class:`~.curator.indexlist.IndexList`
         """
         verify_index_list(ilo)
-        self.loggit.debug('ADD -> ILO = %s', ilo)
+        self.loggit.debug('ADD -> ILO = %s', ilo.indices)
         if not self.client:
             self.client = ilo.client
         self.name = parse_datemath(self.client, self.name)
@@ -80,7 +80,7 @@ class Alias:
         :type ilo: :py:class:`~.curator.indexlist.IndexList`
         """
         verify_index_list(ilo)
-        self.loggit.debug('REMOVE -> ILO = %s', ilo)
+        self.loggit.debug('REMOVE -> ILO = %s', ilo.indices)
         if not self.client:
             self.client = ilo.client
         self.name = parse_datemath(self.client, self.name)

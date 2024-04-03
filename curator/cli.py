@@ -83,18 +83,26 @@ def process_action(client, action_def, dry_run=False):
     :type action_def: :py:class:`~.curator.classdef.ActionDef`
     :rtype: None
     """
-    result = True # DEBUGGING
     logger = logging.getLogger(__name__)
     logger.debug('Configuration dictionary: %s', action_def.action_dict)
     mykwargs = {}
-    noindices = False
+    search_pattern = '_all'
+
+    logger.critical('INITIAL Action kwargs: %s', mykwargs)
     # Add some settings to mykwargs...
     if action_def.action == 'delete_indices':
         mykwargs['master_timeout'] = 30
-    logger.critical('MYKWARGS PRE-PRUNE = %s', action_def.options)
+
     ### Update the defaults with whatever came with opts, minus any Nones
     mykwargs.update(prune_nones(action_def.options))
+
+    # Pop out the search_pattern option, if present.
+    if 'search_pattern' in mykwargs:
+        search_pattern = mykwargs.pop('search_pattern')
+
     logger.debug('Action kwargs: %s', mykwargs)
+    logger.critical('Post search_pattern Action kwargs: %s', mykwargs)
+
     ### Set up the action ###
     logger.debug('Running "%s"', action_def.action.upper())
     if action_def.action == 'alias':
@@ -120,58 +128,16 @@ def process_action(client, action_def, dry_run=False):
             mykwargs.pop('repository') # We don't need to send this value to the action
             action_def.instantiate('list_obj', client, repository=action_def.options['repository'])
         else:
-            # action_def.instantiate('list_obj', client)
-            ### DEBUGGING
-            try:
-                logger.debug('Action %s: action_def.instantiate.list_obj', action_def.action)
-                action_def.instantiate('list_obj', client)
-            except Exception as exc:
-                logger.critical('Action %s: action_def.instantiate.list_obj FAILED', action_def.action)
-                exception_handler(action_def, exc)
-            ### END DEBUGGING
-
-        # action_def.list_obj.iterate_filters({'filters': action_def.filters})
-        ### DEBUGGING
-        try:
-            logger.debug('Action %s: action_def.list_obj.iterate_filters', action_def.action)
-            action_def.list_obj.iterate_filters({'filters': action_def.filters})
-        except Exception as exc:
-            logger.critical('Action %s: action_def.list_obj.iterate_filters FAILED', action_def.action)
-            exception_handler(action_def, exc)
-        ### END DEBUGGING
-
-        # action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
-        ### DEBUGGING
-        try:
-            logger.debug('Action %s: action_def.instantiate.action_cls, KWARGS: %s', action_def.action, mykwargs)
-            action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
-        except Exception as exc:
-            if isinstance(exc, NoIndices):
-                noindices = True
-            logger.critical('Action %s: action_def.instantiate.action_cls FAILED', action_def.action)
-            exception_handler(action_def, exc)
-        ### END DEBUGGING
-
+            action_def.instantiate('list_obj', client, search_pattern=search_pattern)
+        action_def.list_obj.iterate_filters({'filters': action_def.filters})
+        logger.critical('Pre Instantiation Action kwargs: %s', mykwargs)
+        action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
     ### Do the action
     if dry_run:
         action_def.action_cls.do_dry_run()
     else:
-        # logger.debug('Doing the action here.')
-        # action_def.action_cls.do_action()
-        ### DEBUGGING
-        try:
-            logger.debug('Action %s: action_def.action_cls.do_action()', action_def.action)
-            action_def.action_cls.do_action()
-        except Exception as exc:
-            if isinstance(exc, AttributeError):
-                if noindices:
-                    exception_handler(action_def, NoIndices())
-            else:
-                logger.critical('Action %s: action_def.action_cls.do_action() FAILED', action_def.action)
-                exception_handler(action_def, exc)
-        ### END DEBUGGING
-
-    return result # DEBUGGING
+        logger.debug('Doing the action here.')
+        action_def.action_cls.do_action()
 
 def run(ctx: click.Context) -> None:
     """
@@ -222,21 +188,13 @@ def run(ctx: click.Context) -> None:
         ### Process the action ###
         ##########################
         msg = f'Trying Action ID: {idx}, "{action_def.action}": {action_def.description}'
-        # try:
-        #     logger.info(msg)
-        #     process_action(client, action_def, dry_run=ctx.params['dry_run'])
-        # # pylint: disable=broad-except
-        # except Exception as err:
-        #     exception_handler(action_def, err)
-        # logger.info('Action ID: %s, "%s" completed.', idx, action_def.action)
-        ### DEBUGGING
-        logger.info(msg)
-        result = process_action(client, action_def, dry_run=ctx.params['dry_run'])
-        if result:
-            logger.info('Action ID: %s, "%s" completed.', idx, action_def.action)
-        else:
-            exception_handler(action_def, BaseException('NO IDEA HERE YET'))
-        ### END DEBUGGING
+        try:
+            logger.info(msg)
+            process_action(client, action_def, dry_run=ctx.params['dry_run'])
+        # pylint: disable=broad-except
+        except Exception as err:
+            exception_handler(action_def, err)
+        logger.info('Action ID: %s, "%s" completed.', idx, action_def.action)
     logger.info('All actions completed.')
 
 # pylint: disable=unused-argument, redefined-builtin, too-many-arguments, too-many-locals, line-too-long
