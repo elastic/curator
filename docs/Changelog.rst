@@ -3,6 +3,36 @@
 Changelog
 =========
 
+8.0.15 (10 April 2024)
+----------------------
+
+**Announcement**
+
+  * Python 3.12 support becomes official. A few changes were necessary to ``datetime`` calls
+    which were still using naive timestamps. Tests across all minor Python versions from 3.8 - 3.12
+    verify everything is working as expected with regards to those changes. Note that Docker builds
+    are still running Python 3.11 as cx_Freeze still does not officially support Python 3.12.
+  * Added infrastructure to test multiple versions of Python against the code base. This requires
+    you to run:
+        * ``pip install -U hatch hatchling`` -- Install prerequisites
+        * ``hatch run docker:create X.Y.Z`` -- where ``X.Y.Z`` is an ES version on Docker Hub
+        * ``hatch run test:pytest`` -- Run the test suite for each supported version of Python
+        * ``hatch run docker:destroy`` -- Cleanup the Docker containers created in ``docker:create``
+
+**Bugfix**
+
+  * A bug reported in ``es_client`` with Python versions 3.8 and 3.9 has been addressed. Going
+    forward, testing protocol will be to ensure that Curator works with all supported versions of
+    Python, or support will be removed (when 3.8 is EOL, for example).
+
+**Changes**
+
+  * Address deprecation warning in ``get_alias()`` call by limiting indices to only open and
+    closed indices via ``expand_wildcards=['open', 'closed']``.
+  * Address test warnings for an improperly escaped ``\d`` in a docstring in ``indexlist.py``
+  * Updated Python version in Docker build. See Dockerfile for more information.
+  * Docker test scripts updated to make Hatch matrix testing easier (.env file)
+
 8.0.14 (2 April 2024)
 ---------------------
 

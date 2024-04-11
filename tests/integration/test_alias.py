@@ -2,7 +2,7 @@
 # pylint: disable=missing-function-docstring, missing-class-docstring, invalid-name, line-too-long
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytest
 from elasticsearch8.exceptions import NotFoundError
 from . import CuratorTestCase
@@ -76,7 +76,7 @@ class TestActionFileAlias(CuratorTestCase):
         assert expected == self.client.indices.get_alias(name=alias)
     def test_add_and_remove_datemath(self):
         alias = '<testalias-{now-1d/d}>'
-        alias_parsed = f"testalias-{(datetime.utcnow()-timedelta(days=1)).strftime('%Y.%m.%d')}"
+        alias_parsed = f"testalias-{(datetime.now(timezone.utc)-timedelta(days=1)).strftime('%Y.%m.%d')}"
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.alias_add_remove.format(alias))
         idx1, idx2 = ('dummy', 'my_index')

@@ -98,7 +98,7 @@ class Alias:
 
             # Re-raise the exceptions.NoIndices so it will behave as before
             raise NoIndices('No indices to remove from alias') from exc
-        aliases = self.client.indices.get_alias()
+        aliases = self.client.indices.get_alias(expand_wildcards=['open', 'closed'])
         for index in ilo.working_list():
             if index in aliases:
                 self.loggit.debug('Index %s in get_aliases output', index)
