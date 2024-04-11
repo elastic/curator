@@ -127,13 +127,11 @@ echo "Please select one of these environment variables to prepend your 'pytest' 
 echo
 
 for IP in $IPLIST; do
-  echo "REMOTE_ES_SERVER=\"http://$IP:${REMOTE_PORT}\""
-  if [ "$AUTO_EXPORT" == "y" ]; then
-    # This puts our curatortestenv file where it can be purged easily by destroy.sh
-    cd $SCRIPTPATH
-    cd ..
-    echo "export REMOTE_ES_SERVER=http://$IP:$REMOTE_PORT" > curatortestenv
-  fi
+  REMOTE="REMOTE_ES_SERVER=\"http://$IP:${REMOTE_PORT}\""
+  echo ${REMOTE}
+  cd $SCRIPTPATH
+  cd ..
+  echo "export ${REMOTE}" > .env
 done
 
 echo
