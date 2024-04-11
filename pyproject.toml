@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 keywords = [
     'elasticsearch',
@@ -28,7 +29,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.13.0"
+    "es_client==8.13.1"
 ]
 
 [project.optional-dependencies]
@@ -74,27 +75,40 @@ exclude = [
     "tests",
 ]
 
+### Docker Environment
+[tool.hatch.envs.docker]
+platforms = ["linux", "macos"]
+
+[tool.hatch.envs.docker.scripts]
+create = "docker_test/scripts/create.sh {args}"
+destroy = "docker_test/scripts/destroy.sh"
+
+### Lint environment
+[tool.hatch.envs.lint.scripts]
+run-pyright = "pyright {args:.}"
+run-black = "black --quiet --check --diff {args:.}"
+run-ruff = "ruff check --quiet {args:.}"
+run-curlylint = "curlylint {args:.}"
+python = ["run-pyright", "run-black", "run-ruff"]
+templates = ["run-curlylint"]
+all = ["python", "templates"]
+
+### Test environment
 [tool.hatch.envs.test]
+platforms = ["linux", "macos"]
 dependencies = [
-    "coverage[toml]",
     "requests",
     "pytest >=7.2.1",
-    "pytest-cov",
+    "pytest-cov"
 ]
 
-[tool.hatch.envs.test.scripts]
-step0 = "$(docker_test/scripts/destroy.sh 2&>1 /dev/null)"
-step1 = "step0 ; echo 'Starting test environment in Docker...' ; $(AUTO_EXPORT=y docker_test/scripts/create.sh 8.12.1 2&>1 /dev/null)"
-step2 = "step1 ; source docker_test/curatortestenv; echo 'Running tests:'"
-step3 = "step2 ; pytest ; EXITCODE=$?"
-step4 = "step3 ; echo 'Tests complete! Destroying Docker test environment...' "
-full = "step4 ; $(docker_test/scripts/destroy.sh 2&>1 /dev/null ) ;  exit $EXITCODE"
-run-coverage = "pytest --cov-config=pyproject.toml --cov=curator --cov=tests"
-run = "run-coverage --no-cov"
-
 [[tool.hatch.envs.test.matrix]]
-python = ["3.9", "3.10", "3.11"]
-version = ["8.0.11"]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.test.scripts]
+pytest = "source docker_test/.env; pytest"
+pytest-cov = "source docker_test/.env; pytest --cov=curator"
+pytest-cov-report = "source docker_test/.env; pytest --cov=curator --cov-report=term-missing"
 
 [tool.pytest.ini_options]
 pythonpath = [".", "curator"]

@@ -9,15 +9,16 @@ import sys
 import tempfile
 import time
 import json
-from datetime import timedelta, datetime, date
+from datetime import timedelta, datetime, date, timezone
 from subprocess import Popen, PIPE
+from unittest import SkipTest, TestCase
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import ConnectionError as ESConnectionError
 from click import testing as clicktest
 from curator.cli import cli
 
 from . import testvars
-from unittest import SkipTest, TestCase
+
 
 client = None
 
@@ -122,25 +123,31 @@ class CuratorTestCase(TestCase):
         return Args(self.args)
 
     def create_indices(self, count, unit=None, ilm_policy=None):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         unit = unit if unit else self.args['time_unit']
         fmt = DATEMAP[unit]
         if not unit == 'months':
             step = timedelta(**{unit: 1})
             for _ in range(count):
-                self.create_index(self.args['prefix'] + now.strftime(fmt), wait_for_yellow=False, ilm_policy=ilm_policy)
+                self.create_index(
+                    self.args['prefix'] + now.strftime(fmt),
+                    wait_for_yellow=False, ilm_policy=ilm_policy)
                 now -= step
         else: # months
             now = date.today()
             d = date(now.year, now.month, 1)
-            self.create_index(self.args['prefix'] + now.strftime(fmt), wait_for_yellow=False, ilm_policy=ilm_policy)
+            self.create_index(
+                self.args['prefix'] + now.strftime(fmt),
+                wait_for_yellow=False, ilm_policy=ilm_policy)
 
             for _ in range(1, count):
                 if d.month == 1:
                     d = date(d.year-1, 12, 1)
                 else:
                     d = date(d.year, d.month-1, 1)
-                self.create_index(self.args['prefix'] + datetime(d.year, d.month, 1).strftime(fmt), wait_for_yellow=False, ilm_policy=ilm_policy)
+                self.create_index(
+                    self.args['prefix'] + datetime(d.year, d.month, 1).strftime(fmt),
+                    wait_for_yellow=False, ilm_policy=ilm_policy)
         # pylint: disable=E1123
         self.client.cluster.health(wait_for_status='yellow')
 
@@ -148,11 +155,13 @@ class CuratorTestCase(TestCase):
         # pylint: disable=E1123
         self.client.cluster.health(wait_for_status='yellow')
 
-    def create_index(self, name, shards=1, wait_for_yellow=True, ilm_policy=None, wait_for_active_shards=1):
+    def create_index(
+            self, name, shards=1, wait_for_yellow=True, ilm_policy=None, wait_for_active_shards=1):
         request_body={'index': {'number_of_shards': shards, 'number_of_replicas': 0}}
         if ilm_policy is not None:
             request_body['index']['lifecycle'] = {'name': ilm_policy}
-        self.client.indices.create(index=name, settings=request_body, wait_for_active_shards=wait_for_active_shards)
+        self.client.indices.create(
+            index=name, settings=request_body, wait_for_active_shards=wait_for_active_shards)
         if wait_for_yellow:
             self.wfy()
 
@@ -232,4 +241,3 @@ class CuratorTestCase(TestCase):
                 myargs.append(value)
             myargs.append(self.args['actionfile'])
             self.result = self.runner.invoke(cli, myargs)
-

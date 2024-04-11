@@ -26,7 +26,7 @@ UPONE=$(pwd | awk -F\/ '{print $NF}')
 
 if [[ "$UPONE" = "docker_test" ]]; then
   rm -rf $(pwd)/repo/*
-  rm -rf $(pwd)/curatortestenv
+  cp /dev/null $(pwd)/.env
 else
   echo "WARNING: Unable to automatically empty bind mounted repo path."
   echo "Please manually empty the contents of the repo directory!"

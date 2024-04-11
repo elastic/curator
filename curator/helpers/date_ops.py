@@ -4,7 +4,7 @@ import random
 import re
 import string
 import time
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from elasticsearch8.exceptions import NotFoundError
 from curator.exceptions import ConfigurationError
 from curator.defaults.settings import date_regex
@@ -43,6 +43,7 @@ class TimestringSearch(object):
                 timestamp = match.group("date")
                 return datetime_to_epoch(get_datetime(timestamp, self.timestring))
 
+
 def absolute_date_range(
         unit, date_from, date_to,
         date_from_format=None, date_to_format=None
@@ -77,7 +78,7 @@ def absolute_date_range(
         raise ConfigurationError('Must provide "date_from_format" and "date_to_format"')
     try:
         start_epoch = datetime_to_epoch(get_datetime(date_from, date_from_format))
-        logger.debug('Start ISO8601 = %s', datetime.utcfromtimestamp(start_epoch).isoformat())
+        logger.debug('Start ISO8601 = %s', epoch2iso(start_epoch))
     except Exception as err:
         raise ConfigurationError(
             f'Unable to parse "date_from" {date_from} and "date_from_format" {date_from_format}. '
@@ -116,7 +117,7 @@ def absolute_date_range(
         end_epoch = get_point_of_reference(
             unit, -1, epoch=datetime_to_epoch(end_date)) -1
 
-    logger.debug('End ISO8601 = %s', datetime.utcfromtimestamp(end_epoch).isoformat())
+    logger.debug('End ISO8601 = %s', epoch2iso(end_epoch))
     return (start_epoch, end_epoch)
 
 def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
@@ -152,7 +153,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     if not epoch:
         epoch = time.time()
     epoch = fix_epoch(epoch)
-    raw_point_of_ref = datetime.utcfromtimestamp(epoch)
+    raw_point_of_ref = datetime.fromtimestamp(epoch, timezone.utc)
     logger.debug('Raw point of Reference = %s', raw_point_of_ref)
     # Reverse the polarity, because -1 as last week makes sense when read by
     # humans, but datetime timedelta math makes -1 in the future.
@@ -208,7 +209,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         start_date = point_of_ref - start_delta
     # By this point, we know our start date and can convert it to epoch time
     start_epoch = datetime_to_epoch(start_date)
-    logger.debug('Start ISO8601 = %s', datetime.utcfromtimestamp(start_epoch).isoformat())
+    logger.debug('Start ISO8601 = %s', epoch2iso(start_epoch))
     # This is the number of units we need to consider.
     count = (range_to - range_from) + 1
     # We have to iterate to one more month, and then subtract a second to get
@@ -234,7 +235,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         # to get hours, days, or weeks, as they don't change
         end_epoch = get_point_of_reference(
             unit, count * -1, epoch=start_epoch) -1
-    logger.debug('End ISO8601 = %s', datetime.utcfromtimestamp(end_epoch).isoformat())
+    logger.debug('End ISO8601 = %s', epoch2iso(end_epoch))
     return (start_epoch, end_epoch)
 
 def datetime_to_epoch(mydate):
@@ -247,8 +248,52 @@ def datetime_to_epoch(mydate):
     :returns: An epoch timestamp based on ``mydate``
     :rtype: int
     """
-    tdelta = (mydate - datetime(1970, 1, 1))
+    tdelta = mydate - datetime(1970, 1, 1)
     return tdelta.seconds + tdelta.days * 24 * 3600
+
+def epoch2iso(epoch: int) -> str:
+    """
+    Return an ISO8601 value for epoch
+
+    :param epoch: An epoch timestamp
+    :type epoch: int
+
+    :returns: An ISO8601 timestamp
+    :rtype: str
+    """
+    # Because Python 3.12 now requires non-naive timezone declarations, we must change.
+    #
+    ### Example:
+    ### epoch == 1491256800
+    ###
+    ### The old way:
+    ###datetime.utcfromtimestamp(epoch)
+    ###   datetime.datetime(2017, 4, 3, 22, 0).isoformat()
+    ###   Result: 2017-04-03T22:00:00
+    ###
+    ### The new way:
+    ###     datetime.fromtimestamp(epoch, timezone.utc)
+    ###     datetime.datetime(2017, 4, 3, 22, 0, tzinfo=datetime.timezone.utc).isoformat()
+    ###     Result: 2017-04-03T22:00:00+00:00
+    ###
+    ### End Example
+    #
+    # Note that the +00:00 is appended now where we affirmatively declare the UTC timezone
+    #
+    # As a result, we will use this function to prune away the timezone if it is +00:00 and replace
+    # it with Z, which is shorter Zulu notation for UTC (which Elasticsearch uses)
+    #
+    # We are MANUALLY, FORCEFULLY declaring timezone.utc, so it should ALWAYS be +00:00, but could
+    # in theory sometime show up as a Z, so we test for that.
+
+    parts = datetime.fromtimestamp(epoch, timezone.utc).isoformat().split('+')
+    if len(parts) == 1:
+        if parts[0][-1] == 'Z':
+            return parts[0] # Our ISO8601 already ends with a Z for Zulu/UTC time
+        return f'{parts[0]}Z' # It doesn't end with a Z so we put one there
+    if parts[1] == '00:00':
+        return f'{parts[0]}Z' # It doesn't end with a Z so we put one there
+    return f'{parts[0]}+{parts[1]}' # Fallback publishes the +TZ, whatever that was
 
 def fix_epoch(epoch):
     """
@@ -537,7 +582,7 @@ def parse_date_pattern(name):
         if char == '%':
             pass
         elif char in date_regex() and prev == '%':
-            rendered += str(datetime.utcnow().strftime(f'%{char}'))
+            rendered += str(datetime.now(timezone.utc).strftime(f'%{char}'))
         else:
             rendered += char
         logger.debug('Partially rendered name: %s', rendered)

@@ -927,7 +927,6 @@ class IndexList:
     def filter_by_count(self, count=None, reverse=True, use_age=False, pattern=None,
             source='creation_date', timestring=None, field=None, stats_result='min_value',
             exclude=True):
-        # pylint: disable=anomalous-backslash-in-string
         """
         Remove indices from the actionable list beyond the number ``count``, sorted
         reverse-alphabetically by default.  If you set ``reverse=False``, it will be sorted
@@ -951,7 +950,7 @@ class IndexList:
         :param pattern: Select indices to count from a regular expression pattern. This pattern
             must have one and only one capture group. This can allow a single ``count`` filter
             instance to operate against any number of matching patterns, and keep ``count`` of each
-            index in that group.  For example, given a ``pattern`` of ``'^(.*)-\d{6}$'``, it will
+            index in that group.  For example, given a ``pattern`` of ``'^(.*)-\\d{6}$'``, it will
             match both ``rollover-000001`` and ``index-999990``, but not ``logstash-2017.10.12``.
             Following the same example, if my cluster also had ``rollover-000002`` through
             ``rollover-000010`` and ``index-888888`` through ``index-999999``, it will process both

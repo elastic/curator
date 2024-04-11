@@ -1,7 +1,7 @@
 """Test snapshot action functionality"""
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from curator.helpers.getters import get_indices, get_snapshot
 from . import CuratorTestCase
 from . import testvars
@@ -23,7 +23,7 @@ class TestActionFileSnapshot(CuratorTestCase):
         self.create_indices(5)
         self.create_repository()
         snap_name = '<snapshot-{now-1d/d}>'
-        snap_name_parsed = f"snapshot-{(datetime.utcnow()-timedelta(days=1)).strftime('%Y.%m.%d')}"
+        snap_name_parsed = f"snapshot-{(datetime.now(timezone.utc)-timedelta(days=1)).strftime('%Y.%m.%d')}"
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
         self.write_config(self.args['actionfile'], testvars.snapshot_test.format(self.args['repository'], snap_name, 1, 30))
         self.invoke_runner()
