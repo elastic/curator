@@ -883,7 +883,7 @@ class IndexList(object):
         source='creation_date', timestring=None, field=None,
         stats_result='min_value', exclude=True):
         # pylint: disable=W1401
-        """
+        r"""
         Remove indices from the actionable list beyond the number `count`,
         sorted reverse-alphabetically by default.  If you set `reverse` to
         `False`, it will be sorted alphabetically.
