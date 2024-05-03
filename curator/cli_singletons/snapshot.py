@@ -1,8 +1,11 @@
+"""Snapshot Singleton"""
 import click
-from curator.cli_singletons.object_class import cli_action
-from curator.cli_singletons.utils import get_width, validate_filter_json
+from curator.cli_singletons.object_class import CLIAction
+from curator.cli_singletons.utils import validate_filter_json
 
-@click.command(context_settings=get_width())
+# pylint: disable=line-too-long
+@click.command()
+@click.option('--search_pattern', type=str, default='_all', help='Elasticsearch Index Search Pattern')
 @click.option('--repository', type=str, required=True, help='Snapshot repository')
 @click.option('--name', type=str, help='Snapshot name', show_default=True, default='curator-%Y%m%d%H%M%S')
 @click.option('--ignore_unavailable', is_flag=True, show_default=True, help='Ignore unavailable shards/indices.')
@@ -16,12 +19,16 @@ from curator.cli_singletons.utils import get_width, validate_filter_json
 @click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', default=False, show_default=True)
 @click.option('--filter_list', callback=validate_filter_json, help='JSON array of filters selecting indices to act on.', required=True)
 @click.pass_context
-def snapshot(ctx, repository, name, ignore_unavailable, include_global_state, partial,
-    skip_repo_fs_check, wait_for_completion, wait_interval, max_wait, ignore_empty_list, allow_ilm_indices, filter_list):
+def snapshot(
+        ctx, search_pattern, repository, name, ignore_unavailable, include_global_state, partial,
+        skip_repo_fs_check, wait_for_completion, wait_interval, max_wait, ignore_empty_list,
+        allow_ilm_indices, filter_list
+    ):
     """
     Snapshot Indices
     """
     manual_options = {
+        'search_pattern': search_pattern,
         'name': name,
         'repository': repository,
         'ignore_unavailable': ignore_unavailable,
@@ -34,5 +41,5 @@ def snapshot(ctx, repository, name, ignore_unavailable, include_global_state, pa
         'allow_ilm_indices': allow_ilm_indices,
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
-    action = cli_action(ctx.info_name, ctx.obj['config']['client'], manual_options, filter_list, ignore_empty_list)
+    action = CLIAction(ctx.info_name, ctx.obj['configdict'], manual_options, filter_list, ignore_empty_list)
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])

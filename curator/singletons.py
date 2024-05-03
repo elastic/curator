@@ -1,70 +1,62 @@
+"""CLI module for curator_cli"""
 import click
-import os
-from curator.defaults import settings
-from curator.config_utils import test_config, set_logging
-from curator.utils import test_client_options
-from curator.cli_singletons.utils import config_override, false_to_none, get_width
-from curator.cli_singletons.alias import alias
-from curator.cli_singletons.allocation import allocation
-from curator.cli_singletons.close import close
-from curator.cli_singletons.delete import delete_indices, delete_snapshots
-from curator.cli_singletons.forcemerge import forcemerge
-from curator.cli_singletons.open_indices import open_indices
-from curator.cli_singletons.replicas import replicas
-from curator.cli_singletons.restore import restore
-from curator.cli_singletons.rollover import rollover
-from curator.cli_singletons.snapshot import snapshot
-from curator.cli_singletons.shrink import shrink
-from curator.cli_singletons.show import show_indices, show_snapshots
+from es_client.defaults import SHOW_EVERYTHING
+from es_client.helpers.config import (
+    cli_opts, context_settings, generate_configdict, get_config, options_from_dict)
+from es_client.helpers.logging import configure_logging
+from es_client.helpers.utils import option_wrapper
+from curator.defaults.settings import CLICK_DRYRUN, default_config_file, footer
 from curator._version import __version__
+from curator.cli_singletons import (
+    alias, allocation, close, delete_indices, delete_snapshots, forcemerge, open_indices, replicas,
+    restore, rollover, snapshot, shrink
+)
+from curator.cli_singletons.show import show_indices, show_snapshots
 
-import logging
-logger = logging.getLogger(__name__)
+click_opt_wrap = option_wrapper()
 
-@click.group(context_settings=get_width())
-@click.option('--config', help='Path to configuration file. Default: ~/.curator/curator.yml', type=click.Path(), default=settings.config_file())
-@click.option('--host', help='Elasticsearch host.')
-@click.option('--url_prefix', help='Elasticsearch http url prefix.')
-@click.option('--port', help='Elasticsearch port.')
-@click.option('--use_ssl', is_flag=True, callback=false_to_none, help='Connect to Elasticsearch through SSL.')
-@click.option('--certificate', help='Path to certificate to use for SSL validation.')
-@click.option('--client-cert', help='Path to file containing SSL certificate for client auth.', type=str)
-@click.option('--client-key', help='Path to file containing SSL key for client auth.', type=str)
-@click.option('--ssl-no-validate', is_flag=True, callback=false_to_none, help='Do not validate SSL certificate')
-@click.option('--http_auth', help='Use Basic Authentication ex: user:pass')
-@click.option('--timeout', help='Connection timeout in seconds.', type=int)
-@click.option('--master-only', is_flag=True, callback=false_to_none, help='Only operate on elected master node.')
-@click.option('--dry-run', is_flag=True, help='Do not perform any changes.')
-@click.option('--loglevel', help='Log level')
-@click.option('--logfile', help='log file')
-@click.option('--logformat', help='Log output format [default|logstash|json].')
-@click.version_option(version=__version__)
+# pylint: disable=unused-argument, redefined-builtin, too-many-arguments, too-many-locals
+@click.group(
+    context_settings=context_settings(), epilog=footer(__version__, tail='singleton-cli.html'))
+@options_from_dict(SHOW_EVERYTHING)
+@click_opt_wrap(*cli_opts('dry-run', settings=CLICK_DRYRUN))
+@click.version_option(__version__, '-v', '--version', prog_name='curator_cli')
 @click.pass_context
-def cli(
-    ctx, config, host, url_prefix, port, use_ssl, certificate, client_cert,
-    client_key, ssl_no_validate, http_auth, timeout, master_only, dry_run,
-    loglevel, logfile, logformat):
-    if os.path.isfile(config):
-        initial_config = test_config(config)
-    else:
-        initial_config = None
-    configuration = config_override(ctx, initial_config)
-    set_logging(configuration['logging'])
-    test_client_options(configuration['client'])
-    ctx.obj['config'] = configuration
+def curator_cli(
+    ctx, config, hosts, cloud_id, api_token, id, api_key, username, password, bearer_auth,
+    opaque_id, request_timeout, http_compress, verify_certs, ca_certs, client_cert, client_key,
+    ssl_assert_hostname, ssl_assert_fingerprint, ssl_version, master_only, skip_version_test,
+    loglevel, logfile, logformat, blacklist, dry_run
+):
+    """
+    Curator CLI (Singleton Tool)
+    
+    Run a single action from the command-line. 
+    
+    The default $HOME/.curator/curator.yml configuration file (--config)
+    can be used but is not needed.
+    
+    Command-line settings will always override YAML configuration settings.
+    """
+    ctx.obj = {}
     ctx.obj['dry_run'] = dry_run
+    ctx.obj['default_config'] = default_config_file()
+    get_config(ctx)
+    configure_logging(ctx)
+    generate_configdict(ctx)
+
 # Add the subcommands
-cli.add_command(alias)
-cli.add_command(allocation)
-cli.add_command(close)
-cli.add_command(delete_indices)
-cli.add_command(delete_snapshots)
-cli.add_command(forcemerge)
-cli.add_command(open_indices)
-cli.add_command(replicas)
-cli.add_command(snapshot)
-cli.add_command(restore)
-cli.add_command(rollover)
-cli.add_command(shrink)
-cli.add_command(show_indices)
-cli.add_command(show_snapshots)
+curator_cli.add_command(alias)
+curator_cli.add_command(allocation)
+curator_cli.add_command(close)
+curator_cli.add_command(delete_indices)
+curator_cli.add_command(delete_snapshots)
+curator_cli.add_command(forcemerge)
+curator_cli.add_command(open_indices)
+curator_cli.add_command(replicas)
+curator_cli.add_command(snapshot)
+curator_cli.add_command(restore)
+curator_cli.add_command(rollover)
+curator_cli.add_command(shrink)
+curator_cli.add_command(show_indices)
+curator_cli.add_command(show_snapshots)

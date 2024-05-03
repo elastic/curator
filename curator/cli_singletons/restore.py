@@ -1,8 +1,10 @@
+"""Snapshot Restore Singleton"""
 import click
-from curator.cli_singletons.object_class import cli_action
-from curator.cli_singletons.utils import get_width, json_to_dict, validate_filter_json
+from curator.cli_singletons.object_class import CLIAction
+from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 
-@click.command(context_settings=get_width())
+# pylint: disable=line-too-long
+@click.command()
 @click.option('--repository', type=str, required=True, help='Snapshot repository')
 @click.option('--name', type=str, help='Snapshot name', required=False, default=None)
 @click.option('--index', multiple=True, help='Index name to restore. (Can invoke repeatedly for multiple indices)')
@@ -21,15 +23,19 @@ from curator.cli_singletons.utils import get_width, json_to_dict, validate_filte
 @click.option('--allow_ilm_indices/--no-allow_ilm_indices', help='Allow Curator to operate on Index Lifecycle Management monitored indices.', default=False, show_default=True)
 @click.option('--filter_list', callback=validate_filter_json, help='JSON array of filters selecting snapshots to act on.', required=True)
 @click.pass_context
-def restore(ctx, repository, name, index, rename_pattern, rename_replacement, extra_settings,
-    include_aliases, ignore_unavailable, include_global_state, partial, wait_for_completion, 
-    wait_interval, max_wait, skip_repo_fs_check, ignore_empty_list, allow_ilm_indices, filter_list):
+def restore(
+        ctx, repository, name, index, rename_pattern, rename_replacement, extra_settings,
+        include_aliases, ignore_unavailable, include_global_state, partial, wait_for_completion,
+        wait_interval, max_wait, skip_repo_fs_check, ignore_empty_list, allow_ilm_indices,
+        filter_list
+    ):
     """
     Restore Indices
     """
     indices = list(index)
     manual_options = {
         'name': name,
+        'extra_settings': extra_settings,
         'indices': indices,
         'rename_pattern': rename_pattern,
         'rename_replacement': rename_replacement,
@@ -44,5 +50,12 @@ def restore(ctx, repository, name, index, rename_pattern, rename_replacement, ex
         'allow_ilm_indices': allow_ilm_indices,
     }
     # ctx.info_name is the name of the function or name specified in @click.command decorator
-    action = cli_action(ctx.info_name, ctx.obj['config']['client'], manual_options, filter_list, ignore_empty_list, repository=repository)
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj['configdict'],
+        manual_options,
+        filter_list,
+        ignore_empty_list,
+        repository=repository
+    )
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])

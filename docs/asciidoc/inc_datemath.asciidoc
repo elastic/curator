@@ -1,4 +1,4 @@
-This setting may be a valid {ref}/date-math-index-names.html[Elasticsearch date math string].
+This setting may be a valid {ref}/api-conventions.html#api-date-math-index-names[Elasticsearch date math string].
 
 A date math name takes the following form:
 
@@ -11,7 +11,7 @@ A date math name takes the following form:
 |===
 |static_name| is the static text part of the name
 |date_math_expr| is a dynamic date math expression that computes the date dynamically
-|date_format|is the optional format in which the computed date should be rendered. Defaults to `YYYY.MM.dd`.
+|date_format|is the optional format in which the computed date should be rendered. Defaults to `yyyy.MM.dd`.
 |time_zone|is the optional time zone . Defaults to `utc`.
 |===
 
@@ -22,7 +22,7 @@ The following example shows different forms of date math names and the final for
 |Expression| Resolves to
 |<logstash-{now/d}>| logstash-2024.03.22
 |<logstash-{now/M}>| logstash-2024.03.01
-|<logstash-{now/M{YYYY.MM}}>| logstash-2024.03
-|<logstash-{now/M-1M{YYYY.MM}}>| logstash-2024.02
-|<logstash-{now/d{YYYY.MM.dd\|+12:00}}> | logstash-2024.03.23
+|<logstash-{now/M{yyyy.MM}}>| logstash-2024.03
+|<logstash-{now/M-1M{yyyy.MM}}>| logstash-2024.02
+|<logstash-{now/d{yyyy.MM.dd\|+12:00}}> | logstash-2024.03.23
 |===

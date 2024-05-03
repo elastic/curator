@@ -11,6 +11,7 @@ once created, can only be deleted.
 * <<allocation,Allocation>>
 * <<close,Close>>
 * <<cluster_routing,Cluster Routing>>
+* <<cold2frozen,Cold2Frozen>>
 * <<create_index,Create Index>>
 * <<delete_indices,Delete Indices>>
 * <<delete_snapshots,Delete Snapshots>>
@@ -152,6 +153,7 @@ defined by `wait_interval`.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_allocation_type,allocation_type>>
 * <<option_value,value>>
 * <<option_wfc,wait_for_completion>>
@@ -175,7 +177,8 @@ TIP: See an example of this action in an <<actionfile,actionfile>>
 action: close
 description: "Close selected indices"
 options:
-  delete_aliases: False
+  delete_aliases: false
+  skip_flush: false
 filters:
 - filtertype: ...
 -------------
@@ -189,7 +192,9 @@ aliases beforehand.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_delete_aliases,delete_aliases>>
+* <<option_skip_flush,skip_flush>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -197,8 +202,6 @@ aliases beforehand.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_close,here>>.
-
-
 
 [[cluster_routing]]
 == Cluster Routing
@@ -260,6 +263,98 @@ defined by `wait_interval`.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_cluster_routing,here>>.
+
+
+
+[[cold2frozen]]
+== Cold2Frozen
+
+IMPORTANT: This action is for an unusual case where an index is a mounted, searchable snapshot in
+  the cold tier and is not associated with an ILM policy. This action will not work with an index
+  associated with an ILM policy regardless of the value of `allow_ilm_indices`.
+
+[source,yaml]
+-------------
+action: cold2frozen
+description: "Migrate non-ILM indices from the cold tier to the frozen tier"
+options:
+  index_settings: {}
+  ignore_index_settings: []
+  wait_for_completion: True
+filters:
+- filtertype: ...
+-------------
+
+NOTE: Empty values and commented lines will result in the default value, if any,
+    being selected.  If a setting is set, but not used by a given action, it
+    will be ignored.
+
+This action migrates the selected non-ILM indices from the cold tier to the frozen tier.
+You may well ask why this action is here and why it is limited to non-ILM indices. The answer
+is "redacted data." If an index must be restored from the cold tier to be live so that sensitive
+data can be redacted, at present, it must be disassociated from an ILM policy to accomplish this.
+If you forcemerge and re-snapshot the redacted index, you can still put it in the cold or frozen
+tier, but it will not be associated with an ILM policy any more. This custom action is for moving
+that manually re-mounted cold tier index to the frozen tier, preserving the aliases it currently
+has.
+
+=== index_settings
+
+Settings that should be added to the index when it is mounted. This should be a YAML dictionary
+containing anything under what would normally appear in `settings`.
+
+See {ref}/searchable-snapshots-api-mount-snapshot.html
+
+[source,yaml]
+-------------
+action: cold2frozen
+description: "Migrate non-ILM indices from the cold tier to the frozen tier"
+options:
+  index_settings:
+    routing:
+      allocation:
+        include:
+          _tier_preference: data_frozen
+  ignore_index_settings: []
+  wait_for_completion: True
+filters:
+- filtertype: ...
+-------------
+
+NOTE: If unset, the default behavior is to ensure that the `_tier_preference` is `data_frozen`,
+  if available. If it is not, Curator will assess which data tiers are available in your cluster
+  and use those from coldest to warmest, e.g. `data_cold,data_warm,data_hot`. If none of these are
+  available, it will default to `data_content`.
+
+=== ignore_index_settings
+
+This should be a YAML list of index settings the migrated index should ignore after mount.
+
+See {ref}/searchable-snapshots-api-mount-snapshot.html
+
+[source,yaml]
+-------------
+action: cold2frozen
+description: "Migrate non-ILM indices from the cold tier to the frozen tier"
+options:
+  index_settings:
+  ignore_index_settings:
+    - 'index.refresh_interval'
+  wait_for_completion: True
+filters:
+- filtertype: ...
+-------------
+
+NOTE: If unset, the default behavior is to ensure that the `index.refresh_interval` is ignored.
+
+=== Optional settings
+
+* <<option_search_pattern,search_pattern>>
+* <<option_wfc,wait_for_completion>>
+* <<option_ignore_empty,ignore_empty_list>>
+* <<option_timeout_override,timeout_override>>
+* <<option_continue,continue_if_exception>>
+* <<option_disable,disable_action>>
 
 
 
@@ -326,7 +421,7 @@ options:
 
 For the `create_index` action, the <<option_name,name>> option can be in
 Elasticsearch
-{ref}/date-math-index-names.html[date math] format.  This allows index names
+{ref}/api-conventions.html#api-date-math-index-names[date math] format.  This allows index names
 containing dates to use deterministic math to set a date name in the past or the
 future.
 
@@ -335,7 +430,7 @@ create an index named `logstash-2017.03.27`. If you wanted to create
 _tomorrow's_ index, you would use the name `<logstash-{now/d+1d}>`, which adds 1
 day.  This pattern creates an index named `logstash-2017.03.28`.  For many more
 configuration options, read the Elasticsearch
-{ref}/date-math-index-names.html[date math] documentation.
+{ref}/api-conventions.html#api-date-math-index-names[date math] documentation.
 
 === Extra Settings
 
@@ -403,7 +498,7 @@ This action deletes the selected indices.
 In clusters which are overcrowded with indices, or a high number of shards per
 node, deletes can take a longer time to process.  In such cases, it may be
 helpful to set a higher timeout than is set in the
-<<configfile, configuration file>>.  You can override that <<timeout,timeout>>
+<<configfile, configuration file>>.  You can override that <<request_timeout,request_timeout>>
 as follows:
 
 [source,yaml]
@@ -419,6 +514,7 @@ filters:
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -521,6 +617,7 @@ filters:
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_delay,delay>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
@@ -591,6 +688,7 @@ settings, and to be able to verify configurational integrity in the YAML file,
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -622,6 +720,7 @@ This action opens the selected indices.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_timeout_override,timeout_override>>
 * <<option_continue,continue_if_exception>>
@@ -664,14 +763,10 @@ this action.  All other options are as follows.
 === Optional settings
 
 * <<option_refresh,refresh>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
 * <<option_remote_filters,remote_filters>>
-* <<option_remote_ssl_no_validate,remote_ssl_no_validate>>
 * <<option_remote_url_prefix,remote_url_prefix>>
 * <<option_request_body,request_body>>
 * <<option_requests_per_second,requests_per_second>>
@@ -697,13 +792,6 @@ Generally speaking, the Curator should be able to perform a remote reindex from
 any version of Elasticsearch, 1.4 and newer. Strictly speaking, the Reindex API
 in Elasticsearch _is_ able to reindex from older clusters, but Curator cannot be
 used to facilitate this due to Curator's dependency on changes released in 1.4.
-
-However, there is a https://github.com/elastic/elasticsearch/pull/23805[known bug]
-with Elasticsearch 5.3.0 not being able to reindex from remote clusters older
-than 2.0.  The patch is available in Elasticsearch 5.3.1.  Earlier versions of
-Elasticsearch 5.x do not suffer from this bug. This bug appeared again in
-Elasticsearch 5.4.0, and was fixed in 5.4.1, and hopefully will not appear in
-any other future releases.
 
 
 [[replicas]]
@@ -755,6 +843,7 @@ defined by `wait_interval`.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_wfc,wait_for_completion>>
 * <<option_max_wait,max_wait>>
 * <<option_wait_interval,wait_interval>>
@@ -881,7 +970,7 @@ actions:
 
 In this case, the number of replicas will be applied to the restored indices.
 
-For more information see the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
+For more information see the {ref}/snapshots-restore-snapshot.html[official Elasticsearch Documentation].
 
 === Required settings
 
@@ -980,9 +1069,8 @@ options:
   index before triggering a rollover.  This _must_ be nested under
   `conditions:`. There is no default value.  If this condition is specified, it
   must have a value, or Curator will generate an error.
-* <<option_max_size,max_size>> **Only supported in Elasticsearch 6.1.0 and up.**
-  The maximum size the index can be before a rollover is triggered.  This _must_
-  be nested under `conditions:`. There is no default value.  If this condition
+* <<option_max_size,max_size>> The maximum size the index can be before a rollover is triggered.
+  This _must_ be nested under `conditions:`. There is no default value.  If this condition
   is specified, it must have a value, or Curator will generate an error.
 
 
@@ -1094,6 +1182,7 @@ as needed.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_continue,continue_if_exception>>
 * <<option_ignore_empty,ignore_empty_list>>
 * <<option_copy_aliases,copy_aliases>>
@@ -1153,6 +1242,7 @@ read about them and change them accordingly.
 
 === Optional settings
 
+* <<option_search_pattern,search_pattern>>
 * <<option_name,name>>
 * <<option_ignore,ignore_unavailable>>
 * <<option_include_gs,include_global_state>>
@@ -1168,3 +1258,5 @@ read about them and change them accordingly.
 
 TIP: See an example of this action in an <<actionfile,actionfile>>
     <<ex_snapshot,here>>.
+
+

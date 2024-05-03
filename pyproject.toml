@@ -1,0 +1,124 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "elasticsearch-curator"
+authors = [{ name="Elastic", email="info@elastic.co" }]
+dynamic = ["version"]
+description = "Tending your Elasticsearch indices and snapshots"
+license = { text="Apache-2.0" }
+readme = "README.rst"
+requires-python = ">=3.8"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = [
+    'elasticsearch',
+    'time-series',
+    'indexed',
+    'index-expiry'
+]
+dependencies = [
+    "es_client==8.13.1"
+]
+
+[project.optional-dependencies]
+test = [
+    "requests",
+    "pytest >=7.2.1",
+    "pytest-cov",
+]
+doc = ["sphinx", "sphinx_rtd_theme"]
+
+[project.scripts]
+curator = "curator.cli:cli"
+curator_cli = "curator.singletons:curator_cli"
+es_repo_mgr = "curator.repomgrcli:repo_mgr_cli"
+
+[project.urls]
+"Homepage" = "https://github.com/elastic/curator"
+"Bug Tracker" = "https://github.com/elastic/curator/issues"
+
+[tool.hatch.version]
+path = "curator/_version.py"
+
+[tool.hatch.module]
+name = "curator"
+
+[tool.hatch.build]
+include = [
+  "curator/*.py",
+  "curator/actions/*.py",
+  "curator/cli_singletons/*.py",
+  "curator/defaults/*.py",
+  "curator/helpers/*.py",
+  "curator/validators/*.py",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "dist",
+    "docs",
+    "docker_test",
+    "examples",
+    "html_docs",
+    "tests",
+]
+
+### Docker Environment
+[tool.hatch.envs.docker]
+platforms = ["linux", "macos"]
+
+[tool.hatch.envs.docker.scripts]
+create = "docker_test/scripts/create.sh {args}"
+destroy = "docker_test/scripts/destroy.sh"
+
+### Lint environment
+[tool.hatch.envs.lint.scripts]
+run-pyright = "pyright {args:.}"
+run-black = "black --quiet --check --diff {args:.}"
+run-ruff = "ruff check --quiet {args:.}"
+run-curlylint = "curlylint {args:.}"
+python = ["run-pyright", "run-black", "run-ruff"]
+templates = ["run-curlylint"]
+all = ["python", "templates"]
+
+### Test environment
+[tool.hatch.envs.test]
+platforms = ["linux", "macos"]
+dependencies = [
+    "requests",
+    "pytest >=7.2.1",
+    "pytest-cov"
+]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+
+[tool.hatch.envs.test.scripts]
+pytest = "source docker_test/.env; pytest"
+pytest-cov = "source docker_test/.env; pytest --cov=curator"
+pytest-cov-report = "source docker_test/.env; pytest --cov=curator --cov-report=term-missing"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "curator"]
+minversion = "7.2"
+addopts = "-ra -q"
+testpaths = [
+    "tests/unit",
+    "tests/integration",
+]
+
+[tool.distutils.build_exe]
+excludes = ["tcltk", "tkinter", "unittest"]
+zip_include_packages = ["certifi"]

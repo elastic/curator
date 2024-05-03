@@ -1,8 +1,20 @@
+"""Set up voluptuous Schema defaults for various actions"""
 from voluptuous import Schema
 from curator.defaults import option_defaults
 
 ## Methods for building the schema
 def action_specific(action):
+    """
+    :param action: The name of an action
+    :type action: str
+
+    :returns: A :py:class:`list` containing one or more
+        :py:class:`~.voluptuous.schema_builder.Optional` or
+        :py:class:`~.voluptuous.schema_builder.Required` options from
+        :py:mod:`~.curator.defaults.option_defaults`, defining acceptable values for each for the
+        given ``action``
+    :rtype: list
+    """
     options = {
         'alias' : [
             option_defaults.name(action),
@@ -10,6 +22,7 @@ def action_specific(action):
             option_defaults.extra_settings(),
         ],
         'allocation' : [
+            option_defaults.search_pattern(),
             option_defaults.key(),
             option_defaults.value(),
             option_defaults.allocation_type(),
@@ -17,7 +30,11 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'close' : [ option_defaults.delete_aliases() ],
+        'close' : [
+            option_defaults.search_pattern(),
+            option_defaults.delete_aliases(),
+            option_defaults.skip_flush(),
+        ],
         'cluster_routing' : [
             option_defaults.routing_type(),
             option_defaults.cluster_routing_setting(),
@@ -26,26 +43,39 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
+        'cold2frozen' : [
+            option_defaults.search_pattern(),
+            option_defaults.c2f_index_settings(),
+            option_defaults.c2f_ignore_index_settings(),
+            option_defaults.wait_for_completion('cold2frozen'),
+        ],
         'create_index' : [
             option_defaults.name(action),
+            option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
-        'delete_indices' : [],
+        'delete_indices' : [
+            option_defaults.search_pattern(),
+        ],
         'delete_snapshots' : [
             option_defaults.repository(),
             option_defaults.retry_interval(),
             option_defaults.retry_count(),
         ],
         'forcemerge' : [
+            option_defaults.search_pattern(),
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
         'index_settings' : [
+            option_defaults.search_pattern(),
             option_defaults.index_settings(),
             option_defaults.ignore_unavailable(),
             option_defaults.preserve_existing(),
         ],
-        'open' : [],
+        'open' : [
+            option_defaults.search_pattern(),
+        ],
         'reindex' : [
             option_defaults.request_body(),
             option_defaults.refresh(),
@@ -59,16 +89,12 @@ def action_specific(action):
             option_defaults.remote_certificate(),
             option_defaults.remote_client_cert(),
             option_defaults.remote_client_key(),
-            option_defaults.remote_aws_key(),
-            option_defaults.remote_aws_secret_key(),
-            option_defaults.remote_aws_region(),
             option_defaults.remote_filters(),
-            option_defaults.remote_url_prefix(),
-            option_defaults.remote_ssl_no_validate(),
             option_defaults.migration_prefix(),
             option_defaults.migration_suffix(),
         ],
         'replicas' : [
+            option_defaults.search_pattern(),
             option_defaults.count(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
@@ -98,6 +124,7 @@ def action_specific(action):
             option_defaults.skip_repo_fs_check(),
         ],
         'snapshot' : [
+            option_defaults.search_pattern(),
             option_defaults.repository(),
             option_defaults.name(action),
             option_defaults.ignore_unavailable(),
@@ -109,6 +136,7 @@ def action_specific(action):
             option_defaults.skip_repo_fs_check(),
         ],
         'shrink' : [
+            option_defaults.search_pattern(),
             option_defaults.shrink_node(),
             option_defaults.node_filters(),
             option_defaults.number_of_shards(),
@@ -129,8 +157,15 @@ def action_specific(action):
     return options[action]
 
 def get_schema(action):
-    # Appending the options dictionary seems to be the best way, since the
-    # "Required" and "Optional" elements are hashes themselves.
+    """
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` of acceptable options and their default
+    values as returned by :py:func:`action_specific`, passing along the value of ``action``.
+
+    :param action: The name of an action
+    :type action: str
+
+    :returns: A valid :py:class:`~.voluptuous.schema_builder.Schema` of the options for ``action``
+    """
     options = {}
     defaults = [
         option_defaults.allow_ilm_indices(),

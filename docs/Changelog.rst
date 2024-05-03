@@ -1,20 +1,924 @@
-.. _changelog:
+.. _Changelog:
 
 Changelog
 =========
 
-5.7.0 (? ? ?)
--------------
+8.0.15 (10 April 2024)
+----------------------
+
+**Announcement**
+
+  * Python 3.12 support becomes official. A few changes were necessary to ``datetime`` calls
+    which were still using naive timestamps. Tests across all minor Python versions from 3.8 - 3.12
+    verify everything is working as expected with regards to those changes. Note that Docker builds
+    are still running Python 3.11 as cx_Freeze still does not officially support Python 3.12.
+  * Added infrastructure to test multiple versions of Python against the code base. This requires
+    you to run:
+        * ``pip install -U hatch hatchling`` -- Install prerequisites
+        * ``hatch run docker:create X.Y.Z`` -- where ``X.Y.Z`` is an ES version on Docker Hub
+        * ``hatch run test:pytest`` -- Run the test suite for each supported version of Python
+        * ``hatch run docker:destroy`` -- Cleanup the Docker containers created in ``docker:create``
+
+**Bugfix**
+
+  * A bug reported in ``es_client`` with Python versions 3.8 and 3.9 has been addressed. Going
+    forward, testing protocol will be to ensure that Curator works with all supported versions of
+    Python, or support will be removed (when 3.8 is EOL, for example).
+
+**Changes**
+
+  * Address deprecation warning in ``get_alias()`` call by limiting indices to only open and
+    closed indices via ``expand_wildcards=['open', 'closed']``.
+  * Address test warnings for an improperly escaped ``\d`` in a docstring in ``indexlist.py``
+  * Updated Python version in Docker build. See Dockerfile for more information.
+  * Docker test scripts updated to make Hatch matrix testing easier (.env file)
+
+8.0.14 (2 April 2024)
+---------------------
+
+**Announcement**
+
+  * A long awaited feature has been added, stealthily. It's fully in the documentation, but I do
+    not yet plan to make a big announcement about it. In actions that search through indices, you
+    can now specify a ``search_pattern`` to limit the number of indices that will be filtered. If
+    no search pattern is specified, the behavior will be the same as it ever was: it will search
+    through ``_all`` indices. The actions that support this option are: allocation, close,
+    cold2frozen, delete_indices, forcemerge, index_settings, open, replicas, shrink, and snapshot.
+
+**Bugfix**
+
+  * A mixup with naming conventions from the PII redacter tool got in the way of the cold2frozen
+    action completing properly.
+
+**Changes**
+
+  * Version bump: ``es_client==8.13.0``
+      * With the version bump to ``es_client`` comes a necessary change to calls to create a
+        repository. In https://github.com/elastic/elasticsearch-specification/pull/2255 it became
+        clear that using ``type`` and ``settings`` as it has been was insufficient for repository
+        settings, so we go back to using a request ``body`` as in older times. This change affects
+        ``esrepomgr`` in one place, and otherwise only in snapshot/restore testing.
+  * Added the curator.helpers.getters.meta_getter to reduce near duplicate functions.
+  * Changed curator.helpers.getters.get_indices to use the _cat API to pull indices. The primary
+    driver for this is that it avoids pulling in the full mapping and index settings when all we
+    really need to return is a list of index names. This should help keep memory from ballooning
+    quite as much. The function also now allows for a search_pattern kwarg to search only for
+    indices matching a pattern. This will also potentially make the initial index return list much
+    smaller, and the list of indices needing to be filtered that much smaller.
+  * Tests were added to ensure that the changes for ``get_indices`` work everywhere.
+  * Tests were added to ensure that the new ``search_pattern`` did not break anything, and does
+    behave as expected.
+
+8.0.13 (26 March 2024)
+----------------------
+
+**Bugfix**
+
+  * An issue was discovered in ``es_client`` that caused default values from command-line options
+    which should not have been set to override settings in configuration files.
+    ``es_client==8.12.9`` corrects this. Reported in #1708, hat tip to @rgaduput for reporting this
+    bug.
+
+8.0.12 (20 March 2024)
+----------------------
+
+**Bugfix**
+
+  * ``six`` dependency erroneously removed from ``es_client``. It's back in ``es_client==8.12.8``
+
+8.0.11 (20 March 2024)
+----------------------
+
+**Announcement**
+
+  * With the advent of ``es_client==8.12.5``, environment variables can now be used to automatically
+    populate command-line options. The ``ESCLIENT_`` prefix just needs to prepend the capitalized
+    option name, and any hyphens need to be replaced by underscores. ``--http-compress True`` is
+    automatically settable by having ``ESCLIENT_HTTP_COMPRESS=1``. Boolean values are 1, 0, True,
+    or False (case-insensitive). Options like ``hosts`` which can have multiple values just need to
+    have whitespace between the values, e.g. 
+    ``ESCLIENT_HOSTS='http://127.0.0.1:9200 http://localhost:9200'``. It splits perfectly. This is
+    tremendous news for the containerization/k8s community. You won't have to have all of the
+    options spelled out any more. Just have the environment variables assigned.
+  * Also, log blacklisting has made it to the command-line as well. It similarly can be set via
+    environment variable, e.g. ``ESCLIENT_BLACKLIST='elastic_transport urllib3'``, or by multiple
+    ``--blacklist`` entries at the command line.
+  * ``es_client`` has simplified things such that I can clean up arg sprawl in the command line
+    scripts.
+
+**Changes**
+
+Lots of pending pull requests have been merged. Thank you to the community
+members who took the time to contribute to Curator's code.
+
+  * DOCFIX - Update date math section to use ``y`` instead of ``Y`` (#1510)
+  * DOCFIX - Update period filtertype description (#1550)
+  * add .dockerignore to increase build speed (#1604)
+  * DOCFIX - clarification on prefix and suffix kinds (#1558)
+    The provided documentation was adapted and edited.
+  * Use builtin unittest.mock (#1695)
+      * Had to also update ``helpers.testers.verify_client_object``.
+  * Display proper error when mapping incorrect (#1526) - @namreg
+    Also assisting with this is @alexhornblake in #1537
+    Apologies for needing to adapt the code manually since it's been so long.
+  * Version bumps:
+      * ``es_client==8.12.6``
+
+8.0.10 (1 February 2024)
+------------------------
+
+**Changes**
+
+The upstream dependency, ``es_client``, needed to be patched to address a
+Docker logging permission issue. This release only version bumps that
+dependency:
+
+  * ``es_client==8.12.4``
+
+
+8.0.9 (31 January 2024)
+-----------------------
+
+**Announcements**
+
+Curator is improving command-line options using new defaults and helpers from
+from the ``es_client`` module. This will make things appear a bit cleaner at
+the command-line as well as normalize command-line structure between projects
+using ``es_client``. No more reimplementing the same code in 5 different
+projects!
+
+**Changes**
+
+  * Fix Docker logging per #1694. It should detect whether that path exists and
+    that the process has write permissions before blindly attempting to use it.
+  * If ``--config`` is not specified Curator will now assume you either mean to
+    use CLI options exclusively or look for a config in the default location.
+    Curator will not halt on the absence of ``--config`` any more, per #1698
+  * Increment Dockerfile settings to ``python:3.11.7-alpine3.18``
+  * Some command-line options are hidden by default now but remain usable. The
+    help output explains how to see the full list, if needed.
+  * Dependency bumps
+      * As ``es_client`` covers all of the same upstream dependencies that were
+        necessary in previous releases, all local dependencies have been erased
+        in favor of that one.  For this release, that is ``es_client==8.12.3``
+
+
+8.0.8 (21 July 2023)
+--------------------
+
+**Announcements**
+
+Small change to further reduce memory usage by not creating unused data
+structures.
+
+This revealed a glitch with dry-runs that would eventually have been reported.
+
+**Changes**
+
+  * Don't populate IndexList.index_info until required by a filter. In other
+    words, stop populating the zero values as part of instantiation.
+  * This uncovered an oversight with the 8.0.7 release. Certain actions, if
+    taken with no filters, or only a pattern filter, would never ever populate
+    the index_info. This wasn't a huge problem, unless you were using the
+    dry-run flag. The dry-run output requires the index_info to be present for
+    each index. In 8.0.7, where the empty structure was already in place, a
+    dry-run wouldn't fail, but it also wouldn't show any data. This is fixed.
+  * A few tests also needed updating. They were using contrived scenarios to
+    test certain conditions. Now these tests are manually grabbing necessary
+    metadata so they can pass.
+
+
+8.0.7 (21 July 2023)
+--------------------
+
+**Announcements**
+
+Functionally, there are no changes in this release. However...
+
+This release ends the practice of collecting all stats and metadata at
+IndexList initiation. This should make execution much faster for users with
+enormous clusters with hundreds to thousands of indices. In the past, this was
+handled at IndexList instantiation by making a cluster state API call. This is
+rather heavy, and can be so much data as to slow down Curator for minutes on
+clusters with hundreds to thousands of shards. This is all changed in this
+release.
+
+For example, the pattern filter requires no index metadata, as it only works
+against the index name. If you use a pattern filter first, the actionable list
+of indices is reduced. Then if you need to filter based on age using the
+``creation_date``, the age filter will call ``get_index_settings`` to pull the
+necessary data for that filter to complete. Some filters will not work against
+closed indices. Those filters will automatically call ``get_index_state`` to
+get the open/close status of the indices in the actionable list. The disk space
+filter will require the index state as it won't work on closed indices, and
+will call ``get_index_stats`` to pull the size_in_bytes stats.
+
+Additionally, the cat API is used to get index state (open/close), now, as it
+is the only API call besides the cluster state which can inform on this matter.
+Not calling for a huge dump of the entire cluster state should drastically
+reduce memory requirements, though that may vary for some users still after all
+of the index data is polled, depending on what filters are used.
+
+There is a potential caveat to all this rejoicing, however. Searchable snapshot
+behavior with ILM policies usually keeps indices out of Curator's vision. You
+need to manually tell Curator to allow it to work on ILM enabled indices. But
+for some users who need to restore a snapshot to remove PII or other data from
+an index, it can't be in ILM anymore. This has caused some headaches. For
+example, if you are tracking an index in the hot tier named 'index1' and it is
+in process of being migrated to the cold tier as a searchable snapshot, it may
+suddenly disappear from the system as 'index1' and suddenly re-appear as
+'restored-index1'. The original index may now be an alias that points to the
+newly mounted cold-tier index. Before this version, Curator would choke if it
+encountered this scenario. In fact, one user saw it repeatedly. See the last
+comment of issue 1682 in the GitHub repository for more information.
+
+To combat this, many repeated checks for index integrity have become necessary.
+This also involves verifying that indices in the IndexList are not actually
+aliases. Elasticsearch provides ``exists`` tests for these, but they cannot be
+performed in bulk. They are, however, very lightweight. But network turnaround
+times could make large clusters slower. For this reason, it is highly
+recommended that regex filters be used first, early, and often, before using
+any other filters. This will reduce the number of indices Curator has to check
+and/or verify during execution, which will speed things up drastically.
+
+8.0.6.post1 (18 July 2023)
+--------------------------
+
+**Breakfix Patch**
+
+No code was changed in this release, only Python dependencies. If you are using
+``pip`` to install Curator, chances are good you won't need this release.
+
+This release was necessary after Docker refused to build a viable container using
+PyYAML 6.0.0, which will not build with the new Cython 3, released on Friday,
+July 14, 2023. A speedy fix was released as PyYAML 6.0.1 to address this.
+
+The current 8.0.6 Docker image uses these fixes. This version will be published
+to PyPI, but not otherwise released as its own version.
+
+8.0.6 (18 July 2023)
+--------------------
+
+**Breakfix Release**
+
+  * Small breakfix change to catch a similar rare race condition patched in
+    8.0.5 covering the ``get_index_stats()`` method of IndexList. This patch
+    covers the ``get_metadata()`` method and closes #1682.
+
+8.0.5 (13 July 2023)
+--------------------
+
+**Announcements**
+
+Release for Elasticsearch 8.8.2
+
+**Changes**
+
+  * Small PEP formatting changes that were found editing code.
+  * Bump Python version in Dockerfile to 3.11.4
+  * Bump Python dependency versions.
+  * Change ``targetName`` to ``target_name`` in ``setup.py`` for newest version
+    of cx_Freeze. Hat tip to ``@rene-dekker`` in #1681 who made these changes
+    to 5.x and 7.x.
+  * Fix command-line behavior to not fail if the default config file is not
+    present. The newer CLI-based configuration should allow for no config file
+    at all, and now that's fixed.
+  * Initial work done to prevent a race condition where an index is present at IndexList
+    initialization, but is missing by the time index stats collection begins. The resultant
+    404s were causing Curator to shut down and not complete steps.
+  * When running in a Docker container, make Curator log to ``/proc/1/fd/1`` by
+    default, if no value is provided for ``logfile`` (otherwise, use that).
+
+8.0.4 (28 April 2023)
+---------------------
+
+**Announcements**
+
+Allow single-string, base64 API Key tokens in Curator.
+
+To use a base64 API Key token in YAML configuration:
+
+::
+
+  elasticsearch:
+    client:
+      hosts: https://host.example.tld:9243
+    other_args:
+      api_key:
+        token: '<base64 token goes here>'
+
+To use a base64 API Key token at the command-line:
+
+::
+
+  curator --hosts https://host.example.tld:9243 --api_token <base64 token goes here> [OTHER ARGS/OPTIONS]
+
+**NOTE:** In neither of the above examples are the alligator clips necessary (the ``<`` and ``>`` characters).
+
+**Changes**
+
+  * Update ``es_client`` to 8.7.0, which enables the use of the base64 encoded API Key token.
+    This also fixes #1671 via https://github.com/untergeek/es_client/issues/33
+
+
+8.0.3 (22 February 2023)
+------------------------
+
+**Announcements**
+
+A new action called ``cold2frozen`` has been added to Curator. It is not going to be of much use to
+the vast majority of Elasticsearch users as it serves a very narrow use-case. That is, it migrates
+searchable snapshot indices from the cold tier to the frozen tier, but only if they are not
+associated with ILM (Index Lifecycle Management) policies. As escalation into the cold and frozen
+tiers is usually handled by ILM, this is indeed a rare use case.
+
+**Changes**
+
+  * Fixed instruction display for delete repository action of ``es_repo_mgr``
+  * Fix unit tests to import more specifically/cleanly
+  * Fixed Hatch build includes (this was speed-released to PyPI as 8.0.2.post1) as Curator did not
+    function after a pip install.
+  * Added ``cold2frozen`` action, and tests.
+
+
+8.0.2 (15 February 2023)
+------------------------
+
+**Changes**
+
+  * Added the same CLI flags that the singletons offers. This gives much more flexibility with
+    regards to passing configuration settings as command-line options, particularly for Docker.
+  * Re-created the ``get_client`` function. It now resides in ``curator.helpers.getters`` and will
+    eventually see use in the Reindex class for remote connections.
+  * Created a new set of classes to import, validate the schema, and split individual actions into
+    their own sub-object instances. This is primarily to make ``curator/cli.py`` read much more
+    cleanly. No new functionality here, but fewer conditional branches, and hopefully more readable
+    code.
+  * Updated the documentation to show these changes, both the API and the Elastic.co usage docs.
+
+
+8.0.1 (10 February 2023)
+------------------------
+
+**Announcements**
+
+The 8.0.0 release was about getting Curator out the door with all of the functionality users were
+accustomed to in 5.8.4, but with the newer, updated args and methods in ``elasticsearch8``. Very
+little else was changed that didn't need to be. Now comes a few improvements, and more are coming,
+which is why I didn't start with 8.6.0 as my release version.
+
+  * Now offering multi-architecture Docker builds for ``arm64`` (``v8``) and ``amd64``.
+  * This required the addition of two new scripts at the root level of the project:
+    ``alpine4docker.sh`` and ``post4docker.py``. These scripts are used only when building the
+    Dockerfile. They were needed to make multi-architecture Docker images possible. I'm sure you'll
+    be able to see how they work with a cursory glance.
+
+**Breaking Changes**
+
+  * I split ``curator.utils`` into several, separate modules under ``curator.helpers``.
+
+    I suppose, technically, that this qualifies as a breaking change from 8.0, but I sincerely
+    doubt I have any users using Curator as an API yet, so I made the change. No functions were
+    renamed, so this isn't as breaking so much as a slight shift in module naming. This gave me
+    headaches, but it needed to be done a long time ago. It was always grating to see the Pylint
+    warnings that the file is longer than 1000 lines, and searching for the module you wanted was
+    way too much scrolling. This also gave me the chance to update the tests and the docstring's
+    formatting for rST docs. Most of this release's changes came from this change.
+
+**Changes**
+
+  * Curator has supported ECS logging for a while, but now that there is an official Python module,
+    Curator is going to use it. Welcome, ``ecs-logging``! As before, just use ``logformat: ecs``,
+    but now it has all of the goodness right there!
+  * rST docs are improved and updated. Check out https://curator.readthedocs.io to see.
+  * Logging turned out to be too verbose due to a shift. Now the ``blacklist`` defaults to
+    ``['elastic_transport', 'urllib3']``. Documentation updated accordingly.
+  * Default behavior is now to not verify snapshot repository access for Snapshot and Restore
+    actions. It was a hacky fix for older versions of Elasticsearch that just shouldn't be needed.
+
+8.0.0 (31 January 2023)
+-----------------------
+
+**Announcement**
+
+This release is a *major* refactoring of the Curator code to work with both Elasticsearch
+8.x and the Elasticsearch-py Python module of the same major and minor versions.
+
+I apologize for the crazy merge messes trying to get this all to work. In the end, I had to delete
+my fork on github and start over clean.
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v8.x will only work with Elasticsearch v8.x
+  * Your old Curator ``config.yml`` file will no longer work as written. There have been more than
+    a few changes necessitated by the updates in the ``elasticsearch8`` Python client library.
+    The client connection code has also been extracted to its own module, ``es_client``. This is
+    actually a good thing, however, as new options for configuring the client connection become
+    possible.
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**Changes**
+
+  * Last minute doc fixes. Mostly updated links to Elasticsearch documentation.
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Revamped almost every integration test
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 8.6.1``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="http://172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * The action classes were broken into their own path, ``curator/actions/filename.py``.
+  * ``curator_cli`` has been updated with more client connection settings, like ``cloud_id``.
+  * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
+    instance, all AWS ES connection settings and references have been removed.
+
+8.0.0rc1 (30 January 2023)
+--------------------------
+
+**Announcement**
+
+This release-candidate is a *major* refactoring of the Curator code to work with both Elasticsearch
+8.x and the Elasticsearch-py Python module of the same major and minor versions.
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v8.x will only work with Elasticsearch v8.x
+  * Your old Curator ``config.yml`` file will no longer work as written. There have been more than
+    a few changes necessitated by the updates in the ``elasticsearch8`` Python client library.
+    The client connection code has also been extracted to its own module, ``es_client``. This is
+    actually a good thing, however, as new options for configuring the client connection become
+    possible.
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**Changes**
+
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Revamped almost every integration test
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 8.6.1``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="http://172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * The action classes were broken into their own path, ``curator/actions/filename.py``.
+  * ``curator_cli`` has been updated with more client connection settings, like ``cloud_id``.
+  * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
+    instance, all AWS ES connection settings and references have been removed.
+
+8.0.0a1 (26 January 2023)
+-------------------------
+
+**Announcement**
+
+This release-candidate is a *major* refactoring of the Curator code to work with both Elasticsearch
+8.x and the Elasticsearch-py Python module of the same major and minor versions.
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v8.x will only work with Elasticsearch v8.x
+  * Your old Curator ``config.yml`` file will no longer work as written. There have been more than
+    a few changes necessitated by the updates in the ``elasticsearch8`` Python client library.
+    The client connection code has also been extracted to its own module, ``es_client``. This is
+    actually a good thing, however, as new options for configuring the client connection become
+    possible.
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**Changes**
+
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Revamped almost every integration test
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 8.6.1``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="http://172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * The action classes were broken into their own path, ``curator/actions/filename.py``.
+  * ``curator_cli`` has been updated with more client connection settings, like ``cloud_id``.
+  * As Curator 8 is version locked and will not use AWS credentials to connect to any ES 8.x
+    instance, all AWS ES connection settings and references have been removed.
+
+7.0.0 (31 January 2023)
+-----------------------
+
+**Announcement**
+
+  * This release is a simplified release for only ``pip`` and Docker. It only works
+    with Elasticsearch 7.x and is functionally identical to 5.8.4
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v7.x will only work with Elasticsearch v7.x
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
 
 **New**
 
-  * TravisCI testing for Elasticsearch 6.5.0 (untergeek)
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 7.17.8``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * Add filter by size feature. #1612 (IndraGunawan)
+  * Update Elasticsearch client to 7.17.8
+
+**Security Fixes**
+
+  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni) — This dependency is now fully handled by the
+    ``elasticsearch7`` module and not a separate ``urllib3`` import.
+
+6.0.0 (31 January 2023)
+-----------------------
+
+**Announcement**
+
+  * This release is a simplified release for only ``pip`` and Docker. It only works
+    with Elasticsearch 6.x and is functionally identical to 5.8.4
+
+**Breaking Changes**
+
+  * Curator is now version locked. Curator v6.x will only work with Elasticsearch v6.x
+  * Going forward, Curator will only be released as a tarball via GitHub, as an ``sdist`` or
+    ``wheel`` via ``pip`` on PyPI, and to Docker Hub. There will no longer be RPM, DEB, or Windows
+    ZIP releases. I am sorry if this is inconvenient, but one of the reasons the development and
+    release cycle was delayed so long is because of how painfully difficult it was to do releases.
+  * Curator will only work with Python 3.8+, and will more tightly follow the Python version releases.
+
+**New**
+
+  * Python 3.11.1 is fully supported, and all versions of Python 3.8+ should be fully supported.
+  * Use ``hatch`` and ``hatchling`` for package building & publishing
+  * Because of ``hatch`` and ``pyproject.toml``, the release version still only needs to be tracked
+    in ``curator/_version.py``.
+  * Maintain the barest ``setup.py`` for building a binary version of Curator for Docker using
+    ``cx_Freeze``.
+  * Remove ``setup.cfg``, ``requirements.txt``, ``MANIFEST.in``, and other files as functionality
+    is now handled by ``pyproject.toml`` and doing ``pip install .`` to grab dependencies and
+    install them. YAY! Only one place to track dependencies now!!!
+  * Preliminarily updated the docs.
+  * Migrate towards ``pytest`` and away from ``nose`` tests.
+  * Scripts provided now that aid in producing and destroying Docker containers for testing. See
+    ``docker_test/scripts/create.sh``. To spin up a numbered version release of Elasticsearch, run
+    ``docker_test/scripts/create.sh 6.8.23``. It will download any necessary images, launch them,
+    and tell you when it's ready, as well as provide ``REMOTE_ES_SERVER`` environment variables for
+    testing the ``reindex`` action, e.g.
+    ``REMOTE_ES_SERVER="172.16.0.1:9201" pytest --cov=curator``. These tests are skipped
+    if this value is not provided. To clean up afterwards, run ``docker_test/scripts/destroy.sh``
+  * Add filter by size feature. #1612 (IndraGunawan)
+  * Update Elasticsearch client to 6.8.2
+
+**Security Fixes**
+
+  * Use `urllib3` 1.26.5 or higher #1610 (tsaarni) — This dependency is now fully handled by the
+    ``elasticsearch7`` module and not a separate ``urllib3`` import.
+
+5.8.4 (27 April 2021)
+---------------------
+
+**Announcement**
+
+  * Because Python 2.7 has been EOL for over a year now, many projects are no
+    longer supporting it. This will also be the case for Curator as its
+    dependencies cease to support Python 2.7. With `boto3` having announced it
+    is ceasing support of Python 2.7, deprecated as of 15 Jan 2021, and fully
+    unsupported on 15 Jul 2021, Curator will follow these same dates. This
+    means that you will need to use an older version of Curator to continue
+    using Python 2.7, or upgrade to Python 3.6 or greater.
+
+**Breaking**
+
+  * Normally I would not include breaking changes, but users have asked for
+    Click v7, which changes actions to require hyphens, and not underscores.
+    Options can still have underscores, but actions can't--well, not strictly
+    true. You can have underscores, but Click v7 will convert them to hyphens.
+    This should _only_ affect users of the Curator CLI, and not YAML file
+    users, and only the actions: `show-indices`, `show-snapshots`,
+    `delete-indices`, `delete-snapshots`. The actual actions are still named
+    with underscores, and the code has been updated to work with the hyphenated
+    action names.
+
+**New**
+
+  * Now using `elasticsearch-py` version 7.12.0
+  * Adding testing for Python 3.9
+  * Removing testing on Python 3.6
+  * Tested Elasticsearch versions now include 7.12.0, 7.11.2, 7.10.2, 7.9.3,
+    7.8.1, 6.8.15, 5.6.16
+  * Changing `requirements.txt` as follows:
+    - boto3-1.17.57
+    - certifi-2020.12.5
+    - click-7.1.2
+    - elasticsearch-7.12.0
+    - pyyaml-5.4.1
+    - requests-2.25.1
+    - requests-aws4auth-1.0.1
+    - six-1.15.0
+    - urllib3-1.26.4
+    - voluptuous-0.12.1
 
 **Bug Fixes**
 
+  * Alias integration tests needed updating for newer versions of Elasticsearch
+    that include ILM.
+  * Click 7.0 now reports an exit code of `1` for schema mismatches where it
+    yielded a `-1` in the past. Tests needed updating to correct for this.
+
+**Security**
+
+  * Address multiple `pyyaml` vulnerabilities by bumping to version 5.4.1.
+    Contributed in #1596 (tsaarni)
+
+5.8.3 (25 November 2020)
+------------------------
+
+**New**
+
+  * Determined to test the last 2 major version's final patch releases, plus
+    the last 5 minor releases in the current major version. Travis CI testing
+    needs to go faster, and this should suffice. For now, this means versions
+    5.6.16, 6.8.13, 7.6.2, 7.7.1, 7.8.1, 7.9.3, and 7.10.0
+
+**Bug Fixes**
+
+  * Caught a few stale merge failures, and asciidoc documentation problems
+    which needed fixing in the 5.8 branch, which necessitate this tiny bump
+    release. No code changes between 5.8.2 and 5.8.3.
+
+5.8.2 (24 November 2020)
+------------------------
+
+**Announcement**
+
+  * No, Curator isn't going away. But as you can tell, it's not as actively
+    developed as it once was. I am gratified to find there are still users who
+    make it a part of their workflow. I intend to continue development in my
+    spare time. Curator is now a labor of love, not an engineering project I
+    do during work hours.
+
+**New**
+
+  * Testing changes. Only last ES version of 5.x and 6.x are tested, plus the
+    releases of 7.x since 7.2.
+  * ``http_auth`` is now deprecated. You can continue to use it, but it will go
+    away in the next major release. Moving forward, you should use ``username``
+    and ``password``. This should work in ``curator``, ``curator_cli``, and
+    ``es_repo_mgr``.
+  * Removed tests for all 5.x branches of Elasticsearch but the final (5.6).
+  * Added tests for missing 7.x branches of Elasticsearch
+  * Remove tests for Python 3.5
+  * Fix hang of Shrink action in ES 7.x in #1528 (jclegras)
+  * Add ``ecs`` as a ``logformat`` option in #1529 (m1keil)
+
+**Bug Fixes**
+
+  * Lots of code cleanup, trying to go PEP-8. All tests are still passing, and
+    the APIs are not changed (yet—-that comes in the next major release).
+  * Dockerfile has been updated to produce a working version with Python 3.7
+    and Curator 5.8.1
+  * Pin (for now) Elasticsearch Python module to 7.1.0. This will be updated
+    when an updated release of the module fixes the `cluster.state` API call
+    regression at https://github.com/elastic/elasticsearch-py/issues/1141
+  * Fix ``client.tasks.get`` API call to be ``client.tasks.list`` when no index
+    name is provided.  See
+    https://github.com/elastic/elasticsearch-py/issues/1110
+  * Pin some pip versions to allow urllib3 and boto to coexist. See #1562
+    (sethmlarson).
+
+**Documentation**
+
+  * Add Freeze/Unfreeze documentation in #1497 (lucabelluccini)
+  * Update compatibility matrix in #1522 (jibsonline)
+
+5.8.1 (25 September 2019)
+-------------------------
+
+**Bug Fixes**
+
+  * ``LD_LIBRARY_PATH`` will now be set in ``/usr/bin/curator`` and the
+    associated scripts rather than set in ``/etc/ld.so.conf.d``
+
+**Other**
+
+  * Unsaved logging change in ``utils.py`` that got missed is merged.
+
+5.8.0 (24 September 2019)
+-------------------------
+
+**New**
+
+  * Require ``elasticsearch-py`` version 7.0.4
+  * Official support for Python 3.7 — In fact, the pre-built packages are built
+    using Python 3.7 now.
+  * Packages bundle OpenSSL 1.1.1c, removing the need for system OpenSSL
+  * Certifi 2019.9.11 certificates included.
+  * New client configuration option: api_key - used in the X-Api-key header in
+    requests to Elasticsearch when set, which may be required if ReadonlyREST
+    plugin is configured to require api-key. Requested in #1409 (vetler)
+  * Add ``skip_flush`` option to the ``close`` action. This should be useful
+    when trying to close indices with unassigned shards (e.g. before restore).
+    Raised in #1412. (psypuff)
+  * Use ``RequestsHttpConnection`` class, which permits the use of
+    ``HTTP_PROXY`` and ``HTTPS_PROXY`` environment variables. Raised in #510
+    and addressed by #1259 (raynigon) in August of 2018. Subsequent changes,
+    however, required some adaptation, and re-submission as a different PR.
+    (untergeek)
+  * ``ignore_existing`` option added to ``CreateIndex``. Will not raise an
+    error if the index to be created already exists. Raised by (breml) in
+    #1352. (untergeek)
+  * Add support for ``freeze`` and ``unfreeze`` indexes using curator. Requires
+    Elasticsearch version 6.6 or greater with xpack enabled. Requested in issue
+    #1399 and rasied in PR #1454. (junmuz)
+  * Allow the ``close`` action to ignore synced flush failures with the new
+    ``ignore_sync_failures`` option.  Raised in #1248. (untergeek)
+
+**Bug Fixes**
+
+  * Fix kibana filter to match any and all indices starting with ``.kibana``.
+    This addresses #1363, and everyone else upgrading to Elasticsearch 7.x.
+    Update documentation accordingly. (untergeek)
+  * Fix reindex post-action checks. When the filters do not return documents
+    to be reindexed, the post-action check to ensure the target index exists
+    is not needed. This new version will skip that validation if no documents
+    are processed (issue #1170). (afharo)
+  * Prevent the ``empty`` filtertype from incorrectly matching against closed
+    indices #1430 (heyitsmdr)
+  * Fix ``index_size`` function to be able to report either for either the
+    ``total`` of all shards (default) or just ``primaries``. Added as a keyword
+    arg to preserve existing behavior. This was needed to fix sizing
+    calculations for the Shrink action, which should only count ``primaries``.
+    Raised in #1429 (untergeek).
+  * Fix ``allow_ilm_indices`` to work with the ``rollover`` action. Reported in
+    #1418 (untergeek)
+  * Update the client connection logic to be cleaner and log more verbosely in
+    an attempt to address issues like #1418 and others like it more effectively
+    as other failures have appeared to be client failures because the last
+    log message were vague indications that a client connection was attempted.
+    This is a step in the right direction, as it explicitly exits with a 1 exit
+    code for different conditions now. (untergeek)
+  * Catch snapshots without a timestring in the name causing a logic error when
+    using the ``count`` filter and ``use_age`` with ``source: name``. Reported
+    by (nerophon) in #1366. (untergeek)
+  * Ensure authentication (401), authorization (403), and other 400 errors are
+    logged properly. Reported by (rfalke) in #1413. (untergeek)
+  * Fix crashes in restore of "large" number of indices reported by breml in
+    #1360. (anandsinghkunwar)
+  * Do an empty list check before querying indices for field stats. Fixed by
+    (CiXiHuo) in #1448.
+  * Fix "Correctly report task runtime in seconds" while reindexing. Reported
+    by (jkelastic) in #1335
+
+**Documentation**
+
+  * Grammar correction of ilm.asciidoc #1425 (SlavikCA)
+  * Updates to reflect changes to Elasticsearch 7 documentation #1426 and #1428
+    (lcawl) and (jrodewig)
+
+5.7.6 (6 May 2019)
+------------------
+
+**Security Fix**
+
+Evidently, there were some upstream dependencies which required vulnerable
+versions of ``urllib3`` and ``requests``. These have been addressed.
+
+  * CVE-2018-20060, CVE-2019-11324, CVE-2018-18074 are addressed by this
+    update. Fixed in #1395 (cburgess)
+
+**Bug Fixes**
+
+  * Allow aliases in Elasticsearch versions >= 6.5.0 to refer to more than one
+    index, if ``is_write_index`` is present and one index has it set to `True`.
+    Requested in #1342 (untergeek)
+
+5.7.5 (26 April 2019)
+---------------------
+
+This has to be a new record with 5 releases in 3 days, however, as a wonderful
+aside, this release is the Curator Haiku release (if you don't know why, look
+up the structure of a Haiku).
+
+**Bug Fix**
+
+  * Persistent ILM filter error has finally been caught. Apparently, in Python,
+    a list of lists ``[[]]`` will evaluate as existing, because it has one
+    array element, even if that element is empty. So, this is my bad, but it is
+    fixed now. (untergeek)
+
+5.7.4 (25 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * ILM filter was reading from full index list, rather than the working list
+    Reported in #1389 (untergeek)
+
+5.7.3 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Still further package collisions with ``urllib3`` between ``boto3`` and
+    ``requests``.  It was working, but with an unacceptable error, which is
+    addressed in release 5.7.3. (untergeek)
+
+5.7.2 (24 April 2019)
+---------------------
+
+**Bug Fix**
+
+  * Fix ``urllib3`` dependency collision on account of ``boto3`` (untergeek)
+
+5.7.1 (24 April 2019)
+---------------------
+
+We do not speak of 5.7.1
+
+5.7.0 (24 April 2019)
+---------------------
+
+**New**
+
+  * Support for ``elasticsearch-py`` 7.0.0 (untergeek)
+  * Support for Elasticsearch 7.0 #1371 (untergeek)
+  * TravisCI testing for Elasticsearch 6.5, 6.6, 6.7, and 7.0 (untergeek)
+  * Allow shrink action to use multiple data paths #1350 (IzekChen)
+
+**Bug Fixes**
+
+  * Fix ``regex`` pattern filter to use ``re.search`` #1355 (matthewdupre)
   * Report rollover results in both dry-run and regular runs. Requested
     in #1313 (untergeek)
   * Hide passwords in DEBUG logs. Requested in #1336 (untergeek)
+  * With ILM fully released, Curator tests now correctly use the
+    ``allow_ilm_indices`` option. (untergeek)
+
+**Documentation**
+
+  * Many thanks to those who submitted documentation fixes, both factual as
+    well as typos!
+
 
 5.6.0 (13 November 2018)
 ------------------------

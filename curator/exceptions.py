@@ -1,3 +1,4 @@
+"""Curator Exceptions"""
 class CuratorException(Exception):
     """
     Base class for all exceptions raised by Curator which are not Elasticsearch
@@ -57,4 +58,24 @@ class FailedRestore(CuratorException):
 class FailedReindex(CuratorException):
     """
     Exception raised when failures are found in the reindex task response
+    """
+
+class ClientException(CuratorException):
+    """
+    Exception raised when the Elasticsearch client and/or connection is the source of the problem.
+    """
+
+class LoggingException(CuratorException):
+    """
+    Exception raised when Curator cannot either log or configure logging
+    """
+
+class RepositoryException(CuratorException):
+    """
+    Exception raised when Curator cannot verify a snapshot repository
+    """
+
+class SearchableSnapshotException(CuratorException):
+    """
+    Exception raised when Curator finds something out of order with a Searchable Snapshot
     """

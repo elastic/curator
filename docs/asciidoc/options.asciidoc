@@ -7,10 +7,12 @@
 Options are settings used by <<actions,actions>>.
 
 * <<option_allocation_type,allocation_type>>
+* <<option_allow_ilm,allow_ilm_indices>>
 * <<option_continue,continue_if_exception>>
 * <<option_count,count>>
 * <<option_delay,delay>>
 * <<option_delete_aliases,delete_aliases>>
+* <<option_skip_flush,skip_flush>>
 * <<option_disable,disable_action>>
 * <<option_extra_settings,extra_settings>>
 * <<option_ignore_empty,ignore_empty_list>>
@@ -33,14 +35,10 @@ Options are settings used by <<actions,actions>>.
 * <<option_number_of_shards,number_of_shards>>
 * <<option_partial,partial>>
 * <<option_refresh,refresh>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
 * <<option_remote_filters,remote_filters>>
-* <<option_remote_ssl_no_validate,remote_ssl_no_validate>>
 * <<option_remote_url_prefix,remote_url_prefix>>
 * <<option_rename_pattern,rename_pattern>>
 * <<option_rename_replacement,rename_replacement>>
@@ -50,6 +48,7 @@ Options are settings used by <<actions,actions>>.
 * <<option_retry_count,retry_count>>
 * <<option_retry_interval,retry_interval>>
 * <<option_routing_type,routing_type>>
+* <<option_search_pattern,search_pattern>>
 * <<option_setting,setting>>
 * <<option_shrink_node,shrink_node>>
 * <<option_slices,slices>>
@@ -88,6 +87,29 @@ The value of this setting must be one of `require`, `include`, or `exclude`.
 Read more about these settings at {ref}/shard-allocation-filtering.html
 
 The default value for this setting is `require`.
+
+[[option_allow_ilm]]
+== allow_ilm_indices
+
+This option allows Curator to manage ILM-enabled indices. Exercise caution that
+ILM policies and Curator actions will not interfere with each other.
+
+IMPORTANT: Read more about Curator and Index Lifecycle Management
+  <<ilm,here>>.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete the specified indices"
+options:
+  allow_ilm_indices: true
+filters:
+- filtertype: ...
+-------------
+
+The value of this setting must be either `true` or `false`.
+
+The default value for this setting is `false`.
 
 [[option_continue]]
 == continue_if_exception
@@ -242,6 +264,27 @@ indices before closing.
 
 The default value is `False`.
 
+[[option_skip_flush]]
+== skip_flush
+
+NOTE: This setting is only used by the <<close,close action>>, and is
+    optional.
+
+[source,yaml]
+-------------
+action: close
+description: "Close selected indices"
+options:
+  skip_flush: False
+filters:
+- filtertype: ...
+-------------
+
+If `skip_flush` is set to `True`, Curator will not flush indices to disk
+before closing. This may be useful for closing red indices before restoring.
+
+The default value is `False`.
+
 [[option_disable]]
 == disable_action
 
@@ -312,7 +355,7 @@ options:
 
 === <<restore,restore>>
 
-See the {ref}/modules-snapshots.html#_changing_index_settings_during_restore[official Elasticsearch Documentation].
+See the {ref}/snapshots-restore-snapshot.html[official Elasticsearch Documentation].
 
 [source,yaml]
 -------------
@@ -350,7 +393,7 @@ actions:
 action: rollover
 description: >-
   Rollover the index associated with alias 'name', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -489,12 +532,12 @@ filters:
 
 When the `ignore_unavailable` option is `False` and an index is missing,
 or if the request is to apply a
-https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#_static_index_settings[static]
+{esref}/index-modules.html#_static_index_settings[static]
 setting and the index is opened, the index setting request will fail.
 The `ignore_unavailable` option allows these indices to be skipped, when set to
 `True`.
 
-NOTE: https://www.elastic.co/guide/en/elasticsearch/reference/5.4/index-modules.html#dynamic-index-settings[Dynamic]
+NOTE: {esref}/index-modules.html#dynamic-index-settings[Dynamic]
 index settings can be applied to either open or closed indices.
 
 [[option_include_aliases]]
@@ -686,7 +729,7 @@ will be raised, and execution will halt.
 action: rollover
 description: >-
   Rollover the index associated with alias 'aliasname', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -711,7 +754,7 @@ Ages such as `1d` for one day, or `30s` for 30 seconds can be used.
 action: rollover
 description: >-
   Rollover the index associated with alias 'aliasname', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -735,7 +778,7 @@ an error.
 action: rollover
 description: >-
   Rollover the index associated with alias 'aliasname', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -748,7 +791,7 @@ NOTE: At least one of <<option_max_age,max_age>>, <<option_max_docs,max_docs>>,
 
 The maximum approximate size an index is allowed to be before triggering a
 rollover.  Sizes must use Elasticsearch approved
-{ref}/common-options.html#byte-units[byte units]. It _must_ be nested under
+{ref}/common-options.html[human-readable byte units]. It _must_ be nested under
 `conditions:` There is no default value.  If this condition is specified, it
 must have a value, or Curator will generate an error.
 
@@ -1046,7 +1089,7 @@ options:
   # ...
 -------------
 
-or use Elasticsearch {ref}/date-math-index-names.html[date math]
+or use Elasticsearch {ref}/api-conventions.html#api-date-math-index-names[date math]
 
 [source,yaml]
 -------------
@@ -1094,13 +1137,13 @@ description: >-
   date math.
 options:
   name: aliasname
-  new_index: "<prefix-{now/d}-1>" 
+  new_index: "<prefix-{now/d}-1>"
   conditions:
     max_age: 1d
   wait_for_active_shards: 1
 -------------
 
-IMPORTANT: A new index name for rollover should still end with a dash followed by an 
+IMPORTANT: A new index name for rollover should still end with a dash followed by an
   incrementable number, e.g. `my_new_index-1`, or if using date math, `<prefix-{now/d}-1>`
   or `<prefix-{now/d}-000001>`
 
@@ -1324,134 +1367,6 @@ Read more about this setting at {ref}/docs-reindex.html
 
 The default value is `True`.
 
-[[option_remote_aws_key]]
-== remote_aws_key
-
-NOTE: This option is only used by the <<reindex,Reindex action>> when performing
-a remote reindex operation.
-
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM access key, or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_aws_key: AWS_KEY
-      remote_aws_secret_key: AWS_SECRET_KEY
-      remote_aws_region: us-east-1
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
-
-[[option_remote_aws_region]]
-== remote_aws_region
-
-NOTE: This option is only used by the <<reindex,Reindex action>> when performing
-a remote reindex operation.
-
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS region, or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_aws_key: AWS_KEY
-      remote_aws_secret_key: AWS_SECRET_KEY
-      remote_aws_region: us-east-1
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
-
-[[option_remote_aws_secret_key]]
-== remote_aws_secret_key
-
-NOTE: This option is only used by the <<reindex,Reindex action>> when performing
-a remote reindex operation.
-
-WARNING: This feature allows connection to AWS using IAM credentials, but
-    <<faq_aws_iam,Curator 5 does not currently work with AWS>>.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM secret access key, or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_aws_key: AWS_KEY
-      remote_aws_secret_key: AWS_SECRET_KEY
-      remote_aws_region: us-east-1
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
 
 [[option_remote_certificate]]
 == remote_certificate
@@ -1615,48 +1530,6 @@ provided, and reindex them to the _local_ cluster as the name provided in the
 `dest` `index`.  In this example, that is `index2`.
 
 
-
-[[option_remote_ssl_no_validate]]
-== remote_ssl_no_validate
-
-This should be `True`, `False` or left empty.
-
-[source,yaml]
--------------
-actions:
-  1:
-    description: "Reindex index1 into index2"
-    action: reindex
-    options:
-      wait_interval: 9
-      max_wait: -1
-      remote_ssl_no_validate: True
-      request_body:
-        source:
-          remote:
-            host: https://otherhost:9200
-          index: index1
-        dest:
-          index: index2
-    filters:
-    - filtertype: none
--------------
-
-
-If access to your Elasticsearch instance is protected by SSL encryption, you may
-set `ssl_no_validate` to `True` to disable SSL certificate verification.
-
-Valid use cases for doing so include the use of self-signed certificates that
-cannot be otherwise verified and would generate error messages.
-
-WARNING: Setting `ssl_no_validate` to `True` will likely result in a warning
-    message that your SSL certificates are not trusted. This is expected
-    behavior.
-
-The default value is `False`.
-
-
-
 [[option_remote_url_prefix]]
 == remote_url_prefix
 
@@ -1744,7 +1617,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/modules-snapshots.html#_restore
+Read more about this setting at {ref}/snapshots-restore-snapshot.html
 
 There is no default value.
 
@@ -1796,7 +1669,7 @@ and put it after `restored_index`.  For example, if I was restoring
 `index-2017.03.01`, the resulting index would be renamed to
 `restored_index-2017.03.01`.
 
-Read more about this setting at {ref}/modules-snapshots.html#_restore
+Read more about this setting at {ref}/snapshots-restore-snapshot.html
 
 There is no default value.
 
@@ -2022,9 +1895,6 @@ options:
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
 
 === Reindex From Remote With Filter-Selected Indices
 
@@ -2094,9 +1964,6 @@ options:
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
 
 === Reindex - Migration
 
@@ -2191,9 +2058,6 @@ options:
 * <<option_remote_certificate,remote_certificate>>
 * <<option_remote_client_cert,remote_client_cert>>
 * <<option_remote_client_key,remote_client_key>>
-* <<option_remote_aws_key,remote_aws_key>>
-* <<option_remote_aws_secret_key,remote_aws_secret_key>>
-* <<option_remote_aws_region,remote_remote_aws_region>>
 * <<option_migration_prefix,migration_prefix>>
 * <<option_migration_suffix,migration_suffix>>
 
@@ -2287,6 +2151,30 @@ The value of this setting must be either `allocation` or `rebalance`
 
 There is no default value. This setting must be set by the user or an exception
 will be raised, and execution will halt.
+
+[[option_search_pattern]]
+== search_pattern
+
+NOTE: This setting is only used by the
+  <<allocation>>, <<close>>, <<cold2frozen>>, <<delete_indices>>, <<forcemerge>>,
+  <<index_settings>>, <<open>>, <<replicas>>, <<shrink>>, and <<snapshot>> actions.
+
+[source,yaml]
+-------------
+action: delete_indices
+description: "Delete selected indices"
+options:
+  search_pattern: 'index-*'
+filters:
+- filtertype: ...
+-------------
+
+The value of this option can be a comma-separated list of data streams, indices, and aliases used
+to limit the request. Supports wildcards (*). To target all data streams and indices, omit this
+parameter or use * or _all. If using wildcards it is highly recommended to encapsulate the entire
+search pattern in single quotes, e.g. `search_pattern: 'a*,b*,c*'`
+
+The default value is `_all`.
 
 [[option_setting]]
 == setting
@@ -2404,7 +2292,7 @@ were `-shrink`, the resulting target index name would be `foo-index-shrink`.
 NOTE: This setting is only used by the <<reindex,reindex>> action.
 
 This setting can speed up reindexing operations by using
-{ref}/search-request-scroll.html#sliced-scroll[Sliced Scroll] to slice on the
+{ref}/paginate-search-results.html#slice-scroll[Sliced Scroll] to slice on the
 \_uid.
 
 [source,yaml]
@@ -2716,7 +2604,7 @@ actions:
 action: rollover
 description: >-
   Rollover the index associated with alias 'name', which should be in the
-  form of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+  form of prefix-000001 (or similar), or prefix-yyyy.MM.DD-1.
 options:
   name: aliasname
   conditions:
@@ -2945,8 +2833,8 @@ This setting must be a positive integer between 1 and 30.
 
 This setting specifies how long to wait between checks to see if the action has
 completed or not.  This number should not be larger than the client
-<<timeout,timeout>> or the <<option_timeout_override,timeout_override>>.  As the
-default client <<timeout,timeout>> value for is 30, this should be uncommon.
+<<request_timeout,request_timeout>> or the <<option_timeout_override,timeout_override>>.  As the
+default client <<request_timeout,request_timeout>> value for is 30, this should be uncommon.
 
 The default value for this setting is `9`, meaning 9 seconds between checks.
 

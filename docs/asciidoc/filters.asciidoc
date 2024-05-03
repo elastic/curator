@@ -290,7 +290,7 @@ based on the values of <<fe_count,count>>, <<fe_exclude,exclude>>, and
 
 === Age-based sorting
 
-For use cases, where "like" items are being counted, and their name pattern
+For use cases where "like" items are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as item names will be sorted in
 <<fe_reverse,reverse>> order by default.  This means that the item count will
@@ -435,7 +435,7 @@ removed from the actionable list, leaving `index-2017.03.03`,
 * <<fe_pattern,pattern>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
-* <<fe_exclude,exclude>> (default is `False`)
+* <<fe_exclude,exclude>> (default is `True`)
 
 === Index-only settings
 
@@ -452,10 +452,11 @@ removed from the actionable list, leaving `index-2017.03.03`,
 -------------
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices which do not contain any documents.  They will remain in, or be
-removed from the actionable list based on the value of <<fe_exclude,exclude>>.
+indices which do not contain any documents. Indices that are closed are automatically
+removed from consideration. They will remain in, or be removed from the actionable list
+based on the value of <<fe_exclude,exclude>>.
 
-By default the indices matched by the empty filter will be excluded since 
+By default the indices matched by the empty filter will be excluded since
 the exclude setting defaults to True. To include matching indices rather than
 exclude, set the exclude setting to False.
 
@@ -502,12 +503,12 @@ remain in, or be removed from the actionable list based on the value of
   exclude: True
 -------------
 
-This <<filtertype,filtertype>> will remove indices `.kibana`, `.kibana-5`,
-and `.kibana-6` from the list of indices, if present.
+This <<filtertype,filtertype>> will remove any index matching the regular
+expression `^\.kibana.*$` from the list of indices, if present.
 
 This <<filtertype,filtertype>> will iterate over the actionable list and match
-indices `.kibana`, `.kibana-5`, or `.kibana-6`. They
-will remain in, or be removed from the actionable list based on the value of
+indices matching the regular expression `^\.kibana.*$`. They will remain in, or
+be removed from the actionable list based on the value of
 <<fe_exclude,exclude>>.
 
 === Optional settings
@@ -610,15 +611,15 @@ NOTE: Empty values and commented lines will result in the default value, if any,
 === Relative Periods
 A relative period will be reckoned relative to execution time, unless an
 <<fe_epoch,epoch>> timestamp is provided.  Reckoning is truncated to the most
-recent whole unit, where a <<fe_unit,unit>> can be one of `seconds`, `minutes`,
-`hours`, `days`, `weeks`, `months`, or `years`.  For example, if I selected
-`hours` as my `unit`, and I began execution at 02:35, then the point of reckoning
-would be 02:00. This is relatively easy with `days`, `months`, and `years`, but
-slightly more complicated with `weeks`. Some users may wish to reckon weeks by
-the ISO standard, which starts weeks on Monday. Others may wish to use Sunday
-as the first day of the week.  Both are acceptable options with the `period`
-filter. The default behavior for `weeks` is to have Sunday be the start of the
-week. This can be overridden with <<fe_week_starts_on,week_starts_on>> as follows:
+recent whole unit, where a <<fe_unit,unit>> can be one of `hours`, `days`, `weeks`, 
+`months`, or `years`.  For example, if I selected `hours` as my `unit`, and I 
+began execution at 02:35, then the point of reckoning would be 02:00. This is 
+relatively easy with `days`, `months`, and `years`, but slightly more complicated 
+with `weeks`. Some users may wish to reckon weeks by the ISO standard, which 
+starts weeks on Monday. Others may wish to use Sunday as the first day of the 
+week.  Both are acceptable options with the `period` filter. The default behavior 
+for `weeks` is to have Sunday be the start of the week. This can be overridden 
+with <<fe_week_starts_on,week_starts_on>> as follows:
 
 [source,yaml]
 -------------
@@ -799,7 +800,7 @@ caveats regarding this choice:
 These are only a few of the caveats. This is still a valid use-case, especially
 for those running a single-node test box.
 
-For use cases, where "like" indices are being counted, and their name pattern
+For use cases where "like" indices are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
 <<fe_reverse,reverse>> order by default.  For this case, this means that disk
@@ -816,7 +817,7 @@ proceeding through to the oldest.
   source: creation_date
 -------------
 
-For use cases, where "like" indices are being counted, and their name pattern
+For use cases where "like" indices are being counted, and their name pattern
 guarantees date sorting is equal to alphabetical sorting, it is unnecessary to
 set <<fe_use_age,use_age>> to `True`, as index names will be sorted in
 <<fe_reverse,reverse>> order by default.  For this case, this means that disk
@@ -927,7 +928,7 @@ messages like these in the output:
 * <<fe_use_age,use_age>>
 * <<fe_source,source>> (required if `use_age` is `True`)
 * <<fe_timestring,timestring>> (required if `source` is `name`)
-* <<fe_threshold_behavior,fe_threshold_behavior>> (default is `greater_than`)
+* <<fe_threshold_behavior,threshold_behavior>> (default is `greater_than`)
 * <<fe_field,field>> (required if `source` is `field_stats`)
 * <<fe_stats_result,stats_result>> (only used if `source` is `field_stats`)
 * <<fe_exclude,exclude>> (default is `False`)

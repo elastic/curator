@@ -11,7 +11,13 @@
 [[command-line]]
 == Command Line Interface
 
-The command-line arguments are as follows:
+Most common client configuration settings are now available at the command-line.
+
+IMPORTANT: While both the configuration file and the command-line arguments can be used together,
+  it is important to note that command-line options will override file-based configuration of the
+  same setting.
+
+The most basic command-line arguments are as follows:
 
 [source,sh]
 -------
@@ -33,7 +39,7 @@ specified.
 
 `ACTION_FILE.YML` is a YAML <<actionfile, actionfile>>.
 
-Command-line help is never far away:
+For other client configuration options, command-line help is never far away:
 
 [source,sh]
 -------
@@ -47,20 +53,71 @@ The help output looks like this:
 $ curator --help
 Usage: curator [OPTIONS] ACTION_FILE
 
-  Curator for Elasticsearch indices.
+  Curator for Elasticsearch indices
 
-  See http://elastic.co/guide/en/elasticsearch/client/curator/current
+  The default $HOME/.curator/curator.yml configuration file (--config) can be used but is not needed.
+
+  Command-line settings will always override YAML configuration settings.
+
+  Some less-frequently used client configuration options are now hidden. To see the full list, run:
+
+      curator_cli -h
 
 Options:
-  --config PATH  Path to configuration file. Default: ~/.curator/curator.yml
-  --dry-run      Do not perform any changes.
-  --version      Show the version and exit.
-  --help         Show this message and exit.
+  --config PATH                   Path to configuration file.
+  --hosts TEXT                    Elasticsearch URL to connect to.
+  --cloud_id TEXT                 Elastic Cloud instance id
+  --api_token TEXT                The base64 encoded API Key token
+  --id TEXT                       API Key "id" value
+  --api_key TEXT                  API Key "api_key" value
+  --username TEXT                 Elasticsearch username
+  --password TEXT                 Elasticsearch password
+  --request_timeout FLOAT         Request timeout in seconds
+  --verify_certs / --no-verify_certs
+                                  Verify SSL/TLS certificate(s)  [default: verify_certs]
+  --ca_certs TEXT                 Path to CA certificate file or directory
+  --client_cert TEXT              Path to client certificate file
+  --client_key TEXT               Path to client key file
+  --dry-run                       Do not perform any changes.
+  --loglevel [DEBUG|INFO|WARNING|ERROR|CRITICAL]
+                                  Log level
+  --logfile TEXT                  Log file
+  --logformat [default|ecs]       Log output format
+  -v, --version                   Show the version and exit.
+  -h, --help                      Show this message and exit.
+
+  Learn more at https://www.elastic.co/guide/en/elasticsearch/client/curator/8.0/command-line.html
 -------
 
 You can use <<envvars,environment variables>> in your configuration files.
 
-TIP: See <<faq_unicode,this FAQ about Python 3 requiring a Unicode locale>>
+=== Running Curator from Docker
+
+Running Curator from the command-line using Docker requires only a few additional steps.
+
+Should you desire to use them, Docker-based Curator requires you to map a volume for your
+configuration and/or log files. Attempting to read a YAML configuration file if you have
+neglected to volume map your configuration directory to `/.curator` will not work.
+
+It looks like this:
+
+[source,sh]
+-------
+docker run [-t] --rm --name myimagename \
+  -v /PATH/TO/MY/CONFIGS:/.curator      \
+  untergeek/curator:mytag               \
+--config /.curator/config.yml /.curator/actionfile.yml
+-------
+
+NOTE: While testing, adding the `-t` flag will allocate a pseudo-tty, allowing you to see terminal
+  output that would otherwise be hidden.
+
+Both of the files `config.yml` and `actionfile.yml` should already exist in the path
+`/PATH/TO/MY/CONFIGS` before run time.
+
+The `--rm` in the command means that the container (not the image) will be deleted after
+completing execution. You definitely want this as there is no reason to keep creating
+containers for each run. The eventual cleanup from this would be unpleasant.
 
 &nbsp;
 
@@ -73,49 +130,107 @@ file, though it does support using the client configuration file if you want.
 As an important bonus, the command-line options allow you to override the
 settings in the `curator.yml` file!
 
+IMPORTANT: While both the configuration file and the command-line arguments can be used together,
+  it is important to note that command-line options will override file-based configuration of the
+  same setting.
+
 [source,sh]
 ---------
 $ curator_cli --help
 Usage: curator_cli [OPTIONS] COMMAND [ARGS]...
 
+  Curator CLI (Singleton Tool)
+
+  Run a single action from the command-line.
+
+  The default $HOME/.curator/curator.yml configuration file (--config) can be used but is not needed.
+
+  Command-line settings will always override YAML configuration settings.
+
 Options:
-  --config PATH       Path to configuration file. Default:
-                      ~/.curator/curator.yml
-  --host TEXT         Elasticsearch host.
-  --url_prefix TEXT   Elasticsearch http url prefix.
-  --port TEXT         Elasticsearch port.
-  --use_ssl           Connect to Elasticsearch through SSL.
-  --certificate TEXT  Path to certificate to use for SSL validation.
-  --client-cert TEXT  Path to file containing SSL certificate for client auth.
-  --client-key TEXT   Path to file containing SSL key for client auth.
-  --ssl-no-validate   Do not validate SSL certificate
-  --http_auth TEXT    Use Basic Authentication ex: user:pass
-  --timeout INTEGER   Connection timeout in seconds.
-  --master-only       Only operate on elected master node.
-  --dry-run           Do not perform any changes.
-  --loglevel TEXT     Log level
-  --logfile TEXT      log file
-  --logformat TEXT    Log output format [default|logstash|json].
-  --version           Show the version and exit.
-  --help              Show this message and exit.
+  --config PATH                   Path to configuration file.
+  --hosts TEXT                    Elasticsearch URL to connect to.
+  --cloud_id TEXT                 Elastic Cloud instance id
+  --api_token TEXT                The base64 encoded API Key token
+  --id TEXT                       API Key "id" value
+  --api_key TEXT                  API Key "api_key" value
+  --username TEXT                 Elasticsearch username
+  --password TEXT                 Elasticsearch password
+  --bearer_auth TEXT              Bearer authentication token
+  --opaque_id TEXT                X-Opaque-Id HTTP header value
+  --request_timeout FLOAT         Request timeout in seconds
+  --http_compress / --no-http_compress
+                                  Enable HTTP compression  [default: no-http_compress]
+  --verify_certs / --no-verify_certs
+                                  Verify SSL/TLS certificate(s)  [default: verify_certs]
+  --ca_certs TEXT                 Path to CA certificate file or directory
+  --client_cert TEXT              Path to client certificate file
+  --client_key TEXT               Path to client key file
+  --ssl_assert_hostname TEXT      Hostname or IP address to verify on the node's certificate.
+  --ssl_assert_fingerprint TEXT   SHA-256 fingerprint of the node's certificate. If this value is given then root-of-trust
+                                  verification isn't done and only the node's certificate fingerprint is verified.
+  --ssl_version TEXT              Minimum acceptable TLS/SSL version
+  --master-only / --no-master-only
+                                  Only run if the single host provided is the elected master  [default: no-master-only]
+  --skip_version_test / --no-skip_version_test
+                                  Elasticsearch version compatibility check  [default: no-skip_version_test]
+  --dry-run                       Do not perform any changes.
+  --loglevel [DEBUG|INFO|WARNING|ERROR|CRITICAL]
+                                  Log level
+  --logfile TEXT                  Log file
+  --logformat [default|ecs]       Log output format
+  -v, --version                   Show the version and exit.
+  -h, --help                      Show this message and exit.
 
 Commands:
+  alias             Add/Remove Indices to/from Alias
   allocation        Shard Routing Allocation
-  close             Close indices
-  delete_indices    Delete indices
-  delete_snapshots  Delete snapshots
-  forcemerge        forceMerge index/shard segments
-  open              Open indices
-  replicas          Change replica count
-  show_indices      Show indices
-  show_snapshots    Show snapshots
-  snapshot          Snapshot indices
+  close             Close Indices
+  delete-indices    Delete Indices
+  delete-snapshots  Delete Snapshots
+  forcemerge        forceMerge Indices (reduce segment count)
+  open              Open Indices
+  replicas          Change Replica Count
+  restore           Restore Indices
+  rollover          Rollover Index associated with Alias
+  show-indices      Show Indices
+  show-snapshots    Show Snapshots
+  shrink            Shrink Indices to --number_of_shards
+  snapshot          Snapshot Indices
+
+  Learn more at https://www.elastic.co/guide/en/elasticsearch/client/curator/8.0/singleton-cli.html
 ---------
 
 The option flags for the given commands match those used for the same
 <<actions,actions>>.  The only difference is how filtering is handled.
 
-TIP: See <<faq_unicode,this FAQ about Python 3 requiring a Unicode locale>>
+=== Running Curator from Docker
+
+Running `curator_cli` from the command-line using Docker requires only a few additional steps.
+
+Should you desire to use them, Docker-based `curator_cli` requires you to map a volume for your
+configuration and/or log files. Attempting to read a YAML configuration file if you have
+neglected to volume map your configuration directory to `/.curator` will not work.
+
+It looks like this:
+
+[source,sh]
+-------
+docker run [-t] --rm --name myimagename  \
+  --entrypoint /curator/curator_cli      \
+  -v /PATH/TO/MY/CONFIGS:/.curator       \
+  untergeek/curator:mytag                \
+  --config /.curator/config.yml [OPTIONS] COMMAND [ARGS]...
+-------
+
+NOTE: While testing, adding the `-t` flag will allocate a pseudo-tty, allowing you to see terminal
+  output that would otherwise be hidden.
+
+The `config.yml` file should already exist in the path `/PATH/TO/MY/CONFIGS` before run time.
+
+The `--rm` in the command means that the container (not the image) will be deleted after
+completing execution. You definitely want this as there is no reason to keep creating
+containers for each run. The eventual cleanup from this would be unpleasant.
 
 === Command-line filtering
 
@@ -163,8 +278,8 @@ test your filters without causing any harm to the system.
 
 [source,sh]
 -----------
-$ curator_cli show_indices --help
-Usage: curator_cli show_indices [OPTIONS]
+$ curator_cli show-indices --help
+Usage: curator_cli show-indices [OPTIONS]
 
   Show indices
 
@@ -175,12 +290,14 @@ Options:
   --filter_list TEXT  JSON string representing an array of filters.
                       [required]
   --help              Show this message and exit.
+
+  Learn more at https://www.elastic.co/guide/en/elasticsearch/client/curator/8.0/singleton-cli.html#_show_indicessnapshots
 -----------
 
 [source,sh]
 -----------
-$ curator_cli show_snapshots --help
-Usage: curator_cli show_snapshots [OPTIONS]
+$ curator_cli show-snapshots --help
+Usage: curator_cli show-snapshots [OPTIONS]
 
   Show snapshots
 
@@ -189,10 +306,12 @@ Options:
   --filter_list TEXT  JSON string representing an array of filters.
                       [required]
   --help              Show this message and exit.
+
+  Learn more at https://www.elastic.co/guide/en/elasticsearch/client/curator/8.0/singleton-cli.html#_show_indicessnapshots
 -----------
 
-The `show_snapshots` command will only show snapshots matching the provided
-filters.  The `show_indices` command will also do this, but also offers a few
+The `show-snapshots` command will only show snapshots matching the provided
+filters.  The `show-indices` command will also do this, but also offers a few
 extra features.
 
 * `--verbose` adds state, total size of primary and all replicas, the document
@@ -203,7 +322,7 @@ extra features.
 * `--epoch` changes the date format from ISO8601 to epoch time.  If `--header`
   is also selected, the column header title will change to `creation_date`
 
-There are no extra columns or `--verbose` output for the `show_snapshots`
+There are no extra columns or `--verbose` output for the `show-snapshots`
 command.
 
 Without `--epoch`

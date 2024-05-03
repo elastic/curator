@@ -18,7 +18,7 @@ files.  <<actions,Actions>> and <<filters,filters>> are documented separately.
 WARNING: This functionality is experimental and may be changed or removed +
     completely in a future release.
 
-You can use environment variable references in the both the
+You can use environment variable references in both the
 <<configfile,configuration file>> and the <<actionfile,action file>> to set
 values that need to be configurable at runtime. To do this, use:
 
@@ -185,38 +185,53 @@ looks like this:
 ---
 # Remember, leave a key empty if there is no value.  None will be a string,
 # not a Python "NoneType"
-client:
-  hosts:
-    - 127.0.0.1
-  port: 9200
-  url_prefix:
-  use_ssl: False
-  certificate:
-  client_cert:
-  client_key:
-  ssl_no_validate: False
-  http_auth:
-  timeout: 30
-  master_only: False
+elasticsearch:
+  client:
+    hosts:
+      - http://127.0.0.1:9200
+    cloud_id:
+    ca_certs:
+    client_cert:
+    client_key:
+    verify_certs:
+    request_timeout: 30
+  other_settings:
+    master_only: False
+    username:
+    password:
+    api_key:
+      id:
+      api_key:
+      token:
 
 logging:
   loglevel: INFO
   logfile:
   logformat: default
-  blacklist: ['elasticsearch', 'urllib3']
+  blacklist: ['elastic_transport', 'urllib3']
 -----------
 
-It is a YAML configuration file.  The two root keys must be `client` and
+It is a YAML configuration file.  The two root keys must be `elasticsearch` and
 `logging`.  The subkeys of each of these will be described here.
+
+There are other keys available for the `client` subkey of the `elasticsearch` root key, many of
+which are listed https://es-client.readthedocs.io/en/latest/defaults.html[here].
+The most commonly used ones (listed above) are described as follows:
 
 [[hosts]]
 === hosts
 
-This can be a single value:
+IMPORTANT: All hosts must be in `HTTP[S]://FQDN.DOMAIN.TLD:PORT` form or they will be rejected and
+    Curator will exit with an error. The only exception to this is `HTTPS://FQDN.DOMAIN.TLD`
+    (without port), in which case `:443` is implicit, and is, in fact, appended automatically.
+
+WARNING: If both `cloud_id` and `hosts` keys are populated an exception will be thrown and Curator will exit.
+
+A `hosts` definition can be a single value:
 
 [source,sh]
 -----------
-hosts: 127.0.0.1
+hosts: http://127.0.0.1:9200
 -----------
 
 Or multiple values in the 3 acceptable YAML ways to render sequences, or arrays:
@@ -228,94 +243,46 @@ Flow:
 
 [source,sh]
 -----------
-hosts: [ "10.0.0.1", "10.0.0.2" ]
+hosts: [ "http://10.0.0.1:9200", "http://10.0.0.2:9200" ]
 -----------
 
 Spanning:
 
 [source,sh]
 -----------
-hosts: [ "10.0.0.1",
-    "10.0.0.2" ]
+hosts: [ "http://10.0.0.1:9200",
+    "http://10.0.0.2:9200" ]
 -----------
 
 Block:
 [source,sh]
 -----------
 hosts:
-  - 10.0.0.1
-  - 10.0.0.2
+  - http://10.0.0.1:9200
+  - http://10.0.0.2:9200
 -----------
 
-You can also provide these hosts with optional ports, and bypass the port
-option:
+
+[[cloud_id]]
+=== cloud_id
+
+The value should encapsulated in quotes because of the included colon:
 
 [source,sh]
 -----------
-hosts:
-  - 10.0.0.1:9200
-  - 10.0.0.2:9201
+cloud_id: 'deployment_name:BIG_HASH_VALUE'
 -----------
 
-WARNING: When adding a port to the end of a host or IP, the YAML Flow and
-    Spanning styles require `host:port` to be single `'` or double `"` quote
-    encapsulated or you will receive an error.  The Block style does not have
-    this limitation.
+WARNING: If both `cloud_id` and `hosts` keys are populated an exception will be thrown and Curator will exit.
 
-[[port]]
-=== port
-
-This should be a single value:
-
-[source,sh]
------------
-port: 9200
------------
-
-The default is `9200`.  This value will only be applied to <<hosts,hosts>>
-without a port affixed, e.g. `localhost:9202`.
-
-[[url_prefix]]
-=== url_prefix
-
-This should be a single value or left empty.
-
-[source,sh]
------------
-url_prefix:
------------
-
-In some cases you may be obliged to connect to your Elasticsearch cluster
-through a proxy of some kind. There may be a URL prefix before the API URI
-items, e.g. http://example.com/elasticsearch/ as opposed to
-http://localhost:9200. In such a case, set the `url_prefix` to the
-appropriate value, 'elasticsearch' in this example.
-
-The default is an empty string.
-
-[[use_ssl]]
-=== use_ssl
-
-This should be `True`, `False` or left empty.
-
-[source,sh]
------------
-use_ssl:
------------
-
-If access to your Elasticsearch instance is protected by SSL encryption, you
-must use set `use_ssl` to `True`.
-
-The default is `False`
-
-[[certificate]]
-=== certificate
+[[ca_certs]]
+=== ca_certs
 
 This should be a file path to your CA certificate, or left empty.
 
 [source,sh]
 -----------
-certificate:
+ca_certs:
 -----------
 
 This setting allows the use of a specified CA certificate file to validate the
@@ -363,146 +330,37 @@ SSL key. The key file must be an unencrypted key in PEM format.
 
 include::inc_filepath.asciidoc[]
 
-[[aws_key]]
-=== aws_key
 
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM access key, or left empty.
-
-[source,sh]
------------
-aws_key:
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-IMPORTANT: This feature may be deprecated in a future release. You should consider
-    using <<aws_sign_request,aws_sign_request>> instead.
-
-[[aws_secret_key]]
-=== aws_secret_key
-
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS IAM secret access key, or left empty.
-
-[source,sh]
------------
-aws_secret_key:
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-IMPORTANT: This feature may be deprecated in a future release. You should consider
-    using <<aws_sign_request,aws_sign_request>> instead.
-
-[[aws_region]]
-=== aws_region
-
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: This setting will not work unless the `requests-aws4auth` Python module
-    has been manually installed first.
-
-This should be an AWS region, or left empty.
-
-[source,sh]
------------
-aws_region:
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-[[aws_sign_request]]
-=== aws_sign_request
-
-WARNING: This feature has not been fully tested and should be considered BETA.
-
-WARNING: If installing via `pip`, this setting will not work unless the `requests-aws4auth`
-    and `boto3` Python modules have been manually installed first.
-
-WARNING: Credentials found in your environment will replace the data specified in
-    <<aws_key,aws_key>> and <<aws_secret_key,aws_secret_key>>
-
-This should be `True` if you want your requests to be signed with credentials retrieved
-    from your environment. The order in which credentials will be searched for is:
-
-    . Environment variables
-    . Shared credential file (~/.aws/credentials)
-    . AWS config file (~/.aws/config)
-    . Boto2 config file (/etc/boto.cfg and ~/.boto)
-    . Instance metadata service on an Amazon EC2 instance that has an IAM role configured.
-
-The default value is `False`.
-
-[source,sh]
------------
-aws_sign_request: True
------------
-
-IMPORTANT: You must set your <<hosts,hosts>> to the proper hostname _with_ port.
-    It may not work setting <<port,port>> and <<hosts,hosts>> to only a host
-    name due to the different connection module used.
-
-
-
-[[ssl_no_validate]]
-=== ssl_no_validate
+[[verify_certs]]
+=== verify_certs
 
 This should be `True`, `False` or left empty.
 
 [source,sh]
 -----------
-ssl_no_validate:
+verify_certs:
 -----------
 
 If access to your Elasticsearch instance is protected by SSL encryption, you may
-set `ssl_no_validate` to `True` to disable SSL certificate verification.
+set `verify_certs` to `False` to disable SSL certificate verification.
 
 Valid use cases for doing so include the use of self-signed certificates that
 cannot be otherwise verified and would generate error messages.
 
-WARNING: Setting `ssl_no_validate` to `True` will likely result in a warning
+WARNING: Setting `verify_certs` to `False` will likely result in a warning
     message that your SSL certificates are not trusted. This is expected
     behavior.
 
-The default value is `False`.
+The default value is `True`.
 
-[[http_auth]]
-=== http_auth
-
-This should be a authentication credentials (e.g. `user:pass`), or left empty.
-
-[source,sh]
------------
-http_auth:
------------
-
-This setting allows basic HTTP authentication to an Elasticsearch instance.
-
-The default is empty.
-
-[[timeout]]
-=== timeout
+[[request_timeout]]
+=== request_timeout
 
 This should be an integer number of seconds, or left empty.
 
 [source,sh]
 -----------
-timeout:
+request_timeout:
 -----------
 
 You can change the default client connection timeout value with this setting.
@@ -535,6 +393,65 @@ WARNING: If `master_only` is `True`, and <<hosts,hosts>> has more than one
     deploying to all nodes in the cluster.
 
 The default value is `False`.
+
+[[username]]
+=== username
+
+The HTTP Basic Authentication username
+
+[[password]]
+=== password
+
+The HTTP Basic Authentication password
+
+[[id]]
+=== id
+
+This should be the `id` portion of an API Key pair.
+
+[source,sh]
+---------
+api_key:
+  id:
+---------
+
+This setting combined with the other subkey `api_key` allows API Key authentication to an
+Elasticsearch instance.
+
+The default is empty.
+
+[[api_key]]
+=== api_key
+
+This should be the `api_key` portion of an API Key pair.
+
+[source,sh]
+---------
+api_key:
+  api_key:
+---------
+
+This setting combined with the other subkey `id` allows API Key authentication to an
+Elasticsearch instance.
+
+The default is empty.
+
+[[token]]
+=== token
+
+This should be a base64 encoded representation of an API Key pair.
+
+[source,sh]
+---------
+api_key:
+  token:
+---------
+
+This setting will override any values provided for the `id` or `api_key` subkeys of `api_key`.
+
+The default is empty.
+
+
 
 [[loglevel]]
 === loglevel
@@ -574,7 +491,7 @@ console.
 [[logformat]]
 === logformat
 
-This should `default`, `json`, `logstash`, or left empty.
+This should `default`, `json`, `logstash`, `ecs` or left empty.
 
 [source,sh]
 -----------
@@ -596,6 +513,16 @@ The `json` or `logstash` formats look like:
 "loglevel": "INFO", "message": "Action #1: ACTIONNAME", "name": "curator.cli"}
 -----------
 
+The `ecs` format looks like:
+[source,sh]
+-----------
+{"@timestamp":"2020-02-22T11:55:00.022Z","log.level":"info","message":"Action #1:
+ACTIONNAME","ecs":{"version":"1.6.0"},"log":{"logger":"curator.cli","origin":
+{"file":{"line":178,"name":"cli.py"},"function":"run"},"original":"Action #1:
+ACTIONNAME"},"process":{"name":"MainProcess","pid":12345,"thread":
+{"id":123456789886543,"name":"MainThread"}}}
+-----------
+
 The default value is `default`.
 
 [[blacklist]]
@@ -606,14 +533,14 @@ empty.
 
 [source,sh]
 -----------
-blacklist: ['elasticsearch', 'urllib3']
+blacklist: ['elastic_transport', 'urllib3']
 -----------
 
-The default value is `['elasticsearch', 'urllib3']`, which will result in
-logs for the `elasticsearch` and `urllib3` Python modules _not_ being output.
+The default value is `['elastic_transport', 'urllib3']`, which will result in
+logs for the `elastic_transport` and `urllib3` Python modules _not_ being output.
 These can be quite verbose, so unless you need them to debug an issue, you
 should accept the default value.
 
 TIP: If you do need to troubleshoot an issue, set `blacklist` to `[]`, which is
 an empty array.  Leaving it unset will result in the default behavior, which is
-to filter out `elasticsearch` and `urllib3` log traffic.
+to filter out `elastic_transport` and `urllib3` log traffic.

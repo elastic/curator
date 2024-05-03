@@ -22,7 +22,6 @@ You can use <<envvars,environment variables>> in your configuration files.
 * <<ex_rollover,rollover>>
 * <<ex_shrink,shrink>>
 * <<ex_snapshot,snapshot>>
-
 --
 
 [[ex_alias]]
@@ -134,7 +133,9 @@ actions:
       Close indices older than 30 days (based on index name), for logstash-
       prefixed indices.
     options:
+      skip_flush: False
       delete_aliases: False
+      ignore_sync_failures: True
       disable_action: True
     filters:
     - filtertype: pattern
@@ -334,7 +335,6 @@ actions:
       max_num_segments: 2
       exclude:
 -------------
-
 
 [[ex_index_settings]]
 == index_settings
