@@ -88,7 +88,7 @@ def process_action(client, action_def, dry_run=False):
     mykwargs = {}
     search_pattern = '_all'
 
-    logger.critical('INITIAL Action kwargs: %s', mykwargs)
+    logger.debug('INITIAL Action kwargs: %s', mykwargs)
     # Add some settings to mykwargs...
     if action_def.action == 'delete_indices':
         mykwargs['master_timeout'] = 30
@@ -101,7 +101,7 @@ def process_action(client, action_def, dry_run=False):
         search_pattern = mykwargs.pop('search_pattern')
 
     logger.debug('Action kwargs: %s', mykwargs)
-    logger.critical('Post search_pattern Action kwargs: %s', mykwargs)
+    logger.debug('Post search_pattern Action kwargs: %s', mykwargs)
 
     ### Set up the action ###
     logger.debug('Running "%s"', action_def.action.upper())
@@ -130,7 +130,7 @@ def process_action(client, action_def, dry_run=False):
         else:
             action_def.instantiate('list_obj', client, search_pattern=search_pattern)
         action_def.list_obj.iterate_filters({'filters': action_def.filters})
-        logger.critical('Pre Instantiation Action kwargs: %s', mykwargs)
+        logger.debug('Pre Instantiation Action kwargs: %s', mykwargs)
         action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
     ### Do the action
     if dry_run:
