@@ -84,6 +84,14 @@ create = "docker_test/scripts/create.sh {args}"
 destroy = "docker_test/scripts/destroy.sh"
 
 ### Lint environment
+[tool.hatch.envs.lint]
+detached = true
+dependencies = [
+  'black>=23.1.0',
+  'mypy>=1.0.0',
+  'ruff>=0.0.243',
+]
+
 [tool.hatch.envs.lint.scripts]
 run-pyright = "pyright {args:.}"
 run-black = "black --quiet --check --diff {args:.}"
@@ -92,6 +100,15 @@ run-curlylint = "curlylint {args:.}"
 python = ["run-pyright", "run-black", "run-ruff"]
 templates = ["run-curlylint"]
 all = ["python", "templates"]
+
+[tool.pylint.format]
+max-line-length = "88"
+
+[tool.black]
+target-version = ['py38']
+line-length = 88
+skip-string-normalization = true
+include = '\.pyi?$'
 
 ### Test environment
 [tool.hatch.envs.test]
