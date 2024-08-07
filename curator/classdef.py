@@ -1,4 +1,5 @@
 """Other Classes"""
+
 import logging
 from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import password_filter
@@ -8,15 +9,17 @@ from curator.actions import CLASS_MAP
 from curator.exceptions import ConfigurationError
 from curator.helpers.testers import validate_actions
 
-# Let me tell you the story of the nearly wasted afternoon and the research that went into this
-# seemingly simple work-around. Actually, no. It's even more wasted time writing that story here.
-# Suffice to say that I couldn't use the CLASS_MAP with class objects to directly map them to class
-# instances. The Wrapper class and the ActionDef.instantiate method do all of the work for me,
-# allowing me to easily and cleanly pass *args and **kwargs to the individual action classes of
-# CLASS_MAP.
+# Let me tell you the story of the nearly wasted afternoon and the research that went
+# into this seemingly simple work-around. Actually, no. It's even more wasted time
+# writing that story here. Suffice to say that I couldn't use the CLASS_MAP with class
+# objects to directly map them to class instances. The Wrapper class and the
+# ActionDef.instantiate method do all of the work for me, allowing me to easily and
+# cleanly pass *args and **kwargs to the individual action classes of CLASS_MAP.
+
 
 class Wrapper:
     """Wrapper Class"""
+
     def __init__(self, cls):
         """Instantiate with passed Class (not instance or object)
 
@@ -32,23 +35,25 @@ class Wrapper:
         self.class_instance = self.class_object(*args, **kwargs)
 
     def get_instance(self, *args, **kwargs):
-        """Return the instance with ``*args`` and ``**kwargs``
-        """
+        """Return the instance with ``*args`` and ``**kwargs``"""
         self.set_instance(*args, **kwargs)
         return self.class_instance
+
 
 class ActionsFile:
     """Class to parse and verify entire actions file
 
     Individual actions are :py:class:`~.curator.classdef.ActionDef` objects
     """
+
     def __init__(self, action_file):
         self.logger = logging.getLogger(__name__)
         #: The full, validated configuration from ``action_file``.
         self.fullconfig = self.get_validated(action_file)
         self.logger.debug('Action Configuration: %s', password_filter(self.fullconfig))
-        #: A dict of all actions in the provided configuration. Each original key name is preserved
-        #: and the value is now an :py:class:`~.curator.classdef.ActionDef`, rather than a dict.
+        #: A dict of all actions in the provided configuration. Each original key name
+        #: is preserved and the value is now an
+        #: :py:class:`~.curator.classdef.ActionDef`, rather than a dict.
         self.actions = None
         self.set_actions(self.fullconfig['actions'])
 
@@ -69,8 +74,9 @@ class ActionsFile:
     def parse_actions(self, all_actions):
         """Parse the individual actions found in ``all_actions['actions']``
 
-        :param all_actions: All actions, each its own dictionary behind a numeric key. Making the
-            keys numeric guarantees that if they are sorted, they will always be executed in order.
+        :param all_actions: All actions, each its own dictionary behind a numeric key.
+            Making the keys numeric guarantees that if they are sorted, they will
+            always be executed in order.
 
         :type all_actions: dict
 
@@ -85,12 +91,14 @@ class ActionsFile:
     def set_actions(self, all_actions):
         """Set the actions via :py:meth:`~.curator.classdef.ActionsFile.parse_actions`
 
-        :param all_actions: All actions, each its own dictionary behind a numeric key. Making the
-            keys numeric guarantees that if they are sorted, they will always be executed in order.
+        :param all_actions: All actions, each its own dictionary behind a numeric key.
+            Making the keys numeric guarantees that if they are sorted, they will
+            always be executed in order.
         :type all_actions: dict
         :rtype: None
         """
         self.actions = self.parse_actions(all_actions)
+
 
 # In this case, I just don't care that pylint thinks I'm overdoing it with attributes
 # pylint: disable=too-many-instance-attributes
@@ -99,6 +107,7 @@ class ActionDef:
 
     Instances of this class represent an individual action from an action file.
     """
+
     def __init__(self, action_dict):
         #: The whole action dictionary
         self.action_dict = action_dict
@@ -111,7 +120,8 @@ class ActionDef:
         #: Only when action is alias will this be a :py:class:`~.curator.IndexList`
         self.alias_removes = None
         #: The list class, either :py:class:`~.curator.IndexList` or
-        #: :py:class:`~.curator.SnapshotList`. Default is :py:class:`~.curator.IndexList`
+        #: :py:class:`~.curator.SnapshotList`. Default is
+        #: :py:class:`~.curator.IndexList`
         self.list_obj = Wrapper(IndexList)
         #: The action ``description``
         self.description = None
@@ -136,32 +146,38 @@ class ActionDef:
 
     def instantiate(self, attribute, *args, **kwargs):
         """
-        Convert ``attribute`` from being a :py:class:`~.curator.classdef.Wrapper` of a Class to an
-        instantiated object of that Class.
+        Convert ``attribute`` from being a :py:class:`~.curator.classdef.Wrapper` of a
+        Class to an instantiated object of that Class.
 
         This is madness or genius. You decide. This entire method plus the
-        :py:class:`~.curator.classdef.Wrapper` class came about because I couldn't cleanly
-        instantiate a class variable into a class object. It works, and that's good enough for me.
+        :py:class:`~.curator.classdef.Wrapper` class came about because I couldn't
+        cleanly instantiate a class variable into a class object. It works, and that's
+        good enough for me.
 
-        :param attribute: The `name` of an attribute that references a Wrapper class instance
+        :param attribute: The `name` of an attribute that references a Wrapper class
+            instance
         :type attribute: str
         """
         try:
             wrapper = getattr(self, attribute)
         except AttributeError as exc:
-            raise AttributeError(f'Bad Attribute: {attribute}. Exception: {exc}') from exc
+            raise AttributeError(
+                f'Bad Attribute: {attribute}. Exception: {exc}'
+            ) from exc
         setattr(self, attribute, self.get_obj_instance(wrapper, *args, **kwargs))
 
     def get_obj_instance(self, wrapper, *args, **kwargs):
         """Get the class instance wrapper identified by ``wrapper``
-        Pass all other args and kwargs to the :py:meth:`~.curator.classdef.Wrapper.get_instance`
-        method.
+        Pass all other args and kwargs to the
+        :py:meth:`~.curator.classdef.Wrapper.get_instance` method.
 
-        :returns: An instance of the class that :py:class:`~.curator.classdef.Wrapper` is wrapping
+        :returns: An instance of the class that :py:class:`~.curator.classdef.Wrapper`
+            is wrapping
         """
         if not isinstance(wrapper, Wrapper):
             raise ConfigurationError(
-                f'{__name__} was passed wrapper which was of type {type(wrapper)}')
+                f'{__name__} was passed wrapper which was of type {type(wrapper)}'
+            )
         return wrapper.get_instance(*args, **kwargs)
 
     def set_alias_extras(self):
@@ -175,7 +191,8 @@ class ActionDef:
         Do extra setup when action is ``alias``
 
         Set :py:attr:`list_obj` to :py:class:`~.curator.SnapshotList` when
-        :py:attr:`~.curator.classdef.ActionDef.action` is ``delete_snapshots`` or ``restore``
+        :py:attr:`~.curator.classdef.ActionDef.action` is ``delete_snapshots`` or
+        ``restore``
         """
 
         self.action_cls = Wrapper(CLASS_MAP[self.action])
@@ -186,15 +203,15 @@ class ActionDef:
 
     def set_option_attrs(self):
         """
-        Iteratively get the keys and values from :py:attr:`~.curator.classdef.ActionDef.options`
-        and set the attributes
+        Iteratively get the keys and values from
+        :py:attr:`~.curator.classdef.ActionDef.options` and set the attributes
         """
         attmap = {
             'disable_action': 'disabled',
             'continue_if_exception': 'cif',
             'ignore_empty_list': 'iel',
             'allow_ilm_indices': 'allow_ilm',
-            'timeout_override' : 'timeout_override'
+            'timeout_override': 'timeout_override',
         }
         for key in self.action_dict['options']:
             if key in attmap:
@@ -219,7 +236,8 @@ class ActionDef:
         logger = logging.getLogger('curator.cli.ActionDef')
         msg = (
             f'For action {self.action}: disable_action={self.disabled}'
-            f'continue_if_exception={self.cif}, timeout_override={self.timeout_override}'
+            f'continue_if_exception={self.cif}, '
+            f'timeout_override={self.timeout_override}, '
             f'ignore_empty_list={self.iel}, allow_ilm_indices={self.allow_ilm}'
         )
         logger.debug(msg)
