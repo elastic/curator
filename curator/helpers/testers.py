@@ -1,4 +1,5 @@
 """Utility functions that get things"""
+
 import logging
 from voluptuous import Schema
 from elasticsearch8 import Elasticsearch
@@ -7,11 +8,20 @@ from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator.helpers.getters import get_repository, get_write_index
 from curator.exceptions import (
-    ConfigurationError, MissingArgument, RepositoryException, SearchableSnapshotException)
-from curator.defaults.settings import index_filtertypes, snapshot_actions, snapshot_filtertypes
+    ConfigurationError,
+    MissingArgument,
+    RepositoryException,
+    SearchableSnapshotException,
+)
+from curator.defaults.settings import (
+    index_filtertypes,
+    snapshot_actions,
+    snapshot_filtertypes,
+)
 from curator.validators import actions, options
 from curator.validators.filter_functions import validfilters
 from curator.helpers.utils import report_failure
+
 
 def has_lifecycle_name(idx_settings):
     """
@@ -25,6 +35,7 @@ def has_lifecycle_name(idx_settings):
         if 'name' in idx_settings['lifecycle']:
             return True
     return False
+
 
 def is_idx_partial(idx_settings):
     """
@@ -41,10 +52,12 @@ def is_idx_partial(idx_settings):
                     return True
                 # store.snapshot.partial exists but is False -- Not a frozen tier mount
                 return False
-            # store.snapshot exists, but partial isn't there -- Possibly a cold tier mount
+            # store.snapshot exists, but partial isn't there --
+            # Possibly a cold tier mount
             return False
         raise SearchableSnapshotException('Index not a mounted searchable snapshot')
     raise SearchableSnapshotException('Index not a mounted searchable snapshot')
+
 
 def ilm_policy_check(client, alias):
     """Test if alias is associated with an ILM policy
@@ -70,6 +83,7 @@ def ilm_policy_check(client, alias):
     except KeyError:
         logger.debug('No ILM policies associated with %s', alias)
     return False
+
 
 def repository_exists(client, repository=None):
     """
@@ -101,6 +115,7 @@ def repository_exists(client, repository=None):
         response = False
     return response
 
+
 def rollable_alias(client, alias):
     """
     Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_alias`
@@ -112,8 +127,8 @@ def rollable_alias(client, alias):
     :type alias: str
 
 
-    :returns: ``True`` or ``False`` depending on whether ``alias`` is an alias that points to an
-        index that can be used by the ``_rollover`` API.
+    :returns: ``True`` or ``False`` depending on whether ``alias`` is an alias that
+        points to an index that can be used by the ``_rollover`` API.
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -124,16 +139,19 @@ def rollable_alias(client, alias):
         return False
     # Response should be like:
     # {'there_should_be_only_one': {'aliases': {'value of "alias" here': {}}}}
-    # where 'there_should_be_only_one' is a single index name that ends in a number, and 'value of
-    # "alias" here' reflects the value of the passed parameter, except where the ``is_write_index``
-    # setting makes it possible to have more than one index associated with a rollover index
+    # where 'there_should_be_only_one' is a single index name that ends in a number,
+    # and 'value of "alias" here' reflects the value of the passed parameter, except
+    # where the ``is_write_index`` setting makes it possible to have more than one
+    # index associated with a rollover index
     for idx in response:
         if 'is_write_index' in response[idx]['aliases'][alias]:
             if response[idx]['aliases'][alias]['is_write_index']:
                 return True
     # implied ``else``: If not ``is_write_index``, it has to fit the following criteria:
     if len(response) > 1:
-        logger.error('"alias" must only reference one index, but points to %s', response)
+        logger.error(
+            '"alias" must only reference one index, but points to %s', response
+        )
         return False
     index = list(response.keys())[0]
     rollable = False
@@ -147,6 +165,7 @@ def rollable_alias(client, alias):
         elif index[-2:][0] == '-':
             rollable = True
     return rollable
+
 
 def snapshot_running(client):
     """
@@ -170,9 +189,11 @@ def snapshot_running(client):
     # pylint: disable=simplifiable-if-expression
     return False if not status else True
 
+
 def validate_actions(data):
     """
-    Validate the ``actions`` configuration dictionary, as imported from actions.yml, for example.
+    Validate the ``actions`` configuration dictionary, as imported from actions.yml,
+    for example.
 
     :param data: The configuration dictionary
 
@@ -203,12 +224,12 @@ def validate_actions(data):
             prune_nones(valid_structure['options']),
             options.get_schema(current_action),
             'options',
-            loc
+            loc,
         ).result()
         clean_config[action_id] = {
-            'action' : current_action,
-            'description' : valid_structure['description'],
-            'options' : clean_options,
+            'action': current_action,
+            'description': valid_structure['description'],
+            'options': clean_options,
         }
         if current_action == 'alias':
             add_remove = {}
@@ -218,18 +239,18 @@ def validate_actions(data):
                         valid_structure[k]['filters'],
                         Schema(validfilters(current_action, location=loc)),
                         f'"{k}" filters',
-                        f'{loc}, "filters"'
+                        f'{loc}, "filters"',
                     ).result()
                     add_remove.update(
                         {
                             k: {
-                                'filters' : SchemaCheck(
+                                'filters': SchemaCheck(
                                     current_filters,
                                     Schema(validfilters(current_action, location=loc)),
                                     'filters',
-                                    f'{loc}, "{k}", "filters"'
-                                    ).result()
-                                }
+                                    f'{loc}, "{k}", "filters"',
+                                ).result()
+                            }
                         }
                     )
             # Add/Remove here
@@ -237,15 +258,15 @@ def validate_actions(data):
         elif current_action in ['cluster_routing', 'create_index', 'rollover']:
             # neither cluster_routing nor create_index should have filters
             pass
-        else: # Filters key only appears in non-alias actions
+        else:  # Filters key only appears in non-alias actions
             valid_filters = SchemaCheck(
                 valid_structure['filters'],
                 Schema(validfilters(current_action, location=loc)),
                 'filters',
-                f'{loc}, "filters"'
+                f'{loc}, "filters"',
             ).result()
             clean_filters = validate_filters(current_action, valid_filters)
-            clean_config[action_id].update({'filters' : clean_filters})
+            clean_config[action_id].update({'filters': clean_filters})
         # This is a special case for remote reindex
         if current_action == 'reindex':
             # Check only if populated with something.
@@ -254,13 +275,16 @@ def validate_actions(data):
                     valid_structure['options']['remote_filters'],
                     Schema(validfilters(current_action, location=loc)),
                     'filters',
-                    f'{loc}, "filters"'
+                    f'{loc}, "filters"',
                 ).result()
                 clean_remote_filters = validate_filters(current_action, valid_filters)
-                clean_config[action_id]['options'].update({'remote_filters': clean_remote_filters})
+                clean_config[action_id]['options'].update(
+                    {'remote_filters': clean_remote_filters}
+                )
 
     # if we've gotten this far without any Exceptions raised, it's valid!
     return {'actions': clean_config}
+
 
 def validate_filters(action, myfilters):
     """
@@ -284,10 +308,12 @@ def validate_filters(action, myfilters):
     for fil in myfilters:
         if fil['filtertype'] not in filtertypes:
             raise ConfigurationError(
-                f"\"{fil['filtertype']}\" filtertype is not compatible with action \"{action}\""
+                f"\"{fil['filtertype']}\" filtertype is not compatible with "
+                f"action \"{action}\""
             )
     # If we get to this point, we're still valid.  Return the original list
     return myfilters
+
 
 def verify_client_object(test):
     """
@@ -295,8 +321,8 @@ def verify_client_object(test):
 
     :type test: :py:class:`~.elasticsearch.Elasticsearch`
 
-    :returns: ``True`` if ``test`` is a proper :py:class:`~.elasticsearch.Elasticsearch` client
-        object and raise a :py:exc:`TypeError` exception if it is not.
+    :returns: ``True`` if ``test`` is a proper :py:class:`~.elasticsearch.Elasticsearch`
+        client object and raise a :py:exc:`TypeError` exception if it is not.
     :rtype: bool
     """
     logger = logging.getLogger(__name__)
@@ -308,14 +334,15 @@ def verify_client_object(test):
         logger.error(msg)
         raise TypeError(msg)
 
+
 def verify_index_list(test):
     """
     :param test: The variable or object to test
 
     :type test: :py:class:`~.curator.IndexList`
 
-    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.indexlist.IndexList` object,
-        else raise a :py:class:`TypeError` exception.
+    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.indexlist.IndexList`
+        object, else raise a :py:class:`TypeError` exception.
     :rtype: None
     """
     # It breaks if this import isn't local to this function:
@@ -323,11 +350,13 @@ def verify_index_list(test):
     # 'curator.indexlist' (most likely due to a circular import)
     # pylint: disable=import-outside-toplevel
     from curator.indexlist import IndexList
+
     logger = logging.getLogger(__name__)
     if not isinstance(test, IndexList):
         msg = f'Not a valid IndexList object. Type: {type(test)} was passed'
         logger.error(msg)
         raise TypeError(msg)
+
 
 def verify_repository(client, repository=None):
     """
@@ -365,14 +394,16 @@ def verify_repository(client, repository=None):
         report = f'Failed to verify all nodes have repository access: {msg}'
         raise RepositoryException(report) from err
 
+
 def verify_snapshot_list(test):
     """
     :param test: The variable or object to test
 
     :type test: :py:class:`~.curator.SnapshotList`
 
-    :returns: ``None`` if ``test`` is a proper :py:class:`~.curator.snapshotlist.SnapshotList`
-        object, else raise a :py:class:`TypeError` exception.
+    :returns: ``None`` if ``test`` is a proper
+        :py:class:`~.curator.snapshotlist.SnapshotList` object, else raise a
+        :py:class:`TypeError` exception.
     :rtype: None
     """
     # It breaks if this import isn't local to this function:
@@ -380,6 +411,7 @@ def verify_snapshot_list(test):
     # 'curator.snapshotlist' (most likely due to a circular import)
     # pylint: disable=import-outside-toplevel
     from curator.snapshotlist import SnapshotList
+
     logger = logging.getLogger(__name__)
     if not isinstance(test, SnapshotList):
         msg = f'Not a valid SnapshotList object. Type: {type(test)} was passed'

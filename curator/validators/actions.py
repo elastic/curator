@@ -1,38 +1,43 @@
 """Validate root ``actions`` and individual ``action`` Schemas"""
+
 from voluptuous import Any, In, Schema, Optional, Required
-from six import string_types
 from es_client.helpers.schemacheck import SchemaCheck
 from curator.defaults import settings
 
+
 def root():
     """
-    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which is a dictionary
-    with ``actions`` :py:class:`~.voluptuous.schema_builder.Required` to be the root key with
-    another dictionary as the value.
+    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which
+    is a dictionary with ``actions`` :py:class:`~.voluptuous.schema_builder.Required`
+    to be the root key with another dictionary as the value.
     """
-    return Schema({ Required('actions'): dict })
+    return Schema({Required('actions'): dict})
+
 
 def valid_action():
     """
-    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which is that the
-    value of key ``action`` is :py:class:`~.voluptuous.schema_builder.Required` to be
+    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which is
+    that the value of key ``action`` is
+    :py:class:`~.voluptuous.schema_builder.Required` to be
     :py:class:`~.voluptuous.schema_builder.In` the value returned by
     :py:func:`~.curator.defaults.settings.all_actions`.
     """
     return {
         Required('action'): Any(
-            In(settings.all_actions()), msg=f'action must be one of {settings.all_actions()}'
+            In(settings.all_actions()),
+            msg=f'action must be one of {settings.all_actions()}',
         )
     }
 
+
 def structure(data, location):
     """
-    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which tests ``data``,
-    which is ostensibly an individual action dictionary. If it is a
+    Return a valid :py:class:`~.voluptuous.schema_builder.Schema` definition which
+    tests ``data``, which is ostensibly an individual action dictionary. If it is a
     :py:func:`~.curator.validators.actions.valid_action`, then it will
     :py:meth:`~.voluptuous.schema_builder.Schema.update` the base
-    :py:class:`~.voluptuous.schema_builder.Schema` with other options, based on the what the
-    value of ``data['action']`` is.
+    :py:class:`~.voluptuous.schema_builder.Schema` with other options, based on the
+    what the value of ``data['action']`` is.
 
     :param data: The configuration dictionary, or sub-dictionary, being validated
     :type data: dict
@@ -48,12 +53,10 @@ def structure(data, location):
     ).result()
     # Build a valid schema knowing that the action has already been validated
     retval = valid_action()
-    retval.update(
-        {Optional('description', default='No description given'): Any(str, *string_types)}
-    )
+    retval.update({Optional('description', default='No description given'): Any(str)})
     retval.update({Optional('options', default=settings.default_options()): dict})
     action = data['action']
-    if action in [ 'cluster_routing', 'create_index', 'rollover']:
+    if action in ['cluster_routing', 'create_index', 'rollover']:
         # The cluster_routing, create_index, and rollover actions should not
         # have a 'filters' block
         pass

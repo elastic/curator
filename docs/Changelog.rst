@@ -3,6 +3,23 @@
 Changelog
 =========
 
+8.0.16 (6 August 2024)
+----------------------
+
+**Changes**
+
+  * Update to use ``es_client==8.14.2``
+  * Formatting changes and improvements
+  * Update CLI to get client using ``ctx.obj['configdict']`` as it's already built
+    by ``es_client``.
+
+**Bugfixes**
+
+  * Fix improper log levels erroneously left in from debugging. Thanks to
+    @boutetnico in #1714
+  * ``es_client`` version 8.14.2 addresses a problem where Python 3.8 is not officially supported
+    for use with ``voluptuous`` greater than ``0.14.2``.
+
 8.0.15 (10 April 2024)
 ----------------------
 
@@ -14,10 +31,10 @@ Changelog
     are still running Python 3.11 as cx_Freeze still does not officially support Python 3.12.
   * Added infrastructure to test multiple versions of Python against the code base. This requires
     you to run:
-        * ``pip install -U hatch hatchling`` -- Install prerequisites
-        * ``hatch run docker:create X.Y.Z`` -- where ``X.Y.Z`` is an ES version on Docker Hub
-        * ``hatch run test:pytest`` -- Run the test suite for each supported version of Python
-        * ``hatch run docker:destroy`` -- Cleanup the Docker containers created in ``docker:create``
+    * ``pip install -U hatch hatchling`` -- Install prerequisites
+    * ``hatch run docker:create X.Y.Z`` -- where ``X.Y.Z`` is an ES version on Docker Hub
+    * ``hatch run test:pytest`` -- Run the test suite for each supported version of Python
+    * ``hatch run docker:destroy`` -- Cleanup the Docker containers created in ``docker:create``
 
 **Bugfix**
 
