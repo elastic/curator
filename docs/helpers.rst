@@ -55,8 +55,6 @@ Getters
 
 .. autofunction:: get_data_tiers
 
-.. autofunction:: get_frozen_prefix
-
 .. autofunction:: get_indices
 
 .. autofunction:: get_repository

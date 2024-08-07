@@ -1,2 +1,3 @@
 """Curator Version"""
-__version__ = '8.0.15'
+
+__version__ = '8.0.16'
