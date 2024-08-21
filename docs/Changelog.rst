@@ -3,6 +3,19 @@
 Changelog
 =========
 
+8.0.17 (? ? ?)
+--------------
+
+**Changes**
+
+  * Update data node detection to include ``data``, ``data_content``, ``data_hot``,
+    and ``data_warm`` for ``shrink`` action. This was first raised in #1621, but
+    needed to go further than just adding ``data_hot``. Hat tip to @gnobironts for
+    the original pull request.
+  * Add ``docker_test/.env`` to ``.gitignore``
+  * More formatting changes as suggested by pylint
+  * Improve API calls to ``node.info`` and ``node.stats`` to use ``filter_path`` 
+
 8.0.16 (6 August 2024)
 ----------------------
 
