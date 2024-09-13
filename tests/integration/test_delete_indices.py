@@ -194,6 +194,50 @@ class TestActionFileDeleteIndices(CuratorTestCase):
         self.assertEqual(0, self.result.exit_code)
         self.assertEqual(1, len(indices))
         self.assertEqual(expected, indices[0])
+    def test_name_days_pattern_with_index_with_month_pattern(self):
+        delete_days_pattern = ('---\n'
+        'actions:\n'
+        '  1:\n'
+        '    description: "Delete indices as filtered"\n'
+        '    action: delete_indices\n'
+        '    options:\n'
+        '      continue_if_exception: False\n'
+        '      disable_action: False\n'
+        '    filters:\n'
+        '    - filtertype: {0}\n'
+        '      source: {1}\n'
+        '      direction: {2}\n'                       
+        '      timestring: {3}\n'
+        '      unit: {4}\n'
+        '      unit_count: {5}\n ')
+        self.create_indices(2, unit='months')
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
+        self.write_config(self.args['actionfile'],
+            delete_days_pattern.format('age', 'name', 'older', "'%Y.%m.%d'", 'days', 7))
+        self.invoke_runner()
+        self.assertEqual(2, len(exclude_ilm_history(get_indices(self.client))))
+    def test_name_month_pattern_with_index_without_pattern(self):
+        delete_no_pattern = ('---\n'
+        'actions:\n'
+        '  1:\n'
+        '    description: "Delete indices as filtered"\n'
+        '    action: delete_indices\n'
+        '    options:\n'
+        '      continue_if_exception: False\n'
+        '      disable_action: False\n'
+        '    filters:\n'
+        '    - filtertype: {0}\n'
+        '      source: {1}\n'
+        '      direction: {2}\n'                       
+        '      timestring: {3}\n'
+        '      unit: {4}\n'
+        '      unit_count: {5}\n ')
+        self.create_index("index-prod")
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
+        self.write_config(self.args['actionfile'],
+            delete_no_pattern.format('age', 'name', 'older', "'%Y.%m'", 'days', 1))
+        self.invoke_runner()
+        self.assertEqual(1, len(exclude_ilm_history(get_indices(self.client))))
     def test_delete_in_period_intersect(self):
         # filtertype: {0}
         # source: {1}
