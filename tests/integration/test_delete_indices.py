@@ -55,7 +55,6 @@ class TestActionFileDeleteIndices(CuratorTestCase):
                 'age', 'name', 'older', '\'%Y.%m.%d\'', 'days', 30, '_([0-9]+)_', ' ', ' ', ' '))
         self.invoke_runner()
         self.assertEqual(15, len(exclude_ilm_history(get_indices(self.client))))
-
     def test_retention_from_name_days_keep_exclude_false_after_failed_match(self):
         # Test extraction of unit_count from index name and confirm correct
         # behavior after a failed regex match with no fallback time - see gh issue 1206
