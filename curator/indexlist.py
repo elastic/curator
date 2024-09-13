@@ -2,6 +2,8 @@
 import re
 import itertools
 import logging
+import sys
+
 from elasticsearch8.exceptions import NotFoundError, TransportError
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import ensure_list
@@ -426,6 +428,8 @@ class IndexList:
             epoch = tstr.get_epoch(index)
             if isinstance(epoch, int):
                 self.index_info[index]['age']['name'] = epoch
+            else:
+                self.index_info[index]['age']['name'] = sys.maxsize
 
 
     def _get_field_stats_dates(self, field='@timestamp'):
