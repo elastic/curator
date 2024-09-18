@@ -14,23 +14,25 @@ from curator.actions.replicas import Replicas
 from curator.actions.rollover import Rollover
 from curator.actions.shrink import Shrink
 from curator.actions.snapshot import Snapshot, DeleteSnapshots, Restore
+from curator.actions.deepfreeze import Deepfreeze
 
 CLASS_MAP = {
-    'alias' : Alias,
-    'allocation' : Allocation,
-    'close' : Close,
-    'cluster_routing' : ClusterRouting,
+    'alias': Alias,
+    'allocation': Allocation,
+    'close': Close,
+    'cluster_routing': ClusterRouting,
     'cold2frozen': Cold2Frozen,
-    'create_index' : CreateIndex,
-    'delete_indices' : DeleteIndices,
-    'delete_snapshots' : DeleteSnapshots,
-    'forcemerge' : ForceMerge,
-    'index_settings' : IndexSettings,
-    'open' : Open,
-    'reindex' : Reindex,
-    'replicas' : Replicas,
-    'restore' : Restore,
-    'rollover' : Rollover,
-    'snapshot' : Snapshot,
-    'shrink' : Shrink,
+    'create_index': CreateIndex,
+    'delete_indices': DeleteIndices,
+    'delete_snapshots': DeleteSnapshots,
+    'forcemerge': ForceMerge,
+    'index_settings': IndexSettings,
+    'open': Open,
+    'reindex': Reindex,
+    'replicas': Replicas,
+    'restore': Restore,
+    'rollover': Rollover,
+    'snapshot': Snapshot,
+    'shrink': Shrink,
+    'deepfreeze': Deepfreeze,
 }
