@@ -4,8 +4,8 @@
 from datetime import datetime
 from unittest import TestCase
 from unittest.mock import Mock
-from curator.actions import Deepfreeze
 
+from curator.actions import Deepfreeze
 from curator.exceptions import RepositoryException
 
 # Get test variables and constants from a single source
