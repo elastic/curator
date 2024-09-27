@@ -5,8 +5,7 @@ import sys
 import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime
-from elasticsearch8.exceptions import RequestError
-from curator.exceptions import ActionError
+from curator.exceptions import ActionError, RepositoryException
 
 
 class Deepfreeze:
@@ -44,6 +43,12 @@ class Deepfreeze:
         self.client = client
         self.repo_name_prefix = repo_name_prefix
         self.bucket_name_prefix = bucket_name_prefix
+        self.base_path = base_path
+        self.canned_acl = canned_acl
+        self.storage_class = storage_class
+        self.keep = keep
+        self.year = year
+        self.month = month
 
         suffix = self.get_next_suffix()
         self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
@@ -54,12 +59,10 @@ class Deepfreeze:
         try:
             self.latest_repo = self.repo_list[-1]
         except IndexError:
-            raise RequestError(
-                f"no matching repositories exist for {self.repo_name_prefix}*"
-            ) from None
+            raise RepositoryException(f"no repositories match {self.repo_name_prefix}")
 
         if self.new_repo_name in self.repo_list:
-            raise RequestError(f"repository {self.repo_name} already exists")
+            raise RepositoryException(f"repository {self.new_repo_name} already exists")
         self.loggit = logging.getLogger('curator.actions.deepfreeze')
 
     def create_new_bucket(self, dry_run=False):
@@ -98,6 +101,7 @@ class Deepfreeze:
                 "storage_class": self.storage_class,
             },
         )
+        # TODO: Gather the reply and parse it to make sure this succeeded
 
     def update_ilm_policies(self, dry_run=False):
         """
@@ -146,8 +150,8 @@ class Deepfreeze:
         """
         Gets the next suffix
         """
-        year = self.year if self.year else datetime.now.year()
-        month = self.month if self.month else datetime.now.month()
+        year = self.year if self.year else datetime.now().year
+        month = self.month if self.month else datetime.now().month
         return f"{year:04}.{month:02}"
 
     def unmount_oldest_repos(self, dry_run=False):
