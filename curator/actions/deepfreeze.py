@@ -1,10 +1,13 @@
 """Deepfreeze action class"""
+
 import logging
 import re
 import sys
+from datetime import datetime
+
 import boto3
 from botocore.exceptions import ClientError
-from datetime import datetime
+
 from curator.exceptions import ActionError, RepositoryException
 
 
@@ -17,12 +20,12 @@ class Deepfreeze:
     def __init__(
         self,
         client,
-        repo_name_prefix='deepfreeze-',
-        bucket_name_prefix='deepfreeze-',
-        base_path='snapshots',
-        canned_acl='private',
-        storage_class='intelligent_tiering',
-        keep='6',
+        repo_name_prefix="deepfreeze-",
+        bucket_name_prefix="deepfreeze-",
+        base_path="snapshots",
+        canned_acl="private",
+        storage_class="intelligent_tiering",
+        keep="6",
         year=None,
         month=None,
     ):
@@ -46,7 +49,7 @@ class Deepfreeze:
         self.base_path = base_path
         self.canned_acl = canned_acl
         self.storage_class = storage_class
-        self.keep = keep
+        self.keep = int(keep)
         self.year = year
         self.month = month
 
@@ -63,7 +66,7 @@ class Deepfreeze:
 
         if self.new_repo_name in self.repo_list:
             raise RepositoryException(f"repository {self.new_repo_name} already exists")
-        self.loggit = logging.getLogger('curator.actions.deepfreeze')
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
 
     def create_new_bucket(self, dry_run=False):
         """
@@ -91,7 +94,7 @@ class Deepfreeze:
         )
         if dry_run:
             return
-        self.client.snapshot.create_repository(
+        response = self.client.snapshot.create_repository(
             name=self.new_repo_name,
             type="s3",
             settings={
@@ -102,6 +105,10 @@ class Deepfreeze:
             },
         )
         # TODO: Gather the reply and parse it to make sure this succeeded
+        #       It should simply bring back '{ "acknowledged": true }' but I
+        #       don't know how client will wrap it.
+        print(f"Response: {response}")
+        self.loggit.info(f"Response: {response}")
 
     def update_ilm_policies(self, dry_run=False):
         """
@@ -111,7 +118,7 @@ class Deepfreeze:
         if self.latest_repo == self.new_repo_name:
             self.loggit.warning("Already on the latest repo")
             sys.exit(0)
-        self.loggit.info(
+        self.loggit.warning(
             f"Switching from {self.latest_repo} to " f"{self.new_repo_name}"
         )
         policies = self.client.ilm.get_lifecycle()
@@ -144,7 +151,7 @@ class Deepfreeze:
         for pol in updated_policies:
             self.loggit.info(f"\t{pol}")
             if not dry_run:
-                self.client.ilm.put_lifecycle(name=pol, policy=updated_policies[pol])
+                self.client.ilm.put_lifecycle(policy_id=pol, body=updated_policies[pol])
 
     def get_next_suffix(self):
         """
@@ -179,10 +186,10 @@ class Deepfreeze:
         return [repo for repo in repos if pattern.search(repo)]
 
     def do_dry_run(self):
-        self.loggit.info('DRY-RUN MODE.  No changes will be made.')
+        self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = (
-            f'DRY-RUN: deepfreeze {self.latest_repo} will be rotated out'
-            f' and {self.new_repo_name} will be added & made active.'
+            f"DRY-RUN: deepfreeze {self.latest_repo} will be rotated out"
+            f" and {self.new_repo_name} will be added & made active."
         )
         self.loggit.info(msg)
         self.create_new_bucket(dry_run=True)

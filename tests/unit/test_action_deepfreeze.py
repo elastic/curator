@@ -1,9 +1,13 @@
-"""test_action_reindex"""
+"""test_action_deepfreeze"""
 
 # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access, attribute-defined-outside-init
+import logging
+import sys
 from datetime import datetime
 from unittest import TestCase
 from unittest.mock import Mock
+
+import boto3
 
 from curator.actions import Deepfreeze
 from curator.exceptions import RepositoryException
@@ -18,13 +22,11 @@ class TestActionDeepfreeze(TestCase):
     def builder(self):
         self.client = Mock()
         self.client.info.return_value = self.VERSION
-        self.client.snapshot.get_repository.return_value = [
-            "foo",
-            "bar",
-            "deepfreeze-foo",
-            f"deepfreeze-{testvars.year:04}.{testvars.month_exists:02}",
-        ]
-        self.client.snapshot.create_repository.return_value = ""
+        self.client.snapshot.get_repository.return_value = testvars.repositories
+        self.client.snapshot.create_repository.return_value = {}
+        self.client.ilm.put_lifecycle.return_value = {}
+        self.client.ilm.get_lifecycle.return_value = testvars.ilm_policy_to_update
+        self.client.snapshot.delete_repository.return_value = {}
 
     def test_init_raise_request_error(self):
         self.builder()
@@ -44,10 +46,7 @@ class TestActionDeepfreeze(TestCase):
         self.builder()
         freezer = Deepfreeze(self.client)
         self.assertEqual(
-            [
-                "deepfreeze-foo",
-                f"deepfreeze-{testvars.year:04}.{testvars.month_exists:02}",
-            ],
+            testvars.repositories_filtered,
             freezer.get_repos(),
         )
 
@@ -68,18 +67,48 @@ class TestActionDeepfreeze(TestCase):
     def test_create_new_bucket(self):
         self.builder()
         freezer = Deepfreeze(self.client)
-        # Not sure how to test this since it gets this itself, not
-        # from a client I could pass in.
+        s3 = boto3.client("s3")
+        freezer.create_new_bucket()
+        response = s3.head_bucket(Bucket=freezer.new_bucket_name)
+        self.assertEqual(response["ResponseMetadata"]["HTTPStatusCode"], 200)
 
-    def test_creat_new_repo(self):
+    def test_create_new_repo(self):
         self.builder()
         freezer = Deepfreeze(self.client)
         freezer.create_new_repo()
+        self.client.snapshot.create_repository.assert_called_with(
+            name=freezer.new_repo_name,
+            type="s3",
+            settings={
+                "bucket": freezer.new_bucket_name,
+                "base_path": freezer.base_path,
+                "canned_acl": freezer.canned_acl,
+                "storage_class": freezer.storage_class,
+            },
+        )
 
     def test_update_ilm_policies(self):
         self.builder()
-        freezer = Deepfreeze(self.client)
+        freezer = Deepfreeze(self.client, year=testvars.year, month=testvars.month)
+        freezer.update_ilm_policies()
+        self.client.ilm.put_lifecycle.assert_called_with(
+            policy_id="deepfreeze-ilm-policy",
+            body=testvars.ilm_policy_updated,
+        )
 
     def test_unmount_oldest_repos(self):
         self.builder()
+        self.client.snapshot.get_repository.return_value = [
+            "deepfreeze-2024.01",
+            "deepfreeze-2024.02",
+            "deepfreeze-2024.03",
+            "deepfreeze-2024.04",
+            "deepfreeze-2024.05",
+            "deepfreeze-2024.06",
+            "deepfreeze-2024.07",
+        ]
         freezer = Deepfreeze(self.client)
+        freezer.unmount_oldest_repos()
+        self.client.snapshot.delete_repository.assert_called_with(
+            name=freezer.repo_list[0]
+        )

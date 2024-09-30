@@ -1,28 +1,28 @@
 from elasticsearch8 import ConflictError, NotFoundError, TransportError
 
-fake_fail                 = Exception("Simulated Failure")
-four_oh_one               = TransportError(401, "simulated error")
-four_oh_four              = TransportError(404, "simulated error")
-get_alias_fail            = NotFoundError(404, "simulated error", "simulated error")
-named_index               = "index_name"
-named_indices             = ["index-2015.01.01", "index-2015.02.01"]
-open_index                = {"metadata": {"indices": {named_index: {"state": "open"}}}}
-closed_index              = {"metadata": {"indices": {named_index: {"state": "close"}}}}
-cat_open_index            = [{"status": "open"}]
-cat_closed_index          = [{"status": "close"}]
-open_indices              = {
+fake_fail = Exception("Simulated Failure")
+four_oh_one = TransportError(401, "simulated error")
+four_oh_four = TransportError(404, "simulated error")
+get_alias_fail = NotFoundError(404, "simulated error", "simulated error")
+named_index = "index_name"
+named_indices = ["index-2015.01.01", "index-2015.02.01"]
+open_index = {"metadata": {"indices": {named_index: {"state": "open"}}}}
+closed_index = {"metadata": {"indices": {named_index: {"state": "close"}}}}
+cat_open_index = [{"status": "open"}]
+cat_closed_index = [{"status": "close"}]
+open_indices = {
     "metadata": {"indices": {"index1": {"state": "open"}, "index2": {"state": "open"}}}
 }
-closed_indices            = {
+closed_indices = {
     "metadata": {
         "indices": {"index1": {"state": "close"}, "index2": {"state": "close"}}
     }
 }
-named_alias               = "alias_name"
-alias_retval              = {"pre_aliased_index": {"aliases": {named_alias: {}}}}
-rollable_alias            = {"index-000001": {"aliases": {named_alias: {}}}}
-rollover_conditions       = {"conditions": {"max_age": "1s"}}
-dry_run_rollover          = {
+named_alias = "alias_name"
+alias_retval = {"pre_aliased_index": {"aliases": {named_alias: {}}}}
+rollable_alias = {"index-000001": {"aliases": {named_alias: {}}}}
+rollover_conditions = {"conditions": {"max_age": "1s"}}
+dry_run_rollover = {
     "acknowledged": True,
     "shards_acknowledged": True,
     "old_index": "index-000001",
@@ -31,11 +31,11 @@ dry_run_rollover          = {
     "dry_run": True,
     "conditions": {"max_age": "1s"},
 }
-aliases_retval            = {
+aliases_retval = {
     "index1": {"aliases": {named_alias: {}}},
     "index2": {"aliases": {named_alias: {}}},
 }
-alias_one_add             = [{"add": {"alias": "alias", "index": "index_name"}}]
+alias_one_add = [{"add": {"alias": "alias", "index": "index_name"}}]
 alias_one_add_with_extras = [
     {
         "add": {
@@ -45,47 +45,47 @@ alias_one_add_with_extras = [
         }
     }
 ]
-alias_one_rm              = [{"remove": {"alias": "my_alias", "index": named_index}}]
-alias_one_body            = {
+alias_one_rm = [{"remove": {"alias": "my_alias", "index": named_index}}]
+alias_one_body = {
     "actions": [
         {"remove": {"alias": "alias", "index": "index_name"}},
         {"add": {"alias": "alias", "index": "index_name"}},
     ]
 }
-alias_two_add             = [
+alias_two_add = [
     {"add": {"alias": "alias", "index": "index-2016.03.03"}},
     {"add": {"alias": "alias", "index": "index-2016.03.04"}},
 ]
-alias_two_rm              = [
+alias_two_rm = [
     {"remove": {"alias": "my_alias", "index": "index-2016.03.03"}},
     {"remove": {"alias": "my_alias", "index": "index-2016.03.04"}},
 ]
-alias_success             = {"acknowledged": True}
-allocation_in             = {
+alias_success = {"acknowledged": True}
+allocation_in = {
     named_index: {
         "settings": {"index": {"routing": {"allocation": {"require": {"foo": "bar"}}}}}
     }
 }
-allocation_out            = {
+allocation_out = {
     named_index: {
         "settings": {"index": {"routing": {"allocation": {"require": {"not": "foo"}}}}}
     }
 }
-indices_space             = {
+indices_space = {
     "indices": {
         "index1": {"index": {"primary_size_in_bytes": 1083741824}},
         "index2": {"index": {"primary_size_in_bytes": 1083741824}},
     }
 }
-snap_name                 = "snap_name"
-repo_name                 = "repo_name"
-test_repo                 = {
+snap_name = "snap_name"
+repo_name = "repo_name"
+test_repo = {
     repo_name: {
         "type": "fs",
         "settings": {"compress": "true", "location": "/tmp/repos/repo_name"},
     }
 }
-test_repos                = {
+test_repos = {
     "TESTING": {
         "type": "fs",
         "settings": {"compress": "true", "location": "/tmp/repos/TESTING"},
@@ -95,9 +95,9 @@ test_repos                = {
         "settings": {"compress": "true", "location": "/rmp/repos/repo_name"},
     },
 }
-snap_running              = {"snapshots": ["running"]}
-nosnap_running            = {"snapshots": []}
-snapshot                  = {
+snap_running = {"snapshots": ["running"]}
+nosnap_running = {"snapshots": []}
+snapshot = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -113,7 +113,7 @@ snapshot                  = {
         }
     ]
 }
-oneinprogress             = {
+oneinprogress = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -129,7 +129,7 @@ oneinprogress             = {
         }
     ]
 }
-partial                   = {
+partial = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -145,7 +145,7 @@ partial                   = {
         }
     ]
 }
-failed                    = {
+failed = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -161,7 +161,7 @@ failed                    = {
         }
     ]
 }
-othersnap                 = {
+othersnap = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -177,7 +177,7 @@ othersnap                 = {
         }
     ]
 }
-snapshots                 = {
+snapshots = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -205,7 +205,7 @@ snapshots                 = {
         },
     ]
 }
-inprogress                = {
+inprogress = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -233,7 +233,7 @@ inprogress                = {
         },
     ]
 }
-highly_unlikely           = {
+highly_unlikely = {
     "snapshots": [
         {
             "duration_in_millis": 60000,
@@ -261,20 +261,20 @@ highly_unlikely           = {
         },
     ]
 }
-snap_body_all             = {
+snap_body_all = {
     "ignore_unavailable": False,
     "include_global_state": True,
     "partial": False,
     "indices": "_all",
 }
-snap_body                 = {
+snap_body = {
     "ignore_unavailable": False,
     "include_global_state": True,
     "partial": False,
     "indices": "index-2015.01.01,index-2015.02.01",
 }
-verified_nodes            = {"nodes": {"nodeid1": {"name": "node1"}, "nodeid2": {"name": "node2"}}}
-synced_pass               = {
+verified_nodes = {"nodes": {"nodeid1": {"name": "node1"}, "nodeid2": {"name": "node2"}}}
+synced_pass = {
     "_shards": {"total": 1, "successful": 1, "failed": 0},
     "index_name": {
         "total": 1,
@@ -283,7 +283,7 @@ synced_pass               = {
         "failures": [],
     },
 }
-synced_fail               = {
+synced_fail = {
     "_shards": {"total": 1, "successful": 0, "failed": 1},
     "index_name": {
         "total": 1,
@@ -305,12 +305,12 @@ synced_fail               = {
         ],
     },
 }
-sync_conflict             = ConflictError(
+sync_conflict = ConflictError(
     409,
     '{"_shards":{"total":1,"successful":0,"failed":1},"index_name":{"total":1,"successful":0,"failed":1,"failures":[{"shard":0,"reason":"pending operations","routing":{"state":"STARTED","primary":true,"node":"nodeid1","relocating_node":null,"shard":0,"index":"index_name"}}]}})',
     synced_fail,
 )
-synced_fails              = {
+synced_fails = {
     "_shards": {"total": 2, "successful": 1, "failed": 1},
     "index1": {
         "total": 1,
@@ -990,8 +990,8 @@ actions:
         threshold_behavior: less_than
 """
 
-generic_task              = {"task": "I0ekFjMhSPCQz7FUs1zJOg:54510686"}
-incomplete_task           = {
+generic_task = {"task": "I0ekFjMhSPCQz7FUs1zJOg:54510686"}
+incomplete_task = {
     "completed": False,
     "task": {
         "node": "I0ekFjMhSPCQz7FUs1zJOg",
@@ -1033,7 +1033,7 @@ incomplete_task           = {
         "total": 3646581,
     },
 }
-completed_task            = {
+completed_task = {
     "completed": True,
     "task": {
         "node": "I0ekFjMhSPCQz7FUs1zJOg",
@@ -1117,15 +1117,15 @@ completed_task_zero_total = {
         "total": 0,
     },
 }
-recovery_output           = {
+recovery_output = {
     "index-2015.01.01": {"shards": [{"stage": "DONE"}]},
     "index-2015.02.01": {"shards": [{"stage": "DONE"}]},
 }
-unrecovered_output        = {
+unrecovered_output = {
     "index-2015.01.01": {"shards": [{"stage": "INDEX"}]},
     "index-2015.02.01": {"shards": [{"stage": "INDEX"}]},
 }
-cluster_health            = {
+cluster_health = {
     "cluster_name": "unit_test",
     "status": "green",
     "timed_out": False,
@@ -1141,14 +1141,14 @@ cluster_health            = {
     "task_max_waiting_in_queue_millis": 0,
     "active_shards_percent_as_number": 100,
 }
-reindex_basic             = {"source": {"index": named_index}, "dest": {"index": "other_index"}}
-reindex_replace           = {
+reindex_basic = {"source": {"index": named_index}, "dest": {"index": "other_index"}}
+reindex_replace = {
     "source": {"index": "REINDEX_SELECTION"},
     "dest": {"index": "other_index"},
 }
-reindex_migration         = {"source": {"index": named_index}, "dest": {"index": "MIGRATION"}}
-index_list_966            = ["indexv0.2_2017-02-12_536a9247f9fa4fc7a7942ad46ea14e0d"]
-recovery_966              = {
+reindex_migration = {"source": {"index": named_index}, "dest": {"index": "MIGRATION"}}
+index_list_966 = ["indexv0.2_2017-02-12_536a9247f9fa4fc7a7942ad46ea14e0d"]
+recovery_966 = {
     "indexv0.2_2017-02-12_536a9247f9fa4fc7a7942ad46ea14e0d": {
         "shards": [
             {
@@ -1650,17 +1650,17 @@ recovery_966              = {
         ]
     }
 }
-no_snap_tasks             = {
+no_snap_tasks = {
     "nodes": {
         "node1": {"tasks": {"task1": {"action": "cluster:monitor/tasks/lists[n]"}}}
     }
 }
-snap_task                 = {
+snap_task = {
     "nodes": {
         "node1": {"tasks": {"task1": {"action": "cluster:admin/snapshot/delete"}}}
     }
 }
-watermark_persistent      = {
+watermark_persistent = {
     "persistent": {
         "cluster": {
             "routing": {
@@ -1669,7 +1669,7 @@ watermark_persistent      = {
         }
     }
 }
-watermark_transient       = {
+watermark_transient = {
     "transient": {
         "cluster": {
             "routing": {
@@ -1678,7 +1678,7 @@ watermark_transient       = {
         }
     }
 }
-watermark_both            = {
+watermark_both = {
     "persistent": {
         "cluster": {
             "routing": {
@@ -1694,15 +1694,127 @@ watermark_both            = {
         }
     },
 }
-empty_cluster_settings    = {"persistent": {}, "transient": {}}
-data_only_node_role       = ["data"]
-master_data_node_role     = ["data", "master"]
-repo_name_prefix          = "deepfreeze-"
-bucket_name_prefix        = "deepfreeze-"
-base_path                 = "snapshots"
-canned_acl                = "private"
-storage_class             = "intelligent_tiering"
-keep                      = "6"
-year                      = "2024"
-month                     = "07"
-month_exists              = "06"
+empty_cluster_settings = {"persistent": {}, "transient": {}}
+data_only_node_role = ["data"]
+master_data_node_role = ["data", "master"]
+repo_name_prefix = "deepfreeze-"
+bucket_name_prefix = "deepfreeze-"
+base_path = "snapshots"
+canned_acl = "private"
+storage_class = "intelligent_tiering"
+keep = "6"
+year = "2024"
+month = "08"
+month_exists = "06"
+repositories = [
+    "foo",
+    "deepfreeze-2024.01",
+    "deepfreeze-2024.02",
+    "deepfreeze-2024.03",
+    "deepfreeze-2024.04",
+    "deepfreeze-2024.05",
+    "deepfreeze-2024.06",
+    "deepfreeze-2024.07",
+]
+repositories_filtered = [
+    "deepfreeze-2024.01",
+    "deepfreeze-2024.02",
+    "deepfreeze-2024.03",
+    "deepfreeze-2024.04",
+    "deepfreeze-2024.05",
+    "deepfreeze-2024.06",
+    "deepfreeze-2024.07",
+]
+ilm_policy_to_update = {
+    "deepfreeze-ilm-policy": {
+        "version": 3,
+        "modified_date": "2024-09-08T13:44:16.327Z",
+        "policy": {
+            "phases": {
+                "frozen": {
+                    "min_age": "2d",
+                    "actions": {
+                        "searchable_snapshot": {
+                            "snapshot_repository": "deepfreeze-2024.07",
+                            "force_merge_index": True,
+                        }
+                    },
+                },
+                "delete": {
+                    "min_age": "3d",
+                    "actions": {"delete": {"delete_searchable_snapshot": False}},
+                },
+                "cold": {
+                    "min_age": "1d",
+                    "actions": {
+                        "allocate": {
+                            "number_of_replicas": 0,
+                            "include": {},
+                            "exclude": {},
+                            "require": {},
+                        },
+                        "searchable_snapshot": {
+                            "snapshot_repository": "deepfreeze-2024.07",
+                            "force_merge_index": True,
+                        },
+                        "set_priority": {"priority": 0},
+                    },
+                },
+                "hot": {
+                    "min_age": "0ms",
+                    "actions": {
+                        "rollover": {
+                            "max_age": "30d",
+                            "max_primary_shard_size": "50gb",
+                        },
+                        "set_priority": {"priority": 100},
+                    },
+                },
+            }
+        },
+        "in_use_by": {"indices": [], "data_streams": [], "composable_templates": []},
+    }
+}
+ilm_policy_updated = {
+    "phases": {
+        "frozen": {
+            "min_age": "2d",
+            "actions": {
+                "searchable_snapshot": {
+                    "snapshot_repository": "deepfreeze-2024.08",
+                    "force_merge_index": True,
+                }
+            },
+        },
+        "delete": {
+            "min_age": "3d",
+            "actions": {"delete": {"delete_searchable_snapshot": False}},
+        },
+        "cold": {
+            "min_age": "1d",
+            "actions": {
+                "allocate": {
+                    "number_of_replicas": 0,
+                    "include": {},
+                    "exclude": {},
+                    "require": {},
+                },
+                "searchable_snapshot": {
+                    "snapshot_repository": "deepfreeze-2024.08",
+                    "force_merge_index": True,
+                },
+                "set_priority": {"priority": 0},
+            },
+        },
+        "hot": {
+            "min_age": "0ms",
+            "actions": {
+                "rollover": {
+                    "max_age": "30d",
+                    "max_primary_shard_size": "50gb",
+                },
+                "set_priority": {"priority": 100},
+            },
+        },
+    }
+}
