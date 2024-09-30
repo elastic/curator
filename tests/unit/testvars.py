@@ -1697,6 +1697,9 @@ watermark_both = {
 empty_cluster_settings = {"persistent": {}, "transient": {}}
 data_only_node_role = ["data"]
 master_data_node_role = ["data", "master"]
+#
+# Deepfreeze values
+#
 repo_name_prefix = "deepfreeze-"
 bucket_name_prefix = "deepfreeze-"
 base_path = "snapshots"

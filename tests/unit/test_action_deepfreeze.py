@@ -1,8 +1,6 @@
 """test_action_deepfreeze"""
 
 # pylint: disable=missing-function-docstring, missing-class-docstring, protected-access, attribute-defined-outside-init
-import logging
-import sys
 from datetime import datetime
 from unittest import TestCase
 from unittest.mock import Mock
