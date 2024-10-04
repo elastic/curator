@@ -10,6 +10,8 @@ from botocore.exceptions import ClientError
 
 from curator.exceptions import ActionError, RepositoryException
 
+STATUS_INDEX = ".deepfreeze-status"
+
 
 class Deepfreeze:
     """
@@ -54,6 +56,7 @@ class Deepfreeze:
         self.month = month
 
         suffix = self.get_next_suffix()
+
         self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
         self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
 
@@ -67,6 +70,9 @@ class Deepfreeze:
         if self.new_repo_name in self.repo_list:
             raise RepositoryException(f"repository {self.new_repo_name} already exists")
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        if not self.client.indices.exists(index=STATUS_INDEX):
+            self.client.indices.create(index=STATUS_INDEX)
+            self.loggit.warning(f"Created index {STATUS_INDEX}")
 
     def create_new_bucket(self, dry_run=False):
         """
@@ -165,13 +171,38 @@ class Deepfreeze:
         """
         Take the oldest repos from the list and remove them, only retaining
         the number chosen in the config under "keep".
+
+        TODO: Do we need to maintain a system index for our use, which tracks
+        the state of the repos? I can see a situation where we thaw some indices and
+        then need to ensure they stay mounted when deepfreeze runs the following time.
         """
         s = slice(0, len(self.repo_list) - self.keep)
         self.loggit.info(f"Repo list: {self.repo_list}")
         for repo in self.repo_list[s]:
             self.loggit.info(f"Removing repo {repo}")
             if not dry_run:
-                self.client.snapshot.delete_repository(name=repo)
+                self.__umount_repo(repo)
+
+    def __unmount_repo(self, repo):
+        """
+        Encapsulate the actions of deleting the repo and, at the same time,
+        doing any record-keeping we need.
+        """
+        # TODO: Ask Aaron for his suggestion on how to handle this in the most
+        # Curator-ish way.
+        repo_info = self.client.get_repository(name=repo)
+        bucket = repo_info["settings"]["bucket"]
+        doc = {
+            "repo": repo,
+            "state": "deepfreeze",
+            "timestamp": datetime.now().isoformat(),
+            "bucket": bucket,
+            "start": None,  # TODO: Add the earliest @timestamp value here
+            "end": None,  # TODO: Add the latest @timestamp value here
+        }
+        self.client.create(index=STATUS_INDEX, document=doc)
+        # Now that our records are complete, go ahead and remove the repo.
+        self.client.snapshot.delete_repository(name=repo)
 
     def get_repos(self) -> list[object]:
         """
@@ -204,4 +235,4 @@ class Deepfreeze:
         self.create_new_bucket()
         self.create_new_repo()
         self.update_ilm_policies()
-        self.unmount_oldest_repos()
+        self.unmount_oldest_repos

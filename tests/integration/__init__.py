@@ -193,6 +193,13 @@ class CuratorTestCase(TestCase):
         }
         self.client.snapshot.create_repository(name=self.args['repository'], body=request_body)
 
+    def create_named_repository(self, repo_name):
+        request_body = {
+            'type': 'fs',
+            'settings': {'location': self.args['location']}
+        }
+        self.client.snapshot.create_repository(name=repo_name, body=request_body)
+
     def delete_repositories(self):
         result = self.client.snapshot.get_repository(name='*')
         for repo in result:

@@ -1,7 +1,7 @@
 """Deepfreeze Singleton"""
 import click
 from curator.cli_singletons.object_class import CLIAction
-import datetime
+from datetime import datetime
 
 
 @click.command()
