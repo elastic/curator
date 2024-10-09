@@ -81,6 +81,7 @@ class Deepfreeze:
         :returns:   whether the bucket was created or not
         :rtype:     bool
         """
+        # TODO: Make this agnostic so it supports Azure, GCP, etc.
         self.loggit.info(f"Creating bucket {self.new_bucket_name}")
         if dry_run:
             return
@@ -176,6 +177,10 @@ class Deepfreeze:
         the state of the repos? I can see a situation where we thaw some indices and
         then need to ensure they stay mounted when deepfreeze runs the following time.
         """
+        # TODO: Look at snapshot.py for date-based calculations
+        # Also, how to embed mutliple classes in a single action file
+        # Alias action may be using multiple filter blocks. Look at that since we'll 
+        # need to do the same thing.:
         s = slice(0, len(self.repo_list) - self.keep)
         self.loggit.info(f"Repo list: {self.repo_list}")
         for repo in self.repo_list[s]:
