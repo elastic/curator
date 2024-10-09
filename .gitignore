@@ -177,3 +177,9 @@ cython_debug/
 #.idea/
 
 .vscode
+
+# pyenv version
+.python-version
+
+# vim backup files
+*~
