@@ -3,6 +3,7 @@ localhost.es
 oneliners.py
 cacert.pem
 docs/
+docker_test/.env
 docker_test/repo/
 docker_test/curatortestenv
 docker_test/scripts/Dockerfile

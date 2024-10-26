@@ -10,6 +10,7 @@ CURATOR_DOCS = 'https://www.elastic.co/guide/en/elasticsearch/client/curator'
 CLICK_DRYRUN = {
     'dry-run': {'help': 'Do not perform any changes.', 'is_flag': True},
 }
+DATA_NODE_ROLES = ['data', 'data_content', 'data_hot', 'data_warm']
 
 # Click specifics
 
