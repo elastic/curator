@@ -38,13 +38,15 @@ class TimestringSearch:
 
         :returns: The epoch timestamp extracted from ``searchme`` by regex matching
             against :py:attr:`pattern`
-        :rtype: int
+        :rtype: int or None
         """
         match = self.pattern.search(searchme)
         if match:
             if match.group("date"):
                 timestamp = match.group("date")
                 return datetime_to_epoch(get_datetime(timestamp, self.timestring))
+            return None
+        return None
 
 
 def absolute_date_range(
@@ -161,6 +163,8 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     :rtype: tuple
     """
     logger = logging.getLogger(__name__)
+    start_date = None
+    start_delta = None
     acceptable_units = ['hours', 'days', 'weeks', 'months', 'years']
     if unit not in acceptable_units:
         raise ConfigurationError(f'"unit" must be one of: {acceptable_units}')
