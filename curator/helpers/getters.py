@@ -1,9 +1,14 @@
 """Utility functions that get things"""
+
 import logging
-import re
 from elasticsearch8 import exceptions as es8exc
 from curator.exceptions import (
-    ConfigurationError, CuratorException, FailedExecution, MissingArgument)
+    ConfigurationError,
+    CuratorException,
+    FailedExecution,
+    MissingArgument,
+)
+
 
 def byte_size(num, suffix='B'):
     """
@@ -23,6 +28,23 @@ def byte_size(num, suffix='B'):
         num /= 1024.0
     return f'{num:.1f}Y{suffix}'
 
+
+def escape_dots(stringval):
+    """
+    Escape any dots (periods) in ``stringval``.
+
+    Primarily used for ``filter_path`` where dots are indicators of path nesting
+
+    :param stringval: A string, ostensibly an index name
+
+    :type stringval: str
+
+    :returns: ``stringval``, but with any periods escaped with a backslash
+    :retval: str
+    """
+    return stringval.replace('.', r'\.')
+
+
 def get_alias_actions(oldidx, newidx, aliases):
     """
     :param oldidx: The old index name
@@ -34,7 +56,8 @@ def get_alias_actions(oldidx, newidx, aliases):
     :type aliases: dict
 
     :returns: A list of actions suitable for
-        :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` ``actions`` kwarg.
+        :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` ``actions``
+        kwarg.
     :rtype: list
     """
     actions = []
@@ -43,9 +66,11 @@ def get_alias_actions(oldidx, newidx, aliases):
         actions.append({'add': {'index': newidx, 'alias': alias}})
     return actions
 
+
 def get_data_tiers(client):
     """
-    Get all valid data tiers from the node roles of each node in the cluster by polling each node
+    Get all valid data tiers from the node roles of each node in the cluster by
+    polling each node
 
     :param client: A client connection object
     :type client: :py:class:`~.elasticsearch.Elasticsearch`
@@ -53,18 +78,27 @@ def get_data_tiers(client):
     :returns: The available data tiers in ``tier: bool`` form.
     :rtype: dict
     """
+
     def role_check(role, node_info):
         if role in node_info['roles']:
             return True
         return False
+
     info = client.nodes.info()['nodes']
-    retval = {'data_hot': False, 'data_warm': False, 'data_cold': False, 'data_frozen': False}
+    retval = {
+        'data_hot': False,
+        'data_warm': False,
+        'data_cold': False,
+        'data_frozen': False,
+    }
     for node in info:
         for role in ['data_hot', 'data_warm', 'data_cold', 'data_frozen']:
-            # This guarantees we don't overwrite a True with a False. We only add True values
+            # This guarantees we don't overwrite a True with a False.
+            # We only add True values
             if role_check(role, info[node]):
                 retval[role] = True
     return retval
+
 
 def get_indices(client, search_pattern='_all'):
     """
@@ -79,10 +113,14 @@ def get_indices(client, search_pattern='_all'):
     logger = logging.getLogger(__name__)
     indices = []
     try:
-        # Doing this in two stages because IndexList also calls for these args, and the unit tests
-        # need to Mock this call the same exact way.
+        # Doing this in two stages because IndexList also calls for these args,
+        # and the unit tests need to Mock this call the same exact way.
         resp = client.cat.indices(
-            index=search_pattern, expand_wildcards='open,closed', h='index,status', format='json')
+            index=search_pattern,
+            expand_wildcards='open,closed',
+            h='index,status',
+            format='json',
+        )
     except Exception as err:
         raise FailedExecution(f'Failed to get indices. Error: {err}') from err
     if not resp:
@@ -91,6 +129,7 @@ def get_indices(client, search_pattern='_all'):
         indices.append(entry['index'])
     logger.debug('All indices: %s', indices)
     return indices
+
 
 def get_repository(client, repository=''):
     """
@@ -114,6 +153,7 @@ def get_repository(client, repository=''):
         )
         raise CuratorException(msg) from err
 
+
 def get_snapshot(client, repository=None, snapshot=''):
     """
     Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get`
@@ -126,9 +166,10 @@ def get_snapshot(client, repository=None, snapshot=''):
     :type repository: str
     :type snapshot: str
 
-    :returns: Information about the provided ``snapshot``, a snapshot (or a comma-separated list of
-        snapshots). If no snapshot specified, it will collect info for all snapshots.  If none
-        exist, an empty :py:class:`dict` will be returned.
+    :returns: Information about the provided ``snapshot``, a snapshot (or a
+        comma-separated list of snapshots). If no snapshot specified, it will
+        collect info for all snapshots.  If none exist, an empty :py:class:`dict`
+        will be returned.
     :rtype: dict
     """
     if not repository:
@@ -142,6 +183,7 @@ def get_snapshot(client, repository=None, snapshot=''):
             f'{repository}.  Error: {err}'
         )
         raise FailedExecution(msg) from err
+
 
 def get_snapshot_data(client, repository=None):
     """
@@ -167,6 +209,7 @@ def get_snapshot_data(client, repository=None):
             f'{repository}. Error: {err}'
         )
         raise FailedExecution(msg) from err
+
 
 def get_tier_preference(client, target_tier='data_frozen'):
     """Do the tier preference thing in reverse order from coldest to hottest
@@ -194,8 +237,8 @@ def get_tier_preference(client, target_tier='data_frozen'):
         if tier in tiers and tiermap[tier] <= tiermap[target_tier]:
             test_list.insert(0, tier)
     if target_tier == 'data_frozen':
-        # We're migrating to frozen here. If a frozen tier exists, frozen searchable snapshot
-        # mounts should only ever go to the frozen tier.
+        # We're migrating to frozen here. If a frozen tier exists, frozen searchable
+        # snapshot mounts should only ever go to the frozen tier.
         if 'data_frozen' in tiers and tiers['data_frozen']:
             return 'data_frozen'
     # If there are no  nodes with the 'data_frozen' role...
@@ -207,8 +250,10 @@ def get_tier_preference(client, target_tier='data_frozen'):
     # If all of these are false, then we have no data tiers and must use 'data_content'
     if not preflist:
         return 'data_content'
-    # This will join from coldest to hottest as csv string, e.g. 'data_cold,data_warm,data_hot'
+    # This will join from coldest to hottest as csv string,
+    # e.g. 'data_cold,data_warm,data_hot'
     return ','.join(preflist)
+
 
 def get_write_index(client, alias):
     """
@@ -220,7 +265,8 @@ def get_write_index(client, alias):
     :type client: :py:class:`~.elasticsearch.Elasticsearch`
     :type alias: str
 
-    :returns: The the index name associated with the alias that is designated ``is_write_index``
+    :returns: The the index name associated with the alias that is designated
+        ``is_write_index``
     :rtype: str
     """
     try:
@@ -229,17 +275,21 @@ def get_write_index(client, alias):
         raise CuratorException(f'Alias {alias} not found') from exc
     # If there are more than one in the list, one needs to be the write index
     # otherwise the alias is a one to many, and can't do rollover.
+    retval = None
     if len(list(response.keys())) > 1:
         for index in list(response.keys()):
             try:
                 if response[index]['aliases'][alias]['is_write_index']:
-                    return index
+                    retval = index
             except KeyError as exc:
                 raise FailedExecution(
-                    'Invalid alias: is_write_index not found in 1 to many alias') from exc
+                    'Invalid alias: is_write_index not found in 1 to many alias'
+                ) from exc
     else:
         # There's only one, so this is it
-        return list(response.keys())[0]
+        retval = list(response.keys())[0]
+    return retval
+
 
 def index_size(client, idx, value='total'):
     """
@@ -256,7 +306,11 @@ def index_size(client, idx, value='total'):
     :returns: The sum of either ``primaries`` or ``total`` shards for index ``idx``
     :rtype: integer
     """
-    return client.indices.stats(index=idx)['indices'][idx][value]['store']['size_in_bytes']
+    fpath = f'indices.{escape_dots(idx)}.{value}.store.size_in_bytes'
+    return client.indices.stats(index=idx, filter_path=fpath)['indices'][idx][value][
+        'store'
+    ]['size_in_bytes']
+
 
 def meta_getter(client, idx, get=None):
     """Meta Getter
@@ -297,9 +351,10 @@ def meta_getter(client, idx, get=None):
         logger.error('Exception encountered: %s', exc)
     return retval
 
+
 def name_to_node_id(client, name):
     """
-    Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
+    Calls :py:meth:`~.elasticsearch.client.NodesClient.info`
 
     :param client: A client connection object
     :param name: The node ``name``
@@ -311,17 +366,19 @@ def name_to_node_id(client, name):
     :rtype: str
     """
     logger = logging.getLogger(__name__)
-    stats = client.nodes.stats()
-    for node in stats['nodes']:
-        if stats['nodes'][node]['name'] == name:
+    fpath = 'nodes'
+    info = client.nodes.info(filter_path=fpath)
+    for node in info['nodes']:
+        if info['nodes'][node]['name'] == name:
             logger.debug('Found node_id "%s" for name "%s".', node, name)
             return node
     logger.error('No node_id found matching name: "%s"', name)
     return None
 
+
 def node_id_to_name(client, node_id):
     """
-    Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
+    Calls :py:meth:`~.elasticsearch.client.NodesClient.info`
 
     :param client: A client connection object
     :param node_id: The node ``node_id``
@@ -333,14 +390,16 @@ def node_id_to_name(client, node_id):
     :rtype: str
     """
     logger = logging.getLogger(__name__)
-    stats = client.nodes.stats()
+    fpath = f'nodes.{node_id}.name'
+    info = client.nodes.info(filter_path=fpath)
     name = None
-    if node_id in stats['nodes']:
-        name = stats['nodes'][node_id]['name']
+    if node_id in info['nodes']:
+        name = info['nodes'][node_id]['name']
     else:
         logger.error('No node_id found matching: "%s"', node_id)
     logger.debug('Name associated with node_id "%s": %s', node_id, name)
     return name
+
 
 def node_roles(client, node_id):
     """
@@ -355,12 +414,14 @@ def node_roles(client, node_id):
     :returns: The list of roles assigned to the node identified by ``node_id``
     :rtype: list
     """
-    return client.nodes.info()['nodes'][node_id]['roles']
+    fpath = f'nodes.{node_id}.roles'
+    return client.nodes.info(filter_path=fpath)['nodes'][node_id]['roles']
+
 
 def single_data_path(client, node_id):
     """
-    In order for a shrink to work, it should be on a single filesystem, as shards cannot span
-    filesystems. Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
+    In order for a shrink to work, it should be on a single filesystem, as shards
+    cannot span filesystems. Calls :py:meth:`~.elasticsearch.client.NodesClient.stats`
 
     :param client: A client connection object
     :param node_id: The node ``node_id``
@@ -371,4 +432,6 @@ def single_data_path(client, node_id):
     :returns: ``True`` if the node has a single filesystem, else ``False``
     :rtype: bool
     """
-    return len(client.nodes.stats()['nodes'][node_id]['fs']['data']) == 1
+    fpath = f'nodes.{node_id}.fs.data'
+    response = client.nodes.stats(filter_path=fpath)
+    return len(response['nodes'][node_id]['fs']['data']) == 1

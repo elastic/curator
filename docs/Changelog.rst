@@ -3,6 +3,33 @@
 Changelog
 =========
 
+8.0.17 (25 October 2024)
+------------------------
+
+**Bugfix**
+
+  * Reported in #1727 (and I'm relieved that nobody got bit by this sooner), A
+    serious bug was found where if using the ``age`` filter while deriving the
+    age from the index name, it was erroneously ignoring any index that did not
+    have a matching ``timestring`` pattern, which would leave a default epoch
+    time of ``0``, which would definitely be older than your cutoff date! As a
+    result, indices were matched and deleted that should not have been.
+    
+    The fix is to remove indices that do not match the pattern in the 
+    ``_get_name_based_ages`` method. The patch is in this release, as are updated
+    tests to replicate the failure scenario. Hat tip to @giom-l for reporting this.
+
+**Changes**
+
+  * Update to use ``es_client==8.15.2``.
+  * Update data node detection to include ``data``, ``data_content``, ``data_hot``,
+    and ``data_warm`` for ``shrink`` action. This was first raised in #1621, but
+    needed to go further than just adding ``data_hot``. Hat tip to @gnobironts for
+    the original pull request.
+  * Add ``docker_test/.env`` to ``.gitignore``
+  * More formatting changes as suggested by pylint
+  * Improve API calls to ``node.info`` and ``node.stats`` to use ``filter_path`` 
+
 8.0.16 (6 August 2024)
 ----------------------
 
