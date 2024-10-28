@@ -136,17 +136,16 @@ class Deepfreeze:
             p = policies[policy]["policy"]["phases"]
             updated = False
             for phase in p:
-                if "searchable_snapshot" in p[phase]["actions"]:
-                    if (
-                        p[phase]["actions"]["searchable_snapshot"][
-                            "snapshot_repository"
-                        ]
-                        == self.latest_repo
-                    ):
-                        p[phase]["actions"]["searchable_snapshot"][
-                            "snapshot_repository"
-                        ] = self.new_repo_name
-                        updated = True
+                if "searchable_snapshot" in p[phase]["actions"] and (
+                                        p[phase]["actions"]["searchable_snapshot"][
+                                            "snapshot_repository"
+                                        ]
+                                        == self.latest_repo
+                                    ):
+                    p[phase]["actions"]["searchable_snapshot"][
+                        "snapshot_repository"
+                    ] = self.new_repo_name
+                    updated = True
             if updated:
                 updated_policies[policy] = policies[policy]["policy"]
 
@@ -164,8 +163,8 @@ class Deepfreeze:
         """
         Gets the next suffix
         """
-        year = self.year if self.year else datetime.now().year
-        month = self.month if self.month else datetime.now().month
+        year = self.year or datetime.now().year
+        month = self.month or datetime.now().month
         return f"{year:04}.{month:02}"
 
     def unmount_oldest_repos(self, dry_run=False):
