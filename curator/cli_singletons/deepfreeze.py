@@ -5,10 +5,11 @@ import click
 
 from curator.cli_singletons.object_class import CLIAction
 
+today=datetime.today()
 deepfreeze = click.Group()
 @deepfreeze.command()
-@click.argument("year", type=int, required=False, default=datetime.now().year)
-@click.argument("month", type=int, required=False, default=datetime.now().month)
+@click.option("--year", type=int, default=today.year, help="Year for the new repository")
+@click.option("--month", type=int, default=today.month, help="Month for the new repository")
 @click.option(
     "--repo_name_prefix",
     type=str,
@@ -86,7 +87,7 @@ def rollover(
         'base_path': base_path,
         'canned_acl': canned_acl,
         'storage_class': storage_class,
-        'keep,   ': keep,
+        'keep': keep,
     }
     action = CLIAction(
         ctx.info_name,
