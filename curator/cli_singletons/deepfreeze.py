@@ -5,8 +5,8 @@ import click
 
 from curator.cli_singletons.object_class import CLIAction
 
-
-@click.command()
+deepfreeze = click.Group()
+@deepfreeze.command()
 @click.argument("year", type=int, required=False, default=datetime.now().year)
 @click.argument("month", type=int, required=False, default=datetime.now().month)
 @click.option(
@@ -64,7 +64,7 @@ from curator.cli_singletons.object_class import CLIAction
     help="How many repositories should remain mounted?",
 )
 @click.pass_context
-def deepfreeze(
+def rollover(
     ctx,
     year,
     month,
