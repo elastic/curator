@@ -185,7 +185,7 @@ class Deepfreeze:
         for repo in self.repo_list[s]:
             self.loggit.info(f"Removing repo {repo}")
             if not dry_run:
-                self.__umount_repo(repo)
+                self.__unmount_repo(repo)
 
     def __unmount_repo(self, repo):
         """
@@ -239,4 +239,4 @@ class Deepfreeze:
         self.create_new_bucket()
         self.create_new_repo()
         self.update_ilm_policies()
-        self.unmount_oldest_repos
+        self.unmount_oldest_repos()
