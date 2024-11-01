@@ -10,3 +10,4 @@ from curator.cli_singletons.restore import restore
 from curator.cli_singletons.rollover import rollover
 from curator.cli_singletons.shrink import shrink
 from curator.cli_singletons.snapshot import snapshot
+from curator.cli_singletons.deepfreeze import setup, rotate

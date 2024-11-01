@@ -89,3 +89,10 @@ def month():
     Return a :class:`voluptuous.schema_builder.Schema` object for `month`
     """
     return {Optional("month"): All(Coerce(int), Range(min=1, max=12))}
+
+def setup():
+    """
+    This setting is optional, and indicates the users's desire to perform setup.
+    Return a :class:`voluptuous.schema_builder.Schema` object for `setup`
+    """
+    return {Optional("setup"): Any(bool, default=False)}

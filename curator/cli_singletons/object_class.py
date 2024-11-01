@@ -8,7 +8,7 @@ from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator import IndexList, SnapshotList
 from curator.actions import (
-    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, ForceMerge,
+    Alias, Allocation, Close, ClusterRouting, CreateIndex, Deepfreeze, DeleteIndices, ForceMerge,
     IndexSettings, Open, Reindex, Replicas, Rollover, Shrink, Snapshot, DeleteSnapshots, Restore
 )
 from curator.defaults.settings import snapshot_actions
@@ -23,6 +23,7 @@ CLASS_MAP = {
     'close' : Close,
     'cluster_routing' : ClusterRouting,
     'create_index' : CreateIndex,
+    'deepfreeze' : Deepfreeze,
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,

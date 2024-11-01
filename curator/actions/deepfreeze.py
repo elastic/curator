@@ -30,6 +30,7 @@ class Deepfreeze:
         keep="6",
         year=None,
         month=None,
+        setup=False
     ):
         """
         :param client: A client connection object
@@ -44,6 +45,7 @@ class Deepfreeze:
         :param keep: How many repositories to retain, defaults to 6
         :param year: Optional year to override current year
         :param month: Optional month to override current month
+        :param setup: Whether to perform setup steps or not
         """
         self.client = client
         self.repo_name_prefix = repo_name_prefix
@@ -54,6 +56,7 @@ class Deepfreeze:
         self.keep = int(keep)
         self.year = year
         self.month = month
+        self.setup = setup
 
         suffix = self.get_next_suffix()
 
@@ -72,7 +75,7 @@ class Deepfreeze:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.client.indices.create(index=STATUS_INDEX)
-            self.loggit.warning(f"Created index {STATUS_INDEX}")
+            self.loggit.warning("Created index %s", STATUS_INDEX)
 
     def create_new_bucket(self, dry_run=False):
         """
@@ -82,7 +85,7 @@ class Deepfreeze:
         :rtype:     bool
         """
         # TODO: Make this agnostic so it supports Azure, GCP, etc.
-        self.loggit.info(f"Creating bucket {self.new_bucket_name}")
+        self.loggit.info("Creating bucket %s", self.new_bucket_name)
         if dry_run:
             return
         try:
@@ -97,7 +100,7 @@ class Deepfreeze:
         Creates a new repo using the previously-created bucket.
         """
         self.loggit.info(
-            f"Creating repo {self.new_repo_name} using bucket {self.new_bucket_name}"
+            "Creating repo %s using bucket %s", self.new_repo_name, self.new_bucket_name
         )
         if dry_run:
             return
@@ -115,7 +118,7 @@ class Deepfreeze:
         #       It should simply bring back '{ "acknowledged": true }' but I
         #       don't know how client will wrap it.
         print(f"Response: {response}")
-        self.loggit.info(f"Response: {response}")
+        self.loggit.info("Response: %s", response)
 
     def update_ilm_policies(self, dry_run=False):
         """
@@ -126,7 +129,7 @@ class Deepfreeze:
             self.loggit.warning("Already on the latest repo")
             sys.exit(0)
         self.loggit.warning(
-            f"Switching from {self.latest_repo} to " f"{self.new_repo_name}"
+            "Switching from %s to %s", self.latest_repo, self.new_repo_name
         )
         policies = self.client.ilm.get_lifecycle()
         updated_policies = {}
@@ -153,11 +156,11 @@ class Deepfreeze:
         if not updated_policies:
             self.loggit.warning("No policies to update")
         else:
-            self.loggit.info(f"Updating {len(updated_policies.keys())} policies:")
-        for pol in updated_policies:
-            self.loggit.info(f"\t{pol}")
+            self.loggit.info("Updating %d policies:", len(updated_policies.keys()))
+        for pol, body in updated_policies.items():
+            self.loggit.info("\t%s", pol)
             if not dry_run:
-                self.client.ilm.put_lifecycle(policy_id=pol, body=updated_policies[pol])
+                self.client.ilm.put_lifecycle(policy_id=pol, body=body)
 
     def get_next_suffix(self):
         """
@@ -181,9 +184,9 @@ class Deepfreeze:
         # Alias action may be using multiple filter blocks. Look at that since we'll 
         # need to do the same thing.:
         s = slice(0, len(self.repo_list) - self.keep)
-        self.loggit.info(f"Repo list: {self.repo_list}")
+        self.loggit.info("Repo list: %s", self.repo_list)
         for repo in self.repo_list[s]:
-            self.loggit.info(f"Removing repo {repo}")
+            self.loggit.info("Removing repo %s", repo)
             if not dry_run:
                 self.__unmount_repo(repo)
 
@@ -234,9 +237,12 @@ class Deepfreeze:
 
     def do_action(self):
         """
-        Perform high-level steps in sequence.
+        Perform high-level repo rotation steps in sequence.
         """
         self.create_new_bucket()
         self.create_new_repo()
-        self.update_ilm_policies()
-        self.unmount_oldest_repos()
+        if self.setup:
+            self.loggit.info("Setup complete. You now need to update ILM policies to use %s.", self.new_repo_name)
+        else:
+            self.update_ilm_policies()
+            self.unmount_oldest_repos()
