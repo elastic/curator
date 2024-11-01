@@ -54,6 +54,17 @@ def action_specific(action):
             option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
+        'deepfreeze': [
+            option_defaults.repo_name_prefix(),
+            option_defaults.bucket_name_prefix(),
+            option_defaults.base_path(),
+            option_defaults.canned_acl(),
+            option_defaults.storage_class(),
+            option_defaults.keep(),
+            option_defaults.year(),
+            option_defaults.month(),
+            option_defaults.setup(),
+        ],
         'delete_indices' : [
             option_defaults.search_pattern(),
         ],

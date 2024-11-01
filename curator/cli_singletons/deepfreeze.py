@@ -70,7 +70,7 @@ today=datetime.today()
     default=False,
 )
 @click.pass_context
-def rollover(
+def deepfreeze(
     ctx,
     year,
     month,
