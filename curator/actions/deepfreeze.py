@@ -30,7 +30,7 @@ class Deepfreeze:
         keep="6",
         year=None,
         month=None,
-        setup=False
+        setup=False,
     ):
         """
         :param client: A client connection object
@@ -140,11 +140,9 @@ class Deepfreeze:
             updated = False
             for phase in p:
                 if "searchable_snapshot" in p[phase]["actions"] and (
-                                        p[phase]["actions"]["searchable_snapshot"][
-                                            "snapshot_repository"
-                                        ]
-                                        == self.latest_repo
-                                    ):
+                    p[phase]["actions"]["searchable_snapshot"]["snapshot_repository"]
+                    == self.latest_repo
+                ):
                     p[phase]["actions"]["searchable_snapshot"][
                         "snapshot_repository"
                     ] = self.new_repo_name
@@ -181,7 +179,7 @@ class Deepfreeze:
         """
         # TODO: Look at snapshot.py for date-based calculations
         # Also, how to embed mutliple classes in a single action file
-        # Alias action may be using multiple filter blocks. Look at that since we'll 
+        # Alias action may be using multiple filter blocks. Look at that since we'll
         # need to do the same thing.:
         s = slice(0, len(self.repo_list) - self.keep)
         self.loggit.info("Repo list: %s", self.repo_list)
@@ -242,7 +240,10 @@ class Deepfreeze:
         self.create_new_bucket()
         self.create_new_repo()
         if self.setup:
-            self.loggit.info("Setup complete. You now need to update ILM policies to use %s.", self.new_repo_name)
+            self.loggit.info(
+                "Setup complete. You now need to update ILM policies to use %s.",
+                self.new_repo_name,
+            )
         else:
             self.update_ilm_policies()
             self.unmount_oldest_repos()

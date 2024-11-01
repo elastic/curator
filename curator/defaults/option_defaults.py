@@ -721,6 +721,7 @@ def warn_if_no_indices():
         )
     }
 
+
 def repo_name_prefix():
     """
     Return a :class:`voluptuous.schema_builder.Schema` object for `repo_name_prefix`
@@ -803,9 +804,10 @@ def month():
     """
     return {Optional("month"): All(Coerce(int), Range(min=1, max=12))}
 
+
 def setup():
     """
-    This setting should be used once, to initialize a deepfreeze repository 
+    This setting should be used once, to initialize a deepfreeze repository
     and bucket.
     Return a :class:`voluptuous.schema_builder.Schema` object for `setup`
     """
