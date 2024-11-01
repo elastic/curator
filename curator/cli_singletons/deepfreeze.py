@@ -6,8 +6,7 @@ import click
 from curator.cli_singletons.object_class import CLIAction
 
 today=datetime.today()
-deepfreeze = click.Group()
-@deepfreeze.command()
+@click.command()
 @click.option("--year", type=int, default=today.year, help="Year for the new repository")
 @click.option("--month", type=int, default=today.month, help="Month for the new repository")
 @click.option(
@@ -64,6 +63,12 @@ deepfreeze = click.Group()
     default=6,
     help="How many repositories should remain mounted?",
 )
+@click.option(
+    '--setup',
+    is_flag=True,
+    help="Perform setup steps for an initial deepfreeze repository",
+    default=False,
+)
 @click.pass_context
 def rollover(
     ctx,
@@ -75,6 +80,7 @@ def rollover(
     canned_acl,
     storage_class,
     keep,
+    setup,
 ):
     """
     Deepfreeze rotation (add a new repo and age oldest off)
@@ -88,6 +94,7 @@ def rollover(
         'canned_acl': canned_acl,
         'storage_class': storage_class,
         'keep': keep,
+        'setup': setup,
     }
     action = CLIAction(
         ctx.info_name,

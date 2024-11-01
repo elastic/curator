@@ -92,7 +92,8 @@ def month():
 
 def setup():
     """
-    This setting is optional, and indicates the users's desire to perform setup.
+    This setting should be used once, to initialize a deepfreeze repository 
+    and bucket.
     Return a :class:`voluptuous.schema_builder.Schema` object for `setup`
     """
     return {Optional("setup"): Any(bool, default=False)}
