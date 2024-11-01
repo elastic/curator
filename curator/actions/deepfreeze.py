@@ -244,6 +244,10 @@ class Deepfreeze:
                 "Setup complete. You now need to update ILM policies to use %s.",
                 self.new_repo_name,
             )
+            self.loggit.info(
+                "Ensure that all ILM policies using this repository have delete_searchable_snapshot set to false. "
+                "See https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html"
+            )
         else:
             self.update_ilm_policies()
             self.unmount_oldest_repos()
