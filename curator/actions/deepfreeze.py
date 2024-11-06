@@ -136,6 +136,9 @@ class Deepfreeze:
         for policy in policies:
             # Go through these looking for any occurrences of self.latest_repo
             # and change those to use self.new_repo_name instead.
+            # TODO: Ensure that delete_searchable_snapshot is set to false or
+            # the snapshot will be deleted when the policy transitions to the next phase.
+            # in this case, raise an error and skip this policy.
             p = policies[policy]["policy"]["phases"]
             updated = False
             for phase in p:
