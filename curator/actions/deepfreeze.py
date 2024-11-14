@@ -76,6 +76,7 @@ class Deepfreeze:
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.client.indices.create(index=STATUS_INDEX)
             self.loggit.warning("Created index %s", STATUS_INDEX)
+        print("Initializing Deepfreeze")
 
     def create_new_bucket(self, dry_run=False):
         """

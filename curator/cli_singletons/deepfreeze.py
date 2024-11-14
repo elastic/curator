@@ -5,10 +5,16 @@ import click
 
 from curator.cli_singletons.object_class import CLIAction
 
-today=datetime.today()
+today = datetime.today()
+
+
 @click.command()
-@click.option("--year", type=int, default=today.year, help="Year for the new repository")
-@click.option("--month", type=int, default=today.month, help="Month for the new repository")
+@click.option(
+    "--year", type=int, default=today.year, help="Year for the new repo"
+)
+@click.option(
+    "--month", type=int, default=today.month, help="Month for the new repo"
+)
 @click.option(
     "--repo_name_prefix",
     type=str,
