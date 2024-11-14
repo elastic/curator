@@ -29,7 +29,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.15.0"
+    "es_client==8.15.2"
 ]
 
 [project.optional-dependencies]
