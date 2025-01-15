@@ -69,6 +69,18 @@ def deepfreeze():
     default="intelligent_tiering",
     help="What storage class to use, as defined by AWS",
 )
+@click.option(
+    "--provider",
+    type=click.Choicee(
+        [
+            "aws",
+            # "gcp",
+            # "azure",
+        ]
+    ),
+    default="aws",
+    help="What provider to use (AWS only for now)",
+)
 @click.pass_context
 def setup(
     ctx,
@@ -79,6 +91,7 @@ def setup(
     base_path,
     canned_acl,
     storage_class,
+    provider,
 ):
     """
     Setup a cluster for deepfreeze
@@ -91,6 +104,7 @@ def setup(
         'base_path': base_path,
         'canned_acl': canned_acl,
         'storage_class': storage_class,
+        'provider': provider,
     }
 
     pass
@@ -167,6 +181,7 @@ def rotate(
     canned_acl,
     storage_class,
     keep,
+    provider,
 ):
     """
     Deepfreeze rotation (add a new repo and age oldest off)
@@ -180,6 +195,7 @@ def rotate(
         'canned_acl': canned_acl,
         'storage_class': storage_class,
         'keep': keep,
+        'provider': provider,
     }
     action = CLIAction(
         ctx.info_name,

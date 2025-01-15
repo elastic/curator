@@ -13,7 +13,204 @@ from curator.exceptions import ActionError, RepositoryException
 STATUS_INDEX = ".deepfreeze-status"
 
 
-class Deepfreeze:
+def create_new_bucket(bucket_name, dry_run=False):
+    """
+    Creates a new S3 bucket using the aws config in the environment.
+
+    :param bucket_name: The name of the bucket to create
+    :param dry_run: If True, do not actually create the bucket
+    :returns:   whether the bucket was created or not
+    :rtype:     bool
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info("Creating bucket %s", bucket_name)
+    if dry_run:
+        return
+    try:
+        s3 = boto3.client("s3")
+        s3.create_bucket(Bucket=bucket_name)
+    except ClientError as e:
+        loggit.error(e)
+        raise ActionError(e)
+
+
+def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl, storage_class, dry_run=False):
+    """
+    Creates a new repo using the previously-created bucket.
+
+    :param client: A client connection object
+    :param repo_name: The name of the repository to create
+    :param bucket_name: The name of the bucket to use for the repository
+    :param base_path: Path within a bucket where snapshots are stored
+    :param canned_acl: One of the AWS canned ACL values
+    :param storage_class: AWS Storage class
+    :param dry_run: If True, do not actually create the repository
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info("Creating repo %s using bucket %s", repo_name, bucket_name)
+    if dry_run:
+        return
+    response = client.snapshot.create_repository(
+        name=repo_name,
+        type="s3",
+        settings={
+            "bucket": bucket_name,
+            "base_path": base_path,
+            "canned_acl": canned_acl,
+            "storage_class": storage_class,
+        },
+    )
+    # TODO: Gather the reply and parse it to make sure this succeeded
+    #       It should simply bring back '{ "acknowledged": true }' but I
+    #       don't know how client will wrap it.
+    print(f"Response: {response}")
+    loggit.info("Response: %s", response)
+
+
+def get_next_suffix(year=None, month=None):
+    """
+    Gets the next suffix
+
+    :param year: Optional year to override current year
+    :param month: Optional month to override current month
+    :returns: The next suffix in the format YYYY.MM
+    :rtype: str
+    """
+    current_year = year or datetime.now().year
+    current_month = month or datetime.now().month
+    return f"{current_year:04}.{current_month:02}"
+
+
+def get_repos(client, repo_name_prefix):
+    """
+    Get the complete list of repos and return just the ones whose names
+    begin with the given prefix.
+
+    :param client: A client connection object
+    :param repo_name_prefix: A prefix for repository names
+    :returns: The repos.
+    :rtype: list[object]
+    """
+    repos = client.snapshot.get_repository()
+    pattern = re.compile(repo_name_prefix)
+    return [repo for repo in repos if pattern.search(repo)]
+
+
+def unmount_repo(client, repo, status_index):
+    """
+    Encapsulate the actions of deleting the repo and, at the same time,
+    doing any record-keeping we need.
+
+    :param client: A client connection object
+    :param repo: The name of the repository to unmount
+    :param status_index: The name of the status index
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    repo_info = client.get_repository(name=repo)
+    bucket = repo_info["settings"]["bucket"]
+    doc = {
+        "repo": repo,
+        "state": "deepfreeze",
+        "timestamp": datetime.now().isoformat(),
+        "bucket": bucket,
+        "start": None,  # TODO: Add the earliest @timestamp value here
+        "end": None,  # TODO: Add the latest @timestamp value here
+    }
+    client.create(index=status_index, document=doc)
+    # Now that our records are complete, go ahead and remove the repo.
+    client.snapshot.delete_repository(name=repo)
+
+
+class Setup:
+    """
+    Setup is responsible for creating the initial repository and bucket for
+    deepfreeze operations.
+    """
+
+    def __init__(
+        self,
+        client,
+        repo_name_prefix="deepfreeze-",
+        bucket_name_prefix="deepfreeze-",
+        base_path="snapshots",
+        canned_acl="private",
+        storage_class="intelligent_tiering",
+        provider="aws",
+    ):
+        """
+        :param client: A client connection object
+        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze-`
+        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze-`
+        :param base_path: Path within a bucket where snapshots are stored, defaults to `snapshots`
+        :param canned_acl: One of the AWS canned ACL values (see
+            `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
+            defaults to `private`
+        :param storage_class: AWS Storage class (see `<https://aws.amazon.com/s3/storage-classes/>`),
+            defaults to `intelligent_tiering`
+        :param provider: The provider to use (AWS only for now), defaults to `aws`, and will be saved
+            to the deepfreeze status index for later reference.
+        """
+        print("Initializing Deepfreeze Setup")
+        self.client = client
+        self.repo_name_prefix = repo_name_prefix
+        self.bucket_name_prefix = bucket_name_prefix
+        self.base_path = base_path
+        self.canned_acl = canned_acl
+        self.storage_class = storage_class
+        self.provider = provider
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+
+        suffix = get_next_suffix(self.year, self.month)
+        self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
+        self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
+
+        self.loggit.debug("Deepfreeze Setup initialized")
+
+    def do_dry_run(self):
+        """
+        Perform a dry-run of the setup process.
+        """
+        self.loggit.info("DRY-RUN MODE.  No changes will be made.")
+        msg = (
+            f"DRY-RUN: deepfreeze setup of {self.latest_repo} will be rotated out"
+            f" and {self.new_repo_name} will be added & made active."
+        )
+        self.loggit.info(msg)
+        create_new_bucket(self.new_bucket_name, dry_run=True)
+        create_new_repo(
+            self.client, 
+            self.new_repo_name, 
+            self.new_bucket_name, 
+            self.base_path, 
+            self.canned_acl, 
+            self.storage_class, 
+            dry_run=True
+        )
+
+    def do_action(self):
+        """
+        Perform create initial bucket and repository.
+        """
+        create_new_bucket(self.new_bucket_name)
+        create_new_repo(
+            self.client, 
+            self.new_repo_name, 
+            self.new_bucket_name, 
+            self.base_path, 
+            self.canned_acl, 
+            self.storage_class
+        )
+        self.loggit.info(
+            "Setup complete. You now need to update ILM policies to use %s.",
+            self.new_repo_name,
+        )
+        self.loggit.info(
+            "Ensure that all ILM policies using this repository have delete_searchable_snapshot set to false. "
+            "See https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html"
+        )
+
+
+class Rotate:
     """
     The Deepfreeze is responsible for managing the repository rotation given
     a config file of user-managed options and settings.
@@ -30,7 +227,6 @@ class Deepfreeze:
         keep="6",
         year=None,
         month=None,
-        setup=False,
     ):
         """
         :param client: A client connection object
@@ -45,7 +241,6 @@ class Deepfreeze:
         :param keep: How many repositories to retain, defaults to 6
         :param year: Optional year to override current year
         :param month: Optional month to override current month
-        :param setup: Whether to perform setup steps or not
         """
         print("Initializing Deepfreeze")
 
@@ -58,14 +253,13 @@ class Deepfreeze:
         self.keep = int(keep)
         self.year = year
         self.month = month
-        self.setup = setup
 
-        suffix = self.get_next_suffix()
+        suffix = get_next_suffix(self.year, self.month)
 
         self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
         self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
 
-        self.repo_list = self.get_repos()
+        self.repo_list = get_repos(self.client, self.repo_name_prefix)
         self.repo_list.sort()
         try:
             self.latest_repo = self.repo_list[-1]
@@ -79,49 +273,6 @@ class Deepfreeze:
             self.client.indices.create(index=STATUS_INDEX)
             self.loggit.warning("Created index %s", STATUS_INDEX)
         self.loggit.info("Deepfreeze initialized")
-
-    def create_new_bucket(self, dry_run=False):
-        """
-        Creates a new S3 bucket using the aws config in the environment.
-
-        :returns:   whether the bucket was created or not
-        :rtype:     bool
-        """
-        # TODO: Make this agnostic so it supports Azure, GCP, etc.
-        self.loggit.info("Creating bucket %s", self.new_bucket_name)
-        if dry_run:
-            return
-        try:
-            s3 = boto3.client("s3")
-            s3.create_bucket(Bucket=self.new_bucket_name)
-        except ClientError as e:
-            self.loggit.error(e)
-            raise ActionError(e)
-
-    def create_new_repo(self, dry_run=False):
-        """
-        Creates a new repo using the previously-created bucket.
-        """
-        self.loggit.info(
-            "Creating repo %s using bucket %s", self.new_repo_name, self.new_bucket_name
-        )
-        if dry_run:
-            return
-        response = self.client.snapshot.create_repository(
-            name=self.new_repo_name,
-            type="s3",
-            settings={
-                "bucket": self.new_bucket_name,
-                "base_path": self.base_path,
-                "canned_acl": self.canned_acl,
-                "storage_class": self.storage_class,
-            },
-        )
-        # TODO: Gather the reply and parse it to make sure this succeeded
-        #       It should simply bring back '{ "acknowledged": true }' but I
-        #       don't know how client will wrap it.
-        print(f"Response: {response}")
-        self.loggit.info("Response: %s", response)
 
     def update_ilm_policies(self, dry_run=False):
         """
@@ -166,14 +317,6 @@ class Deepfreeze:
             if not dry_run:
                 self.client.ilm.put_lifecycle(policy_id=pol, body=body)
 
-    def get_next_suffix(self):
-        """
-        Gets the next suffix
-        """
-        year = self.year or datetime.now().year
-        month = self.month or datetime.now().month
-        return f"{year:04}.{month:02}"
-
     def unmount_oldest_repos(self, dry_run=False):
         """
         Take the oldest repos from the list and remove them, only retaining
@@ -192,87 +335,40 @@ class Deepfreeze:
         for repo in self.repo_list[s]:
             self.loggit.info("Removing repo %s", repo)
             if not dry_run:
-                self.__unmount_repo(repo)
-
-    def __unmount_repo(self, repo):
-        """
-        Encapsulate the actions of deleting the repo and, at the same time,
-        doing any record-keeping we need.
-        """
-        # TODO: Ask Aaron for his suggestion on how to handle this in the most
-        # Curator-ish way.
-        repo_info = self.client.get_repository(name=repo)
-        bucket = repo_info["settings"]["bucket"]
-        doc = {
-            "repo": repo,
-            "state": "deepfreeze",
-            "timestamp": datetime.now().isoformat(),
-            "bucket": bucket,
-            "start": None,  # TODO: Add the earliest @timestamp value here
-            "end": None,  # TODO: Add the latest @timestamp value here
-        }
-        self.client.create(index=STATUS_INDEX, document=doc)
-        # Now that our records are complete, go ahead and remove the repo.
-        self.client.snapshot.delete_repository(name=repo)
-
-    def get_repos(self) -> list[object]:
-        """
-        Get the complete list of repos and return just the ones whose names
-        begin with our prefix.
-
-        :returns:   The repos.
-        :rtype:     list[object]
-        """
-        repos = self.client.snapshot.get_repository()
-        pattern = re.compile(self.repo_name_prefix)
-        return [repo for repo in repos if pattern.search(repo)]
+                unmount_repo(self.client, repo, STATUS_INDEX)
 
     def do_dry_run(self):
+        """
+        Perform a dry-run of the rotation process.
+        """
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = (
             f"DRY-RUN: deepfreeze {self.latest_repo} will be rotated out"
             f" and {self.new_repo_name} will be added & made active."
         )
         self.loggit.info(msg)
-        self.create_new_bucket(dry_run=True)
-        self.create_new_repo(dry_run=True)
+        create_new_bucket(self.new_bucket_name, dry_run=True)
+        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.canned_acl, self.storage_class, dry_run=True)
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
 
-    def do_setup(self):
-        """
-        Perform setup for deepfreeze operations. This is a one-time operation
-        which sets up the initial bucket and repository.
-        """
-        pass
-
-    def do_rotate(self):
+    def do_action(self):
         """
         Perform high-level repo rotation steps in sequence.
         """
-        self.create_new_bucket()
-        self.create_new_repo()
-        if self.setup:
-            self.loggit.info(
-                "Setup complete. You now need to update ILM policies to use %s.",
-                self.new_repo_name,
-            )
-            self.loggit.info(
-                "Ensure that all ILM policies using this repository have delete_searchable_snapshot set to false. "
-                "See https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html"
-            )
-        else:
-            self.update_ilm_policies()
-            self.unmount_oldest_repos()
+        create_new_bucket(self.new_bucket_name)
+        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.canned_acl, self.storage_class)
+        self.update_ilm_policies()
+        self.unmount_oldest_repos()
 
-    def do_thaw(self):
-        """
-        Thaw a deepfreeze repository
-        """
-        pass
+class Thaw:
+    """
+    Thaw a deepfreeze repository
+    """
+    pass
 
-    def do_refreeze(self):
-        """
-        Refreeze a thawed repository
-        """
-        pass
+class Refreeze:
+    """
+    Refreeze a thawed deepfreeze repository
+    """
+    pass
