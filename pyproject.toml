@@ -29,7 +29,8 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.15.2"
+    "es_client==8.15.2",
+    "boto3"
 ]
 
 [project.optional-dependencies]
