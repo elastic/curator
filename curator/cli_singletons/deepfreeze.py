@@ -71,7 +71,7 @@ def deepfreeze():
 )
 @click.option(
     "--provider",
-    type=click.Choicee(
+    type=click.Choice(
         [
             "aws",
             # "gcp",
@@ -181,7 +181,6 @@ def rotate(
     canned_acl,
     storage_class,
     keep,
-    provider,
 ):
     """
     Deepfreeze rotation (add a new repo and age oldest off)
@@ -195,7 +194,6 @@ def rotate(
         'canned_acl': canned_acl,
         'storage_class': storage_class,
         'keep': keep,
-        'provider': provider,
     }
     action = CLIAction(
         ctx.info_name,

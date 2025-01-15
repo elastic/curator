@@ -8,8 +8,9 @@ from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator import IndexList, SnapshotList
 from curator.actions import (
-    Alias, Allocation, Close, ClusterRouting, CreateIndex, Deepfreeze, DeleteIndices, ForceMerge,
-    IndexSettings, Open, Reindex, Replicas, Rollover, Shrink, Snapshot, DeleteSnapshots, Restore
+    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, ForceMerge,
+    IndexSettings, Open, Reindex, Replicas, Rollover, Shrink,  Snapshot, DeleteSnapshots, 
+    Restore, Deepfreeze, 
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -23,7 +24,6 @@ CLASS_MAP = {
     'close' : Close,
     'cluster_routing' : ClusterRouting,
     'create_index' : CreateIndex,
-    'deepfreeze' : Deepfreeze,
     'delete_indices' : DeleteIndices,
     'delete_snapshots' : DeleteSnapshots,
     'forcemerge' : ForceMerge,
@@ -35,6 +35,7 @@ CLASS_MAP = {
     'rollover': Rollover,
     'shrink': Shrink,
     'snapshot' : Snapshot,
+    'deepfreeze' : Deepfreeze,
 }
 
 EXCLUDED_OPTIONS = [

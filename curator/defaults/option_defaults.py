@@ -1,6 +1,7 @@
 """Action Option Schema definitions"""
 
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
+from datetime import datetime
 
 # pylint: disable=E1120
 
@@ -805,10 +806,36 @@ def month():
     return {Optional("month"): All(Coerce(int), Range(min=1, max=12))}
 
 
-def setup():
+def provider():
     """
-    This setting should be used once, to initialize a deepfreeze repository
-    and bucket.
-    Return a :class:`voluptuous.schema_builder.Schema` object for `setup`
+    This setting will determine the cloud provider to use.
     """
-    return {Optional("setup"): Any(bool, default=False)}
+    return {Optional("provider"): All(Any("aws"), default="aws")}
+
+
+def thaw_set():
+    """
+    This setting will allow users to set a thaw_set for refreezing.
+    """
+    return {Optional("thaw_set"): All(Coerce(int), default=0)}
+
+
+def start():
+    """
+    Start of a time window
+    """
+    return {Required("start"): All(str, Coerce(lambda s: datetime.strptime(s, "%Y-%m-%d")))}
+
+
+def end():
+    """
+    End of a time window
+    """
+    return {Required("end"): All(str, Coerce(lambda s: datetime.strptime(s, "%Y-%m-%d")))}
+
+
+def enable_multiple_buckets():
+    """
+    Setting to allow referencing multiple buckets
+    """
+    return {Optional("enable_multiple_buckets", default=False): Any(bool, All(Any(str), Boolean()))}

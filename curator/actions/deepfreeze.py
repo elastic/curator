@@ -12,6 +12,9 @@ from curator.exceptions import ActionError, RepositoryException
 
 STATUS_INDEX = ".deepfreeze-status"
 
+class Deepfreeze:
+    pass
+
 
 def create_new_bucket(bucket_name, dry_run=False):
     """
@@ -150,7 +153,6 @@ class Setup:
         :param provider: The provider to use (AWS only for now), defaults to `aws`, and will be saved
             to the deepfreeze status index for later reference.
         """
-        print("Initializing Deepfreeze Setup")
         self.client = client
         self.repo_name_prefix = repo_name_prefix
         self.bucket_name_prefix = bucket_name_prefix
@@ -159,6 +161,7 @@ class Setup:
         self.storage_class = storage_class
         self.provider = provider
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.info("Initializing Deepfreeze Setup")
 
         suffix = get_next_suffix(self.year, self.month)
         self.new_repo_name = f"{self.repo_name_prefix}{suffix}"

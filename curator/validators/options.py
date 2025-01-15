@@ -54,7 +54,15 @@ def action_specific(action):
             option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
-        'deepfreeze': [
+        'setup': [
+            option_defaults.repo_name_prefix(),
+            option_defaults.bucket_name_prefix(),
+            option_defaults.base_path(),
+            option_defaults.canned_acl(),
+            option_defaults.storage_class(),
+            option_defaults.provider(),
+        ],
+        'rotate': [
             option_defaults.repo_name_prefix(),
             option_defaults.bucket_name_prefix(),
             option_defaults.base_path(),
@@ -63,7 +71,14 @@ def action_specific(action):
             option_defaults.keep(),
             option_defaults.year(),
             option_defaults.month(),
-            option_defaults.setup(),
+        ],
+        'thaw': [
+            option_defaults.start(),
+            option_defaults.end(),
+            option_defaults.enable_multiple_buckets(),
+        ],
+        'refreeze': [
+             option_defaults.thaw_set(),
         ],
         'delete_indices' : [
             option_defaults.search_pattern(),
