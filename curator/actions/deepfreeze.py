@@ -47,6 +47,8 @@ class Deepfreeze:
         :param month: Optional month to override current month
         :param setup: Whether to perform setup steps or not
         """
+        print("Initializing Deepfreeze")
+
         self.client = client
         self.repo_name_prefix = repo_name_prefix
         self.bucket_name_prefix = bucket_name_prefix
@@ -76,7 +78,7 @@ class Deepfreeze:
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.client.indices.create(index=STATUS_INDEX)
             self.loggit.warning("Created index %s", STATUS_INDEX)
-        print("Initializing Deepfreeze")
+        self.loggit.info("Deepfreeze initialized")
 
     def create_new_bucket(self, dry_run=False):
         """
@@ -237,7 +239,14 @@ class Deepfreeze:
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
 
-    def do_action(self):
+    def do_setup(self):
+        """
+        Perform setup for deepfreeze operations. This is a one-time operation
+        which sets up the initial bucket and repository.
+        """
+        pass
+
+    def do_rotate(self):
         """
         Perform high-level repo rotation steps in sequence.
         """
@@ -255,3 +264,15 @@ class Deepfreeze:
         else:
             self.update_ilm_policies()
             self.unmount_oldest_repos()
+
+    def do_thaw(self):
+        """
+        Thaw a deepfreeze repository
+        """
+        pass
+
+    def do_refreeze(self):
+        """
+        Refreeze a thawed repository
+        """
+        pass
