@@ -16,6 +16,23 @@ class Deepfreeze:
     pass
 
 
+def save_settings(client, provider):
+    """
+    Save the settings for the deepfreeze operation to the status index.
+
+    :param client: A client connection object
+    :param provider: The provider to use (AWS only for now)
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info("Saving settings to status index")
+    doc = {
+        "type": "settings",
+        "provider": provider,
+        "timestamp": datetime.now().isoformat(),
+    }
+    client.create(index=STATUS_INDEX, document=doc)
+
+
 def create_new_bucket(bucket_name, dry_run=False):
     """
     Creates a new S3 bucket using the aws config in the environment.
@@ -194,6 +211,7 @@ class Setup:
         """
         Perform create initial bucket and repository.
         """
+        save_settings(self.client, self.provider))
         create_new_bucket(self.new_bucket_name)
         create_new_repo(
             self.client, 
