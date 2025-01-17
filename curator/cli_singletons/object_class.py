@@ -10,7 +10,7 @@ from curator import IndexList, SnapshotList
 from curator.actions import (
     Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, ForceMerge,
     IndexSettings, Open, Reindex, Replicas, Rollover, Shrink,  Snapshot, DeleteSnapshots, 
-    Restore, Deepfreeze, 
+    Restore, Setup, Thaw, Refreeze, Rotate
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -35,7 +35,10 @@ CLASS_MAP = {
     'rollover': Rollover,
     'shrink': Shrink,
     'snapshot' : Snapshot,
-    'deepfreeze' : Deepfreeze,
+    'rotate': Rotate,
+    'setup': Setup,
+    'thaw': Thaw,
+    'refreeze': Refreeze,
 }
 
 EXCLUDED_OPTIONS = [
