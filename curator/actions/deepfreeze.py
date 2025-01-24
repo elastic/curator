@@ -211,7 +211,7 @@ class Setup:
         """
         Perform create initial bucket and repository.
         """
-        save_settings(self.client, self.provider))
+        save_settings(self.client, self.provider)
         create_new_bucket(self.new_bucket_name)
         create_new_repo(
             self.client, 
