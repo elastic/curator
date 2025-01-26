@@ -10,10 +10,23 @@ from botocore.exceptions import ClientError
 
 from curator.exceptions import ActionError, RepositoryException
 
-STATUS_INDEX = ".deepfreeze-status"
+STATUS_INDEX = "deepfreeze-status"
+SETTINGS_ID = "101"
 
 class Deepfreeze:
     pass
+
+
+def ensure_settings_index(client):
+    """
+    Ensure that the status index exists in Elasticsearch.
+
+    :param client: A client connection object
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    if not client.indices.exists(index=STATUS_INDEX):
+        loggit.info("Creating index %s", STATUS_INDEX)
+        client.indices.create(index=STATUS_INDEX)
 
 
 def save_settings(client, provider):
@@ -23,14 +36,22 @@ def save_settings(client, provider):
     :param client: A client connection object
     :param provider: The provider to use (AWS only for now)
     """
+    #TODO: Add the ability to read and update the settings doc, if it already exists
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    loggit.info("Saving settings to status index")
-    doc = {
-        "type": "settings",
-        "provider": provider,
-        "timestamp": datetime.now().isoformat(),
-    }
-    client.create(index=STATUS_INDEX, document=doc)
+    try:
+        existing_doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
+        loggit.info("Settings document already exists, updating it")
+        client.update(index=STATUS_INDEX, id=SETTINGS_ID, doc={"doc": {"provider": provider, "timestamp": datetime.now().isoformat()}})
+    except client.exceptions.NotFoundError:
+        loggit.info("Settings document does not exist, creating it")
+        doc = {
+            "type": "settings",
+            "provider": provider,
+            "timestamp": datetime.now().isoformat(),
+        }
+        loggit.debug("Document: %s", doc)
+        client.create(index=STATUS_INDEX, id=SETTINGS_ID, document=doc)
+    loggit.info("Settings saved")
 
 
 def create_new_bucket(bucket_name, dry_run=False):
@@ -54,14 +75,15 @@ def create_new_bucket(bucket_name, dry_run=False):
         raise ActionError(e)
 
 
-def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl, storage_class, dry_run=False):
+def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl, 
+                    storage_class, dry_run=False):
     """
     Creates a new repo using the previously-created bucket.
 
     :param client: A client connection object
     :param repo_name: The name of the repository to create
     :param bucket_name: The name of the bucket to use for the repository
-    :param base_path: Path within a bucket where snapshots are stored
+    :param base_path_prefix: Path within a bucket where snapshots are stored
     :param canned_acl: One of the AWS canned ACL values
     :param storage_class: AWS Storage class
     :param dry_run: If True, do not actually create the repository
@@ -70,20 +92,25 @@ def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl, stora
     loggit.info("Creating repo %s using bucket %s", repo_name, bucket_name)
     if dry_run:
         return
-    response = client.snapshot.create_repository(
-        name=repo_name,
-        type="s3",
-        settings={
-            "bucket": bucket_name,
-            "base_path": base_path,
-            "canned_acl": canned_acl,
-            "storage_class": storage_class,
-        },
-    )
+    try:
+        response = client.snapshot.create_repository(
+            name=repo_name,
+            body={
+                "type": "s3",
+                "settings": {
+                    "bucket": bucket_name,
+                    "base_path": base_path,
+                    "canned_acl": canned_acl,
+                    "storage_class": storage_class,
+                }
+            },
+        )
+    except Exception as e:
+        loggit.error(e)
+        raise ActionError(e)
     # TODO: Gather the reply and parse it to make sure this succeeded
     #       It should simply bring back '{ "acknowledged": true }' but I
     #       don't know how client will wrap it.
-    print(f"Response: {response}")
     loggit.info("Response: %s", response)
 
 
@@ -98,7 +125,7 @@ def get_next_suffix(year=None, month=None):
     """
     current_year = year or datetime.now().year
     current_month = month or datetime.now().month
-    return f"{current_year:04}.{current_month:02}"
+    return f"-{current_year:04}.{current_month:02}"
 
 
 def get_repos(client, repo_name_prefix):
@@ -113,6 +140,7 @@ def get_repos(client, repo_name_prefix):
     """
     repos = client.snapshot.get_repository()
     pattern = re.compile(repo_name_prefix)
+    logging.debug(f'Looking for repos matching {repo_name_prefix}')
     return [repo for repo in repos if pattern.search(repo)]
 
 
@@ -150,18 +178,21 @@ class Setup:
     def __init__(
         self,
         client,
-        repo_name_prefix="deepfreeze-",
-        bucket_name_prefix="deepfreeze-",
-        base_path="snapshots",
+        year,
+        month,
+        repo_name_prefix="deepfreeze",
+        bucket_name_prefix="deepfreeze",
+        base_path_prefix="snapshots",
         canned_acl="private",
         storage_class="intelligent_tiering",
         provider="aws",
+        rotate_by="path",
     ):
         """
         :param client: A client connection object
-        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze-`
-        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze-`
-        :param base_path: Path within a bucket where snapshots are stored, defaults to `snapshots`
+        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
+        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
+        :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
         :param canned_acl: One of the AWS canned ACL values (see
             `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
             defaults to `private`
@@ -169,21 +200,40 @@ class Setup:
             defaults to `intelligent_tiering`
         :param provider: The provider to use (AWS only for now), defaults to `aws`, and will be saved
             to the deepfreeze status index for later reference.
+        :param rotate_by: Rotate by bucket or path within a bucket?, defaults to `path`
         """
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.debug("Initializing Deepfreeze Setup")
+
         self.client = client
+        self.year = year
+        self.month = month
         self.repo_name_prefix = repo_name_prefix
         self.bucket_name_prefix = bucket_name_prefix
-        self.base_path = base_path
+        self.base_path_prefix = base_path_prefix
         self.canned_acl = canned_acl
         self.storage_class = storage_class
         self.provider = provider
-        self.loggit = logging.getLogger("curator.actions.deepfreeze")
-        self.loggit.info("Initializing Deepfreeze Setup")
+        self.rotate_by = rotate_by
+        self.base_path = self.base_path_prefix
 
         suffix = get_next_suffix(self.year, self.month)
-        self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
-        self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
+        if self.rotate_by == "bucket":
+            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
+            self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
+            self.base_path = f"{self.base_path_prefix}"
+        else:
+            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
+            self.new_bucket_name = f"{self.bucket_name_prefix}"
+            self.base_path = f"{self.base_path}{suffix}"
 
+        self.loggit.debug('Getting repo list')
+        self.repo_list = get_repos(self.client, self.repo_name_prefix)
+        self.repo_list.sort()
+        self.loggit.debug('Repo list: %s', self.repo_list)
+
+        if len(self.repo_list) > 0:
+            raise RepositoryException(f"repositories matching {self.repo_name_prefix} already exist")
         self.loggit.debug("Deepfreeze Setup initialized")
 
     def do_dry_run(self):
@@ -211,6 +261,8 @@ class Setup:
         """
         Perform create initial bucket and repository.
         """
+        self.loggit.debug("Starting Setup action")
+        ensure_settings_index(self.client)
         save_settings(self.client, self.provider)
         create_new_bucket(self.new_bucket_name)
         create_new_repo(
@@ -240,9 +292,9 @@ class Rotate:
     def __init__(
         self,
         client,
-        repo_name_prefix="deepfreeze-",
-        bucket_name_prefix="deepfreeze-",
-        base_path="snapshots",
+        repo_name_prefix="deepfreeze",
+        bucket_name_prefix="deepfreeze",
+        base_path_prefix="snapshots",
         canned_acl="private",
         storage_class="intelligent_tiering",
         keep="6",
@@ -251,9 +303,9 @@ class Rotate:
     ):
         """
         :param client: A client connection object
-        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze-`
-        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze-`
-        :param base_path: Path within a bucket where snapshots are stored, defaults to `snapshots`
+        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
+        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
+        :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
         :param canned_acl: One of the AWS canned ACL values (see
             `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
             defaults to `private`
@@ -263,12 +315,13 @@ class Rotate:
         :param year: Optional year to override current year
         :param month: Optional month to override current month
         """
-        print("Initializing Deepfreeze")
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.debug("Initializing Deepfreeze Rotate")
 
         self.client = client
         self.repo_name_prefix = repo_name_prefix
         self.bucket_name_prefix = bucket_name_prefix
-        self.base_path = base_path
+        self.base_path_prefix = base_path_prefix
         self.canned_acl = canned_acl
         self.storage_class = storage_class
         self.keep = int(keep)
@@ -277,19 +330,25 @@ class Rotate:
 
         suffix = get_next_suffix(self.year, self.month)
 
-        self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
-        self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
+        if self.rotate_by == "bucket":
+            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
+            self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
+            self.base_path = f"{self.base_path_prefix}"
+        else:
+            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
+            self.new_bucket_name = f"{self.bucket_name_prefix}"
+            self.base_path = f"{self.base_path}{suffix}"
 
+        self.loggit.debug('Getting repo list')
         self.repo_list = get_repos(self.client, self.repo_name_prefix)
         self.repo_list.sort()
+        self.loggit.debug('Repo list: %s', self.repo_list)
         try:
             self.latest_repo = self.repo_list[-1]
         except IndexError:
             raise RepositoryException(f"no repositories match {self.repo_name_prefix}")
-
         if self.new_repo_name in self.repo_list:
             raise RepositoryException(f"repository {self.new_repo_name} already exists")
-        self.loggit = logging.getLogger("curator.actions.deepfreeze")
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.client.indices.create(index=STATUS_INDEX)
             self.loggit.warning("Created index %s", STATUS_INDEX)

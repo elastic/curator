@@ -218,8 +218,9 @@ class CLIAction():
             elif self.action in ['cluster_routing', 'create_index', 'rollover']:
                 action_obj = self.action_class(self.client, **self.options)
             elif self.action in ['setup', 'rotate', 'thaw', 'refreeze']:
-                self.logger.debug('Declaring Deepfreeze action object with options: %s', self.options)
+                self.logger.debug(f'Declaring Deepfreeze action object with options: {self.options}')
                 action_obj = self.action_class(self.client, **self.options)
+                self.logger.debug('Deepfreeze action object declared')
             else:
                 self.get_list_object()
                 self.do_filters()

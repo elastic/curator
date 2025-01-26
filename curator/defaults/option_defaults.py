@@ -727,21 +727,28 @@ def repo_name_prefix():
     """
     Return a :class:`voluptuous.schema_builder.Schema` object for `repo_name_prefix`
     """
-    return {Optional("repo_name_prefix"): All(Any(str), default="deepfreeze-")}
+    return {Optional("repo_name_prefix"): All(Any(str), default="deepfreeze")}
 
 
 def bucket_name_prefix():
     """
     Return a :class:`voluptuous.schema_builder.Schema` object for `bucket_name_prefix`
     """
-    return {Optional("bucket_name_prefix"): All(Any(str), default="deepfreeze-")}
+    return {Optional("bucket_name_prefix"): All(Any(str), default="deepfreeze")}
 
 
-def base_path():
+def base_path_prefix():
     """
-    Return a :class:`voluptuous.schema_builder.Schema` object for `base_path`
+    Return a :class:`voluptuous.schema_builder.Schema` object for `base_path_prefix`
     """
-    return {Optional("base_path"): All(Any(str), default="snapshots")}
+    return {Optional("base_path_prefix"): All(Any(str), default="snapshots")}
+
+
+def rotate_by():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `rotate_by`
+    """
+    return {Optional("rotate_by"): All(Any(str), default="path")}
 
 
 def canned_acl():

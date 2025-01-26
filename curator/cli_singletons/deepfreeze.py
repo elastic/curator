@@ -2,6 +2,7 @@
 from datetime import datetime
 
 import click
+import logging
 
 from curator.cli_singletons.object_class import CLIAction
 
@@ -24,17 +25,17 @@ def deepfreeze():
 @click.option(
     "--repo_name_prefix",
     type=str,
-    default="deepfreeze-",
+    default="deepfreeze",
     help="prefix for naming rotating repositories",
 )
 @click.option(
     "--bucket_name_prefix",
     type=str,
-    default="deepfreeze-",
+    default="deepfreeze",
     help="prefix for naming buckets",
 )
 @click.option(
-    "--base_path",
+    "--base_path_prefix",
     type=str,
     default="snapshots",
     help="base path in the bucket to use for searchable snapshots",
@@ -81,6 +82,17 @@ def deepfreeze():
     default="aws",
     help="What provider to use (AWS only for now)",
 )
+@click.option(
+    "--rotate_by",
+    type=click.Choice(
+        [
+            "bucket",
+            "path",
+        ]
+    ),
+    default="path",
+    help="Rotate by bucket or path within a bucket?",
+)
 @click.pass_context
 def setup(
     ctx,
@@ -88,26 +100,36 @@ def setup(
     month,
     repo_name_prefix,
     bucket_name_prefix,
-    base_path,
+    base_path_prefix,
     canned_acl,
     storage_class,
     provider,
+    rotate_by,
 ):
     """
     Setup a cluster for deepfreeze
     """
+    logging.debug("setup")
     manual_options = {
         'year': year,
         'month': month,
         'repo_name_prefix': repo_name_prefix,
         'bucket_name_prefix': bucket_name_prefix,
-        'base_path': base_path,
+        'base_path_prefix': base_path_prefix,
         'canned_acl': canned_acl,
         'storage_class': storage_class,
         'provider': provider,
+        'rotate_by': rotate_by,
     }
 
-    pass
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj['configdict'],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
 
 @deepfreeze.command()
 @click.option(
@@ -129,7 +151,7 @@ def setup(
     help="prefix for naming buckets",
 )
 @click.option(
-    "--base_path",
+    "--base_path_prefix",
     type=str,
     default="snapshots",
     help="base path in the bucket to use for searchable snapshots",
@@ -177,7 +199,7 @@ def rotate(
     month,
     repo_name_prefix,
     bucket_name_prefix,
-    base_path,
+    base_path_prefix,
     canned_acl,
     storage_class,
     keep,
@@ -190,7 +212,7 @@ def rotate(
         'month': month,
         'repo_name_prefix': repo_name_prefix,
         'bucket_name_prefix': bucket_name_prefix,
-        'base_path': base_path,
+        'base_path_prefix': base_path_prefix,
         'canned_acl': canned_acl,
         'storage_class': storage_class,
         'keep': keep,
@@ -229,7 +251,14 @@ def thaw(
         'end': end,
         'enable_multiple_buckets': enable_multiple_buckets,
     }
-    pass
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj['configdict'],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
 
 @deepfreeze.command()
 @click.option(
@@ -246,4 +275,11 @@ def refreeze(
     manual_options = {
         'thaw_set': thaw_set,
     }
-    pass
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj['configdict'],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
