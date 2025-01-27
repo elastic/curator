@@ -751,6 +751,21 @@ def rotate_by():
     return {Optional("rotate_by"): All(Any(str), default="path")}
 
 
+def style():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `style`
+    """
+    return {
+        Optional("style"): All(
+            Any(
+                'oneup',
+                'date'
+            ), 
+            default="oneup",
+        )
+    }
+
+
 def canned_acl():
     """
     Return a :class:`voluptuous.schema_builder.Schema` object for `canned_acl`

@@ -64,6 +64,7 @@ def action_specific(action):
             option_defaults.storage_class(),
             option_defaults.provider(),
             option_defaults.rotate_by(),
+            option_defaults.style(),
         ],
         'rotate': [
             option_defaults.repo_name_prefix(),

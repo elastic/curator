@@ -7,6 +7,8 @@ from datetime import datetime
 
 import boto3
 from botocore.exceptions import ClientError
+from elasticsearch8.exceptions import NotFoundError
+from dataclasses import dataclass
 
 from curator.exceptions import ActionError, RepositoryException
 
@@ -15,6 +17,23 @@ SETTINGS_ID = "101"
 
 class Deepfreeze:
     pass
+
+
+@dataclass
+class Settings:
+    repo_name_prefix: str = "deepfreeze"
+    bucket_name_prefix: str = "deepfreeze"
+    base_path_prefix: str = "snapshots"
+    canned_acl: str = "private"
+    storage_class: str = "intelligent_tiering"
+    provider: str = "aws"
+    rotate_by: str = "path"
+    style: str = "oneup"
+    last_suffix: str = None
+
+    def __init__(self, settings_hash):
+        for key, value in settings_hash.items():
+            setattr(self, key, value)
 
 
 def ensure_settings_index(client):
@@ -29,7 +48,25 @@ def ensure_settings_index(client):
         client.indices.create(index=STATUS_INDEX)
 
 
-def save_settings(client, provider):
+def get_settings(client):
+    """
+    Get the settings for the deepfreeze operation from the status index.
+
+    :param client: A client connection object
+    :returns: The settings
+    :rtype: dict
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    try:
+        doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
+        loggit.info("Settings document found")
+        return Settings(doc["_source"])
+    except client.exceptions.NotFoundError:
+        loggit.info("Settings document not found")
+        return None
+
+
+def save_settings(client, settings):
     """
     Save the settings for the deepfreeze operation to the status index.
 
@@ -41,14 +78,10 @@ def save_settings(client, provider):
     try:
         existing_doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
         loggit.info("Settings document already exists, updating it")
-        client.update(index=STATUS_INDEX, id=SETTINGS_ID, doc={"doc": {"provider": provider, "timestamp": datetime.now().isoformat()}})
-    except client.exceptions.NotFoundError:
+        client.update(index=STATUS_INDEX, id=SETTINGS_ID, doc=settings.__dict__)
+    except NotFoundError:
         loggit.info("Settings document does not exist, creating it")
-        doc = {
-            "type": "settings",
-            "provider": provider,
-            "timestamp": datetime.now().isoformat(),
-        }
+        doc = settings.__dict__
         loggit.debug("Document: %s", doc)
         client.create(index=STATUS_INDEX, id=SETTINGS_ID, document=doc)
     loggit.info("Settings saved")
@@ -114,7 +147,7 @@ def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl,
     loggit.info("Response: %s", response)
 
 
-def get_next_suffix(year=None, month=None):
+def get_next_suffix(style, last_suffix, year, month):
     """
     Gets the next suffix
 
@@ -123,9 +156,12 @@ def get_next_suffix(year=None, month=None):
     :returns: The next suffix in the format YYYY.MM
     :rtype: str
     """
-    current_year = year or datetime.now().year
-    current_month = month or datetime.now().month
-    return f"-{current_year:04}.{current_month:02}"
+    if style == "oneup":
+        return str(int(last_suffix) + 1).zfill(6)
+    else:
+        current_year = year or datetime.now().year
+        current_month = month or datetime.now().month
+        return f"{current_year:04}.{current_month:02}"
 
 
 def get_repos(client, repo_name_prefix):
@@ -187,6 +223,7 @@ class Setup:
         storage_class="intelligent_tiering",
         provider="aws",
         rotate_by="path",
+        style="default",
     ):
         """
         :param client: A client connection object
@@ -208,32 +245,38 @@ class Setup:
         self.client = client
         self.year = year
         self.month = month
-        self.repo_name_prefix = repo_name_prefix
-        self.bucket_name_prefix = bucket_name_prefix
-        self.base_path_prefix = base_path_prefix
-        self.canned_acl = canned_acl
-        self.storage_class = storage_class
-        self.provider = provider
-        self.rotate_by = rotate_by
-        self.base_path = self.base_path_prefix
+        self.settings = Settings()
+        self.settings.repo_name_prefix = repo_name_prefix
+        self.settings.bucket_name_prefix = bucket_name_prefix
+        self.settings.base_path_prefix = base_path_prefix
+        self.settings.canned_acl = canned_acl
+        self.settings.storage_class = storage_class
+        self.settings.provider = provider
+        self.settings.rotate_by = rotate_by
+        self.settings.base_path = self.settings.base_path_prefix
+        self.settings.style = style
 
-        suffix = get_next_suffix(self.year, self.month)
-        if self.rotate_by == "bucket":
-            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
-            self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
-            self.base_path = f"{self.base_path_prefix}"
+        self.suffix = '000001'
+        if self.settings.style != "oneup":
+            self.suffix == f'{self.year:04}.{self.month:02}'
+        self.settings.last_suffix = self.suffix
+
+        if self.settings.rotate_by == "bucket":
+            self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
+            self.new_bucket_name = f"{self.settings.bucket_name_prefix}-{self.suffix}"
+            self.base_path = f"{self.settings.base_path_prefix}"
         else:
-            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
-            self.new_bucket_name = f"{self.bucket_name_prefix}"
-            self.base_path = f"{self.base_path}{suffix}"
+            self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
+            self.new_bucket_name = f"{self.settings.bucket_name_prefix}"
+            self.base_path = f"{self.base_path}-{self.suffix}"
 
         self.loggit.debug('Getting repo list')
-        self.repo_list = get_repos(self.client, self.repo_name_prefix)
+        self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort()
         self.loggit.debug('Repo list: %s', self.repo_list)
 
         if len(self.repo_list) > 0:
-            raise RepositoryException(f"repositories matching {self.repo_name_prefix} already exist")
+            raise RepositoryException(f"repositories matching {self.settings.repo_name_prefix}-* already exist")
         self.loggit.debug("Deepfreeze Setup initialized")
 
     def do_dry_run(self):
@@ -242,8 +285,7 @@ class Setup:
         """
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = (
-            f"DRY-RUN: deepfreeze setup of {self.latest_repo} will be rotated out"
-            f" and {self.new_repo_name} will be added & made active."
+            f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
         )
         self.loggit.info(msg)
         create_new_bucket(self.new_bucket_name, dry_run=True)
@@ -252,8 +294,8 @@ class Setup:
             self.new_repo_name, 
             self.new_bucket_name, 
             self.base_path, 
-            self.canned_acl, 
-            self.storage_class, 
+            self.settings.canned_acl, 
+            self.settings.storage_class, 
             dry_run=True
         )
 
@@ -263,15 +305,15 @@ class Setup:
         """
         self.loggit.debug("Starting Setup action")
         ensure_settings_index(self.client)
-        save_settings(self.client, self.provider)
+        save_settings(self.client, self.settings)
         create_new_bucket(self.new_bucket_name)
         create_new_repo(
             self.client, 
             self.new_repo_name, 
             self.new_bucket_name, 
             self.base_path, 
-            self.canned_acl, 
-            self.storage_class
+            self.settings.canned_acl, 
+            self.settings.storage_class
         )
         self.loggit.info(
             "Setup complete. You now need to update ILM policies to use %s.",
@@ -292,25 +334,25 @@ class Rotate:
     def __init__(
         self,
         client,
-        repo_name_prefix="deepfreeze",
-        bucket_name_prefix="deepfreeze",
-        base_path_prefix="snapshots",
-        canned_acl="private",
-        storage_class="intelligent_tiering",
+        # repo_name_prefix="deepfreeze",
+        # bucket_name_prefix="deepfreeze",
+        # base_path_prefix="snapshots",
+        # canned_acl="private",
+        # storage_class="intelligent_tiering",
         keep="6",
         year=None,
         month=None,
     ):
         """
         :param client: A client connection object
-        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
-        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
-        :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
-        :param canned_acl: One of the AWS canned ACL values (see
-            `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
-            defaults to `private`
-        :param storage_class: AWS Storage class (see `<https://aws.amazon.com/s3/storage-classes/>`),
-            defaults to `intelligent_tiering`
+        # :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
+        # :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
+        # :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
+        # :param canned_acl: One of the AWS canned ACL values (see
+        #     `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
+        #     defaults to `private`
+        # :param storage_class: AWS Storage class (see `<https://aws.amazon.com/s3/storage-classes/>`),
+        #     defaults to `intelligent_tiering`
         :param keep: How many repositories to retain, defaults to 6
         :param year: Optional year to override current year
         :param month: Optional month to override current month
@@ -318,35 +360,33 @@ class Rotate:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Rotate")
 
+        self.settings = get_settings(client)
+        self.loggit.debug("Settings: %s", str(self.settings))
+
         self.client = client
-        self.repo_name_prefix = repo_name_prefix
-        self.bucket_name_prefix = bucket_name_prefix
-        self.base_path_prefix = base_path_prefix
-        self.canned_acl = canned_acl
-        self.storage_class = storage_class
         self.keep = int(keep)
-        self.year = year
+        self.year = year 
         self.month = month
+        self.base_path = ''
+        self.suffix = get_next_suffix(self.settings.style, self.settings.last_suffix, year, month)
 
-        suffix = get_next_suffix(self.year, self.month)
-
-        if self.rotate_by == "bucket":
-            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
-            self.new_bucket_name = f"{self.bucket_name_prefix}{suffix}"
-            self.base_path = f"{self.base_path_prefix}"
+        if self.settings.rotate_by == "bucket":
+            self.new_repo_name = f"{self.settings.repo_name_prefix}{self.suffix}"
+            self.new_bucket_name = f"{self.settings.bucket_name_prefix}{self.suffix}"
+            self.base_path = f"{self.settings.base_path_prefix}"
         else:
-            self.new_repo_name = f"{self.repo_name_prefix}{suffix}"
-            self.new_bucket_name = f"{self.bucket_name_prefix}"
-            self.base_path = f"{self.base_path}{suffix}"
+            self.new_repo_name = f"{self.settings.repo_name_prefix}{self.suffix}"
+            self.new_bucket_name = f"{self.settings.bucket_name_prefix}"
+            self.base_path = f"{self.base_path}{self.suffix}"
 
         self.loggit.debug('Getting repo list')
-        self.repo_list = get_repos(self.client, self.repo_name_prefix)
+        self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort()
         self.loggit.debug('Repo list: %s', self.repo_list)
         try:
             self.latest_repo = self.repo_list[-1]
         except IndexError:
-            raise RepositoryException(f"no repositories match {self.repo_name_prefix}")
+            raise RepositoryException(f"no repositories match {self.settings.repo_name_prefix}")
         if self.new_repo_name in self.repo_list:
             raise RepositoryException(f"repository {self.new_repo_name} already exists")
         if not self.client.indices.exists(index=STATUS_INDEX):
@@ -428,7 +468,7 @@ class Rotate:
         )
         self.loggit.info(msg)
         create_new_bucket(self.new_bucket_name, dry_run=True)
-        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.canned_acl, self.storage_class, dry_run=True)
+        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.settings.canned_acl, self.settings.storage_class, dry_run=True)
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
 
@@ -437,7 +477,7 @@ class Rotate:
         Perform high-level repo rotation steps in sequence.
         """
         create_new_bucket(self.new_bucket_name)
-        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.canned_acl, self.storage_class)
+        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.settings.canned_acl, self.settings.storage_class)
         self.update_ilm_policies()
         self.unmount_oldest_repos()
 
