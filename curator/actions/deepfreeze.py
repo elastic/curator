@@ -21,6 +21,9 @@ class Deepfreeze:
 
 @dataclass
 class Settings:
+    """
+    Data class for settings
+    """
     repo_name_prefix: str = "deepfreeze"
     bucket_name_prefix: str = "deepfreeze"
     base_path_prefix: str = "snapshots"
@@ -31,9 +34,10 @@ class Settings:
     style: str = "oneup"
     last_suffix: str = None
 
-    def __init__(self, settings_hash):
-        for key, value in settings_hash.items():
-            setattr(self, key, value)
+    def __init__(self, settings_hash=None):
+        if settings_hash is  not None:
+            for key, value in settings_hash.items():
+                setattr(self, key, value)
 
 
 def ensure_settings_index(client):
@@ -190,17 +194,17 @@ def unmount_repo(client, repo, status_index):
     :param status_index: The name of the status index
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    repo_info = client.get_repository(name=repo)
-    bucket = repo_info["settings"]["bucket"]
-    doc = {
-        "repo": repo,
-        "state": "deepfreeze",
-        "timestamp": datetime.now().isoformat(),
-        "bucket": bucket,
-        "start": None,  # TODO: Add the earliest @timestamp value here
-        "end": None,  # TODO: Add the latest @timestamp value here
-    }
-    client.create(index=status_index, document=doc)
+    # repo_info = client.snapshot.get_repository(name=repo)
+    # bucket = repo_info["settings"]["bucket"]
+    # doc = {
+    #     "repo": repo,
+    #     "state": "deepfreeze",
+    #     "timestamp": datetime.now().isoformat(),
+    #     "bucket": bucket,
+    #     "start": None,  # TODO: Add the earliest @timestamp value here
+    #     "end": None,  # TODO: Add the latest @timestamp value here
+    # }
+    # client.create(index=status_index, document=doc)
     # Now that our records are complete, go ahead and remove the repo.
     client.snapshot.delete_repository(name=repo)
 
@@ -253,20 +257,19 @@ class Setup:
         self.settings.storage_class = storage_class
         self.settings.provider = provider
         self.settings.rotate_by = rotate_by
-        self.settings.base_path = self.settings.base_path_prefix
         self.settings.style = style
+        self.base_path = self.settings.base_path_prefix
 
         self.suffix = '000001'
         if self.settings.style != "oneup":
             self.suffix == f'{self.year:04}.{self.month:02}'
         self.settings.last_suffix = self.suffix
 
+        self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
         if self.settings.rotate_by == "bucket":
-            self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
             self.new_bucket_name = f"{self.settings.bucket_name_prefix}-{self.suffix}"
             self.base_path = f"{self.settings.base_path_prefix}"
         else:
-            self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
             self.new_bucket_name = f"{self.settings.bucket_name_prefix}"
             self.base_path = f"{self.base_path}-{self.suffix}"
 
@@ -369,19 +372,19 @@ class Rotate:
         self.month = month
         self.base_path = ''
         self.suffix = get_next_suffix(self.settings.style, self.settings.last_suffix, year, month)
+        self.settings.last_suffix = self.suffix
 
+        self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
         if self.settings.rotate_by == "bucket":
-            self.new_repo_name = f"{self.settings.repo_name_prefix}{self.suffix}"
-            self.new_bucket_name = f"{self.settings.bucket_name_prefix}{self.suffix}"
+            self.new_bucket_name = f"{self.settings.bucket_name_prefix}-{self.suffix}"
             self.base_path = f"{self.settings.base_path_prefix}"
         else:
-            self.new_repo_name = f"{self.settings.repo_name_prefix}{self.suffix}"
             self.new_bucket_name = f"{self.settings.bucket_name_prefix}"
-            self.base_path = f"{self.base_path}{self.suffix}"
+            self.base_path = f"{self.settings.base_path_prefix}-{self.suffix}"
 
         self.loggit.debug('Getting repo list')
         self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
-        self.repo_list.sort()
+        self.repo_list.sort(reverse=True)
         self.loggit.debug('Repo list: %s', self.repo_list)
         try:
             self.latest_repo = self.repo_list[-1]
@@ -434,8 +437,10 @@ class Rotate:
             self.loggit.info("Updating %d policies:", len(updated_policies.keys()))
         for pol, body in updated_policies.items():
             self.loggit.info("\t%s", pol)
+            self.loggit.debug("Policy body: %s", body)
             if not dry_run:
-                self.client.ilm.put_lifecycle(policy_id=pol, body=body)
+                self.client.ilm.put_lifecycle(name=pol, policy=body)
+            self.loggit.debug("Finished ILM Policy updates")
 
     def unmount_oldest_repos(self, dry_run=False):
         """
@@ -450,9 +455,10 @@ class Rotate:
         # Also, how to embed mutliple classes in a single action file
         # Alias action may be using multiple filter blocks. Look at that since we'll
         # need to do the same thing.:
-        s = slice(0, len(self.repo_list) - self.keep)
-        self.loggit.info("Repo list: %s", self.repo_list)
-        for repo in self.repo_list[s]:
+        self.loggit.debug("Total list: %s", self.repo_list)
+        s = self.repo_list[self.keep:]
+        self.loggit.debug("Repos to remove: %s", s)
+        for repo in s:
             self.loggit.info("Removing repo %s", repo)
             if not dry_run:
                 unmount_repo(self.client, repo, STATUS_INDEX)
@@ -476,6 +482,9 @@ class Rotate:
         """
         Perform high-level repo rotation steps in sequence.
         """
+        ensure_settings_index(self.client)
+        self.loggit.debug('Saving settings')
+        save_settings(self.client, self.settings)
         create_new_bucket(self.new_bucket_name)
         create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.settings.canned_acl, self.settings.storage_class)
         self.update_ilm_policies()
