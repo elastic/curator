@@ -85,9 +85,7 @@ def save_settings(client, settings):
         client.update(index=STATUS_INDEX, id=SETTINGS_ID, doc=settings.__dict__)
     except NotFoundError:
         loggit.info("Settings document does not exist, creating it")
-        doc = settings.__dict__
-        loggit.debug("Document: %s", doc)
-        client.create(index=STATUS_INDEX, id=SETTINGS_ID, document=doc)
+        client.create(index=STATUS_INDEX, id=SETTINGS_ID, document=settings.__dict__)
     loggit.info("Settings saved")
 
 
@@ -180,7 +178,7 @@ def get_repos(client, repo_name_prefix):
     """
     repos = client.snapshot.get_repository()
     pattern = re.compile(repo_name_prefix)
-    logging.debug(f'Looking for repos matching {repo_name_prefix}')
+    logging.debug('Looking for repos matching %s', repo_name_prefix)
     return [repo for repo in repos if pattern.search(repo)]
 
 
@@ -262,7 +260,7 @@ class Setup:
 
         self.suffix = '000001'
         if self.settings.style != "oneup":
-            self.suffix == f'{self.year:04}.{self.month:02}'
+            self.suffix = f'{self.year:04}.{self.month:02}'
         self.settings.last_suffix = self.suffix
 
         self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
