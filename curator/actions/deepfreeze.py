@@ -23,6 +23,44 @@ class Deepfreeze:
 
 
 @dataclass
+class ThawSet:
+    """
+    Data class for thaw settings
+    """
+
+    repo_name: str
+    bucket_name: str
+    base_path: str
+    provider: str
+    indices: list = None
+
+    def __init__(self, thaw_hash=None):
+        if thaw_hash is not None:
+            for key, value in thaw_hash.items():
+                setattr(self, key, value)
+
+
+@dataclass
+class Repository:
+    """
+    Data class for repository
+    """
+
+    name: str
+    bucket: str
+    base_path: str
+    start: datetime
+    end: datetime
+    is_thawed: bool = False
+    is_mounted: bool = True
+
+    def __init__(self, repo_hash=None):
+        if repo_hash is not None:
+            for key, value in repo_hash.items():
+                setattr(self, key, value)
+
+
+@dataclass
 class Settings:
     """
     Data class for settings
