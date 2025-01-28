@@ -151,54 +151,6 @@ def setup(
 @click.option(
     "--month", type=int, default=today.month, help="Month for the new repo (default is today)"
 )
-# @click.option(
-#     "--repo_name_prefix",
-#     type=str,
-#     default="deepfreeze",
-#     help="prefix for naming rotating repositories",
-# )
-# @click.option(
-#     "--bucket_name_prefix",
-#     type=str,
-#     default="deepfreeze",
-#     help="prefix for naming buckets",
-# )
-# @click.option(
-#     "--base_path_prefix",
-#     type=str,
-#     default="snapshots",
-#     help="base path in the bucket to use for searchable snapshots",
-# )
-# @click.option(
-#     "--canned_acl",
-#     type=click.Choice(
-#         [
-#             "private",
-#             "public-read",
-#             "public-read-write",
-#             "authenticated-read",
-#             "log-delivery-write",
-#             "bucket-owner-read",
-#             "bucket-owner-full-control",
-#         ]
-#     ),
-#     default="private",
-#     help="Canned ACL as defined by AWS",
-# )
-# @click.option(
-#     "--storage_class",
-#     type=click.Choice(
-#         [
-#             "standard",
-#             "reduced_redundancy",
-#             "standard_ia",
-#             "intelligent_tiering",
-#             "onezone_ia",
-#         ]
-#     ),
-#     default="intelligent_tiering",
-#     help="What storage class to use, as defined by AWS",
-# )
 @click.option(
     "--keep",
     type=int,
@@ -210,11 +162,6 @@ def rotate(
     ctx,
     year,
     month,
-    # repo_name_prefix,
-    # bucket_name_prefix,
-    # base_path_prefix,
-    # canned_acl,
-    # storage_class,
     keep,
 ):
     """
@@ -223,11 +170,6 @@ def rotate(
     manual_options = {
         'year': year,
         'month': month,
-        # 'repo_name_prefix': repo_name_prefix,
-        # 'bucket_name_prefix': bucket_name_prefix,
-        # 'base_path_prefix': base_path_prefix,
-        # 'canned_acl': canned_acl,
-        # 'storage_class': storage_class,
         'keep': keep,
     }
     action = CLIAction(

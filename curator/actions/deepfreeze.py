@@ -337,11 +337,6 @@ class Rotate:
     def __init__(
         self,
         client,
-        # repo_name_prefix="deepfreeze",
-        # bucket_name_prefix="deepfreeze",
-        # base_path_prefix="snapshots",
-        # canned_acl="private",
-        # storage_class="intelligent_tiering",
         keep="6",
         year=None,
         month=None,
