@@ -386,8 +386,10 @@ class Rotate:
         self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort(reverse=True)
         self.loggit.debug('Repo list: %s', self.repo_list)
+        self.latest_repo = ''
         try:
-            self.latest_repo = self.repo_list[-1]
+            self.latest_repo = self.repo_list[0]
+            self.loggit.debug('Latest repo: %s', self.latest_repo)
         except IndexError:
             raise RepositoryException(f"no repositories match {self.settings.repo_name_prefix}")
         if self.new_repo_name in self.repo_list:
