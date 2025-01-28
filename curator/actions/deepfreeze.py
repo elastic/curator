@@ -3,20 +3,23 @@
 import logging
 import re
 import sys
+from dataclasses import dataclass
 from datetime import datetime
 
 import boto3
 from botocore.exceptions import ClientError
 from elasticsearch8.exceptions import NotFoundError
-from dataclasses import dataclass
 
 from curator.exceptions import ActionError, RepositoryException
 
 STATUS_INDEX = "deepfreeze-status"
 SETTINGS_ID = "101"
 
+
 class Deepfreeze:
-    pass
+    """
+    Allows nesting of actions under the deepfreeze command
+    """
 
 
 @dataclass
@@ -24,6 +27,7 @@ class Settings:
     """
     Data class for settings
     """
+
     repo_name_prefix: str = "deepfreeze"
     bucket_name_prefix: str = "deepfreeze"
     base_path_prefix: str = "snapshots"
@@ -35,7 +39,7 @@ class Settings:
     last_suffix: str = None
 
     def __init__(self, settings_hash=None):
-        if settings_hash is  not None:
+        if settings_hash is not None:
             for key, value in settings_hash.items():
                 setattr(self, key, value)
 
@@ -77,7 +81,6 @@ def save_settings(client, settings):
     :param client: A client connection object
     :param provider: The provider to use (AWS only for now)
     """
-    #TODO: Add the ability to read and update the settings doc, if it already exists
     loggit = logging.getLogger("curator.actions.deepfreeze")
     try:
         existing_doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
@@ -110,8 +113,9 @@ def create_new_bucket(bucket_name, dry_run=False):
         raise ActionError(e)
 
 
-def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl, 
-                    storage_class, dry_run=False):
+def create_new_repo(
+    client, repo_name, bucket_name, base_path, canned_acl, storage_class, dry_run=False
+):
     """
     Creates a new repo using the previously-created bucket.
 
@@ -137,7 +141,7 @@ def create_new_repo(client, repo_name, bucket_name, base_path, canned_acl,
                     "base_path": base_path,
                     "canned_acl": canned_acl,
                     "storage_class": storage_class,
-                }
+                },
             },
         )
     except Exception as e:
@@ -277,7 +281,9 @@ class Setup:
         self.loggit.debug('Repo list: %s', self.repo_list)
 
         if len(self.repo_list) > 0:
-            raise RepositoryException(f"repositories matching {self.settings.repo_name_prefix}-* already exist")
+            raise RepositoryException(
+                f"repositories matching {self.settings.repo_name_prefix}-* already exist"
+            )
         self.loggit.debug("Deepfreeze Setup initialized")
 
     def do_dry_run(self):
@@ -285,19 +291,17 @@ class Setup:
         Perform a dry-run of the setup process.
         """
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
-        msg = (
-            f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
-        )
+        msg = f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
         self.loggit.info(msg)
         create_new_bucket(self.new_bucket_name, dry_run=True)
         create_new_repo(
-            self.client, 
-            self.new_repo_name, 
-            self.new_bucket_name, 
-            self.base_path, 
-            self.settings.canned_acl, 
-            self.settings.storage_class, 
-            dry_run=True
+            self.client,
+            self.new_repo_name,
+            self.new_bucket_name,
+            self.base_path,
+            self.settings.canned_acl,
+            self.settings.storage_class,
+            dry_run=True,
         )
 
     def do_action(self):
@@ -309,12 +313,12 @@ class Setup:
         save_settings(self.client, self.settings)
         create_new_bucket(self.new_bucket_name)
         create_new_repo(
-            self.client, 
-            self.new_repo_name, 
-            self.new_bucket_name, 
-            self.base_path, 
-            self.settings.canned_acl, 
-            self.settings.storage_class
+            self.client,
+            self.new_repo_name,
+            self.new_bucket_name,
+            self.base_path,
+            self.settings.canned_acl,
+            self.settings.storage_class,
         )
         self.loggit.info(
             "Setup complete. You now need to update ILM policies to use %s.",
@@ -361,10 +365,12 @@ class Rotate:
 
         self.client = client
         self.keep = int(keep)
-        self.year = year 
+        self.year = year
         self.month = month
         self.base_path = ''
-        self.suffix = get_next_suffix(self.settings.style, self.settings.last_suffix, year, month)
+        self.suffix = get_next_suffix(
+            self.settings.style, self.settings.last_suffix, year, month
+        )
         self.settings.last_suffix = self.suffix
 
         self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
@@ -384,7 +390,9 @@ class Rotate:
             self.latest_repo = self.repo_list[0]
             self.loggit.debug('Latest repo: %s', self.latest_repo)
         except IndexError:
-            raise RepositoryException(f"no repositories match {self.settings.repo_name_prefix}")
+            raise RepositoryException(
+                f"no repositories match {self.settings.repo_name_prefix}"
+            )
         if self.new_repo_name in self.repo_list:
             raise RepositoryException(f"repository {self.new_repo_name} already exists")
         if not self.client.indices.exists(index=STATUS_INDEX):
@@ -451,7 +459,7 @@ class Rotate:
         # Alias action may be using multiple filter blocks. Look at that since we'll
         # need to do the same thing.:
         self.loggit.debug("Total list: %s", self.repo_list)
-        s = self.repo_list[self.keep:]
+        s = self.repo_list[self.keep :]
         self.loggit.debug("Repos to remove: %s", s)
         for repo in s:
             self.loggit.info("Removing repo %s", repo)
@@ -469,7 +477,15 @@ class Rotate:
         )
         self.loggit.info(msg)
         create_new_bucket(self.new_bucket_name, dry_run=True)
-        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.settings.canned_acl, self.settings.storage_class, dry_run=True)
+        create_new_repo(
+            self.client,
+            self.new_repo_name,
+            self.new_bucket_name,
+            self.base_path,
+            self.settings.canned_acl,
+            self.settings.storage_class,
+            dry_run=True,
+        )
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
 
@@ -481,18 +497,29 @@ class Rotate:
         self.loggit.debug('Saving settings')
         save_settings(self.client, self.settings)
         create_new_bucket(self.new_bucket_name)
-        create_new_repo(self.client, self.new_repo_name, self.new_bucket_name, self.base_path, self.settings.canned_acl, self.settings.storage_class)
+        create_new_repo(
+            self.client,
+            self.new_repo_name,
+            self.new_bucket_name,
+            self.base_path,
+            self.settings.canned_acl,
+            self.settings.storage_class,
+        )
         self.update_ilm_policies()
         self.unmount_oldest_repos()
+
 
 class Thaw:
     """
     Thaw a deepfreeze repository
     """
+
     pass
+
 
 class Refreeze:
     """
     Refreeze a thawed deepfreeze repository
     """
+
     pass

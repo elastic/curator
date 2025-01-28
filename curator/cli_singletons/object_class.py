@@ -1,16 +1,35 @@
 """Object builder"""
 import logging
 import sys
-from voluptuous import Schema
+
 from es_client.builder import Builder
 from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
+from voluptuous import Schema
+
 from curator import IndexList, SnapshotList
 from curator.actions import (
-    Alias, Allocation, Close, ClusterRouting, CreateIndex, DeleteIndices, ForceMerge,
-    IndexSettings, Open, Reindex, Replicas, Rollover, Shrink,  Snapshot, DeleteSnapshots, 
-    Restore, Setup, Thaw, Refreeze, Rotate
+    Alias,
+    Allocation,
+    Close,
+    ClusterRouting,
+    CreateIndex,
+    DeleteIndices,
+    DeleteSnapshots,
+    ForceMerge,
+    IndexSettings,
+    Open,
+    Refreeze,
+    Reindex,
+    Replicas,
+    Restore,
+    Rollover,
+    Rotate,
+    Setup,
+    Shrink,
+    Snapshot,
+    Thaw,
 )
 from curator.defaults.settings import snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots

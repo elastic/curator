@@ -1,26 +1,34 @@
 """Deepfreeze Singleton"""
+
+import logging
 from datetime import datetime
 
 import click
-import logging
 
 from curator.cli_singletons.object_class import CLIAction
 
 today = datetime.today()
+
 
 @click.group()
 def deepfreeze():
     """
     Deepfreeze command group
     """
-    pass
+
 
 @deepfreeze.command()
 @click.option(
-    "--year", type=int, default=today.year, help="Year for the new repo (default is today)"
+    "--year",
+    type=int,
+    default=today.year,
+    help="Year for the new repo (default is today)",
 )
 @click.option(
-    "--month", type=int, default=today.month, help="Month for the new repo (default is today)"
+    "--month",
+    type=int,
+    default=today.month,
+    help="Month for the new repo (default is today)",
 )
 @click.option(
     "--repo_name_prefix",
@@ -144,12 +152,19 @@ def setup(
     )
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])
 
+
 @deepfreeze.command()
 @click.option(
-    "--year", type=int, default=today.year, help="Year for the new repo (default is today)"
+    "--year",
+    type=int,
+    default=today.year,
+    help="Year for the new repo (default is today)",
 )
 @click.option(
-    "--month", type=int, default=today.month, help="Month for the new repo (default is today)"
+    "--month",
+    type=int,
+    default=today.month,
+    help="Month for the new repo (default is today)",
 )
 @click.option(
     "--keep",
@@ -181,15 +196,22 @@ def rotate(
     )
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])
 
+
 @deepfreeze.command()
 @click.option(
-    "--start", type=click.DateTime(formats=["%Y-%m-%d"]), help="Start of period to be thawed"
+    "--start",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    help="Start of period to be thawed",
 )
 @click.option(
-    "--end", type=click.DateTime(formats=["%Y-%m-%d"]), help="End of period to be thawed"
+    "--end",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    help="End of period to be thawed",
 )
 @click.option(
-    "--enable-multiple-buckets", is_flag=True, help="Enable multiple buckets for thawing if period spans multiple buckets"
+    "--enable-multiple-buckets",
+    is_flag=True,
+    help="Enable multiple buckets for thawing if period spans multiple buckets",
 )
 @click.pass_context
 def thaw(
@@ -214,6 +236,7 @@ def thaw(
         True,
     )
     action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+
 
 @deepfreeze.command()
 @click.option(
