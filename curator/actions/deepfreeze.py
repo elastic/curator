@@ -1,5 +1,7 @@
 """Deepfreeze action class"""
 
+# pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
+
 import logging
 import re
 import sys
