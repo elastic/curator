@@ -82,7 +82,7 @@ class Settings:
                 setattr(self, key, value)
 
 
-def ensure_settings_index(client):
+def ensure_settings_index(client) -> None:
     """
     Ensure that the status index exists in Elasticsearch.
 
@@ -107,7 +107,7 @@ def get_settings(client):
         doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
         loggit.info("Settings document found")
         return Settings(doc["_source"])
-    except client.exceptions.NotFoundError:
+    except NotFoundError:
         loggit.info("Settings document not found")
         return None
 
@@ -202,10 +202,12 @@ def get_next_suffix(style, last_suffix, year, month):
     """
     if style == "oneup":
         return str(int(last_suffix) + 1).zfill(6)
-    else:
+    elif style == "date":
         current_year = year or datetime.now().year
         current_month = month or datetime.now().month
         return f"{current_year:04}.{current_month:02}"
+    else:
+        raise ValueError("Invalid style")
 
 
 def get_repos(client, repo_name_prefix):
