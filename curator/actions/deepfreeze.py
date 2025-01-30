@@ -30,6 +30,15 @@ class ThawSet:
     Data class for thaw settings
     """
 
+    repos: []
+
+
+@dataclass
+class ThawedRepo:
+    """
+    Data class for a thawed repo and indices
+    """
+
     repo_name: str
     bucket_name: str
     base_path: str
@@ -60,6 +69,10 @@ class Repository:
         if repo_hash is not None:
             for key, value in repo_hash.items():
                 setattr(self, key, value)
+
+
+# class RepoList(List):
+#     """Encapsulate a list of repos"""
 
 
 @dataclass
@@ -228,7 +241,7 @@ def get_repos(client, repo_name_prefix):
     return [repo for repo in repos if pattern.search(repo)]
 
 
-def unmount_repo(client, repo, status_index):
+def unmount_repo(client, repo):
     """
     Encapsulate the actions of deleting the repo and, at the same time,
     doing any record-keeping we need.
@@ -238,19 +251,29 @@ def unmount_repo(client, repo, status_index):
     :param status_index: The name of the status index
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    # repo_info = client.snapshot.get_repository(name=repo)
-    # bucket = repo_info["settings"]["bucket"]
-    # doc = {
-    #     "repo": repo,
-    #     "state": "deepfreeze",
-    #     "timestamp": datetime.now().isoformat(),
-    #     "bucket": bucket,
-    #     "start": None,  # TODO: Add the earliest @timestamp value here
-    #     "end": None,  # TODO: Add the latest @timestamp value here
-    # }
-    # client.create(index=status_index, document=doc)
+    repo_info = client.snapshot.get_repository(name=repo)
+    bucket = repo_info["settings"]["bucket"]
+    base_path = repo_info["settings"]["base_path"]
+    repodoc = Repository(
+        {
+            "name": repo,
+            "bucket": bucket,
+            "base_path": base_path,
+            "is_mounted": False,
+            "start": None,  # TODO: Add the earliest @timestamp value here
+            "end": None,  # TODO: Add the latest @timestamp value here
+        }
+    )
+    msg = f"Recording repository details as {repodoc}"
+    loggit.debug(msg)
+    client.create(index=STATUS_INDEX, document=repodoc)
     # Now that our records are complete, go ahead and remove the repo.
     client.snapshot.delete_repository(name=repo)
+
+
+def decode_date(date_in: str) -> datetime:
+
+    return datetime.today()
 
 
 class Setup:
@@ -506,9 +529,40 @@ class Rotate:
         for repo in s:
             self.loggit.info("Removing repo %s", repo)
             if not dry_run:
-                unmount_repo(self.client, repo, STATUS_INDEX)
+                unmount_repo(self.client, repo)
 
-    def do_dry_run(self):
+    def get_repo_details(self, repo: str) -> Repository:
+        """
+        Get all the relevant details about this repo and build a Repository object
+        using them.
+
+        Args:
+            repo (str): Name of the repository
+
+        Returns:
+            Repository: A fleshed-out Repository object for persisting to ES.
+        """
+        reponse = self.client.get_repository(repo)
+        # TODO: The hard part here is figuring out what the earliest and latest
+        # @timestamp values across all indices stored in this bucket are...
+        return Repository(
+            {
+                "name": repo,
+                "bucket": response['bucket'],
+                "base_path": response['base_path'],
+                "start": self.get_earliest(repo),
+                "end": self.get_latest(repo),
+                "is_mounted": False,
+            }
+        )
+
+    def get_earliest(self, repo: str) -> datetime:
+        return None
+
+    def get_latest(self, repo: str) -> datetime:
+        return None
+
+    def do_dry_run(self) -> None:
         """
         Perform a dry-run of the rotation process.
         """
@@ -531,7 +585,7 @@ class Rotate:
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
 
-    def do_action(self):
+    def do_action(self) -> None:
         """
         Perform high-level repo rotation steps in sequence.
         """
@@ -556,7 +610,43 @@ class Thaw:
     Thaw a deepfreeze repository
     """
 
-    pass
+    def __init__(
+        self,
+        client,
+        start,
+        end,
+        enable_multiple_buckets,
+    ):
+
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.debug("Initializing Deepfreeze Rotate")
+
+        self.settings = get_settings(client)
+        self.loggit.debug("Settings: %s", str(self.settings))
+
+        self.client = client
+        self.start = decode_date(start)
+        self.end = decode_date(end)
+        self.enable_multiple_buckets = enable_multiple_buckets
+
+    def get_repos_to_thaw(self) -> list[Repository]:
+        return []
+
+    def thaw_repo(self, repo: str) -> None:
+        pass
+
+    def do_action(self):
+        """
+        Perform high-level repo thawing steps in sequence.
+        """
+        # We don't save the settings here because nothing should change our settings.
+        # What we _will_ do though, is save a ThawSet showing what indices and repos
+        # were thawed out.
+
+        thawset = ThawedRepo()
+        for repo in self.get_repos_to_thaw():
+            self.loggit.info("Thawing %s", repo)
+            self.thaw_repo(repo)
 
 
 class Refreeze:

@@ -25,7 +25,7 @@ def test_unmount_repo_success(mock_client):
     mock_client.snapshot.delete_repository.return_value = {"acknowledged": True}
 
     # Call the function with the mock client
-    unmount_repo(mock_client, repo, status_index)
+    unmount_repo(mock_client, repo)
 
     # Assert that delete_repository was called with the correct repo name
     mock_client.snapshot.delete_repository.assert_called_once_with(name=repo)
@@ -43,7 +43,7 @@ def test_unmount_repo_delete_repository_exception(mock_client):
 
     # Ensure the exception is raised
     with pytest.raises(Exception, match="Error deleting repository"):
-        unmount_repo(mock_client, repo, status_index)
+        unmount_repo(mock_client, repo)
 
     # Check that delete_repository was called with the correct repo name
     mock_client.snapshot.delete_repository.assert_called_once_with(name=repo)

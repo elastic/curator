@@ -3,25 +3,25 @@
 # pylint: disable=missing-function-docstring, pointless-statement, missing-class-docstring, protected-access, attribute-defined-outside-init
 from unittest import TestCase
 
-from curator.actions.deepfreeze import ThawSet
+from curator.actions.deepfreeze import ThawedRepo
 
 
-class TestClassDeepfreezeThawSet(TestCase):
+class TestClassDeepfreezeThawedRepo(TestCase):
 
     def test_default_values(self):
-        ts = ThawSet()
+        tr = ThawedRepo()
         with self.assertRaises(AttributeError):
-            ts.repo_name
+            tr.repo_name
         with self.assertRaises(AttributeError):
-            ts.bucket_name
+            tr.bucket_name
         with self.assertRaises(AttributeError):
-            ts.base_path
+            tr.base_path
         with self.assertRaises(AttributeError):
-            ts.provider
-        self.assertEqual(ts.indices, None)
+            tr.provider
+        self.assertEqual(tr.indices, None)
 
     def test_set_from_hash(self):
-        ts = ThawSet(
+        tr = ThawedRepo(
             {
                 "repo_name": "my_repo",
                 "bucket_name": "my_bucket",
@@ -30,8 +30,8 @@ class TestClassDeepfreezeThawSet(TestCase):
                 "indices": ["index1", "index2"],
             }
         )
-        self.assertEqual(ts.repo_name, "my_repo")
-        self.assertEqual(ts.bucket_name, "my_bucket")
-        self.assertEqual(ts.base_path, "my_path")
-        self.assertEqual(ts.provider, "aws")
-        self.assertEqual(ts.indices, ["index1", "index2"])
+        self.assertEqual(tr.repo_name, "my_repo")
+        self.assertEqual(tr.bucket_name, "my_bucket")
+        self.assertEqual(tr.base_path, "my_path")
+        self.assertEqual(tr.provider, "aws")
+        self.assertEqual(tr.indices, ["index1", "index2"])

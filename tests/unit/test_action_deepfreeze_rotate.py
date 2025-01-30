@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from curator.actions.deepfreeze import RepositoryException, Rotate, Settings
+from curator.actions.deepfreeze import Rotate, Settings
 
 
 @pytest.fixture
