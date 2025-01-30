@@ -131,26 +131,26 @@ def setup(
     """
     logging.debug("setup")
     manual_options = {
-        'year': year,
-        'month': month,
-        'repo_name_prefix': repo_name_prefix,
-        'bucket_name_prefix': bucket_name_prefix,
-        'base_path_prefix': base_path_prefix,
-        'canned_acl': canned_acl,
-        'storage_class': storage_class,
-        'provider': provider,
-        'rotate_by': rotate_by,
-        'style': style,
+        "year": year,
+        "month": month,
+        "repo_name_prefix": repo_name_prefix,
+        "bucket_name_prefix": bucket_name_prefix,
+        "base_path_prefix": base_path_prefix,
+        "canned_acl": canned_acl,
+        "storage_class": storage_class,
+        "provider": provider,
+        "rotate_by": rotate_by,
+        "style": style,
     }
 
     action = CLIAction(
         ctx.info_name,
-        ctx.obj['configdict'],
+        ctx.obj["configdict"],
         manual_options,
         [],
         True,
     )
-    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
 
 
 @deepfreeze.command()
@@ -183,18 +183,18 @@ def rotate(
     Deepfreeze rotation (add a new repo and age oldest off)
     """
     manual_options = {
-        'year': year,
-        'month': month,
-        'keep': keep,
+        "year": year,
+        "month": month,
+        "keep": keep,
     }
     action = CLIAction(
         ctx.info_name,
-        ctx.obj['configdict'],
+        ctx.obj["configdict"],
         manual_options,
         [],
         True,
     )
-    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
 
 
 @deepfreeze.command()
@@ -224,18 +224,18 @@ def thaw(
     Thaw a deepfreeze repository
     """
     manual_options = {
-        'start': start,
-        'end': end,
-        'enable_multiple_buckets': enable_multiple_buckets,
+        "start": start,
+        "end": end,
+        "enable_multiple_buckets": enable_multiple_buckets,
     }
     action = CLIAction(
         ctx.info_name,
-        ctx.obj['configdict'],
+        ctx.obj["configdict"],
         manual_options,
         [],
         True,
     )
-    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
 
 
 @deepfreeze.command()
@@ -251,13 +251,13 @@ def refreeze(
     Refreeze a thawed repository
     """
     manual_options = {
-        'thaw_set': thaw_set,
+        "thaw_set": thaw_set,
     }
     action = CLIAction(
         ctx.info_name,
-        ctx.obj['configdict'],
+        ctx.obj["configdict"],
         manual_options,
         [],
         True,
     )
-    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
