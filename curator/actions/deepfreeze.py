@@ -25,15 +25,6 @@ class Deepfreeze:
 
 
 @dataclass
-class ThawSet:
-    """
-    Data class for thaw settings
-    """
-
-    repos: []
-
-
-@dataclass
 class ThawedRepo:
     """
     Data class for a thawed repo and indices
@@ -45,10 +36,27 @@ class ThawedRepo:
     provider: str
     indices: list = None
 
-    def __init__(self, thaw_hash=None):
-        if thaw_hash is not None:
-            for key, value in thaw_hash.items():
-                setattr(self, key, value)
+    def __init__(self, name: str) -> None:
+        self.repo_name = name
+        # TODO: Get the bucket and base_path from the repo
+        self.bucket_name = ""
+        self.base_path = ""
+        self.provider = "aws"
+        self.indices = []
+
+
+class ThawSet(dict[str, ThawedRepo]):
+    """
+    Data class for thaw settings
+    """
+
+    def add(self, thawed_repo: ThawedRepo) -> None:
+        """
+        Add a thawed repo to the set
+
+        :param thawed_repo: A thawed repo object
+        """
+        self[thawed_repo.repo_name] = thawed_repo
 
 
 @dataclass
@@ -65,7 +73,7 @@ class Repository:
     is_thawed: bool = False
     is_mounted: bool = True
 
-    def __init__(self, repo_hash=None):
+    def __init__(self, repo_hash=None) -> None:
         if repo_hash is not None:
             for key, value in repo_hash.items():
                 setattr(self, key, value)
@@ -91,12 +99,13 @@ class Settings:
     style: str = "oneup"
     last_suffix: str = None
 
-    def __init__(self, settings_hash=None):
+    def __init__(self, settings_hash=None) -> None:
         if settings_hash is not None:
             for key, value in settings_hash.items():
                 setattr(self, key, value)
 
 
+# ? What type hint shoudl be used here?
 def ensure_settings_index(client) -> None:
     """
     Ensure that the status index exists in Elasticsearch.
@@ -109,7 +118,7 @@ def ensure_settings_index(client) -> None:
         client.indices.create(index=STATUS_INDEX)
 
 
-def get_settings(client):
+def get_settings(client) -> Settings:
     """
     Get the settings for the deepfreeze operation from the status index.
 
@@ -127,7 +136,7 @@ def get_settings(client):
         return None
 
 
-def save_settings(client, settings):
+def save_settings(client, settings: Settings) -> None:
     """
     Save the settings for the deepfreeze operation to the status index.
 
@@ -136,7 +145,7 @@ def save_settings(client, settings):
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     try:
-        existing_doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
+        client.get(index=STATUS_INDEX, id=SETTINGS_ID)
         loggit.info("Settings document already exists, updating it")
         client.update(index=STATUS_INDEX, id=SETTINGS_ID, doc=settings.__dict__)
     except NotFoundError:
@@ -145,7 +154,7 @@ def save_settings(client, settings):
     loggit.info("Settings saved")
 
 
-def create_new_bucket(bucket_name, dry_run=False):
+def create_new_bucket(bucket_name: str, dry_run: bool = False) -> None:
     """
     Creates a new S3 bucket using the aws config in the environment.
 
@@ -167,8 +176,14 @@ def create_new_bucket(bucket_name, dry_run=False):
 
 
 def create_new_repo(
-    client, repo_name, bucket_name, base_path, canned_acl, storage_class, dry_run=False
-):
+    client,
+    repo_name: str,
+    bucket_name: str,
+    base_path: str,
+    canned_acl: str,
+    storage_class: str,
+    dry_run: bool = False,
+) -> None:
     """
     Creates a new repo using the previously-created bucket.
 
@@ -200,13 +215,14 @@ def create_new_repo(
     except Exception as e:
         loggit.error(e)
         raise ActionError(e)
+    #
     # TODO: Gather the reply and parse it to make sure this succeeded
     #       It should simply bring back '{ "acknowledged": true }' but I
     #       don't know how client will wrap it.
     loggit.info("Response: %s", response)
 
 
-def get_next_suffix(style, last_suffix, year, month):
+def get_next_suffix(style: str, last_suffix: str, year: int, month: int) -> str:
     """
     Gets the next suffix
 
@@ -225,7 +241,7 @@ def get_next_suffix(style, last_suffix, year, month):
         raise ValueError("Invalid style")
 
 
-def get_repos(client, repo_name_prefix):
+def get_repos(client, repo_name_prefix: str) -> list[str]:
     """
     Get the complete list of repos and return just the ones whose names
     begin with the given prefix.
@@ -237,11 +253,11 @@ def get_repos(client, repo_name_prefix):
     """
     repos = client.snapshot.get_repository()
     pattern = re.compile(repo_name_prefix)
-    logging.debug('Looking for repos matching %s', repo_name_prefix)
+    logging.debug("Looking for repos matching %s", repo_name_prefix)
     return [repo for repo in repos if pattern.search(repo)]
 
 
-def unmount_repo(client, repo):
+def unmount_repo(client, repo: str) -> None:
     """
     Encapsulate the actions of deleting the repo and, at the same time,
     doing any record-keeping we need.
@@ -272,7 +288,6 @@ def unmount_repo(client, repo):
 
 
 def decode_date(date_in: str) -> datetime:
-
     return datetime.today()
 
 
@@ -285,17 +300,17 @@ class Setup:
     def __init__(
         self,
         client,
-        year,
-        month,
-        repo_name_prefix="deepfreeze",
-        bucket_name_prefix="deepfreeze",
-        base_path_prefix="snapshots",
-        canned_acl="private",
-        storage_class="intelligent_tiering",
-        provider="aws",
-        rotate_by="path",
-        style="default",
-    ):
+        year: int,
+        month: int,
+        repo_name_prefix: str = "deepfreeze",
+        bucket_name_prefix: str = "deepfreeze",
+        base_path_prefix: str = "snapshots",
+        canned_acl: str = "private",
+        storage_class: str = "intelligent_tiering",
+        provider: str = "aws",
+        rotate_by: str = "path",
+        style: str = "oneup",
+    ) -> None:
         """
         :param client: A client connection object
         :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
@@ -327,9 +342,9 @@ class Setup:
         self.settings.style = style
         self.base_path = self.settings.base_path_prefix
 
-        self.suffix = '000001'
+        self.suffix = "000001"
         if self.settings.style != "oneup":
-            self.suffix = f'{self.year:04}.{self.month:02}'
+            self.suffix = f"{self.year:04}.{self.month:02}"
         self.settings.last_suffix = self.suffix
 
         self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
@@ -340,10 +355,10 @@ class Setup:
             self.new_bucket_name = f"{self.settings.bucket_name_prefix}"
             self.base_path = f"{self.base_path}-{self.suffix}"
 
-        self.loggit.debug('Getting repo list')
+        self.loggit.debug("Getting repo list")
         self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort()
-        self.loggit.debug('Repo list: %s', self.repo_list)
+        self.loggit.debug("Repo list: %s", self.repo_list)
 
         if len(self.repo_list) > 0:
             raise RepositoryException(
@@ -351,7 +366,7 @@ class Setup:
             )
         self.loggit.debug("Deepfreeze Setup initialized")
 
-    def do_dry_run(self):
+    def do_dry_run(self) -> None:
         """
         Perform a dry-run of the setup process.
         """
@@ -369,7 +384,7 @@ class Setup:
             dry_run=True,
         )
 
-    def do_action(self):
+    def do_action(self) -> None:
         """
         Perform create initial bucket and repository.
         """
@@ -404,10 +419,10 @@ class Rotate:
     def __init__(
         self,
         client,
-        keep="6",
-        year=None,
-        month=None,
-    ):
+        keep: str = "6",
+        year: int = None,
+        month: int = None,
+    ) -> None:
         """
         :param client: A client connection object
         # :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
@@ -432,7 +447,7 @@ class Rotate:
         self.keep = int(keep)
         self.year = year
         self.month = month
-        self.base_path = ''
+        self.base_path = ""
         self.suffix = get_next_suffix(
             self.settings.style, self.settings.last_suffix, year, month
         )
@@ -446,14 +461,14 @@ class Rotate:
             self.new_bucket_name = f"{self.settings.bucket_name_prefix}"
             self.base_path = f"{self.settings.base_path_prefix}-{self.suffix}"
 
-        self.loggit.debug('Getting repo list')
+        self.loggit.debug("Getting repo list")
         self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort(reverse=True)
-        self.loggit.debug('Repo list: %s', self.repo_list)
-        self.latest_repo = ''
+        self.loggit.debug("Repo list: %s", self.repo_list)
+        self.latest_repo = ""
         try:
             self.latest_repo = self.repo_list[0]
-            self.loggit.debug('Latest repo: %s', self.latest_repo)
+            self.loggit.debug("Latest repo: %s", self.latest_repo)
         except IndexError:
             raise RepositoryException(
                 f"no repositories match {self.settings.repo_name_prefix}"
@@ -465,7 +480,7 @@ class Rotate:
             self.loggit.warning("Created index %s", STATUS_INDEX)
         self.loggit.info("Deepfreeze initialized")
 
-    def update_ilm_policies(self, dry_run=False):
+    def update_ilm_policies(self, dry_run=False) -> None:
         """
         Loop through all existing IML policies looking for ones which reference
         the latest_repo and update them to use the new repo instead.
@@ -510,7 +525,7 @@ class Rotate:
                 self.client.ilm.put_lifecycle(name=pol, policy=body)
             self.loggit.debug("Finished ILM Policy updates")
 
-    def unmount_oldest_repos(self, dry_run=False):
+    def unmount_oldest_repos(self, dry_run=False) -> None:
         """
         Take the oldest repos from the list and remove them, only retaining
         the number chosen in the config under "keep".
@@ -542,14 +557,14 @@ class Rotate:
         Returns:
             Repository: A fleshed-out Repository object for persisting to ES.
         """
-        reponse = self.client.get_repository(repo)
+        response = self.client.get_repository(repo)
         # TODO: The hard part here is figuring out what the earliest and latest
         # @timestamp values across all indices stored in this bucket are...
         return Repository(
             {
                 "name": repo,
-                "bucket": response['bucket'],
-                "base_path": response['base_path'],
+                "bucket": response["bucket"],
+                "base_path": response["base_path"],
                 "start": self.get_earliest(repo),
                 "end": self.get_latest(repo),
                 "is_mounted": False,
@@ -590,7 +605,7 @@ class Rotate:
         Perform high-level repo rotation steps in sequence.
         """
         ensure_settings_index(self.client)
-        self.loggit.debug('Saving settings')
+        self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)
         create_new_bucket(self.new_bucket_name)
         create_new_repo(
@@ -613,11 +628,10 @@ class Thaw:
     def __init__(
         self,
         client,
-        start,
-        end,
-        enable_multiple_buckets,
-    ):
-
+        start: datetime,
+        end: datetime,
+        enable_multiple_buckets: bool = False,
+    ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Rotate")
 
@@ -635,7 +649,7 @@ class Thaw:
     def thaw_repo(self, repo: str) -> None:
         pass
 
-    def do_action(self):
+    def do_action(self) -> None:
         """
         Perform high-level repo thawing steps in sequence.
         """
@@ -643,10 +657,11 @@ class Thaw:
         # What we _will_ do though, is save a ThawSet showing what indices and repos
         # were thawed out.
 
-        thawset = ThawedRepo()
+        thawset = ThawSet()
         for repo in self.get_repos_to_thaw():
             self.loggit.info("Thawing %s", repo)
             self.thaw_repo(repo)
+            thawset.add(ThawedRepo(repo))
 
 
 class Refreeze:
