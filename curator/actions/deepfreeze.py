@@ -8,9 +8,8 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 
-import boto3
-from botocore.exceptions import ClientError
 from elasticsearch8.exceptions import NotFoundError
+from s3client import s3_client_factory
 
 from curator.exceptions import ActionError, RepositoryException
 
@@ -152,27 +151,6 @@ def save_settings(client, settings: Settings) -> None:
         loggit.info("Settings document does not exist, creating it")
         client.create(index=STATUS_INDEX, id=SETTINGS_ID, document=settings.__dict__)
     loggit.info("Settings saved")
-
-
-def create_new_bucket(bucket_name: str, dry_run: bool = False) -> None:
-    """
-    Creates a new S3 bucket using the aws config in the environment.
-
-    :param bucket_name: The name of the bucket to create
-    :param dry_run: If True, do not actually create the bucket
-    :returns:   whether the bucket was created or not
-    :rtype:     bool
-    """
-    loggit = logging.getLogger("curator.actions.deepfreeze")
-    loggit.info("Creating bucket %s", bucket_name)
-    if dry_run:
-        return
-    try:
-        s3 = boto3.client("s3")
-        s3.create_bucket(Bucket=bucket_name)
-    except ClientError as e:
-        loggit.error(e)
-        raise ActionError(e)
 
 
 def create_new_repo(
@@ -342,6 +320,8 @@ class Setup:
         self.settings.style = style
         self.base_path = self.settings.base_path_prefix
 
+        self.s3 = s3_client_factory(self.provider)
+
         self.suffix = "000001"
         if self.settings.style != "oneup":
             self.suffix = f"{self.year:04}.{self.month:02}"
@@ -373,7 +353,7 @@ class Setup:
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
         self.loggit.info(msg)
-        create_new_bucket(self.new_bucket_name, dry_run=True)
+        self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
         create_new_repo(
             self.client,
             self.new_repo_name,
@@ -391,7 +371,7 @@ class Setup:
         self.loggit.debug("Starting Setup action")
         ensure_settings_index(self.client)
         save_settings(self.client, self.settings)
-        create_new_bucket(self.new_bucket_name)
+        self.s3.create_bucket(self.new_bucket_name)
         create_new_repo(
             self.client,
             self.new_repo_name,
@@ -452,6 +432,8 @@ class Rotate:
             self.settings.style, self.settings.last_suffix, year, month
         )
         self.settings.last_suffix = self.suffix
+
+        self.s3 = s3_client_factory(self.settings.provider)
 
         self.new_repo_name = f"{self.settings.repo_name_prefix}-{self.suffix}"
         if self.settings.rotate_by == "bucket":
@@ -587,7 +569,8 @@ class Rotate:
             f" and {self.new_repo_name} will be added & made active."
         )
         self.loggit.info(msg)
-        create_new_bucket(self.new_bucket_name, dry_run=True)
+        self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
+        self.s3.create_bucket(self.new_bucket_name, dry_run=True)
         create_new_repo(
             self.client,
             self.new_repo_name,
@@ -607,7 +590,7 @@ class Rotate:
         ensure_settings_index(self.client)
         self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)
-        create_new_bucket(self.new_bucket_name)
+        self.s3.create_bucket(self.new_bucket_name, dry_run=True)
         create_new_repo(
             self.client,
             self.new_repo_name,
@@ -642,6 +625,8 @@ class Thaw:
         self.start = decode_date(start)
         self.end = decode_date(end)
         self.enable_multiple_buckets = enable_multiple_buckets
+
+        self.s3 = s3_client_factory(self.settings.provider)
 
     def get_repos_to_thaw(self) -> list[Repository]:
         return []
