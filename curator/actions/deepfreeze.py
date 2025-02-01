@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from elasticsearch8.exceptions import NotFoundError
-from s3client import s3_client_factory
 
 from curator.exceptions import ActionError, RepositoryException
+from curator.s3client import s3_client_factory
 
 STATUS_INDEX = "deepfreeze-status"
 SETTINGS_ID = "101"
