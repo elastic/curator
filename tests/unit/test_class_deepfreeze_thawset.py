@@ -1,10 +1,6 @@
 """Test the deepfreee Repository class"""
 
 # pylint: disable=missing-function-docstring, pointless-statement, missing-class-docstring, protected-access, attribute-defined-outside-init
-from unittest import TestCase
-
-import pytest
-
 from curator.actions.deepfreeze import ThawedRepo, ThawSet
 
 

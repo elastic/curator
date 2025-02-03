@@ -2,7 +2,6 @@
 
 # pylint: disable=missing-function-docstring, redefined-outer-name, pointless-statement, missing-class-docstring, protected-access, attribute-defined-outside-init
 
-import re
 from unittest.mock import Mock
 
 import pytest
