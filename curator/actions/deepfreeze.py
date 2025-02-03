@@ -320,7 +320,7 @@ class Setup:
         self.settings.style = style
         self.base_path = self.settings.base_path_prefix
 
-        self.s3 = s3_client_factory(self.provider)
+        self.s3 = s3_client_factory(self.settings.provider)
 
         self.suffix = "000001"
         if self.settings.style != "oneup":
@@ -570,7 +570,6 @@ class Rotate:
         )
         self.loggit.info(msg)
         self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
-        self.s3.create_bucket(self.new_bucket_name, dry_run=True)
         create_new_repo(
             self.client,
             self.new_repo_name,
@@ -590,7 +589,7 @@ class Rotate:
         ensure_settings_index(self.client)
         self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)
-        self.s3.create_bucket(self.new_bucket_name, dry_run=True)
+        self.s3.create_bucket(self.new_bucket_name)
         create_new_repo(
             self.client,
             self.new_repo_name,
