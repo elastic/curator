@@ -35,13 +35,20 @@ class ThawedRepo:
     provider: str
     indices: list = None
 
-    def __init__(self, name: str) -> None:
-        self.repo_name = name
-        # TODO: Get the bucket and base_path from the repo
-        self.bucket_name = ""
-        self.base_path = ""
+    def __init__(self, repo_info: dict, indices: list[str] = None) -> None:
+        self.repo_name = repo_info["name"]
+        self.bucket_name = repo_info["bucket"]
+        self.base_path = repo_info["base_path"]
         self.provider = "aws"
-        self.indices = []
+        self.indices = indices
+
+    def add_index(self, index: str) -> None:
+        """
+        Add an index to the list of indices
+
+        :param index: The index to add
+        """
+        self.indices.append(index)
 
 
 class ThawSet(dict[str, ThawedRepo]):
@@ -51,7 +58,7 @@ class ThawSet(dict[str, ThawedRepo]):
 
     def add(self, thawed_repo: ThawedRepo) -> None:
         """
-        Add a thawed repo to the set
+        Add a thawed repo to the dictionary
 
         :param thawed_repo: A thawed repo object
         """
@@ -104,7 +111,7 @@ class Settings:
                 setattr(self, key, value)
 
 
-# ? What type hint shoudl be used here?
+# ? What type hint should be used here?
 def ensure_settings_index(client) -> None:
     """
     Ensure that the status index exists in Elasticsearch.
@@ -645,7 +652,8 @@ class Thaw:
         for repo in self.get_repos_to_thaw():
             self.loggit.info("Thawing %s", repo)
             self.thaw_repo(repo)
-            thawset.add(ThawedRepo(repo))
+            repo_info = self.client.get_repository(repo)
+            thawset.add(ThawedRepo(repo_info))
 
 
 class Refreeze:
