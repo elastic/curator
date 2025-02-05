@@ -16,6 +16,12 @@ from curator.s3client import s3_client_factory
 STATUS_INDEX = "deepfreeze-status"
 SETTINGS_ID = "101"
 
+#
+#
+# Utility Classes
+#
+#
+
 
 class Deepfreeze:
     """
@@ -539,6 +545,7 @@ class Rotate:
             # TODO: Ensure that delete_searchable_snapshot is set to false or
             # the snapshot will be deleted when the policy transitions to the next phase.
             # in this case, raise an error and skip this policy.
+            # ? Maybe we don't correct this but flag it as an error?
             p = policies[policy]["policy"]["phases"]
             updated = False
             for phase in p:
@@ -569,10 +576,6 @@ class Rotate:
         """
         Take the oldest repos from the list and remove them, only retaining
         the number chosen in the config under "keep".
-
-        TODO: Do we need to maintain a system index for our use, which tracks
-        the state of the repos? I can see a situation where we thaw some indices and
-        then need to ensure they stay mounted when deepfreeze runs the following time.
         """
         # TODO: Look at snapshot.py for date-based calculations
         # Also, how to embed mutliple classes in a single action file
@@ -598,24 +601,17 @@ class Rotate:
             Repository: A fleshed-out Repository object for persisting to ES.
         """
         response = self.client.get_repository(repo)
-        # TODO: The hard part here is figuring out what the earliest and latest
-        # @timestamp values across all indices stored in this bucket are...
+        earliest, latest = get_timestamp_range(self.client, [repo])
         return Repository(
             {
                 "name": repo,
                 "bucket": response["bucket"],
                 "base_path": response["base_path"],
-                "start": self.get_earliest(repo),
-                "end": self.get_latest(repo),
+                "start": earliest,
+                "end": latest,
                 "is_mounted": False,
             }
         )
-
-    def get_earliest(self, repo: str) -> datetime:
-        return None
-
-    def get_latest(self, repo: str) -> datetime:
-        return None
 
     def do_dry_run(self) -> None:
         """
