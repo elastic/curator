@@ -5,7 +5,7 @@ Test deepfreeze setup functionality
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
 
-from . import CuratorTestCase, testvars
+from . import CuratorTestCase
 
 HOST = os.environ.get("TEST_ES_SERVER", "http://127.0.0.1:9200")
 
