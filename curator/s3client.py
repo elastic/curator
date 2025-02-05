@@ -52,22 +52,26 @@ class S3Client:
         Args:
             bucket_name (str): The name of the bucket to return.
             path (str): The path to the bucket to return.
+            object_keys (list[str]): A list of object keys to return.
+            restore_days (int): The number of days to keep the object restored.
+            retrieval_tier (str): The retrieval tier to use.
 
         Returns:
             None
         """
         raise NotImplementedError("Subclasses should implement this method")
 
-    def refreeze(self, bucket_name: str, path: str) -> None:
+    def refreeze(
+        self, bucket_name: str, path: str, storage_class: str = "GLACIER"
+    ) -> None:
         """
         Return a bucket to deepfreeze.
 
         Args:
             bucket_name (str): The name of the bucket to return.
             path (str): The path to the bucket to return.
+            storage_class (str): The storage class to send the data to.
 
-        Returns:
-            None
         """
         raise NotImplementedError("Subclasses should implement this method")
 
@@ -100,18 +104,22 @@ class AwsS3Client(S3Client):
         """
         Restores objects from Glacier storage class back to an instant access tier.
 
-        :param bucket_name: The name of the bucket
-        :param base_path: The base path within the bucket
-        :param object_keys: A list of object keys to restore
-        :param restore_days: The number of days to keep the object restored
-        :param retrieval_tier: The retrieval tier to use
-        :return: None
+        Args:
+            bucket_name (str): The name of the bucket
+            base_path (str): The base path (prefix) of the objects to thaw
+            object_keys (list[str]): A list of object keys to thaw
+            restore_days (int): The number of days to keep the object restored
+            retrieval_tier (str): The retrieval tier to use
+
+        Returns:
+            None
         """
         self.loggit.info(f"Thawing bucket: {bucket_name} at path: {base_path}")
         for key in object_keys:
             if not key.startswith(base_path):
                 continue  # Skip objects outside the base path
 
+            # ? Do we need to keep track of what tier this came from instead of just assuming Glacier?
             try:
                 response = self.client.head_object(Bucket=bucket_name, Key=key)
                 storage_class = response.get("StorageClass", "")
@@ -136,9 +144,43 @@ class AwsS3Client(S3Client):
             except Exception as e:
                 self.loggit.error(f"Error restoring {key}: {str(e)}")
 
-    def refreeze(self, bucket_name: str, path: str) -> None:
-        self.loggit.info(f"Refreezing bucket: {bucket_name} at path: {path}")
-        # Placeholder for refreezing an AWS S3 bucket
+    def refreeze(
+        self, bucket_name: str, path: str, storage_class: str = "GLACIER"
+    ) -> None:
+        """
+        Moves objects back to a Glacier-tier storage class.
+
+        Args:
+            bucket_name (str): The name of the bucket
+            path (str): The path to the objects to refreeze
+            storage_class (str): The storage class to move the objects to
+
+        Returns:
+            None
+        """
+        self.loggit.info(f"Refreezing objects in bucket: {bucket_name} at path: {path}")
+
+        paginator = self.client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket_name, Prefix=path)
+
+        for page in pages:
+            if "Contents" in page:
+                for obj in page["Contents"]:
+                    key = obj["Key"]
+
+                    try:
+                        # Copy the object with a new storage class
+                        self.client.copy_object(
+                            Bucket=bucket_name,
+                            CopySource={"Bucket": bucket_name, "Key": key},
+                            Key=key,
+                            StorageClass=storage_class,
+                            MetadataDirective="COPY",
+                        )
+                        self.loggit.info(f"Refrozen: {key} to {storage_class}")
+
+                    except Exception as e:
+                        self.loggit.error(f"Error refreezing {key}: {str(e)}")
 
 
 def s3_client_factory(provider: str) -> S3Client:
