@@ -38,7 +38,14 @@ class S3Client:
         """
         raise NotImplementedError("Subclasses should implement this method")
 
-    def thaw(self, bucket_name: str, path: str) -> None:
+    def thaw(
+        self,
+        bucket_name: str,
+        base_path: str,
+        object_keys: list[str],
+        restore_days: int = 7,
+        retrieval_tier: str = "Standard",
+    ) -> None:
         """
         Return a bucket from deepfreeze.
 
@@ -82,9 +89,52 @@ class AwsS3Client(S3Client):
             self.loggit.error(e)
             raise ActionError(e)
 
-    def thaw(self, bucket_name: str, path: str) -> None:
-        self.loggit.info(f"Thawing bucket: {bucket_name} at path: {path}")
-        # Placeholder for thawing an AWS S3 bucket
+    def thaw(
+        self,
+        bucket_name: str,
+        base_path: str,
+        object_keys: list[str],
+        restore_days: int = 7,
+        retrieval_tier: str = "Standard",
+    ) -> None:
+        """
+        Restores objects from Glacier storage class back to an instant access tier.
+
+        :param bucket_name: The name of the bucket
+        :param base_path: The base path within the bucket
+        :param object_keys: A list of object keys to restore
+        :param restore_days: The number of days to keep the object restored
+        :param retrieval_tier: The retrieval tier to use
+        :return: None
+        """
+        self.loggit.info(f"Thawing bucket: {bucket_name} at path: {base_path}")
+        for key in object_keys:
+            if not key.startswith(base_path):
+                continue  # Skip objects outside the base path
+
+            try:
+                response = self.client.head_object(Bucket=bucket_name, Key=key)
+                storage_class = response.get("StorageClass", "")
+
+                if storage_class in ["GLACIER", "DEEP_ARCHIVE", "GLACIER_IR"]:
+                    self.loggit.info(
+                        f"Restoring: {key} (Storage Class: {storage_class})"
+                    )
+                    self.client.restore_object(
+                        Bucket=bucket_name,
+                        Key=key,
+                        RestoreRequest={
+                            "Days": restore_days,
+                            "GlacierJobParameters": {"Tier": retrieval_tier},
+                        },
+                    )
+                else:
+                    self.loggit.info(
+                        f"Skipping: {key} (Storage Class: {storage_class})"
+                    )
+
+            except Exception as e:
+                self.loggit.error(f"Error restoring {key}: {str(e)}")
 
     def refreeze(self, bucket_name: str, path: str) -> None:
         self.loggit.info(f"Refreezing bucket: {bucket_name} at path: {path}")

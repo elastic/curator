@@ -209,6 +209,26 @@ def rotate(
     help="End of period to be thawed",
 )
 @click.option(
+    "--retain",
+    type=int,
+    default=7,
+    help="How many days to retain the thawed repository",
+)
+@click.option(
+    "--storage_class",
+    type=click.Choice(
+        [
+            "standard",
+            "reduced_redundancy",
+            "standard_ia",
+            "intelligent_tiering",
+            "onezone_ia",
+        ]
+    ),
+    default="intelligent_tiering",
+    help="What storage class to use, as defined by AWS",
+)
+@click.option(
     "--enable-multiple-buckets",
     is_flag=True,
     help="Enable multiple buckets for thawing if period spans multiple buckets",
@@ -218,6 +238,8 @@ def thaw(
     ctx,
     start,
     end,
+    retain,
+    storage_class,
     enable_multiple_buckets,
 ):
     """
@@ -226,6 +248,8 @@ def thaw(
     manual_options = {
         "start": start,
         "end": end,
+        "retain": retain,
+        "storage_class": storage_class,
         "enable_multiple_buckets": enable_multiple_buckets,
     }
     action = CLIAction(
