@@ -111,6 +111,56 @@ class Settings:
                 setattr(self, key, value)
 
 
+#
+#
+# Utility functions
+#
+#
+
+
+def get_snapshot_indices(client, repository) -> list[str]:
+    """
+    Retrieve all indices from snapshots in the given repository.
+
+    :param client: A client connection object
+    :param repository: The name of the repository
+    :returns: A list of indices
+    :rtype: list[str]
+    """
+    snapshots = client.snapshot.get(repository=repository, snapshot="_all")
+    indices = set()
+
+    for snapshot in snapshots["snapshots"]:
+        indices.update(snapshot["indices"])
+
+    return list(indices)
+
+
+def get_timestamp_range(client, indices) -> tuple[datetime, datetime]:
+    """
+    Retrieve the earliest and latest @timestamp values from the given indices.
+
+    :param client: A client connection object
+    :param indices: A list of indices
+    :returns: A tuple containing the earliest and latest @timestamp values
+    :rtype: tuple[datetime, datetime]
+    """
+    query = {
+        "size": 0,
+        "aggs": {
+            "earliest": {"min": {"field": "@timestamp"}},
+            "latest": {"max": {"field": "@timestamp"}},
+        },
+    }
+
+    response = client.search(index=",".join(indices), body=query)
+
+    earliest = response["aggregations"]["earliest"]["value_as_string"]
+    latest = response["aggregations"]["latest"]["value_as_string"]
+
+    return datetime.fromisoformat(earliest), datetime.fromisoformat(latest)
+
+
 # ? What type hint should be used here?
 def ensure_settings_index(client) -> None:
     """
@@ -255,14 +305,15 @@ def unmount_repo(client, repo: str) -> None:
     repo_info = client.snapshot.get_repository(name=repo)
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
+    earliest, latest = get_timestamp_range(client, get_snapshot_indices(client, repo))
     repodoc = Repository(
         {
             "name": repo,
             "bucket": bucket,
             "base_path": base_path,
             "is_mounted": False,
-            "start": None,  # TODO: Add the earliest @timestamp value here
-            "end": None,  # TODO: Add the latest @timestamp value here
+            "start": earliest,
+            "end": latest,
         }
     )
     msg = f"Recording repository details as {repodoc}"
