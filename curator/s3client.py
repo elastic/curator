@@ -20,6 +20,10 @@ from curator.exceptions import ActionError
 class S3Client:
     """
     Superclass for S3 Clients.
+
+    This class should *only* perform actions that are common to all S3 clients. It
+    should not handle record-keeping or anything unrelated to S3 actions. The calling
+    methods should handle that.
     """
 
     def create_bucket(self, bucket_name: str) -> None:
@@ -28,6 +32,32 @@ class S3Client:
 
         Args:
             bucket_name (str): The name of the bucket to create.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
+    def thaw(self, bucket_name: str, path: str) -> None:
+        """
+        Return a bucket from deepfreeze.
+
+        Args:
+            bucket_name (str): The name of the bucket to return.
+            path (str): The path to the bucket to return.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
+    def refreeze(self, bucket_name: str, path: str) -> None:
+        """
+        Return a bucket to deepfreeze.
+
+        Args:
+            bucket_name (str): The name of the bucket to return.
+            path (str): The path to the bucket to return.
 
         Returns:
             None
@@ -51,6 +81,14 @@ class AwsS3Client(S3Client):
         except ClientError as e:
             self.loggit.error(e)
             raise ActionError(e)
+
+    def thaw(self, bucket_name: str, path: str) -> None:
+        self.loggit.info(f"Thawing bucket: {bucket_name} at path: {path}")
+        # Placeholder for thawing an AWS S3 bucket
+
+    def refreeze(self, bucket_name: str, path: str) -> None:
+        self.loggit.info(f"Refreezing bucket: {bucket_name} at path: {path}")
+        # Placeholder for refreezing an AWS S3 bucket
 
 
 def s3_client_factory(provider: str) -> S3Client:

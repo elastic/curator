@@ -183,3 +183,4 @@ cython_debug/
 
 # vim backup files
 *~
+repo_time_tester.py
