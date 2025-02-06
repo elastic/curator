@@ -11,7 +11,7 @@ from datetime import datetime
 from elasticsearch8.exceptions import NotFoundError
 
 from curator.exceptions import ActionError, RepositoryException
-from curator.s3client import s3_client_factory
+from curator.s3client import S3Client, s3_client_factory
 
 STATUS_INDEX = "deepfreeze-status"
 SETTINGS_ID = "101"
@@ -91,10 +91,6 @@ class Repository:
                 setattr(self, key, value)
 
 
-# class RepoList(List):
-#     """Encapsulate a list of repos"""
-
-
 @dataclass
 class Settings:
     """
@@ -125,7 +121,10 @@ class Settings:
 
 
 def thaw_indices(
-    client, provider: str, indices: list[str], restore_days: int, retrieval_tier: str
+    s3: S3Client,
+    indices: list[str],
+    restore_days: int = 7,
+    retrieval_tier: str = "Standard",
 ) -> None:
     """
     Thaw indices in Elasticsearch
@@ -133,9 +132,8 @@ def thaw_indices(
     :param client: A client connection object
     :param indices: A list of indices to thaw
     """
-    s3 = s3_client_factory(provider)
     for index in indices:
-        objects = s3.get_objects(client, index)
+        objects = s3.get_objects(index)
     for obj in objects:
         bucket_name = obj["bucket"]
         base_path = obj["base_path"]
@@ -143,7 +141,7 @@ def thaw_indices(
         s3.thaw(bucket_name, base_path, object_keys, restore_days, retrieval_tier)
 
 
-def get_snapshot_indices(client, repository) -> list[str]:
+def get_all_indices_in_repo(client, repository) -> list[str]:
     """
     Retrieve all indices from snapshots in the given repository.
 
@@ -182,6 +180,8 @@ def get_timestamp_range(client, indices) -> tuple[datetime, datetime]:
 
     earliest = response["aggregations"]["earliest"]["value_as_string"]
     latest = response["aggregations"]["latest"]["value_as_string"]
+
+    logging.debug("Earliest: %s, Latest: %s", earliest, latest)
 
     return datetime.fromisoformat(earliest), datetime.fromisoformat(latest)
 
@@ -330,15 +330,17 @@ def unmount_repo(client, repo: str) -> None:
     repo_info = client.snapshot.get_repository(name=repo)
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
-    earliest, latest = get_timestamp_range(client, get_snapshot_indices(client, repo))
+    earliest, latest = get_timestamp_range(
+        client, get_all_indices_in_repo(client, repo)
+    )
     repodoc = Repository(
         {
             "name": repo,
             "bucket": bucket,
             "base_path": base_path,
             "is_mounted": False,
-            "start": earliest,
-            "end": latest,
+            "start": decode_date(earliest),
+            "end": decode_date(latest),
         }
     )
     msg = f"Recording repository details as {repodoc}"
@@ -349,7 +351,12 @@ def unmount_repo(client, repo: str) -> None:
 
 
 def decode_date(date_in: str) -> datetime:
-    return datetime.today()
+    if isinstance(date_in, datetime):
+        return date_in
+    elif isinstance(date_in, str):
+        return datetime.fromisoformat(date_in)
+    else:
+        raise ValueError("Invalid date format")
 
 
 class Setup:
@@ -685,6 +692,8 @@ class Thaw:
         client,
         start: datetime,
         end: datetime,
+        retain: int,
+        storage_class: str,
         enable_multiple_buckets: bool = False,
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
@@ -696,15 +705,14 @@ class Thaw:
         self.client = client
         self.start = decode_date(start)
         self.end = decode_date(end)
+        self.retain = retain
+        self.storage_class = storage_class
         self.enable_multiple_buckets = enable_multiple_buckets
 
         self.s3 = s3_client_factory(self.settings.provider)
 
     def get_repos_to_thaw(self) -> list[Repository]:
         return []
-
-    def thaw_repo(self, repo: str) -> None:
-        pass
 
     def do_action(self) -> None:
         """
@@ -715,16 +723,24 @@ class Thaw:
         # were thawed out.
 
         thawset = ThawSet()
+
+        # TODO: We need to have a list of indices to thaw. Choose those whose start or
+        #       end dates fall within the range given. For now, let's just thaw
+        #       everything since the record-keeping required for targeted thawing might
+        #       be a bit much for V1.0.
+        indices = []
         for repo in self.get_repos_to_thaw():
             self.loggit.info("Thawing %s", repo)
-            self.thaw_repo(repo)
+            indices = get_all_indices_in_repo(self.client, repo)
+            thaw_indices(self.s3, indices, self.retain, self.storage_class)
             repo_info = self.client.get_repository(repo)
             thawset.add(ThawedRepo(repo_info))
 
 
 class Refreeze:
     """
-    Refreeze a thawed deepfreeze repository
+    Refreeze a thawed deepfreeze repository (if provider does not allow for thawing
+    with a retention period, or if the user wants to re-freeze early)
     """
 
     pass
