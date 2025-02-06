@@ -24,8 +24,8 @@ def test_unmount_repo(mock_client, mocker):
         "curator.actions.deepfreeze.get_timestamp_range",
         return_value=("2024-01-01", "2024-01-31"),
     )
-    mock_get_snapshot_indices = mocker.patch(
-        "curator.actions.deepfreeze.get_snapshot_indices",
+    mock_get_all_indices_in_repo = mocker.patch(
+        "curator.actions.deepfreeze.get_all_indices_in_repo",
         return_value=["index1", "index2"],
     )
     mock_repository = mocker.patch("curator.actions.deepfreeze.Repository")
@@ -37,7 +37,7 @@ def test_unmount_repo(mock_client, mocker):
 
     # Assertions
     mock_client.snapshot.get_repository.assert_called_once_with(name="test-repo")
-    mock_get_snapshot_indices.assert_called_once_with(mock_client, "test-repo")
+    mock_get_all_indices_in_repo.assert_called_once_with(mock_client, "test-repo")
     mock_get_timestamp_range.assert_called_once_with(mock_client, ["index1", "index2"])
     mock_repository.assert_called_once()
     mock_client.create.assert_called_once()
