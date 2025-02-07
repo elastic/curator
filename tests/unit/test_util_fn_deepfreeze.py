@@ -1,20 +1,13 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 from curator.actions.deepfreeze import (
-    create_new_repo,
     decode_date,
-    ensure_settings_index,
     get_all_indices_in_repo,
-    get_next_suffix,
-    get_repos,
-    get_settings,
     get_timestamp_range,
-    save_settings,
     thaw_indices,
-    unmount_repo,
 )
 
 

@@ -31,6 +31,7 @@ keywords = [
 dependencies = [
     "boto3"
     "es_client==8.19.5"
+    "rich"
 ]
 
 [project.optional-dependencies]
