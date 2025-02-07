@@ -285,3 +285,22 @@ def refreeze(
         True,
     )
     action.do_singleton_action(dry_run=ctx.obj["dry_run"])
+
+
+@deepfreeze.command()
+@click.pass_context
+def status(
+    ctx,
+):
+    """
+    Show the status of deepfreeze
+    """
+    manual_options = {}
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj["configdict"],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
