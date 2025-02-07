@@ -4,6 +4,7 @@
 
 import logging
 import re
+import shutil
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -357,6 +358,17 @@ def decode_date(date_in: str) -> datetime:
         return datetime.fromisoformat(date_in)
     else:
         raise ValueError("Invalid date format")
+
+
+def print_centered(msg: str, fill: str = "-") -> None:
+    """
+    Print a message centered in the terminal window
+
+    :param msg: The message to print
+    :param width: The width of the terminal window
+    """
+    term_width = shutil.get_terminal_size().columns
+    print(msg.center(term_width, fill))
 
 
 class Setup:
@@ -744,3 +756,51 @@ class Refreeze:
     """
 
     pass
+
+
+class Status:
+    """
+    Get the status of the deepfreeze components
+    """
+
+    def __init__(self, client) -> None:
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.debug("Initializing Deepfreeze Status")
+        self.settings = get_settings(client)
+        self.client = client
+
+    def do_action(self) -> None:
+        self.loggit.info("Getting status")
+        print()
+        print_centered("Repositories")
+        print_centered("Mounted", ".")
+        if not self.client.indices.exists(index=STATUS_INDEX):
+            self.loggit.warning("No status index found")
+            return
+        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
+        repolist = get_repos(self.client, self.settings.repo_name_prefix)
+        repolist.sort()
+        for repo in repolist:
+            if repo == active_repo:
+                print(f"  {repo} MA")
+            else:
+                print(f"  {repo} M")
+
+        print_centered("Buckets")
+        print(f"Using provider {self.settings.provider}")
+        if self.settings.rotate_by == "bucket":
+            print(
+                f"  Active Bucket: {self.settings.bucket_name_prefix}-{self.settings.last_suffix}"
+            )
+            print(f"  Active Base Path: {self.settings.base_path_prefix}")
+        else:
+            print(f"  Active Bucket: {self.settings.bucket_name_prefix}")
+            print(
+                f"  Active Base Path: {self.settings.base_path_prefix}-{self.settings.last_suffix}"
+            )
+
+        print_centered("ILM Policies")
+        print_centered("")
+
+    def do_singleton_action(self) -> None:
+        self.do_action()
