@@ -772,20 +772,18 @@ class Status:
     def do_action(self) -> None:
         self.loggit.info("Getting status")
         print()
-        print_centered("Repositories")
-        print_centered("Mounted", ".")
-        if not self.client.indices.exists(index=STATUS_INDEX):
-            self.loggit.warning("No status index found")
-            return
-        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
-        repolist = get_repos(self.client, self.settings.repo_name_prefix)
-        repolist.sort()
-        for repo in repolist:
-            if repo == active_repo:
-                print(f"  {repo} MA")
-            else:
-                print(f"  {repo} M")
 
+        self.do_repositories()
+        self.do_buckets()
+        self.do_ilm_policies()
+
+        print_centered("")
+        print()
+
+    def do_ilm_policies(self):
+        print_centered("ILM Policies")
+
+    def do_buckets(self):
         print_centered("Buckets")
         print(f"Using provider {self.settings.provider}")
         if self.settings.rotate_by == "bucket":
@@ -799,8 +797,20 @@ class Status:
                 f"  Active Base Path: {self.settings.base_path_prefix}-{self.settings.last_suffix}"
             )
 
-        print_centered("ILM Policies")
-        print_centered("")
+    def do_repositories(self):
+        print_centered("Repositories")
+        print_centered("Mounted", ".")
+        if not self.client.indices.exists(index=STATUS_INDEX):
+            self.loggit.warning("No status index found")
+            return
+        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
+        repolist = get_repos(self.client, self.settings.repo_name_prefix)
+        repolist.sort()
+        for repo in repolist:
+            if repo == active_repo:
+                print(f"  {repo} MA")
+            else:
+                print(f"  {repo} M")
 
     def do_singleton_action(self) -> None:
         self.do_action()
