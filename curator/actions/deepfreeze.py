@@ -193,27 +193,6 @@ def thaw_repo(
         print(f"Restore request initiated for {object_key}")
 
 
-def thaw_indices(
-    s3: S3Client,
-    indices: list[str],
-    restore_days: int = 7,
-    retrieval_tier: str = "Standard",
-) -> None:
-    """
-    Thaw indices in Elasticsearch
-
-    :param client: A client connection object
-    :param indices: A list of indices to thaw
-    """
-    for index in indices:
-        objects = s3.get_objects(index)
-    for obj in objects:
-        bucket_name = obj["bucket"]
-        base_path = obj["base_path"]
-        object_keys = obj["object_keys"]
-        s3.thaw(bucket_name, base_path, object_keys, restore_days, retrieval_tier)
-
-
 def get_all_indices_in_repo(client, repository) -> list[str]:
     """
     Retrieve all indices from snapshots in the given repository.
