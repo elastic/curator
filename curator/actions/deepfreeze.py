@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
+import json
 import logging
 import re
 import sys
@@ -17,7 +18,7 @@ from curator.exceptions import ActionError, RepositoryException
 from curator.s3client import S3Client, s3_client_factory
 
 STATUS_INDEX = "deepfreeze-status"
-SETTINGS_ID = "101"
+SETTINGS_ID = "1"
 
 #
 #
@@ -87,11 +88,34 @@ class Repository:
     end: datetime
     is_thawed: bool = False
     is_mounted: bool = True
+    doctype: str = "repository"
 
     def __init__(self, repo_hash=None) -> None:
         if repo_hash is not None:
             for key, value in repo_hash.items():
                 setattr(self, key, value)
+
+    def to_dict(self) -> dict:
+        """
+        Convert the Repository object to a dictionary.
+        Convert datetime to ISO 8601 string format for JSON compatibility.
+        """
+        return {
+            "name": self.name,
+            "bucket": self.bucket,
+            "base_path": self.base_path,
+            "start": self.start.isoformat(),  # Convert datetime to string
+            "end": self.end.isoformat(),  # Convert datetime to string
+            "is_thawed": self.is_thawed,
+            "is_mounted": self.is_mounted,
+            "doctype": self.doctype,
+        }
+
+    def to_json(self) -> str:
+        """
+        Serialize the Repository object to a JSON string.
+        """
+        return json.dumps(self.to_dict(), indent=4)
 
 
 @dataclass
@@ -100,6 +124,7 @@ class Settings:
     Data class for settings
     """
 
+    doctype: str = "settings"
     repo_name_prefix: str = "deepfreeze"
     bucket_name_prefix: str = "deepfreeze"
     base_path_prefix: str = "snapshots"
@@ -159,6 +184,8 @@ def get_all_indices_in_repo(client, repository) -> list[str]:
     for snapshot in snapshots["snapshots"]:
         indices.update(snapshot["indices"])
 
+    logging.debug("Indices: %s", indices)
+
     return list(indices)
 
 
@@ -171,6 +198,9 @@ def get_timestamp_range(client, indices) -> tuple[datetime, datetime]:
     :returns: A tuple containing the earliest and latest @timestamp values
     :rtype: tuple[datetime, datetime]
     """
+    if not indices:
+        return None, None
+
     query = {
         "size": 0,
         "aggs": {
@@ -307,6 +337,23 @@ def get_next_suffix(style: str, last_suffix: str, year: int, month: int) -> str:
         raise ValueError("Invalid style")
 
 
+def get_unmounted_repos(client) -> list[Repository]:
+    """
+    Get the complete list of repos from our index and return a Repository object for each.
+
+    :param client: A client connection object
+    :returns: The unmounted repos.
+    :rtype: list[Repository]
+    """
+    # logging.debug("Looking for unmounted repos")
+    # # Perform search in ES for all repos in the status index
+    query = {"query": {"match": {"doctype": "repository"}}}
+    response = client.search(index=STATUS_INDEX, body=query)
+    repos = response["hits"]["hits"]
+    # return a Repository object for each
+    return [Repository(repo["_source"]) for repo in repos]
+
+
 def get_repos(client, repo_name_prefix: str) -> list[str]:
     """
     Get the complete list of repos and return just the ones whose names
@@ -333,7 +380,7 @@ def unmount_repo(client, repo: str) -> None:
     :param status_index: The name of the status index
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    repo_info = client.snapshot.get_repository(name=repo)
+    repo_info = client.snapshot.get_repository(name=repo)[repo]
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
     earliest, latest = get_timestamp_range(
@@ -347,11 +394,13 @@ def unmount_repo(client, repo: str) -> None:
             "is_mounted": False,
             "start": decode_date(earliest),
             "end": decode_date(latest),
+            "doctype": "repository",
         }
     )
     msg = f"Recording repository details as {repodoc}"
     loggit.debug(msg)
-    client.create(index=STATUS_INDEX, document=repodoc)
+    client.index(index=STATUS_INDEX, document=repodoc.to_dict())
+    loggit.debug("Removing repo %s", repo)
     # Now that our records are complete, go ahead and remove the repo.
     client.snapshot.delete_repository(name=repo)
 
@@ -362,7 +411,8 @@ def decode_date(date_in: str) -> datetime:
     elif isinstance(date_in, str):
         return datetime.fromisoformat(date_in)
     else:
-        raise ValueError("Invalid date format")
+        return datetime.now()  # FIXME: This should be a value error
+        # raise ValueError("Invalid date format")
 
 
 class Setup:
@@ -856,13 +906,13 @@ class Status:
             table.add_row(
                 self.settings.provider,
                 f"{self.settings.bucket_name_prefix}-{self.settings.last_suffix}",
-                f"  Active Base Path: {self.settings.base_path_prefix}",
+                self.settings.base_path_prefix,
             )
         else:
             table.add_row(
                 self.settings.provider,
                 f"{self.settings.bucket_name_prefix}",
-                f"  Active Base Path: {self.settings.base_path_prefix}-{self.settings.last_suffix}",
+                f"{self.settings.base_path_prefix}-{self.settings.last_suffix}",
             )
         self.console.print(table)
 
@@ -873,6 +923,15 @@ class Status:
         table = Table(title="Mounted Repositories")
         table.add_column("Repository", style="cyan")
         table.add_column("Status", style="magenta")
+        table.add_column("Start", style="magenta")
+        table.add_column("End", style="magenta")
+        for repo in get_unmounted_repos(self.client):
+            status = "U"
+            if repo.is_mounted:
+                status = "M"
+            if repo.is_thawed:
+                status = "T"
+            table.add_row(repo.name, status, repo.start, repo.end)
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.loggit.warning("No status index found")
             return
