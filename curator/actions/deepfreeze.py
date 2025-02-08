@@ -148,6 +148,51 @@ class Settings:
 #
 
 
+def thaw_repo(
+    client,
+    bucket_name: str,
+    base_path: str,
+    restore_days: int = 7,
+    retrieval_tier: str = "Standard",
+) -> None:
+    """
+    Thaw a repository in Elasticsearch
+
+    :param client: A client connection object
+    :param bucket_name: The name of the bucket
+    :param object_key: The key of the object
+    :param restore_days: Number of days to keep the object accessible
+    :param retrieval_tier: 'Standard' or 'Expedited' or 'Bulk'
+
+    :raises: NotFoundError
+
+    """
+    response = client.list_objects_v2(Bucket=bucket_name, Prefix=base_path)
+
+    # Check if objects were found
+    if "Contents" not in response:
+        print(f"No objects found in prefix: {base_path}")
+        return
+
+    # Loop through each object and initiate restore for Glacier objects
+    for obj in response["Contents"]:
+        object_key = obj["Key"]
+
+        # Initiate the restore request for each object
+        client.restore_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            RestoreRequest={
+                "Days": restore_days,
+                "GlacierJobParameters": {
+                    "Tier": retrieval_tier  # You can change to 'Expedited' or 'Bulk' if needed
+                },
+            },
+        )
+
+        print(f"Restore request initiated for {object_key}")
+
+
 def thaw_indices(
     s3: S3Client,
     indices: list[str],
@@ -248,6 +293,26 @@ def get_settings(client) -> Settings:
     except NotFoundError:
         loggit.info("Settings document not found")
         return None
+
+
+def get_repos_to_thaw(client, start: datetime, end: datetime) -> list[Repository]:
+    """
+    Get the list of repos that were active during the given time range.
+
+    :param client: A client connection object
+    :param start: The start of the time range
+    :param end: The end of the time range
+    :returns: The repos
+    :rtype: list[Repository] A list of repository names
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    repos = get_unmounted_repos(client)
+    overlapping_repos = []
+    for repo in repos:
+        if repo.start <= end and repo.end >= start:
+            overlapping_repos.append(repo)
+    loggit.info("Found overlapping repos: %s", overlapping_repos)
+    return overlapping_repos
 
 
 def save_settings(client, settings: Settings) -> None:
@@ -767,9 +832,6 @@ class Thaw:
 
         self.s3 = s3_client_factory(self.settings.provider)
 
-    def get_repos_to_thaw(self) -> list[Repository]:
-        return []
-
     def do_action(self) -> None:
         """
         Perform high-level repo thawing steps in sequence.
@@ -780,15 +842,20 @@ class Thaw:
 
         thawset = ThawSet()
 
-        # TODO: We need to have a list of indices to thaw. Choose those whose start or
-        #       end dates fall within the range given. For now, let's just thaw
-        #       everything since the record-keeping required for targeted thawing might
-        #       be a bit much for V1.0.
-        indices = []
         for repo in self.get_repos_to_thaw():
             self.loggit.info("Thawing %s", repo)
-            indices = get_all_indices_in_repo(self.client, repo)
-            thaw_indices(self.s3, indices, self.retain, self.storage_class)
+            if self.provider == "aws":
+                if self.setttings.rotate_by == "bucket":
+                    bucket = f"{self.settings.bucket_name_prefix}-{self.settings.last_suffix}"
+                    path = self.settings.base_path_prefix
+                else:
+                    bucket = f"{self.settings.bucket_name_prefix}"
+                    path = (
+                        f"{self.settings.base_path_prefix}-{self.settings.last_suffix}"
+                    )
+            else:
+                raise ValueError("Invalid provider")
+            thaw_repo(self.s3, bucket, path, self.retain, self.storage_class)
             repo_info = self.client.get_repository(repo)
             thawset.add(ThawedRepo(repo_info))
 
@@ -920,7 +987,7 @@ class Status:
         """
         Print the repositories in use by deepfreeze
         """
-        table = Table(title="Mounted Repositories")
+        table = Table(title="Repositories")
         table.add_column("Repository", style="cyan")
         table.add_column("Status", style="magenta")
         table.add_column("Start", style="magenta")
