@@ -68,6 +68,8 @@ def action_specific(action):
             option_defaults.provider(),
             option_defaults.rotate_by(),
             option_defaults.style(),
+            option_defaults.create_sample_ilm_policy(),
+            option_defaults.ilm_policy_name(),
         ],
         "rotate": [
             option_defaults.keep(),
@@ -77,10 +79,15 @@ def action_specific(action):
         "thaw": [
             option_defaults.start(),
             option_defaults.end(),
+            option_defaults.retain(),
+            option_defaults.storage_class(),
             option_defaults.enable_multiple_buckets(),
         ],
+        "remount": [
+            option_defaults.thawset(),
+        ],
         "refreeze": [
-            option_defaults.thaw_set(),
+            option_defaults.thawset(),
         ],
         "status": [],
         "delete_indices": [

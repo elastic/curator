@@ -844,11 +844,11 @@ def provider():
     return {Optional("provider"): All(Any("aws"), default="aws")}
 
 
-def thaw_set():
+def thawset():
     """
-    This setting will allow users to set a thaw_set for refreezing.
+    This setting will allow users to set a thawset for refreezing.
     """
-    return {Optional("thaw_set"): All(Coerce(int), default=0)}
+    return {Optional("thawset"): All(Coerce(int), default=0)}
 
 
 def start():
@@ -869,22 +869,11 @@ def end():
     }
 
 
-def restore_days():
+def retain():
     """
     Number of days to keep the object restored
     """
-    return {Optional("restore_days", default=7): All(Coerce(int), Range(min=1))}
-
-
-def retrieval_tier():
-    """
-    The retrieval tier to use
-    """
-    return {
-        Optional("retrieval_tier", default="Standard"): Any(
-            "Standard", "Bulk", "Expedited"
-        )
-    }
+    return {Optional("retain", default=7): All(Coerce(int), Range(min=1))}
 
 
 def enable_multiple_buckets():
@@ -896,3 +885,21 @@ def enable_multiple_buckets():
             bool, All(Any(str), Boolean())
         )
     }
+
+
+def create_sample_ilm_policy():
+    """
+    Setting to allow creating a sample ILM policy
+    """
+    return {
+        Optional("create_sample_ilm_policy", default=False): Any(
+            bool, All(Any(str), Boolean())
+        )
+    }
+
+
+def ilm_policy_name():
+    """
+    Setting to allow setting a custom ILM policy name
+    """
+    return {Optional("ilm_policy_name", default="deepfreeze-sample-policy"): Any(str)}

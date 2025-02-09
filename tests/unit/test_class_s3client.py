@@ -4,12 +4,19 @@ import pytest
 from botocore.exceptions import ClientError
 
 from curator.s3client import AwsS3Client, S3Client, s3_client_factory
+from tests.integration import random_suffix
 
 
 def test_create_bucket():
     s3 = AwsS3Client()
     s3.client = MagicMock()
+    s3.client.bucket_exists.return_value = False
 
+    assert s3.client.bucket_exists("test-bucket") is False
+
+    # FIXME: This test is not working as expected. Something in the way it's mocked up
+    # FIXME: means that the call to create_bucket gets a different result when
+    # FIXME: bucket_exists() is called.
     s3.create_bucket("test-bucket")
     s3.client.create_bucket.assert_called_with(Bucket="test-bucket")
 
