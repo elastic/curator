@@ -9,6 +9,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime
 
+from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import NotFoundError
 from rich import print
 from rich.console import Console
@@ -149,7 +150,7 @@ class Settings:
 
 
 def thaw_repo(
-    client,
+    s3: S3Client,
     bucket_name: str,
     base_path: str,
     restore_days: int = 7,
@@ -167,7 +168,7 @@ def thaw_repo(
     :raises: NotFoundError
 
     """
-    response = client.list_objects_v2(Bucket=bucket_name, Prefix=base_path)
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=base_path)
 
     # Check if objects were found
     if "Contents" not in response:
@@ -179,7 +180,7 @@ def thaw_repo(
         object_key = obj["Key"]
 
         # Initiate the restore request for each object
-        client.restore_object(
+        s3.restore_object(
             Bucket=bucket_name,
             Key=object_key,
             RestoreRequest={
@@ -193,7 +194,7 @@ def thaw_repo(
         print(f"Restore request initiated for {object_key}")
 
 
-def get_all_indices_in_repo(client, repository) -> list[str]:
+def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]:
     """
     Retrieve all indices from snapshots in the given repository.
 
@@ -213,7 +214,9 @@ def get_all_indices_in_repo(client, repository) -> list[str]:
     return list(indices)
 
 
-def get_timestamp_range(client, indices) -> tuple[datetime, datetime]:
+def get_timestamp_range(
+    client: Elasticsearch, indices: list[str]
+) -> tuple[datetime, datetime]:
     """
     Retrieve the earliest and latest @timestamp values from the given indices.
 
@@ -243,8 +246,7 @@ def get_timestamp_range(client, indices) -> tuple[datetime, datetime]:
     return datetime.fromisoformat(earliest), datetime.fromisoformat(latest)
 
 
-# ? What type hint should be used here?
-def ensure_settings_index(client) -> None:
+def ensure_settings_index(client: Elasticsearch) -> None:
     """
     Ensure that the status index exists in Elasticsearch.
 
@@ -256,7 +258,7 @@ def ensure_settings_index(client) -> None:
         client.indices.create(index=STATUS_INDEX)
 
 
-def get_settings(client) -> Settings:
+def get_settings(client: Elasticsearch) -> Settings:
     """
     Get the settings for the deepfreeze operation from the status index.
 
@@ -274,7 +276,9 @@ def get_settings(client) -> Settings:
         return None
 
 
-def get_repos_to_thaw(client, start: datetime, end: datetime) -> list[Repository]:
+def get_repos_to_thaw(
+    client: Elasticsearch, start: datetime, end: datetime
+) -> list[Repository]:
     """
     Get the list of repos that were active during the given time range.
 
@@ -294,7 +298,7 @@ def get_repos_to_thaw(client, start: datetime, end: datetime) -> list[Repository
     return overlapping_repos
 
 
-def save_settings(client, settings: Settings) -> None:
+def save_settings(client: Elasticsearch, settings: Settings) -> None:
     """
     Save the settings for the deepfreeze operation to the status index.
 
@@ -381,7 +385,7 @@ def get_next_suffix(style: str, last_suffix: str, year: int, month: int) -> str:
         raise ValueError("Invalid style")
 
 
-def get_unmounted_repos(client) -> list[Repository]:
+def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
     """
     Get the complete list of repos from our index and return a Repository object for each.
 
@@ -398,7 +402,7 @@ def get_unmounted_repos(client) -> list[Repository]:
     return [Repository(repo["_source"]) for repo in repos]
 
 
-def get_repos(client, repo_name_prefix: str) -> list[str]:
+def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
     """
     Get the complete list of repos and return just the ones whose names
     begin with the given prefix.
@@ -414,7 +418,7 @@ def get_repos(client, repo_name_prefix: str) -> list[str]:
     return [repo for repo in repos if pattern.search(repo)]
 
 
-def unmount_repo(client, repo: str) -> None:
+def unmount_repo(client: Elasticsearch, repo: str) -> None:
     """
     Encapsulate the actions of deleting the repo and, at the same time,
     doing any record-keeping we need.
@@ -467,7 +471,7 @@ class Setup:
 
     def __init__(
         self,
-        client,
+        client: Elasticsearch,
         year: int,
         month: int,
         repo_name_prefix: str = "deepfreeze",
@@ -588,7 +592,7 @@ class Rotate:
 
     def __init__(
         self,
-        client,
+        client: Elasticsearch,
         keep: str = "6",
         year: int = None,
         month: int = None,
@@ -789,7 +793,7 @@ class Thaw:
 
     def __init__(
         self,
-        client,
+        client: Elasticsearch,
         start: datetime,
         end: datetime,
         retain: int,
@@ -853,7 +857,7 @@ class Status:
     Get the status of the deepfreeze components
     """
 
-    def __init__(self, client) -> None:
+    def __init__(self, client: Elasticsearch) -> None:
         """
         Setup the status action
 
