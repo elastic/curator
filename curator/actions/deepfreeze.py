@@ -149,6 +149,36 @@ class Settings:
 #
 
 
+def push_to_glacier(s3: S3Client, repo: Repository) -> None:
+    """
+    Move the repository to Glacier storage class
+
+    :param s3: The S3 client object
+    :param repo: The repository to move
+    """
+    response = s3.list_objects_v2(Bucket=repo.bucket, Prefix=repo.base_path)
+
+    # Check if objects were found
+    if "Contents" not in response:
+        print(f"No objects found in prefix: {repo.base_path}")
+        return
+
+    # Loop through each object and initiate restore for Glacier objects
+    count = 0
+    for obj in response["Contents"]:
+        count += 1
+
+        # Initiate the restore request for each object
+        s3.copy_object(
+            Bucket=repo.bucket,
+            Key=obj["key"],
+            CopySource={"Bucket": repo.bucket, "Key": obj["Key"]},
+            StorageClass="GLACIER",
+        )
+
+    print("Freezing to Glacier initiated for {count} objects")
+
+
 def get_cluster_name(client: Elasticsearch) -> str:
     """
     Connects to the Elasticsearch cluster and returns its name.
@@ -192,13 +222,12 @@ def thaw_repo(
     # Loop through each object and initiate restore for Glacier objects
     count = 0
     for obj in response["Contents"]:
-        object_key = obj["Key"]
         count += 1
 
         # Initiate the restore request for each object
         # s3.restore_object(
         #     Bucket=bucket_name,
-        #     Key=object_key,
+        #     Key=obj["Key"],
         #     RestoreRequest={
         #         "Days": restore_days,
         #         "GlacierJobParameters": {
@@ -434,7 +463,7 @@ def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
     return [repo for repo in repos if pattern.search(repo)]
 
 
-def unmount_repo(client: Elasticsearch, repo: str) -> None:
+def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     """
     Encapsulate the actions of deleting the repo and, at the same time,
     doing any record-keeping we need.
@@ -467,6 +496,7 @@ def unmount_repo(client: Elasticsearch, repo: str) -> None:
     loggit.debug("Removing repo %s", repo)
     # Now that our records are complete, go ahead and remove the repo.
     client.snapshot.delete_repository(name=repo)
+    return repodoc
 
 
 def decode_date(date_in: str) -> datetime:
@@ -718,6 +748,15 @@ class Rotate:
                 self.client.ilm.put_lifecycle(name=pol, policy=body)
             self.loggit.debug("Finished ILM Policy updates")
 
+    def is_thawed(repo: str) -> bool:
+        """
+        Check if a repository is thawed
+
+        :param repo: The name of the repository
+        :returns: True if the repository is thawed, False otherwise
+        """
+        return repo.startswith("thawed-")
+
     def unmount_oldest_repos(self, dry_run=False) -> None:
         """
         Take the oldest repos from the list and remove them, only retaining
@@ -731,9 +770,13 @@ class Rotate:
         s = self.repo_list[self.keep :]
         self.loggit.debug("Repos to remove: %s", s)
         for repo in s:
+            if self.is_thawed(repo):
+                self.loggit.warning("Skipping thawed repo %s", repo)
+                continue
             self.loggit.info("Removing repo %s", repo)
             if not dry_run:
-                unmount_repo(self.client, repo)
+                repo = unmount_repo(self.client, repo)
+                push_to_glacier(self.s3, repo)
 
     def get_repo_details(self, repo: str) -> Repository:
         """
