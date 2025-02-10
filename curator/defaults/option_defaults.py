@@ -869,22 +869,11 @@ def end():
     }
 
 
-def restore_days():
+def retain():
     """
     Number of days to keep the object restored
     """
-    return {Optional("restore_days", default=7): All(Coerce(int), Range(min=1))}
-
-
-def retrieval_tier():
-    """
-    The retrieval tier to use
-    """
-    return {
-        Optional("retrieval_tier", default="Standard"): Any(
-            "Standard", "Bulk", "Expedited"
-        )
-    }
+    return {Optional("retain", default=7): All(Coerce(int), Range(min=1))}
 
 
 def enable_multiple_buckets():

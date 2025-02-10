@@ -199,22 +199,28 @@ def rotate(
 
 @deepfreeze.command()
 @click.option(
+    "-s",
     "--start",
-    type=click.DateTime(formats=["%Y-%m-%d"]),
+    type=click.STRING,
+    required=True,
     help="Start of period to be thawed",
 )
 @click.option(
+    "-e",
     "--end",
-    type=click.DateTime(formats=["%Y-%m-%d"]),
+    type=click.STRING,
+    required=True,
     help="End of period to be thawed",
 )
 @click.option(
+    "-r",
     "--retain",
     type=int,
     default=7,
     help="How many days to retain the thawed repository",
 )
 @click.option(
+    "-c",
     "--storage_class",
     type=click.Choice(
         [
@@ -229,6 +235,7 @@ def rotate(
     help="What storage class to use, as defined by AWS",
 )
 @click.option(
+    "-m",
     "--enable-multiple-buckets",
     is_flag=True,
     help="Enable multiple buckets for thawing if period spans multiple buckets",
