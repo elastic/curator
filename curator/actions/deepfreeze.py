@@ -149,6 +149,20 @@ class Settings:
 #
 
 
+def get_cluster_name(client: Elasticsearch) -> str:
+    """
+    Connects to the Elasticsearch cluster and returns its name.
+
+    :param es_host: The URL of the Elasticsearch instance (default: "http://localhost:9200").
+    :return: The name of the Elasticsearch cluster.
+    """
+    try:
+        cluster_info = client.cluster.health()
+        return cluster_info.get("cluster_name", "Unknown Cluster")
+    except Exception as e:
+        return f"Error: {e}"
+
+
 def thaw_repo(
     s3: S3Client,
     bucket_name: str,
@@ -876,6 +890,8 @@ class Status:
         """
         self.loggit.info("Getting status")
         print()
+        cluster_name = get_cluster_name(self.client)
+        print(f"[cyan bold]{cluster_name}[/cyan bold]")
 
         self.do_repositories()
         self.do_buckets()
