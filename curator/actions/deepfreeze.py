@@ -190,22 +190,24 @@ def thaw_repo(
         return
 
     # Loop through each object and initiate restore for Glacier objects
+    count = 0
     for obj in response["Contents"]:
         object_key = obj["Key"]
+        count += 1
 
         # Initiate the restore request for each object
-        s3.restore_object(
-            Bucket=bucket_name,
-            Key=object_key,
-            RestoreRequest={
-                "Days": restore_days,
-                "GlacierJobParameters": {
-                    "Tier": retrieval_tier  # You can change to 'Expedited' or 'Bulk' if needed
-                },
-            },
-        )
+        # s3.restore_object(
+        #     Bucket=bucket_name,
+        #     Key=object_key,
+        #     RestoreRequest={
+        #         "Days": restore_days,
+        #         "GlacierJobParameters": {
+        #             "Tier": retrieval_tier  # You can change to 'Expedited' or 'Bulk' if needed
+        #         },
+        #     },
+        # )
 
-        print(f"Restore request initiated for {object_key}")
+    print("Restore request initiated for {count} objects")
 
 
 def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]:
@@ -839,7 +841,7 @@ class Thaw:
 
         thawset = ThawSet()
 
-        for repo in self.get_repos_to_thaw():
+        for repo in get_repos_to_thaw(self.client, self.start, self.end):
             self.loggit.info("Thawing %s", repo)
             if self.provider == "aws":
                 if self.setttings.rotate_by == "bucket":
@@ -890,8 +892,6 @@ class Status:
         """
         self.loggit.info("Getting status")
         print()
-        cluster_name = get_cluster_name(self.client)
-        print(f"[cyan bold]{cluster_name}[/cyan bold]")
 
         self.do_repositories()
         self.do_buckets()
@@ -916,6 +916,7 @@ class Status:
         table.add_row("Rotate By", self.settings.rotate_by)
         table.add_row("Style", self.settings.style)
         table.add_row("Last Suffix", self.settings.last_suffix)
+        table.add_row("Cluster Name", get_cluster_name(self.client))
 
         self.console.print(table)
 
