@@ -179,20 +179,6 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
     print("Freezing to Glacier initiated for {count} objects")
 
 
-def get_cluster_name(client: Elasticsearch) -> str:
-    """
-    Connects to the Elasticsearch cluster and returns its name.
-
-    :param es_host: The URL of the Elasticsearch instance (default: "http://localhost:9200").
-    :return: The name of the Elasticsearch cluster.
-    """
-    try:
-        cluster_info = client.cluster.health()
-        return cluster_info.get("cluster_name", "Unknown Cluster")
-    except Exception as e:
-        return f"Error: {e}"
-
-
 def thaw_repo(
     s3: S3Client,
     bucket_name: str,
@@ -319,28 +305,6 @@ def get_settings(client: Elasticsearch) -> Settings:
     except NotFoundError:
         loggit.info("Settings document not found")
         return None
-
-
-def get_repos_to_thaw(
-    client: Elasticsearch, start: datetime, end: datetime
-) -> list[Repository]:
-    """
-    Get the list of repos that were active during the given time range.
-
-    :param client: A client connection object
-    :param start: The start of the time range
-    :param end: The end of the time range
-    :returns: The repos
-    :rtype: list[Repository] A list of repository names
-    """
-    loggit = logging.getLogger("curator.actions.deepfreeze")
-    repos = get_unmounted_repos(client)
-    overlapping_repos = []
-    for repo in repos:
-        if repo.start <= end and repo.end >= start:
-            overlapping_repos.append(repo)
-    loggit.info("Found overlapping repos: %s", overlapping_repos)
-    return overlapping_repos
 
 
 def save_settings(client: Elasticsearch, settings: Settings) -> None:
@@ -871,8 +835,25 @@ class Thaw:
         self.retain = retain
         self.storage_class = storage_class
         self.enable_multiple_buckets = enable_multiple_buckets
-
         self.s3 = s3_client_factory(self.settings.provider)
+
+    def get_repos_to_thaw(self, start: datetime, end: datetime) -> list[Repository]:
+        """
+        Get the list of repos that were active during the given time range.
+
+        :param start: The start of the time range
+        :param end: The end of the time range
+        :returns: The repos
+        :rtype: list[Repository] A list of repository names
+        """
+        loggit = logging.getLogger("curator.actions.deepfreeze")
+        repos = get_unmounted_repos(self.client)
+        overlapping_repos = []
+        for repo in repos:
+            if repo.start <= end and repo.end >= start:
+                overlapping_repos.append(repo)
+        loggit.info("Found overlapping repos: %s", overlapping_repos)
+        return overlapping_repos
 
     def do_action(self) -> None:
         """
@@ -884,7 +865,7 @@ class Thaw:
 
         thawset = ThawSet()
 
-        for repo in get_repos_to_thaw(self.client, self.start, self.end):
+        for repo in self.get_repos_to_thaw(self.start, self.end):
             self.loggit.info("Thawing %s", repo)
             if self.provider == "aws":
                 if self.setttings.rotate_by == "bucket":
@@ -929,6 +910,19 @@ class Status:
         self.client = client
         self.console = Console()
 
+    def get_cluster_name(self) -> str:
+        """
+        Connects to the Elasticsearch cluster and returns its name.
+
+        :param es_host: The URL of the Elasticsearch instance (default: "http://localhost:9200").
+        :return: The name of the Elasticsearch cluster.
+        """
+        try:
+            cluster_info = self.client.cluster.health()
+            return cluster_info.get("cluster_name", "Unknown Cluster")
+        except Exception as e:
+            return f"Error: {e}"
+
     def do_action(self) -> None:
         """
         Perform the status action
@@ -959,7 +953,7 @@ class Status:
         table.add_row("Rotate By", self.settings.rotate_by)
         table.add_row("Style", self.settings.style)
         table.add_row("Last Suffix", self.settings.last_suffix)
-        table.add_row("Cluster Name", get_cluster_name(self.client))
+        table.add_row("Cluster Name", self.get_cluster_name())
 
         self.console.print(table)
 
