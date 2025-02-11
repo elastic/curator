@@ -270,6 +270,29 @@ def thaw(
 
 
 @deepfreeze.command()
+@click.option("--thaw-set", type=int, help="Thaw set with repos to be mounted.")
+@click.pass_context
+def remount(
+    ctx,
+    thaw_set,
+):
+    """
+    Remount a thawed repository
+    """
+    manual_options = {
+        "thaw_set": thaw_set,
+    }
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj["configdict"],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
+
+
+@deepfreeze.command()
 @click.option(
     "--thaw-set", type=int, help="Thaw set to be re-frozen. If omitted, re-freeze all."
 )
