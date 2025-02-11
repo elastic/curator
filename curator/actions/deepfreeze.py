@@ -760,6 +760,8 @@ class Rotate:
         :param repo: The name of the repository
         :returns: True if the repository is thawed, False otherwise
         """
+        # TODO: This might work, but we might also need to check our Repostories.
+        self.loggit.debug("Checking if %s is thawed", repo)
         return repo.startswith("thawed-")
 
     def unmount_oldest_repos(self, dry_run=False) -> None:
@@ -895,6 +897,12 @@ class Thaw:
                 overlapping_repos.append(repo)
         loggit.info("Found overlapping repos: %s", overlapping_repos)
         return overlapping_repos
+
+    def do_dry_run(self) -> None:
+        """
+        Perform a dry-run of the thawing process.
+        """
+        pass
 
     def do_action(self) -> None:
         """
