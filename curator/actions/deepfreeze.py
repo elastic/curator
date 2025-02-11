@@ -62,10 +62,14 @@ class ThawedRepo:
         self.indices.append(index)
 
 
+@dataclass
 class ThawSet(dict[str, ThawedRepo]):
     """
     Data class for thaw settings
     """
+
+    doctype: str = "thawset"
+    thawset: dict[str, ThawedRepo] = None
 
     def add(self, thawed_repo: ThawedRepo) -> None:
         """
@@ -73,7 +77,7 @@ class ThawSet(dict[str, ThawedRepo]):
 
         :param thawed_repo: A thawed repo object
         """
-        self[thawed_repo.repo_name] = thawed_repo
+        self.thawset[thawed_repo.repo_name] = thawed_repo
 
 
 @dataclass
@@ -366,8 +370,8 @@ def save_settings(client: Elasticsearch, settings: Settings) -> None:
     loggit.info("Settings saved")
 
 
-def create_new_repo(
-    client,
+def create_repo(
+    client: Elasticsearch,
     repo_name: str,
     bucket_name: str,
     base_path: str,
@@ -599,7 +603,7 @@ class Setup:
         msg = f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
         self.loggit.info(msg)
         self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
-        create_new_repo(
+        create_repo(
             self.client,
             self.new_repo_name,
             self.new_bucket_name,
@@ -617,7 +621,7 @@ class Setup:
         ensure_settings_index(self.client)
         save_settings(self.client, self.settings)
         self.s3.create_bucket(self.new_bucket_name)
-        create_new_repo(
+        create_repo(
             self.client,
             self.new_repo_name,
             self.new_bucket_name,
@@ -753,7 +757,7 @@ class Rotate:
                 self.client.ilm.put_lifecycle(name=pol, policy=body)
             self.loggit.debug("Finished ILM Policy updates")
 
-    def is_thawed(repo: str) -> bool:
+    def is_thawed(self, repo: str) -> bool:
         """
         Check if a repository is thawed
 
@@ -771,8 +775,8 @@ class Rotate:
         """
         # TODO: Look at snapshot.py for date-based calculations
         # Also, how to embed mutliple classes in a single action file
-        # Alias action may be using multiple filter blocks. Look at that since we'll
-        # need to do the same thing.:
+        # Alias action may be using multiple filter blocks. Look at that since we
+        # may need to do the same thing.
         self.loggit.debug("Total list: %s", self.repo_list)
         s = self.repo_list[self.keep :]
         self.loggit.debug("Repos to remove: %s", s)
@@ -820,7 +824,7 @@ class Rotate:
         )
         self.loggit.info(msg)
         self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
-        create_new_repo(
+        create_repo(
             self.client,
             self.new_repo_name,
             self.new_bucket_name,
@@ -840,7 +844,7 @@ class Rotate:
         self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)
         self.s3.create_bucket(self.new_bucket_name)
-        create_new_repo(
+        create_repo(
             self.client,
             self.new_repo_name,
             self.new_bucket_name,
@@ -854,7 +858,7 @@ class Rotate:
 
 class Thaw:
     """
-    Thaw a deepfreeze repository
+    Thaw a deepfreeze repository and make it ready to be remounted
     """
 
     def __init__(
@@ -902,7 +906,13 @@ class Thaw:
         """
         Perform a dry-run of the thawing process.
         """
-        pass
+        thawset = ThawSet()
+
+        for repo in self.get_repos_to_thaw(self.start, self.end):
+            self.loggit.info("Thawing %s", repo)
+            repo_info = self.client.get_repository(repo)
+            thawset.add(ThawedRepo(repo_info))
+        print(f"Dry Run ThawSet: {thawset}")
 
     def do_action(self) -> None:
         """
@@ -930,15 +940,95 @@ class Thaw:
             thaw_repo(self.s3, bucket, path, self.retain, self.storage_class)
             repo_info = self.client.get_repository(repo)
             thawset.add(ThawedRepo(repo_info))
+        response = self.client.index(index=STATUS_INDEX, document=thawset.to_dict())
+        thawset_id = response["_id"]
+        print(
+            f"ThawSet {thawset_id} created. Plase use this ID to remount the thawed repositories."
+        )
+
+
+class Remount:
+    """
+    Remount a thawed deepfreeze repository. Remount indices as "thawed-<repo>".
+    """
+
+    def __init__(
+        self,
+        client: Elasticsearch,
+        thawset: str,
+    ) -> None:
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.debug("Initializing Deepfreeze Rotate")
+
+        self.settings = get_settings(client)
+        self.loggit.debug("Settings: %s", str(self.settings))
+
+        self.client = client
+        self.thawset = ThawSet(thawset)
+
+    def check_thaw_status(self):
+        """
+        Check the status of the thawed repositories.
+        """
+        for repo in self.thawset.repos:
+            self.loggit.info("Checking status of %s", repo)
+            if not check_restore_status(self.s3, repo):
+                self.loggit.warning("Restore not complete for %s", repo)
+                print("Restore not complete for %s", repo)
+                return False
+        return True
+
+    def do_dry_run(self) -> None:
+        """
+        Perform a dry-run of the remounting process.
+        """
+        if not self.check_thaw_status():
+            print("Dry Run Remount: Not all repos thawed")
+
+        for repo in self.thawset.repos:
+            self.loggit.info("Remounting %s", repo)
+
+    def do_action(self) -> None:
+        """
+        Perform high-level repo remounting steps in sequence.
+        """
+        if not self.check_thaw_status():
+            print("Remount: Not all repos thawed")
+            return
+
+        for repo in self.thawset.repos:
+            self.loggit.info("Remounting %s", repo)
+            create_repo(
+                self.client,
+                f"thawed-{repo.name}",
+                repo.bucket,
+                repo.base_path,
+                self.settings.canned_acl,
+                self.settings.storage_class,
+            )
 
 
 class Refreeze:
     """
-    Refreeze a thawed deepfreeze repository (if provider does not allow for thawing
-    with a retention period, or if the user wants to re-freeze early)
+    First unmount a repo, then refreeze it requested (or let it age back to Glacier
+    naturally)
     """
 
-    pass
+    def __init__(self, client: Elasticsearch, thawset: str) -> None:
+        self.loggit = logging.getLogger("curator.actions.deepfreeze")
+        self.loggit.debug("Initializing Deepfreeze Rotate")
+
+        self.settings = get_settings(client)
+        self.loggit.debug("Settings: %s", str(self.settings))
+
+        self.client = client
+        self.thawset = ThawSet(thawset)
+
+    def do_dry_run(self) -> None:
+        pass
+
+    def do_action(self) -> None:
+        pass
 
 
 class Status:
@@ -1010,15 +1100,19 @@ class Status:
         """
         Print the thawed repositories
         """
+        self.loggit.debug("Getting thawsets")
         table = Table(title="ThawSets")
+        table.add_column("ThawSet", style="cyan")
+        table.add_column("Repositories", style="magenta")
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.loggit.warning("No status index found")
             return
         thawsets = self.client.search(index=STATUS_INDEX)
+        self.loggit.debug("Validating thawsets")
         for thawset in thawsets:
             table.add_column(thawset)
-            for repo in thawsets[thawset]:
-                table.add_row(repo)
+            for repo in thawset:
+                table.add_row(thawset["_id"], repo)
 
     def do_ilm_policies(self):
         """
