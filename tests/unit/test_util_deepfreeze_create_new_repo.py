@@ -1,4 +1,4 @@
-""" This module contains unit tests for the create_new_repo function in the deepfreeze module. """
+"""This module contains unit tests for the create_new_repo function in the deepfreeze module."""
 
 # pylint: disable=missing-function-docstring, redefined-outer-name, pointless-statement, missing-class-docstring, protected-access, attribute-defined-outside-init
 
@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from curator.actions.deepfreeze import create_new_repo
+from curator.actions.deepfreeze import create_repo
 from curator.exceptions import ActionError
 
 
@@ -27,7 +27,7 @@ def test_create_new_repo_success(mock_client):
     # Simulate a successful response from the client's create_repository method
     mock_client.snapshot.create_repository.return_value = {"acknowledged": True}
 
-    create_new_repo(
+    create_repo(
         mock_client, repo_name, bucket_name, base_path, canned_acl, storage_class
     )
 
@@ -54,7 +54,7 @@ def test_create_new_repo_dry_run(mock_client):
     canned_acl = "private"
     storage_class = "STANDARD"
 
-    create_new_repo(
+    create_repo(
         mock_client,
         repo_name,
         bucket_name,
@@ -82,7 +82,7 @@ def test_create_new_repo_exception(mock_client):
     )
 
     with pytest.raises(ActionError, match="Error creating repo"):
-        create_new_repo(
+        create_repo(
             mock_client, repo_name, bucket_name, base_path, canned_acl, storage_class
         )
 
