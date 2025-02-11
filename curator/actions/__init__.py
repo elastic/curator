@@ -6,7 +6,15 @@ from curator.actions.close import Close
 from curator.actions.cluster_routing import ClusterRouting
 from curator.actions.cold2frozen import Cold2Frozen
 from curator.actions.create_index import CreateIndex
-from curator.actions.deepfreeze import Deepfreeze, Refreeze, Rotate, Setup, Status, Thaw
+from curator.actions.deepfreeze import (
+    Deepfreeze,
+    Refreeze,
+    Remount,
+    Rotate,
+    Setup,
+    Status,
+    Thaw,
+)
 from curator.actions.delete_indices import DeleteIndices
 from curator.actions.forcemerge import ForceMerge
 from curator.actions.index_settings import IndexSettings
@@ -31,6 +39,7 @@ CLASS_MAP = {
     "index_settings": IndexSettings,
     "open": Open,
     "reindex": Reindex,
+    "remount": Remount,
     "replicas": Replicas,
     "restore": Restore,
     "rollover": Rollover,

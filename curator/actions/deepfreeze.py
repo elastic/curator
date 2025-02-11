@@ -175,7 +175,7 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
         # Initiate the restore request for each object
         s3.copy_object(
             Bucket=repo.bucket,
-            Key=obj["key"],
+            Key=obj["Key"],
             CopySource={"Bucket": repo.bucket, "Key": obj["Key"]},
             StorageClass="GLACIER",
         )
@@ -256,18 +256,18 @@ def thaw_repo(
         count += 1
 
         # Initiate the restore request for each object
-        # s3.restore_object(
-        #     Bucket=bucket_name,
-        #     Key=obj["Key"],
-        #     RestoreRequest={
-        #         "Days": restore_days,
-        #         "GlacierJobParameters": {
-        #             "Tier": retrieval_tier  # You can change to 'Expedited' or 'Bulk' if needed
-        #         },
-        #     },
-        # )
+        s3.restore_object(
+            Bucket=bucket_name,
+            Key=obj["Key"],
+            RestoreRequest={
+                "Days": restore_days,
+                "GlacierJobParameters": {
+                    "Tier": retrieval_tier  # You can change to 'Expedited' or 'Bulk' if needed
+                },
+            },
+        )
 
-    print("Restore request initiated for {count} objects")
+    print(f"Restore request initiated for {count} objects")
 
 
 def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]:
@@ -514,8 +514,7 @@ def decode_date(date_in: str) -> datetime:
     elif isinstance(date_in, str):
         return datetime.fromisoformat(date_in)
     else:
-        return datetime.now()  # FIXME: This should be a value error
-        # raise ValueError("Invalid date format")
+        raise ValueError("Invalid date format")
 
 
 class Setup:
