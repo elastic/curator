@@ -179,6 +179,47 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
     print("Freezing to Glacier initiated for {count} objects")
 
 
+def check_restore_status(s3: S3Client, repo: Repository) -> bool:
+    """
+    Check the restore status of a repository
+
+    Args:
+        s3 (S3Client): The S3 client object
+        repo (Repository): The repository to check
+
+    Returns:
+        bool: Completion status of the restore process from S3
+    """
+    response = s3.list_objects_v2(Bucket=repo.bucket, Prefix=repo.base_path)
+
+    # Check if objects were found
+    if "Contents" not in response:
+        print(f"No objects found in prefix: {repo.base_path}")
+        return
+
+    # Loop through each object and initiate restore for Glacier objects
+    for obj in response["Contents"]:
+        try:
+            response = s3.head_object(Bucket=repo.bucket, Key=obj["Key"])
+
+            # Check if the object has the 'Restore' header
+            restore_status = response.get("Restore")
+
+            if restore_status:
+                if 'ongoing-request="true"' in restore_status:
+                    print(f"Object {obj['Key']} is still being restored.")
+                    return False
+            else:
+                raise Exception(
+                    f"Object {obj['Key']} is not in the restoration process."
+                )
+
+        except Exception as e:
+            print(f"Error checking restore status: {e}")
+            return None
+    return True
+
+
 def thaw_repo(
     s3: S3Client,
     bucket_name: str,
