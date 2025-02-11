@@ -81,8 +81,11 @@ def action_specific(action):
             option_defaults.storage_class(),
             option_defaults.enable_multiple_buckets(),
         ],
+        "remount": [
+            option_defaults.thawset(),
+        ],
         "refreeze": [
-            option_defaults.thaw_set(),
+            option_defaults.thawset(),
         ],
         "status": [],
         "delete_indices": [

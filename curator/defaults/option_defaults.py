@@ -844,11 +844,11 @@ def provider():
     return {Optional("provider"): All(Any("aws"), default="aws")}
 
 
-def thaw_set():
+def thawset():
     """
-    This setting will allow users to set a thaw_set for refreezing.
+    This setting will allow users to set a thawset for refreezing.
     """
-    return {Optional("thaw_set"): All(Coerce(int), default=0)}
+    return {Optional("thawset"): All(Coerce(int), default=0)}
 
 
 def start():

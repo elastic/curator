@@ -127,7 +127,7 @@ def setup(
     style,
 ):
     """
-    Setup a cluster for deepfreeze
+    Set up a cluster for deepfreeze and save the configuration for all future actions
     """
     logging.debug("setup")
     manual_options = {
@@ -250,7 +250,7 @@ def thaw(
     enable_multiple_buckets,
 ):
     """
-    Thaw a deepfreeze repository
+    Thaw a deepfreeze repository (return it from Glacier)
     """
     manual_options = {
         "start": start,
@@ -270,17 +270,17 @@ def thaw(
 
 
 @deepfreeze.command()
-@click.option("--thaw-set", type=int, help="Thaw set with repos to be mounted.")
+@click.option("-t", "--thawset", type=int, help="Thaw set with repos to be mounted.")
 @click.pass_context
 def remount(
     ctx,
-    thaw_set,
+    thawset,
 ):
     """
     Remount a thawed repository
     """
     manual_options = {
-        "thaw_set": thaw_set,
+        "thawset": thawset,
     }
     action = CLIAction(
         ctx.info_name,
@@ -294,18 +294,21 @@ def remount(
 
 @deepfreeze.command()
 @click.option(
-    "--thaw-set", type=int, help="Thaw set to be re-frozen. If omitted, re-freeze all."
+    "-t",
+    "--thawset",
+    type=int,
+    help="Thaw set to be re-frozen. If omitted, re-freeze all.",
 )
 @click.pass_context
 def refreeze(
     ctx,
-    thaw_set,
+    thawset,
 ):
     """
     Refreeze a thawed repository
     """
     manual_options = {
-        "thaw_set": thaw_set,
+        "thawset": thawset,
     }
     action = CLIAction(
         ctx.info_name,
