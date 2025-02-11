@@ -59,10 +59,8 @@ def test_thaw_set_add_and_retrieve():
 
     thaw_set.add(repo)
 
-    assert "test-repo" in thaw_set.thawset  # Key should exist in the dict
-    assert (
-        thaw_set.thawset["test-repo"] is repo
-    )  # Stored object should be the same instance
+    assert "test-repo" in thaw_set  # Key should exist in the dict
+    assert thaw_set["test-repo"] is repo  # Stored object should be the same instance
 
 
 def test_thaw_set_overwrite():
@@ -77,9 +75,9 @@ def test_thaw_set_overwrite():
     thaw_set.add(repo1)
     thaw_set.add(repo2)
 
-    assert thaw_set.thawset["test-repo"] is repo2  # Latest instance should be stored
+    assert thaw_set["test-repo"] is repo2  # Latest instance should be stored
     assert (
-        thaw_set.thawset["test-repo"].bucket_name == "bucket2"
+        thaw_set["test-repo"].bucket_name == "bucket2"
     )  # Ensure it overwrote correctly
 
 
@@ -95,9 +93,9 @@ def test_thaw_set_multiple_repos():
     thaw_set.add(repo1)
     thaw_set.add(repo2)
 
-    assert thaw_set.thawset["repo1"] is repo1
-    assert thaw_set.thawset["repo2"] is repo2
-    assert len(thaw_set.thawset) == 2  # Ensure correct count of stored repos
+    assert thaw_set["repo1"] is repo1
+    assert thaw_set["repo2"] is repo2
+    assert len(thaw_set) == 2  # Ensure correct count of stored repos
 
 
 def test_thaw_set_no_duplicate_keys():
@@ -116,8 +114,6 @@ def test_thaw_set_no_duplicate_keys():
     thaw_set.add(repo1)
     thaw_set.add(repo2)
 
-    assert len(thaw_set.thawset) == 1  # Should still be 1 since repo2 replaces repo1
-    assert thaw_set.thawset["repo1"] is repo2  # Ensure the replacement worked
-    assert (
-        thaw_set.thawset["repo1"].bucket_name == "bucket2"
-    )  # Ensure new values are stored
+    assert len(thaw_set) == 1  # Should still be 1 since repo2 replaces repo1
+    assert thaw_set["repo1"] is repo2  # Ensure the replacement worked
+    assert thaw_set["repo1"].bucket_name == "bucket2"  # Ensure new values are stored

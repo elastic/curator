@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 from elasticsearch8 import Elasticsearch
@@ -63,13 +63,12 @@ class ThawedRepo:
 
 
 @dataclass
-class ThawSet:
+class ThawSet(dict[str, ThawedRepo]):
     """
     Data class for thaw settings
     """
 
     doctype: str = "thawset"
-    thawset: dict[str, ThawedRepo] = field(default_factory=dict)
 
     def add(self, thawed_repo: ThawedRepo) -> None:
         """
@@ -77,7 +76,7 @@ class ThawSet:
 
         :param thawed_repo: A thawed repo object
         """
-        self.thawset[thawed_repo.repo_name] = thawed_repo
+        self[thawed_repo.repo_name] = thawed_repo
 
 
 @dataclass
@@ -470,6 +469,25 @@ def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
     pattern = re.compile(repo_name_prefix)
     logging.debug("Looking for repos matching %s", repo_name_prefix)
     return [repo for repo in repos if pattern.search(repo)]
+
+
+def get_thawset(client: Elasticsearch, thawset_id: str) -> ThawSet:
+    """
+    Get the thawset from the status index.
+
+    :param client: A client connection object
+    :param thawset_id: The ID of the thawset
+    :returns: The thawset
+    :rtype: ThawSet
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    try:
+        doc = client.get(index=STATUS_INDEX, id=thawset_id)
+        loggit.info("ThawSet document found")
+        return ThawSet(doc["_source"])
+    except NotFoundError:
+        loggit.info("ThawSet document not found")
+        return None
 
 
 def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
@@ -939,7 +957,7 @@ class Thaw:
             thaw_repo(self.s3, bucket, path, self.retain, self.storage_class)
             repo_info = self.client.get_repository(repo)
             thawset.add(ThawedRepo(repo_info))
-        response = self.client.index(index=STATUS_INDEX, document=thawset.to_dict())
+        response = self.client.index(index=STATUS_INDEX, document=thawset)
         thawset_id = response["_id"]
         print(
             f"ThawSet {thawset_id} created. Plase use this ID to remount the thawed repositories."
@@ -963,13 +981,13 @@ class Remount:
         self.loggit.debug("Settings: %s", str(self.settings))
 
         self.client = client
-        self.thawset = ThawSet(thawset)
+        self.thawset = get_thawset(thawset)
 
     def check_thaw_status(self):
         """
         Check the status of the thawed repositories.
         """
-        for repo in self.thawset.repos:
+        for repo in self.thawset:
             self.loggit.info("Checking status of %s", repo)
             if not check_restore_status(self.s3, repo):
                 self.loggit.warning("Restore not complete for %s", repo)
@@ -984,7 +1002,7 @@ class Remount:
         if not self.check_thaw_status():
             print("Dry Run Remount: Not all repos thawed")
 
-        for repo in self.thawset.repos:
+        for repo in self.thawset_id.repos:
             self.loggit.info("Remounting %s", repo)
 
     def do_action(self) -> None:
@@ -995,7 +1013,7 @@ class Remount:
             print("Remount: Not all repos thawed")
             return
 
-        for repo in self.thawset.repos:
+        for repo in self.thawset_id.repos:
             self.loggit.info("Remounting %s", repo)
             create_repo(
                 self.client,
