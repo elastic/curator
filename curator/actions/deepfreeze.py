@@ -6,7 +6,7 @@ import json
 import logging
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from elasticsearch8 import Elasticsearch
@@ -63,13 +63,13 @@ class ThawedRepo:
 
 
 @dataclass
-class ThawSet(dict[str, ThawedRepo]):
+class ThawSet:
     """
     Data class for thaw settings
     """
 
     doctype: str = "thawset"
-    thawset: dict[str, ThawedRepo] = None
+    thawset: dict[str, ThawedRepo] = field(default_factory=dict)
 
     def add(self, thawed_repo: ThawedRepo) -> None:
         """
