@@ -75,6 +75,19 @@ class S3Client:
         """
         raise NotImplementedError("Subclasses should implement this method")
 
+    def list_objects(self, bucket_name: str, prefix: str) -> list[str]:
+        """
+        List objects in a bucket with a given prefix.
+
+        Args:
+            bucket_name (str): The name of the bucket to list objects from.
+            prefix (str): The prefix to use when listing objects.
+
+        Returns:
+            list[str]: A list of object keys.
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
 
 class AwsS3Client(S3Client):
     """
@@ -181,6 +194,31 @@ class AwsS3Client(S3Client):
 
                     except Exception as e:
                         self.loggit.error(f"Error refreezing {key}: {str(e)}")
+
+    def list_objects(self, bucket_name: str, prefix: str) -> list[str]:
+        """
+        List objects in a bucket with a given prefix.
+
+        Args:
+            bucket_name (str): The name of the bucket to list objects from.
+            prefix (str): The prefix to use when listing objects.
+
+        Returns:
+            list[str]: A list of object keys.
+        """
+        self.loggit.info(
+            f"Listing objects in bucket: {bucket_name} with prefix: {prefix}"
+        )
+        paginator = self.client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
+        object_keys = []
+
+        for page in pages:
+            if "Contents" in page:
+                for obj in page["Contents"]:
+                    object_keys.append(obj["Key"])
+
+        return object_keys
 
 
 def s3_client_factory(provider: str) -> S3Client:
