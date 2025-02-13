@@ -7,7 +7,7 @@ import logging
 import re
 import sys
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, time
 
 from elasticsearch8 import Elasticsearch
 from elasticsearch8.exceptions import NotFoundError
@@ -15,17 +15,12 @@ from rich import print
 from rich.console import Console
 from rich.table import Table
 
+from curator.actions import CreateIndex
 from curator.exceptions import ActionError, RepositoryException
 from curator.s3client import S3Client, s3_client_factory
 
 STATUS_INDEX = "deepfreeze-status"
 SETTINGS_ID = "1"
-
-#
-#
-# Utility Classes
-#
-#
 
 
 class Deepfreeze:
@@ -37,7 +32,25 @@ class Deepfreeze:
 @dataclass
 class ThawedRepo:
     """
-    Data class for a thawed repo and indices
+    ThawedRepo is a data class representing a thawed repository and its indices.
+
+    Attributes:
+        repo_name (str): The name of the repository.
+        bucket_name (str): The name of the bucket where the repository is stored.
+        base_path (str): The base path of the repository.
+        provider (str): The provider of the repository, default is "aws".
+        indices (list): A list of indices associated with the repository.
+
+    Methods:
+        __init__(repo_info: dict, indices: list[str] = None) -> None:
+            Initializes a ThawedRepo instance with repository information and optional indices.
+
+        add_index(index: str) -> None:
+            Adds an index to the list of indices.
+
+    Example:
+        thawed_repo = ThawedRepo(repo_info, indices)
+        thawed_repo.add_index("index_name")
     """
 
     repo_name: str
@@ -57,7 +70,11 @@ class ThawedRepo:
         """
         Add an index to the list of indices
 
-        :param index: The index to add
+        Params:
+            index (str): The index to add
+
+        Returns:
+            None
         """
         self.indices.append(index)
 
@@ -66,6 +83,17 @@ class ThawedRepo:
 class ThawSet(dict[str, ThawedRepo]):
     """
     Data class for thaw settings
+
+    Attributes:
+        doctype (str): The document type of the thaw settings.
+
+    Methods:
+        add(thawed_repo: ThawedRepo) -> None:
+            Add a thawed repo to the dictionary
+
+    Example:
+        thawset = ThawSet()
+        thawset.add(ThawedRepo(repo_info, indices))
     """
 
     doctype: str = "thawset"
@@ -74,7 +102,11 @@ class ThawSet(dict[str, ThawedRepo]):
         """
         Add a thawed repo to the dictionary
 
-        :param thawed_repo: A thawed repo object
+        Params:
+            thawed_repo (ThawedRepo): The thawed repo to add
+
+        Returns:
+            None
         """
         self[thawed_repo.repo_name] = thawed_repo
 
@@ -83,6 +115,28 @@ class ThawSet(dict[str, ThawedRepo]):
 class Repository:
     """
     Data class for repository
+
+    Attributes:
+        name (str): The name of the repository.
+        bucket (str): The name of the bucket.
+        base_path (str): The base path of the repository.
+        start (datetime): The start date of the repository.
+        end (datetime): The end date of the repository.
+        is_thawed (bool): Whether the repository is thawed.
+        is_mounted (bool): Whether the repository is mounted.
+        doctype (str): The document type of the repository.
+
+    Methods:
+        to_dict() -> dict:
+            Convert the Repository object to a dictionary.
+
+        to_json() -> str:
+            Convert the Repository object to a JSON string.
+
+    Example:
+        repo = Repository(name="repo1", bucket="bucket1", base_path="path1", start=datetime.now(), end=datetime.now())
+        repo_dict = repo.to_dict()
+        repo_json = repo.to_json()
     """
 
     name: str
@@ -103,13 +157,21 @@ class Repository:
         """
         Convert the Repository object to a dictionary.
         Convert datetime to ISO 8601 string format for JSON compatibility.
+
+        Params:
+            None
+
+        Returns:
+            dict: A dictionary representation of the Repository object.
         """
+        start_str = self.start.isoformat() if self.start else None
+        end_str = self.end.isoformat() if self.end else None
         return {
             "name": self.name,
             "bucket": self.bucket,
             "base_path": self.base_path,
-            "start": self.start.isoformat(),  # Convert datetime to string
-            "end": self.end.isoformat(),  # Convert datetime to string
+            "start": start_str,
+            "end": end_str,
             "is_thawed": self.is_thawed,
             "is_mounted": self.is_mounted,
             "doctype": self.doctype,
@@ -117,15 +179,46 @@ class Repository:
 
     def to_json(self) -> str:
         """
-        Serialize the Repository object to a JSON string.
+        Convert the Repository object to a JSON string.
+
+        Params:
+            None
+
+        Returns:
+            str: A JSON string representation of the Repository object.
         """
         return json.dumps(self.to_dict(), indent=4)
+
+    def __lt__(self, other):
+        """
+        Less than comparison based on the repository name.
+
+        Params:
+            other (Repository): Another Repository object to compare with.
+
+        Returns:
+            bool: True if this repository's name is less than the other repository's name, False otherwise.
+        """
+        return self.name < other.name
 
 
 @dataclass
 class Settings:
     """
     Data class for settings
+
+    Attributes:
+        doctype (str): The document type of the settings.
+        repo_name_prefix (str): The prefix for repository names.
+        bucket_name_prefix (str): The prefix for bucket names.
+        base_path_prefix (str): The base path prefix.
+        canned_acl (str): The canned ACL.
+        storage_class (str): The storage class.
+        provider (str): The provider.
+        rotate_by (str): The rotation style.
+        style (str): The style of the settings.
+        last_suffix (str): The last suffix.
+
     """
 
     doctype: str = "settings"
@@ -145,21 +238,21 @@ class Settings:
                 setattr(self, key, value)
 
 
-#
-#
-# Utility functions
-#
-#
-
-
 def push_to_glacier(s3: S3Client, repo: Repository) -> None:
-    """
-    Move the repository to Glacier storage class
+    """Push objects to Glacier storage
 
     :param s3: The S3 client object
-    :param repo: The repository to move
+    :type s3: S3Client
+    :param repo: The repository to push to Glacier
+    :type repo: Repository
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the object is not in the restoration process
     """
-    response = s3.list_objects_v2(Bucket=repo.bucket, Prefix=repo.base_path)
+    logging.debug("Pushing objects to Glacier storage")
+    response = s3.list_objects(repo.bucket, repo.base_path)
 
     # Check if objects were found
     if "Contents" not in response:
@@ -184,16 +277,17 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
 
 def check_restore_status(s3: S3Client, repo: Repository) -> bool:
     """
-    Check the restore status of a repository
+    Check the status of the restore request for each object in the repository.
 
-    Args:
-        s3 (S3Client): The S3 client object
-        repo (Repository): The repository to check
-
-    Returns:
-        bool: Completion status of the restore process from S3
+    :param s3:  The S3 client object
+    :type s3: S3Client
+    :param repo: The repository to check
+    :type repo: Repository
+    :raises Exception:  If the object is not in the restoration process
+    :return:   True if the restore request is complete, False otherwise
+    :rtype: bool
     """
-    response = s3.list_objects_v2(Bucket=repo.bucket, Prefix=repo.base_path)
+    response = s3.list_objects(repo.bucket, repo.base_path)
 
     # Check if objects were found
     if "Contents" not in response:
@@ -231,18 +325,25 @@ def thaw_repo(
     retrieval_tier: str = "Standard",
 ) -> None:
     """
-    Thaw a repository in Elasticsearch
+    Restore objects from Glacier storage
 
-    :param client: A client connection object
-    :param bucket_name: The name of the bucket
-    :param object_key: The key of the object
-    :param restore_days: Number of days to keep the object accessible
-    :param retrieval_tier: 'Standard' or 'Expedited' or 'Bulk'
+    :param s3: The S3 client object
+    :type s3: S3Client
+    :param bucket_name: Bucket name
+    :type bucket_name: str
+    :param base_path: Base path of the repository
+    :type base_path: str
+    :param restore_days: Number of days to retain before returning to Glacier, defaults to 7
+    :type restore_days: int, optional
+    :param retrieval_tier: Storage tier to return objects to, defaults to "Standard"
+    :type retrieval_tier: str, optional
 
-    :raises: NotFoundError
+    :raises Exception: If the object is not in the restoration process
 
+    :return: None
+    :rtype: None
     """
-    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=base_path)
+    response = s3.list_objects(bucket_name, base_path)
 
     # Check if objects were found
     if "Contents" not in response:
@@ -277,15 +378,19 @@ def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]
     :param repository: The name of the repository
     :returns: A list of indices
     :rtype: list[str]
+
+    :raises Exception: If the repository does not exist
+    :raises Exception: If the repository is empty
+    :raises Exception: If the repository is not mounted
     """
-    snapshots = client.snapshot.get(repository=repository, snapshot="_all")
     indices = set()
 
+    # TODO: Convert these three lines to use an existing Curator function?
+    snapshots = client.snapshot.get(repository=repository, snapshot="_all")
     for snapshot in snapshots["snapshots"]:
         indices.update(snapshot["indices"])
 
     logging.debug("Indices: %s", indices)
-
     return list(indices)
 
 
@@ -299,10 +404,19 @@ def get_timestamp_range(
     :param indices: A list of indices
     :returns: A tuple containing the earliest and latest @timestamp values
     :rtype: tuple[datetime, datetime]
+
+    :raises Exception: If the indices list is empty
+    :raises Exception: If the indices do not exist
+    :raises Exception: If the indices are empty
+
+    :example:
+        >>> get_timestamp_range(client, ["index1", "index2"])
+        (datetime.datetime(2021, 1, 1, 0, 0), datetime.datetime(2021, 1, 2, 0, 0))
     """
+    logging.debug("Determining timestamp range for indices: %s", indices)
     if not indices:
         return None, None
-
+    # TODO: Consider using Curator filters to accomplish this
     query = {
         "size": 0,
         "aggs": {
@@ -310,8 +424,8 @@ def get_timestamp_range(
             "latest": {"max": {"field": "@timestamp"}},
         },
     }
-
     response = client.search(index=",".join(indices), body=query)
+    logging.debug("Response: %s", response)
 
     earliest = response["aggregations"]["earliest"]["value_as_string"]
     latest = response["aggregations"]["latest"]["value_as_string"]
@@ -326,11 +440,22 @@ def ensure_settings_index(client: Elasticsearch) -> None:
     Ensure that the status index exists in Elasticsearch.
 
     :param client: A client connection object
+    :type client: Elasticsearch
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the index cannot be created
+    :raises Exception: If the index already exists
+    :raises Exception: If the index cannot be retrieved
+    :raises Exception: If the index is not empty
+
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     if not client.indices.exists(index=STATUS_INDEX):
         loggit.info("Creating index %s", STATUS_INDEX)
-        client.indices.create(index=STATUS_INDEX)
+        CreateIndex(client, STATUS_INDEX).do_action()
+        # client.indices.create(index=STATUS_INDEX)
 
 
 def get_settings(client: Elasticsearch) -> Settings:
@@ -338,8 +463,16 @@ def get_settings(client: Elasticsearch) -> Settings:
     Get the settings for the deepfreeze operation from the status index.
 
     :param client: A client connection object
+    :type client: Elasticsearch
+
     :returns: The settings
     :rtype: dict
+
+    :raises Exception: If the settings document does not exist
+
+    :example:
+        >>> get_settings(client)
+        {'repo_name_prefix': 'deepfreeze', 'bucket_name_prefix': 'deepfreeze', 'base_path_prefix': 'snapshots', 'canned_acl': 'private', 'storage_class': 'intelligent_tiering', 'provider': 'aws', 'rotate_by': 'path', 'style': 'oneup', 'last_suffix': '000001'}
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     try:
@@ -356,7 +489,17 @@ def save_settings(client: Elasticsearch, settings: Settings) -> None:
     Save the settings for the deepfreeze operation to the status index.
 
     :param client: A client connection object
-    :param provider: The provider to use (AWS only for now)
+    :type client: Elasticsearch
+    :param settings: The settings to save
+    :type settings: Settings
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the settings document cannot be created
+    :raises Exception: If the settings document cannot be updated
+    :raises Exception: If the settings document cannot be retrieved
+    :raises Exception: If the settings document is not empty
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     try:
@@ -382,12 +525,24 @@ def create_repo(
     Creates a new repo using the previously-created bucket.
 
     :param client: A client connection object
+    :type client: Elasticsearch
     :param repo_name: The name of the repository to create
+    :type repo_name: str
     :param bucket_name: The name of the bucket to use for the repository
+    :type bucket_name: str
     :param base_path_prefix: Path within a bucket where snapshots are stored
+    :type base_path_prefix: str
     :param canned_acl: One of the AWS canned ACL values
+    :type canned_acl: str
     :param storage_class: AWS Storage class
+    :type storage_class: str
     :param dry_run: If True, do not actually create the repository
+    :type dry_run: bool
+
+    :raises Exception: If the repository cannot be created
+    :raises Exception: If the repository already exists
+    :raises Exception: If the repository cannot be retrieved
+    :raises Exception: If the repository is not empty
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     loggit.info("Creating repo %s using bucket %s", repo_name, bucket_name)
@@ -423,10 +578,19 @@ def get_next_suffix(style: str, last_suffix: str, year: int, month: int) -> str:
     """
     Gets the next suffix
 
+    :param style: The style of the suffix
+    :type style: str
+    :param last_suffix: The last suffix
+    :type last_suffix: str
     :param year: Optional year to override current year
+    :type year: int
     :param month: Optional month to override current month
+    :type month: int
+
     :returns: The next suffix in the format YYYY.MM
     :rtype: str
+
+    :raises ValueError: If the style is not valid
     """
     if style == "oneup":
         return str(int(last_suffix) + 1).zfill(6)
@@ -443,8 +607,13 @@ def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
     Get the complete list of repos from our index and return a Repository object for each.
 
     :param client: A client connection object
+    :type client: Elasticsearch
+
     :returns: The unmounted repos.
     :rtype: list[Repository]
+
+    :raises Exception: If the repository does not exist
+
     """
     # logging.debug("Looking for unmounted repos")
     # # Perform search in ES for all repos in the status index
@@ -461,11 +630,17 @@ def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
     begin with the given prefix.
 
     :param client: A client connection object
+    :type client: Elasticsearch
     :param repo_name_prefix: A prefix for repository names
+    :type repo_name_prefix: str
+
     :returns: The repos.
     :rtype: list[object]
+
+    :raises Exception: If the repository does not exist
     """
     repos = client.snapshot.get_repository()
+    logging.debug("Repos retrieved: %s", repos)
     pattern = re.compile(repo_name_prefix)
     logging.debug("Looking for repos matching %s", repo_name_prefix)
     return [repo for repo in repos if pattern.search(repo)]
@@ -476,9 +651,14 @@ def get_thawset(client: Elasticsearch, thawset_id: str) -> ThawSet:
     Get the thawset from the status index.
 
     :param client: A client connection object
+    :type client: Elasticsearch
     :param thawset_id: The ID of the thawset
+    :type thawset_id: str
+
     :returns: The thawset
     :rtype: ThawSet
+
+    :raises Exception: If the thawset document does not exist
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     try:
@@ -496,37 +676,109 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     doing any record-keeping we need.
 
     :param client: A client connection object
+    :type client: Elasticsearch
     :param repo: The name of the repository to unmount
-    :param status_index: The name of the status index
+    :type repo: str
+
+    :returns: The repo.
+    :rtype: Repository
+
+    :raises Exception: If the repository does not exist
+    :raises Exception: If the repository is not empty
+    :raises Exception: If the repository cannot be deleted
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     repo_info = client.snapshot.get_repository(name=repo)[repo]
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
-    earliest, latest = get_timestamp_range(
-        client, get_all_indices_in_repo(client, repo)
-    )
-    repodoc = Repository(
-        {
-            "name": repo,
-            "bucket": bucket,
-            "base_path": base_path,
-            "is_mounted": False,
-            "start": decode_date(earliest),
-            "end": decode_date(latest),
-            "doctype": "repository",
-        }
-    )
+    indices = get_all_indices_in_repo(client, repo)
+    repodoc = {}
+    if indices:
+        earliest, latest = get_timestamp_range(client, indices)
+        repodoc = Repository(
+            {
+                "name": repo,
+                "bucket": bucket,
+                "base_path": base_path,
+                "is_mounted": False,
+                "start": decode_date(earliest),
+                "end": decode_date(latest),
+                "doctype": "repository",
+            }
+        )
+    else:
+        repodoc = Repository(
+            {
+                "name": repo,
+                "bucket": bucket,
+                "base_path": base_path,
+                "is_mounted": False,
+                "start": None,
+                "end": None,
+                "doctype": "repository",
+            }
+        )
     msg = f"Recording repository details as {repodoc}"
     loggit.debug(msg)
     client.index(index=STATUS_INDEX, document=repodoc.to_dict())
     loggit.debug("Removing repo %s", repo)
     # Now that our records are complete, go ahead and remove the repo.
     client.snapshot.delete_repository(name=repo)
+    loggit.debug("Repo %s removed", repo)
     return repodoc
 
 
+def wait_for_s3_restore(
+    s3: S3Client, thawset: ThawSet, wait_interval: int = 60, max_wait: int = -1
+) -> None:
+    """
+    Wait for the S3 objects to be restored.
+
+    :param s3: The S3 client object
+    :type s3: S3Client
+    :param thawset: The thawset to wait for
+    :type thawset: ThawSet
+    :param wait_interval: The interval to wait between checks
+    :type wait_interval: int
+    :param max_wait: The maximum time to wait
+    :type max_wait: int
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the S3 objects are not restored
+    :raises Exception: If the S3 objects are not found
+    :raises Exception: If the S3 objects are not in the restoration process
+    :raises Exception: If the S3 objects are not in the correct storage class
+    :raises Exception: If the S3 objects are not in the correct bucket
+    :raises Exception: If the S3 objects are not in the correct base path
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info("Waiting for S3 objects to be restored")
+    start_time = datetime.now()
+    while True:
+        if check_is_s3_thawed(s3, thawset):
+            loggit.info("S3 objects restored")
+            break
+        if max_wait > 0 and (datetime.now() - start_time).seconds > max_wait:
+            loggit.warning("Max wait time exceeded")
+            break
+        loggit.info("Waiting for S3 objects to be restored")
+        time.sleep(wait_interval)
+
+
 def decode_date(date_in: str) -> datetime:
+    """
+    Decode a date from a string or datetime object.
+
+    :param date_in: The date to decode
+    :type date_in: str or datetime
+
+    :returns: The decoded date
+    :rtype: datetime
+
+    :raises ValueError: If the date is not valid
+    """
     if isinstance(date_in, datetime):
         return date_in
     elif isinstance(date_in, str):
@@ -535,10 +787,64 @@ def decode_date(date_in: str) -> datetime:
         raise ValueError("Invalid date format")
 
 
+def check_is_s3_thawed(s3: S3Client, thawset: ThawSet) -> bool:
+    """
+    Check the status of the thawed repositories.
+
+    :param s3: The S3 client object
+    :type s3: S3Client
+    :param thawset: The thawset to check
+    :type thawset: ThawSet
+
+    :returns: True if the repositories are thawed, False otherwise
+    :rtype: bool
+
+    :raises Exception: If the repository does not exist
+    :raises Exception: If the repository is not empty
+    :raises Exception: If the repository is not mounted
+    :raises Exception: If the repository is not thawed
+    :raises Exception: If the repository is not in the correct storage class
+    :raises Exception: If the repository is not in the correct bucket
+    :raises Exception: If the repository is not in the correct base path
+    """
+    for repo in thawset:
+        logging.info("Checking status of %s", repo)
+        if not check_restore_status(s3, repo):
+            logging.warning("Restore not complete for %s", repo)
+            print("Restore not complete for %s", repo)
+            return False
+    return True
+
+
 class Setup:
     """
     Setup is responsible for creating the initial repository and bucket for
     deepfreeze operations.
+
+    :param client: A client connection object
+    :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
+    :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
+    :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
+    :param canned_acl: One of the AWS canned ACL values (see
+        `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
+        defaults to `private`
+    :param storage_class: AWS Storage class (see `<https://aws.amazon.com/s3/storage-classes/>`),
+        defaults to `intelligent_tiering`
+    :param provider: The provider to use (AWS only for now), defaults to `aws`, and will be saved
+        to the deepfreeze status index for later reference.
+    :param rotate_by: Rotate by bucket or path within a bucket?, defaults to `path`
+
+    :raises RepositoryException: If a repository with the given prefix already exists
+
+    :methods:
+        do_dry_run: Perform a dry-run of the setup process.
+        do_action: Perform create initial bucket and repository.
+
+    :example:
+        >>> from curator.actions.deepfreeze import Setup
+        >>> setup = Setup(client, repo_name_prefix="deepfreeze", bucket_name_prefix="deepfreeze", base_path_prefix="snapshots", canned_acl="private", storage_class="intelligent_tiering", provider="aws", rotate_by="path")
+        >>> setup.do_dry_run()
+        >>> setup.do_action()
     """
 
     def __init__(
@@ -555,20 +861,6 @@ class Setup:
         rotate_by: str = "path",
         style: str = "oneup",
     ) -> None:
-        """
-        :param client: A client connection object
-        :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
-        :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
-        :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
-        :param canned_acl: One of the AWS canned ACL values (see
-            `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
-            defaults to `private`
-        :param storage_class: AWS Storage class (see `<https://aws.amazon.com/s3/storage-classes/>`),
-            defaults to `intelligent_tiering`
-        :param provider: The provider to use (AWS only for now), defaults to `aws`, and will be saved
-            to the deepfreeze status index for later reference.
-        :param rotate_by: Rotate by bucket or path within a bucket?, defaults to `path`
-        """
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Setup")
 
@@ -608,13 +900,16 @@ class Setup:
 
         if len(self.repo_list) > 0:
             raise RepositoryException(
-                f"repositories matching {self.settings.repo_name_prefix}-* already exist"
+                f"repositories matching {self.settings.repo_jname_prefix}-* already exist"
             )
         self.loggit.debug("Deepfreeze Setup initialized")
 
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the setup process.
+
+        :return: None
+        :rtype: None
         """
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
@@ -632,7 +927,10 @@ class Setup:
 
     def do_action(self) -> None:
         """
-        Perform create initial bucket and repository.
+        Perform setup steps to create initial bucket and repository and save settings.
+
+        :return: None
+        :rtype: None
         """
         self.loggit.debug("Starting Setup action")
         ensure_settings_index(self.client)
@@ -660,6 +958,22 @@ class Rotate:
     """
     The Deepfreeze is responsible for managing the repository rotation given
     a config file of user-managed options and settings.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param keep: How many repositories to retain, defaults to 6
+    :type keep: str
+    :param year: Optional year to override current year
+    :type year: int
+    :param month: Optional month to override current month
+    :type month: int
+
+    :raises RepositoryException: If a repository with the given prefix already exists
+
+    :methods:
+        update_ilm_policies: Update ILM policies to use the new repository.
+        unmount_oldest_repos: Unmount the oldest repositories.
+        is_thawed: Check if a repository is thawed.
     """
 
     def __init__(
@@ -669,20 +983,6 @@ class Rotate:
         year: int = None,
         month: int = None,
     ) -> None:
-        """
-        :param client: A client connection object
-        # :param repo_name_prefix: A prefix for repository names, defaults to `deepfreeze`
-        # :param bucket_name_prefix: A prefix for bucket names, defaults to `deepfreeze`
-        # :param base_path_prefix: Path within a bucket where snapshots are stored, defaults to `snapshots`
-        # :param canned_acl: One of the AWS canned ACL values (see
-        #     `<https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl>`),
-        #     defaults to `private`
-        # :param storage_class: AWS Storage class (see `<https://aws.amazon.com/s3/storage-classes/>`),
-        #     defaults to `intelligent_tiering`
-        :param keep: How many repositories to retain, defaults to 6
-        :param year: Optional year to override current year
-        :param month: Optional month to override current month
-        """
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Rotate")
 
@@ -732,6 +1032,15 @@ class Rotate:
         """
         Loop through all existing IML policies looking for ones which reference
         the latest_repo and update them to use the new repo instead.
+
+        :param dry_run: If True, do not actually update the policies
+        :type dry_run: bool
+
+        :return: None
+        :rtype: None
+
+        :raises Exception: If the policy cannot be updated
+        :raises Exception: If the policy does not exist
         """
         if self.latest_repo == self.new_repo_name:
             self.loggit.warning("Already on the latest repo")
@@ -780,6 +1089,8 @@ class Rotate:
 
         :param repo: The name of the repository
         :returns: True if the repository is thawed, False otherwise
+
+        :raises Exception: If the repository does not exist
         """
         # TODO: This might work, but we might also need to check our Repostories.
         self.loggit.debug("Checking if %s is thawed", repo)
@@ -789,6 +1100,14 @@ class Rotate:
         """
         Take the oldest repos from the list and remove them, only retaining
         the number chosen in the config under "keep".
+
+        :param dry_run: If True, do not actually remove the repositories
+        :type dry_run: bool
+
+        :return: None
+        :rtype: None
+
+        :raises Exception: If the repository cannot be removed
         """
         # TODO: Look at snapshot.py for date-based calculations
         # Also, how to embed mutliple classes in a single action file
@@ -807,15 +1126,15 @@ class Rotate:
                 push_to_glacier(self.s3, repo)
 
     def get_repo_details(self, repo: str) -> Repository:
-        """
-        Get all the relevant details about this repo and build a Repository object
-        using them.
+        """Return a Repository object given a repo name
 
-        Args:
-            repo (str): Name of the repository
+        :param repo: The name of the repository
+        :type repo: str
 
-        Returns:
-            Repository: A fleshed-out Repository object for persisting to ES.
+        :return: The repository object
+        :rtype: Repository
+
+        :raises Exception: If the repository does not exist
         """
         response = self.client.get_repository(repo)
         earliest, latest = get_timestamp_range(self.client, [repo])
@@ -833,6 +1152,12 @@ class Rotate:
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the rotation process.
+
+        :return: None
+        :rtype: None
+
+        :raises Exception: If the repository cannot be created
+        :raises Exception: If the repository already exists
         """
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = (
@@ -856,6 +1181,12 @@ class Rotate:
     def do_action(self) -> None:
         """
         Perform high-level repo rotation steps in sequence.
+
+        :return: None
+        :rtype: None
+
+        :raises Exception: If the repository cannot be created
+        :raises Exception: If the repository already exists
         """
         ensure_settings_index(self.client)
         self.loggit.debug("Saving settings")
@@ -875,7 +1206,28 @@ class Rotate:
 
 class Thaw:
     """
-    Thaw a deepfreeze repository and make it ready to be remounted
+    Thaw a deepfreeze repository and make it ready to be remounted. If
+    wait_for_completion is True, wait for the thawed repository to be ready and then
+    proceed to remount it. This is the default.
+
+    :param client: A client connection object
+    :param start: The start of the time range
+    :param end: The end of the time range
+    :param retain: The number of days to retain the thawed repository
+    :param storage_class: The storage class to use for the thawed repository
+    :param wait_for_completion: If True, wait for the thawed repository to be ready
+    :param wait_interval: The interval to wait between checks
+    :param max_wait: The maximum time to wait (-1 for no limit)
+    :param enable_multiple_buckets: If True, enable multiple buckets
+
+    :raises Exception: If the repository does not exist
+    :raises Exception: If the repository is not empty
+    :raises Exception: If the repository is not mounted
+
+    :methods:
+        get_repos_to_thaw: Get the list of repos that were active during the given time range.
+        do_dry_run: Perform a dry-run of the thawing process.
+        do_action: Perform high-level repo thawing steps in sequence.
     """
 
     def __init__(
@@ -885,6 +1237,9 @@ class Thaw:
         end: datetime,
         retain: int,
         storage_class: str,
+        wait_for_completion: bool = True,
+        wait_interval: int = 60,
+        max_wait: int = -1,
         enable_multiple_buckets: bool = False,
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
@@ -898,6 +1253,9 @@ class Thaw:
         self.end = decode_date(end)
         self.retain = retain
         self.storage_class = storage_class
+        self.wfc = wait_for_completion
+        self.wait_interval = wait_interval
+        self.max_wait = max_wait
         self.enable_multiple_buckets = enable_multiple_buckets
         self.s3 = s3_client_factory(self.settings.provider)
 
@@ -906,9 +1264,15 @@ class Thaw:
         Get the list of repos that were active during the given time range.
 
         :param start: The start of the time range
+        :type start: datetime
         :param end: The end of the time range
+        :type start: datetime
+
         :returns: The repos
         :rtype: list[Repository] A list of repository names
+
+        :raises Exception: If the repository does not exist
+        :raises Exception: If the repository is not empty
         """
         loggit = logging.getLogger("curator.actions.deepfreeze")
         repos = get_unmounted_repos(self.client)
@@ -922,6 +1286,9 @@ class Thaw:
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the thawing process.
+
+        :return: None
+        :rtype: None
         """
         thawset = ThawSet()
 
@@ -934,6 +1301,9 @@ class Thaw:
     def do_action(self) -> None:
         """
         Perform high-level repo thawing steps in sequence.
+
+        :return: None
+        :rtype: None
         """
         # We don't save the settings here because nothing should change our settings.
         # What we _will_ do though, is save a ThawSet showing what indices and repos
@@ -958,21 +1328,46 @@ class Thaw:
             repo_info = self.client.get_repository(repo)
             thawset.add(ThawedRepo(repo_info))
         response = self.client.index(index=STATUS_INDEX, document=thawset)
-        thawset_id = response["_id"]
-        print(
-            f"ThawSet {thawset_id} created. Plase use this ID to remount the thawed repositories."
-        )
+        if not self.wfc:
+            thawset_id = response["_id"]
+            print(
+                f"ThawSet {thawset_id} created. Plase use this ID to remount the thawed repositories."
+            )
+        else:
+            wait_for_s3_restore(self.s3, thawset_id, self.wait_interval, self.max_wait)
+            remount = Remount(
+                self.client, thawset_id, self.wfc, self.wait_interval, self.max_wait
+            )
+            remount.do_action()
 
 
 class Remount:
     """
     Remount a thawed deepfreeze repository. Remount indices as "thawed-<repo>".
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param thawset: The thawset to remount
+    :type thawset: str
+    :param wait_for_completion: If True, wait for the remounted repository to be ready
+    :type wait_for_completion: bool
+    :param wait_interval: The interval to wait between checks
+    :type wait_interval: int
+    :param max_wait: The maximum time to wait (-1 for no limit)
+    :type max_wait: int
+
+    :methods:
+        do_dry_run: Perform a dry-run of the remounting process.
+        do_action: Perform high-level repo remounting steps in sequence.
     """
 
     def __init__(
         self,
         client: Elasticsearch,
         thawset: str,
+        wait_for_completion: bool = True,
+        wait_interval: int = 9,
+        max_wait: int = -1,
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Rotate")
@@ -982,24 +1377,18 @@ class Remount:
 
         self.client = client
         self.thawset = get_thawset(thawset)
-
-    def check_thaw_status(self):
-        """
-        Check the status of the thawed repositories.
-        """
-        for repo in self.thawset:
-            self.loggit.info("Checking status of %s", repo)
-            if not check_restore_status(self.s3, repo):
-                self.loggit.warning("Restore not complete for %s", repo)
-                print("Restore not complete for %s", repo)
-                return False
-        return True
+        self.wfc = wait_for_completion
+        self.wait_interval = wait_interval
+        self.max_wait = max_wait
 
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the remounting process.
+
+        :return: None
+        :rtype: None
         """
-        if not self.check_thaw_status():
+        if not check_is_s3_thawed(self.s3, self.thawset):
             print("Dry Run Remount: Not all repos thawed")
 
         for repo in self.thawset_id.repos:
@@ -1008,8 +1397,11 @@ class Remount:
     def do_action(self) -> None:
         """
         Perform high-level repo remounting steps in sequence.
+
+        :return: None
+        :rtype: None
         """
-        if not self.check_thaw_status():
+        if not check_is_s3_thawed(self.s3, self.thawset):
             print("Remount: Not all repos thawed")
             return
 
@@ -1029,6 +1421,15 @@ class Refreeze:
     """
     First unmount a repo, then refreeze it requested (or let it age back to Glacier
     naturally)
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param thawset: The thawset to refreeze
+    :type thawset: str
+
+    :methods:
+        do_dry_run: Perform a dry-run of the refreezing process.
+        do_action: Perform high-level repo refreezing steps in sequence.
     """
 
     def __init__(self, client: Elasticsearch, thawset: str) -> None:
@@ -1042,24 +1443,45 @@ class Refreeze:
         self.thawset = ThawSet(thawset)
 
     def do_dry_run(self) -> None:
+        """
+        Perform a dry-run of the refreezing process.
+
+        :return: None
+        :rtype: None
+        """
         pass
 
     def do_action(self) -> None:
+        """
+        Perform high-level repo refreezing steps in sequence.
+
+        :return: None
+        :rtype: None
+        """
         pass
 
 
 class Status:
     """
-    Get the status of the deepfreeze components
+    Get the status of the deepfreeze components. No dry_run for this action makes
+    sense as it changes nothing, so the do_singleton_action method simply runs the
+    do_action method directly.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+
+    :methods:
+        do_action: Perform high-level status steps in sequence.
+        do_singleton_action: Perform high-level status steps in sequence.
+        get_cluster_name: Get the name of the cluster.
+        do_repositories: Get the status of the repositories.
+        do_buckets: Get the status of the buckets.
+        do_ilm_policies: Get the status of the ILM policies.
+        do_thawsets: Get the status of the thawsets.
+        do_config: Get the status of the configuration.
     """
 
     def __init__(self, client: Elasticsearch) -> None:
-        """
-        Setup the status action
-
-        Args:
-            client (elasticsearch): Elasticsearch client object
-        """
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Status")
         self.settings = get_settings(client)
@@ -1071,7 +1493,9 @@ class Status:
         Connects to the Elasticsearch cluster and returns its name.
 
         :param es_host: The URL of the Elasticsearch instance (default: "http://localhost:9200").
+        :type es_host: str
         :return: The name of the Elasticsearch cluster.
+        :rtype: str
         """
         try:
             cluster_info = self.client.cluster.health()
@@ -1082,6 +1506,9 @@ class Status:
     def do_action(self) -> None:
         """
         Perform the status action
+
+        :return: None
+        :rtype: None
         """
         self.loggit.info("Getting status")
         print()
@@ -1095,6 +1522,9 @@ class Status:
     def do_config(self):
         """
         Print the configuration settings
+
+        :return: None
+        :rtype: None
         """
         table = Table(title="Configuration")
         table.add_column("Setting", style="cyan")
@@ -1116,6 +1546,9 @@ class Status:
     def do_thawsets(self):
         """
         Print the thawed repositories
+
+        :return: None
+        :rtype: None
         """
         self.loggit.debug("Getting thawsets")
         table = Table(title="ThawSets")
@@ -1134,6 +1567,9 @@ class Status:
     def do_ilm_policies(self):
         """
         Print the ILM policies affected by deepfreeze
+
+        :return: None
+        :rtype: None
         """
         table = Table(title="ILM Policies")
         table.add_column("Policy", style="cyan")
@@ -1160,6 +1596,9 @@ class Status:
     def do_buckets(self):
         """
         Print the buckets in use by deepfreeze
+
+        :return: None
+        :rtype: None
         """
         table = Table(title="Buckets")
         table.add_column("Provider", style="cyan")
@@ -1183,13 +1622,18 @@ class Status:
     def do_repositories(self):
         """
         Print the repositories in use by deepfreeze
+
+        :return: None
+        :rtype: None
         """
         table = Table(title="Repositories")
         table.add_column("Repository", style="cyan")
         table.add_column("Status", style="magenta")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
-        for repo in get_unmounted_repos(self.client):
+        unmounted_repos = get_unmounted_repos(self.client)
+        unmounted_repos.sort()
+        for repo in unmounted_repos:
             status = "U"
             if repo.is_mounted:
                 status = "M"
@@ -1212,5 +1656,8 @@ class Status:
     def do_singleton_action(self) -> None:
         """
         Dry run makes no sense here, so we're just going to do this either way.
+
+        :return: None
+        :rtype: None
         """
         self.do_action()
