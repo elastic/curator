@@ -235,6 +235,26 @@ def rotate(
     help="What storage class to use, as defined by AWS",
 )
 @click.option(
+    "-w",
+    "--wait_for_completion",
+    is_flag=True,
+    help="Wait for completion of the thaw",
+)
+@click.option(
+    "-i",
+    "--wait_interval",
+    type=int,
+    default=60,
+    help="How often to check for completion of the thaw",
+)
+@click.option(
+    "-m",
+    "--max_wait",
+    type=int,
+    default=-1,
+    help="How long to wait for completion of the thaw (-1 means forever)",
+)
+@click.option(
     "-m",
     "--enable-multiple-buckets",
     is_flag=True,
@@ -247,16 +267,27 @@ def thaw(
     end,
     retain,
     storage_class,
+    wait_for_completion,
+    wait_interval,
+    max_wait,
     enable_multiple_buckets,
 ):
     """
     Thaw a deepfreeze repository (return it from Glacier)
+
+    Specifying wait_for_completion will cause the CLI to wait for the thaw to complete
+    and then proceed directly to remount the repository. This is useful for scripting
+    the thaw process or unattended operation. This mode is the default, so you must
+    specify --no-wait-for-completion to disable it.
     """
     manual_options = {
         "start": start,
         "end": end,
         "retain": retain,
         "storage_class": storage_class,
+        "wait_for_completion": wait_for_completion,
+        "wait_interval": wait_interval,
+        "max_wait": max_wait,
         "enable_multiple_buckets": enable_multiple_buckets,
     }
     action = CLIAction(
@@ -271,16 +302,42 @@ def thaw(
 
 @deepfreeze.command()
 @click.option("-t", "--thawset", type=int, help="Thaw set with repos to be mounted.")
+@click.option(
+    "-w",
+    "--wait_for_completion",
+    is_flag=True,
+    help="Wait for completion of the thaw",
+)
+@click.option(
+    "-i",
+    "--wait_interval",
+    type=int,
+    default=60,
+    help="How often to check for completion of the thaw",
+)
+@click.option(
+    "-m",
+    "--max_wait",
+    type=int,
+    default=-1,
+    help="How long to wait for completion of the thaw (-1 means forever)",
+)
 @click.pass_context
 def remount(
     ctx,
     thawset,
+    wait_for_completion,
+    wait_interval,
+    max_wait,
 ):
     """
     Remount a thawed repository
     """
     manual_options = {
         "thawset": thawset,
+        "wait_for_completion": wait_for_completion,
+        "wait_interval": wait_interval,
+        "max_wait": max_wait,
     }
     action = CLIAction(
         ctx.info_name,
