@@ -134,7 +134,8 @@ class Repository:
             Convert the Repository object to a JSON string.
 
     Example:
-        repo = Repository(name="repo1", bucket="bucket1", base_path="path1", start=datetime.now(), end=datetime.now())
+        repo = Repository({name="repo1", bucket="bucket1", base_path="path1", start=datetime.now(), end=datetime.now()})
+        repo = Repository(name="deepfreeze-000032")
         repo_dict = repo.to_dict()
         repo_json = repo.to_json()
     """
@@ -148,7 +149,9 @@ class Repository:
     is_mounted: bool = True
     doctype: str = "repository"
 
-    def __init__(self, repo_hash=None) -> None:
+    def __init__(self, repo_hash=None, name=None) -> None:
+        if name is not None:
+            repo_hash = self.client.get(index=STATUS_INDEX, id=name)["_source"]
         if repo_hash is not None:
             for key, value in repo_hash.items():
                 setattr(self, key, value)
