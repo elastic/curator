@@ -38,6 +38,17 @@ class S3Client:
         """
         raise NotImplementedError("Subclasses should implement this method")
 
+    def bucket_exists(self, bucket_name: str) -> bool:
+        """
+        Test whether or not the named bucket exists
+
+        :param bucket_name: Bucket name to check
+        :type bucket_name: str
+        :return: Existence state of named bucket
+        :rtype: bool
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
     def thaw(
         self,
         bucket_name: str,
@@ -106,6 +117,14 @@ class AwsS3Client(S3Client):
             self.loggit.error(e)
             raise ActionError(e)
 
+    def bucket_exists(self, bucket_name: str) -> bool:
+        # TODO: Write a call to the S3 service to test bucket existence
+        return self.client.get_bucket(bucket_name)
+
+    def delete_bucket(self, bucket_name: str) -> None:
+        # TODO: Write a call to the S3 service to delete the named bucket
+        self.client.delete_bucket(bucket_name)
+
     def thaw(
         self,
         bucket_name: str,
@@ -138,9 +157,7 @@ class AwsS3Client(S3Client):
                 storage_class = response.get("StorageClass", "")
 
                 if storage_class in ["GLACIER", "DEEP_ARCHIVE", "GLACIER_IR"]:
-                    self.loggit.info(
-                        f"Restoring: {key} (Storage Class: {storage_class})"
-                    )
+                    self.loggit.debug(f"Restoring: {key} from {storage_class})")
                     self.client.restore_object(
                         Bucket=bucket_name,
                         Key=key,
@@ -150,7 +167,7 @@ class AwsS3Client(S3Client):
                         },
                     )
                 else:
-                    self.loggit.info(
+                    self.loggit.debug(
                         f"Skipping: {key} (Storage Class: {storage_class})"
                     )
 
