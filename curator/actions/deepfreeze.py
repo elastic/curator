@@ -114,7 +114,8 @@ class ThawSet(dict[str, ThawedRepo]):
 @dataclass
 class Repository:
     """
-    Data class for repository
+    Data class for repository. Given a name, it will retrieve the repository from the
+    status index. If given other parameters, it will create a new repository object.
 
     Attributes:
         name (str): The name of the repository.
@@ -140,11 +141,12 @@ class Repository:
         repo_json = repo.to_json()
     """
 
-    name: str
-    bucket: str
-    base_path: str
-    start: datetime
-    end: datetime
+    name: str = None
+    bucket: str = None
+    base_path: str = None
+    # These default datetimes are to prevent issues with None.
+    start: datetime = datetime.now()
+    end: datetime = datetime.now()
     is_thawed: bool = False
     is_mounted: bool = True
     doctype: str = "repository"
@@ -208,7 +210,8 @@ class Repository:
 @dataclass
 class Settings:
     """
-    Data class for settings
+    Data class for settings. Can be instantiated from a dictionary or from individual
+    parameters.
 
     Attributes:
         doctype (str): The document type of the settings.
@@ -750,6 +753,8 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     indices = get_all_indices_in_repo(client, repo)
     repodoc = {}
     if indices:
+        # ! TODO: This can't be done here; we have to calculate the date range while
+        # ! TODO: the indices are still mounted.
         earliest, latest = get_timestamp_range(client, indices)
         repodoc = Repository(
             {
@@ -1150,8 +1155,8 @@ class Rotate:
             # Go through these looking for any occurrences of self.latest_repo
             # and change those to use self.new_repo_name instead.
             # TODO: Ensure that delete_searchable_snapshot is set to false or
-            # the snapshot will be deleted when the policy transitions to the next phase.
-            # in this case, raise an error and skip this policy.
+            # TODO: the snapshot will be deleted when the policy transitions to the
+            # TODO: next phase. In this case, raise an error and skip this policy.
             # ? Maybe we don't correct this but flag it as an error?
             p = policies[policy]["policy"]["phases"]
             updated = False
@@ -1205,10 +1210,6 @@ class Rotate:
 
         :raises Exception: If the repository cannot be removed
         """
-        # TODO: Look at snapshot.py for date-based calculations
-        # Also, how to embed mutliple classes in a single action file
-        # Alias action may be using multiple filter blocks. Look at that since we
-        # may need to do the same thing.
         self.loggit.debug("Total list: %s", self.repo_list)
         s = self.repo_list[self.keep :]
         self.loggit.debug("Repos to remove: %s", s)
@@ -1218,6 +1219,8 @@ class Rotate:
                 continue
             self.loggit.info("Removing repo %s", repo)
             if not dry_run:
+                # ? Do I want to check for existence of snapshots still mounted from
+                # ? the repo here or in unmount_repo?
                 repo = unmount_repo(self.client, repo)
                 push_to_glacier(self.s3, repo)
 
