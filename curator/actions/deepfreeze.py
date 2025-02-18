@@ -1031,6 +1031,39 @@ class Rotate:
             self.loggit.warning("Created index %s", STATUS_INDEX)
         self.loggit.info("Deepfreeze initialized")
 
+    def update_repo_date_range(self, dry_run=False):
+        """
+        Update the date ranges for all repositories in the status index.
+
+        :return: None
+        :rtype: None
+
+        :raises Exception: If the repository does not exist
+        :raises Exception: If the repository is not empty
+        :raises Exception: If the repository is not mounted
+        :raises Exception: If the repository is not thawed
+        """
+        self.loggit.debug("Updating repo date ranges")
+        # Get the repo objects (not names) which match our prefix
+        repos = get_repos(self.client, self.settings.repo_name_prefix)
+        # Now loop through the repos, updating the date range for each
+        for repo in repos:
+            self.loggit.debug("Updating date range for %s", repo.name)
+            indices = get_all_indices_in_repo(self.client, repo.name)
+            if indices:
+                earliest, latest = get_timestamp_range(self.client, indices)
+                repo.start = (
+                    decode_date(earliest) if earliest <= repo.start else repo.start
+                )
+                repo.end = decode_date(latest) if latest >= repo.end else repo.end
+                # ? Will this produce too many updates? Do I need to only update if one
+                # ? of the dates has changed?
+                if not dry_run:
+                    self.client.update(index=STATUS_INDEX, doc=repo.to_dict())
+                self.loggit.debug("Updated date range for %s", repo.name)
+            else:
+                self.loggit.debug("No update; no indices found for %s", repo.name)
+
     def update_ilm_policies(self, dry_run=False) -> None:
         """
         Loop through all existing IML policies looking for ones which reference
@@ -1180,6 +1213,7 @@ class Rotate:
         )
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
+        self.update_repo_date_range(dry_run=True)
 
     def do_action(self) -> None:
         """
@@ -1205,6 +1239,7 @@ class Rotate:
         )
         self.update_ilm_policies()
         self.unmount_oldest_repos()
+        self.update_repo_date_range()
 
 
 class Thaw:
