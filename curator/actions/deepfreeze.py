@@ -235,10 +235,40 @@ class Settings:
     style: str = "oneup"
     last_suffix: str = None
 
-    def __init__(self, settings_hash=None) -> None:
+    def __init__(
+        self,
+        settings_hash: dict[str, str] = None,
+        repo_name_prefix: str = "deepfreeze",
+        bucket_name_prefix: str = "deepfreeze",
+        base_path_prefix: str = "snapshots",
+        canned_acl: str = "private",
+        storage_class: str = "intelligent_tiering",
+        provider: str = "aws",
+        rotate_by: str = "path",
+        style: str = "oneup",
+        last_suffix: str = None,
+    ) -> None:
         if settings_hash is not None:
             for key, value in settings_hash.items():
                 setattr(self, key, value)
+        if repo_name_prefix:
+            self.repo_name_prefix = repo_name_prefix
+        if bucket_name_prefix:
+            self.bucket_name_prefix = bucket_name_prefix
+        if base_path_prefix:
+            self.base_path_prefix = base_path_prefix
+        if canned_acl:
+            self.canned_acl = canned_acl
+        if storage_class:
+            self.storage_class = storage_class
+        if provider:
+            self.provider = provider
+        if rotate_by:
+            self.rotate_by = rotate_by
+        if style:
+            self.style = style
+        if last_suffix:
+            self.last_suffix = last_suffix
 
 
 def push_to_glacier(s3: S3Client, repo: Repository) -> None:
@@ -627,7 +657,7 @@ def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
     return [Repository(repo["_source"]) for repo in repos]
 
 
-def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
+def get_repo_names(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
     """
     Get the complete list of repos and return just the ones whose names
     begin with the given prefix.
@@ -647,6 +677,29 @@ def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
     pattern = re.compile(repo_name_prefix)
     logging.debug("Looking for repos matching %s", repo_name_prefix)
     return [repo for repo in repos if pattern.search(repo)]
+
+
+def get_repos(client: Elasticsearch, repo_name_prefix: str) -> list[Repository]:
+    """
+    Get the list of repos from our index and return a Repository object for each one
+    which matches the given prefix.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo_name_prefix: A prefix for repository names
+    :type repo_name_prefix: str
+
+    :returns: The repos.
+    :rtype: list[Repository]
+
+    :raises Exception: If the repository does not exist
+    """
+    repos = client.snapshot.get_repository()
+    logging.debug("Repos retrieved: %s", repos)
+    pattern = re.compile(repo_name_prefix)
+    logging.debug("Looking for repos matching %s", repo_name_prefix)
+    df_repos = [repo for repo in repos if pattern.search(repo)]
+    return [Repository(name=repo) for repo in df_repos]
 
 
 def get_thawset(client: Elasticsearch, thawset_id: str) -> ThawSet:
@@ -723,10 +776,17 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
         )
     msg = f"Recording repository details as {repodoc}"
     loggit.debug(msg)
-    client.index(index=STATUS_INDEX, document=repodoc.to_dict())
     loggit.debug("Removing repo %s", repo)
-    # Now that our records are complete, go ahead and remove the repo.
-    client.snapshot.delete_repository(name=repo)
+    try:
+        client.snapshot.delete_repository(name=repo)
+    except Exception as e:
+        loggit.error(e)
+        print(
+            f"[magenta]Error deleting repository [bold white]{repo}[/bold white]:[/magenta] {e}"
+        )
+        raise ActionError(e)
+    # Don't update the records until the repo has been succesfully removed.
+    client.index(index=STATUS_INDEX, document=repodoc.to_dict())
     loggit.debug("Repo %s removed", repo)
     return repodoc
 
@@ -897,7 +957,7 @@ class Setup:
             self.base_path = f"{self.base_path}-{self.suffix}"
 
         self.loggit.debug("Getting repo list")
-        self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
+        self.repo_list = get_repo_names(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort()
         self.loggit.debug("Repo list: %s", self.repo_list)
 
@@ -1013,7 +1073,7 @@ class Rotate:
             self.base_path = f"{self.settings.base_path_prefix}-{self.suffix}"
 
         self.loggit.debug("Getting repo list")
-        self.repo_list = get_repos(self.client, self.settings.repo_name_prefix)
+        self.repo_list = get_repo_names(self.client, self.settings.repo_name_prefix)
         self.repo_list.sort(reverse=True)
         self.loggit.debug("Repo list: %s", self.repo_list)
         self.latest_repo = ""
@@ -1682,7 +1742,7 @@ class Status:
             self.loggit.warning("No status index found")
             return
         active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
-        repolist = get_repos(self.client, self.settings.repo_name_prefix)
+        repolist = get_repo_names(self.client, self.settings.repo_name_prefix)
         repolist.sort()
         for repo in repolist:
             if repo == active_repo:
