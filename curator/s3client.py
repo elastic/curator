@@ -99,6 +99,41 @@ class S3Client:
         """
         raise NotImplementedError("Subclasses should implement this method")
 
+    def delete_bucket(self, bucket_name: str) -> None:
+        """
+        Delete a bucket with the given name.
+
+        Args:
+            bucket_name (str): The name of the bucket to delete.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
+    def put_object(self, bucket_name: str, key: str, body: str = "") -> None:
+        """
+        Put an object in a bucket at the given path.
+
+        Args:
+            bucket_name (str): The name of the bucket to put the object in.
+            key (str): The key of the object to put.
+            body (str): The body of the object to put.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
+    def list_buckets(self, prefix: str = None) -> list[str]:
+        """
+        List all buckets.
+
+        Returns:
+            list[str]: A list of bucket names.
+        """
+        raise NotImplementedError("Subclasses should implement this method")
+
 
 class AwsS3Client(S3Client):
     """
@@ -111,19 +146,26 @@ class AwsS3Client(S3Client):
 
     def create_bucket(self, bucket_name: str) -> None:
         self.loggit.info(f"Creating bucket: {bucket_name}")
+        if self.bucket_exists(bucket_name):
+            self.loggit.info(f"Bucket {bucket_name} already exists")
+            raise ActionError(f"Bucket {bucket_name} already exists")
         try:
             self.client.create_bucket(Bucket=bucket_name)
         except ClientError as e:
             self.loggit.error(e)
-            raise ActionError(e)
+            raise ActionError(f"Error creating bucket {bucket_name}: {e}")
 
     def bucket_exists(self, bucket_name: str) -> bool:
-        # TODO: Write a call to the S3 service to test bucket existence
-        return self.client.get_bucket(bucket_name)
-
-    def delete_bucket(self, bucket_name: str) -> None:
-        # TODO: Write a call to the S3 service to delete the named bucket
-        self.client.delete_bucket(bucket_name)
+        self.loggit.info(f"Checking if bucket {bucket_name} exists")
+        try:
+            self.client.head_bucket(Bucket=bucket_name)
+            return True
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                return False
+            else:
+                self.loggit.error(e)
+                raise ActionError(e)
 
     def thaw(
         self,
@@ -236,6 +278,63 @@ class AwsS3Client(S3Client):
                     object_keys.append(obj["Key"])
 
         return object_keys
+
+    def delete_bucket(self, bucket_name: str) -> None:
+        """
+        Delete a bucket with the given name.
+
+        Args:
+            bucket_name (str): The name of the bucket to delete.
+
+        Returns:
+            None
+        """
+        self.loggit.info(f"Deleting bucket: {bucket_name}")
+        try:
+            self.client.delete_bucket(Bucket=bucket_name)
+        except ClientError as e:
+            self.loggit.error(e)
+            raise ActionError(e)
+
+    def put_object(self, bucket_name: str, key: str, body: str = "") -> None:
+        """
+        Put an object in a bucket.
+
+        Args:
+            bucket_name (str): The name of the bucket to put the object in.
+            key (str): The key of the object to put.
+            body (str): The body of the object to put.
+
+        Returns:
+            None
+        """
+        self.loggit.info(f"Putting object: {key} in bucket: {bucket_name}")
+        try:
+            self.client.put_object(Bucket=bucket_name, Key=key, Body=body)
+        except ClientError as e:
+            self.loggit.error(e)
+            raise ActionError(e)
+
+    def list_buckets(self, prefix: str = None) -> list[str]:
+        """
+        List all buckets.
+
+        Returns:
+            list[str]: A list of bucket names.
+        """
+        self.loggit.info("Listing buckets")
+        try:
+            response = self.client.list_buckets()
+            buckets = response.get("Buckets", [])
+            bucket_names = [bucket["Name"] for bucket in buckets]
+            if prefix:
+                bucket_names = [
+                    name for name in bucket_names if name.startswith(prefix)
+                ]
+            return bucket_names
+        except ClientError as e:
+            self.loggit.error(e)
+            raise ActionError(e)
 
 
 def s3_client_factory(provider: str) -> S3Client:

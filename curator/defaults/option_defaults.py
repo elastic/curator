@@ -885,3 +885,21 @@ def enable_multiple_buckets():
             bool, All(Any(str), Boolean())
         )
     }
+
+
+def create_sampel_ilm_polcy():
+    """
+    Setting to allow creating a sample ILM policy
+    """
+    return {
+        Optional("create_sample_ilm_policy", default=False): Any(
+            bool, All(Any(str), Boolean())
+        )
+    }
+
+
+def ilm_policy_name():
+    """
+    Setting to allow setting a custom ILM policy name
+    """
+    return {Optional("ilm_policy_name", default="deepfreeze-sample-policy"): Any(str)}

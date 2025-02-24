@@ -112,6 +112,17 @@ def deepfreeze():
     default="oneup",
     help="How to number (suffix) the rotating repositories",
 )
+@click.option(
+    "--create_sample_ilm_policy",
+    is_flag=True,
+    help="Create a sample ILM policy",
+)
+@click.option(
+    "--ilm_policy_name",
+    type=str,
+    default="deepfreeze-sample-policy",
+    help="Name of the sample ILM policy",
+)
 @click.pass_context
 def setup(
     ctx,
@@ -125,9 +136,18 @@ def setup(
     provider,
     rotate_by,
     style,
+    create_sample_ilm_policy,
+    ilm_policy_name,
 ):
     """
-    Set up a cluster for deepfreeze and save the configuration for all future actions
+    Set up a cluster for deepfreeze and save the configuration for all future actions.
+
+    Setup can be tuned by setting the following options to override defaults. Note that
+    --year and --month are only used if style=date. If style=oneup, then year and month
+    are ignored.
+
+    Depending on the S3 provider chosen, some options might not be available, or option
+    values may vary.
     """
     logging.debug("setup")
     manual_options = {
@@ -141,6 +161,8 @@ def setup(
         "provider": provider,
         "rotate_by": rotate_by,
         "style": style,
+        "create_sample_ilm_policy": create_sample_ilm_policy,
+        "ilm_policy_name": ilm_policy_name,
     }
 
     action = CLIAction(

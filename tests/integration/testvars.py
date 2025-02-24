@@ -1,7 +1,3 @@
-"""Test variables"""
-
-# pylint: disable=C0103, C0302
-
 client_config = (
     '---\n'
     'elasticsearch:\n'
@@ -571,21 +567,6 @@ filter_by_alias = (
     '        exclude: {1}\n'
 )
 
-filter_closed = (
-    '---\n'
-    'actions:\n'
-    '  1:\n'
-    '    description: "Delete indices as filtered"\n'
-    '    action: delete_indices\n'
-    '    options:\n'
-    '      ignore_empty_list: True\n'
-    '      continue_if_exception: False\n'
-    '      disable_action: False\n'
-    '    filters:\n'
-    '      - filtertype: closed\n'
-    '        exclude: {0}\n'
-)
-
 bad_option_proto_test = (
     '---\n'
     'actions:\n'
@@ -632,8 +613,7 @@ forcemerge_test = (
     '---\n'
     'actions:\n'
     '  1:\n'
-    '    description: >-\n'
-    '      forceMerge segment count per shard to provided value with optional delay\n'
+    '    description: "forceMerge segment count per shard to provided value with optional delay"\n'
     '    action: forcemerge\n'
     '    options:\n'
     '      max_num_segments: {0}\n'
@@ -1053,3 +1033,16 @@ ilm_delete_proto = (
     '        stats_result: {7}\n'
     '        epoch: {8}\n'
 )
+df_ilm_policy = "df-test-ilm-policy"
+df_bucket_name = "df"
+df_bucket_name_2 = "df-test"
+df_repo_name = "df-test-repo"
+df_providers = ["aws", "gcp", "azure"]
+df_base_path = "/df-test-path"
+df_base_path_2 = "/df-another-test-path"
+df_acl = "private"
+df_storage_class = "Standard"
+df_rotate_by = "path"
+df_style = "oneup"
+df_month = "05"
+df_year = "2024"
