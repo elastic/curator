@@ -360,13 +360,18 @@ class DeepfreezeTestCase(CuratorTestCase):
             rotate = Rotate(
                 client=self.client,
             )
-            if populate_index:
-                self._populate_index(client, testvars.test_index)
             rotate.do_action()
+            if populate_index:
+                # Alter this so it creates an index which the ILM policy will rotate
+                self._populate_index(client, testvars.test_index)
             time.sleep(INTERVAL)
         return rotate
 
     def _populate_index(self, index: str, doc_count: int = 1000) -> None:
+        # Sleep for a seocond every 100 docs to spread out the timestamps a bit
+        for i in range(doc_count):
+            if i % 100 == 0 and i != 0:
+                time.sleep(1)
         for _ in range(doc_count):
             self.client.index(index=index, body={"foo": "bar"})
 
