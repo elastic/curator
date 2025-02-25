@@ -10,6 +10,7 @@ from elasticsearch8 import Elasticsearch, NotFoundError
 
 from curator.actions import CreateIndex
 from curator.actions.deepfreeze import Repository
+from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.exceptions import ActionError
 from curator.s3client import S3Client
 
@@ -209,7 +210,9 @@ def get_timestamp_range(
     return datetime.fromisoformat(earliest), datetime.fromisoformat(latest)
 
 
-def ensure_settings_index(client: Elasticsearch) -> None:
+def ensure_settings_index(
+    client: Elasticsearch, create_if_missing: bool = False
+) -> None:
     """
     Ensure that the status index exists in Elasticsearch.
 
@@ -226,10 +229,15 @@ def ensure_settings_index(client: Elasticsearch) -> None:
 
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    if not client.indices.exists(index=STATUS_INDEX):
-        loggit.info("Creating index %s", STATUS_INDEX)
-        CreateIndex(client, STATUS_INDEX).do_action()
-        # client.indices.create(index=STATUS_INDEX)
+    if create_if_missing:
+        if not client.indices.exists(index=STATUS_INDEX):
+            loggit.info("Creating index %s", STATUS_INDEX)
+            CreateIndex(client, STATUS_INDEX).do_action()
+    else:
+        if not client.indices.exists(index=STATUS_INDEX):
+            raise MissingIndexError(
+                f"Status index {STATUS_INDEX} is missing but should exist"
+            )
 
 
 def get_settings(client: Elasticsearch) -> Settings:
