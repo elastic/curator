@@ -144,7 +144,7 @@ class Setup:
         :rtype: None
         """
         self.loggit.debug("Starting Setup action")
-        ensure_settings_index(self.client)
+        ensure_settings_index(self.client, create_if_missing=True)
         save_settings(self.client, self.settings)
         self.s3.create_bucket(self.new_bucket_name)
         create_repo(
