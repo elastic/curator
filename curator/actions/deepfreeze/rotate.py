@@ -118,10 +118,16 @@ class Rotate:
         self.loggit.debug("Updating repo date ranges")
         # Get the repo objects (not names) which match our prefix
         repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
+        self.loggit.debug("Found %s matching repos", len(repos))
         # Now loop through the repos, updating the date range for each
         for repo in repos:
             self.loggit.debug("Updating date range for %s", repo.name)
             indices = get_all_indices_in_repo(self.client, repo.name)
+            self.loggit.debug("Checking %s indices for existence", len(indices))
+            indices = [
+                index for index in indices if self.client.indices.exists(index=index)
+            ]
+            self.loggit.debug("Found %s indices still mounted", len(indices))
             if indices:
                 earliest, latest = get_timestamp_range(self.client, indices)
                 repo.start = (
@@ -308,6 +314,7 @@ class Rotate:
         self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)
         # Go through mounted repos and make sure the date ranges are up-to-date
+        # FIXME: This doesn't seem to be working correctly!
         self.update_repo_date_range()
         # Create the new bucket and repo, but only if rotate_by is bucket
         if self.settings.rotate_by == "bucket":
