@@ -5,7 +5,6 @@ from curator.actions.deepfreeze.utilities import (
     get_unmounted_repos,
 )
 from tests.integration import CuratorTestCase
-from tests.integration.deepfreeze_helpers import do_rotate, do_setup
 
 
 class TestDeepfreezeThaw(CuratorTestCase):
