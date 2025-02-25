@@ -10,5 +10,17 @@ class DeepfreezeException(Exception):
 
 class MissingIndexError(DeepfreezeException):
     """
-    Exception raised when a misconfiguration is detected
+    Exception raised when the status index is missing
+    """
+
+
+class MissingSettingsError(DeepfreezeException):
+    """
+    Exception raised when the status index exists, but the settings document is missing
+    """
+
+
+class ActionException(DeepfreezeException):
+    """
+    Generic class for unexpected coneditions during DF actions
     """
