@@ -1,23 +1,36 @@
 """Open index action class"""
+
 import logging
 from curator.exceptions import ConfigurationError
 from curator.helpers.date_ops import parse_date_pattern
 from curator.helpers.testers import rollable_alias, verify_client_object
 from curator.helpers.utils import report_failure
 
+
 class Rollover:
     """Rollover Action Class"""
+
     def __init__(
-            self, client, name=None, conditions=None, new_index=None, extra_settings=None,
-            wait_for_active_shards=1
-        ):
+        self,
+        client,
+        name=None,
+        conditions=None,
+        new_index=None,
+        extra_settings=None,
+        wait_for_active_shards=1,
+    ):
         """
         :param client: A client connection object
-        :param name: The name of the single-index-mapped alias to test for rollover conditions.
+        :param name: The name of the single-index-mapped alias to test for rollover
+            conditions.
         :param new_index: A new index name
         :param conditions: Conditions to test
-        :param extra_settings: Must be either ``None``, or a dictionary of settings to apply to the new index on rollover. This is used in place of ``settings`` in the Rollover API, mostly because it's already existent in other places here in Curator
-        :param wait_for_active_shards: The number of shards expected to be active before returning.
+        :param extra_settings: Must be either ``None``, or a dictionary of settings
+            to apply to the new index on rollover. This is used in place of
+            ``settings`` in the Rollover API, mostly because it's already existent
+            in other places here in Curator
+        :param wait_for_active_shards: The number of shards expected to be active
+            before returning.
 
         :type client: :py:class:`~.elasticsearch.Elasticsearch`
         :type name: str
@@ -32,8 +45,7 @@ class Rollover:
         else:
             self.loggit.debug('"conditions" is %s', conditions)
         if not isinstance(extra_settings, dict) and extra_settings is not None:
-            raise ConfigurationError(
-                '"extra_settings" must be a dictionary or None')
+            raise ConfigurationError('"extra_settings" must be a dictionary or None')
         verify_client_object(client)
         #: Object attribute that gets the value of param ``client``.
         self.client = client
@@ -41,8 +53,8 @@ class Rollover:
         self.conditions = conditions
         #: Object attribute that gets the value of param ``extra_settings``.
         self.settings = extra_settings
-        #: The :py:func:`~.curator.helpers.date_ops.parse_date_pattern` rendered version of what
-        #: was passed as ``new_index``, or else ``None``
+        #: The :py:func:`~.curator.helpers.date_ops.parse_date_pattern` rendered
+        #: version of what was passed as ``new_index``, or else ``None``
         self.new_index = parse_date_pattern(new_index) if new_index else new_index
         #: Object attribute that gets the value of param ``wait_for_active_shards``.
         self.wait_for_active_shards = wait_for_active_shards
@@ -74,7 +86,7 @@ class Rollover:
         for k in list(result['conditions'].keys()):
             if result['conditions'][k]:
                 success = True
-        if result['dry_run'] and success: # log "successful" dry-run
+        if result['dry_run'] and success:  # log "successful" dry-run
             self.loggit.info(rollover_string)
         elif result['rolled_over']:
             self.loggit.info(rollover_string)
@@ -87,9 +99,10 @@ class Rollover:
 
     def doit(self, dry_run=False):
         """
-        This exists solely to prevent having to have duplicate code in both  :py:meth:`do_dry_run`
-        and :py:meth:`do_action` because :py:meth:`~.elasticsearch.client.IndicesClient.rollover`
-        has its own ``dry_run`` flag.
+        This exists solely to prevent having to have duplicate code in both
+        :py:meth:`do_dry_run` and :py:meth:`do_action` because
+        :py:meth:`~.elasticsearch.client.IndicesClient.rollover` has its own
+        ``dry_run`` flag.
         """
         return self.client.indices.rollover(
             alias=self.name,
@@ -107,8 +120,8 @@ class Rollover:
 
     def do_action(self):
         """
-        :py:meth:`~.elasticsearch.client.IndicesClient.rollover` the index referenced by alias
-        :py:attr:`name`
+        :py:meth:`~.elasticsearch.client.IndicesClient.rollover` the index
+        referenced by alias :py:attr:`name`
         """
         self.loggit.info('Performing index rollover')
         try:
