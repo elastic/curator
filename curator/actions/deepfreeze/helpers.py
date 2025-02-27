@@ -146,19 +146,6 @@ class Repository:
     is_mounted: bool = True
     doctype: str = "repository"
 
-    def __init__(self, repo_hash=None, es: Elasticsearch = None, name=None) -> None:
-        if name is not None:
-            if es is not None:
-                query = {"query": {"match": {"name": name}}}
-                result = es.search(index=STATUS_INDEX, body=query)
-                if result["hits"]["total"]["value"] > 0:
-                    repo_hash = result["hits"]["hits"][0]["_source"]
-                else:
-                    repo_hash = {"name": name}
-        if repo_hash is not None:
-            for key, value in repo_hash.items():
-                setattr(self, key, value)
-
     def to_dict(self) -> dict:
         """
         Convert the Repository object to a dictionary.

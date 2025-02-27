@@ -381,6 +381,29 @@ def get_next_suffix(style: str, last_suffix: str, year: int, month: int) -> str:
         raise ValueError("Invalid style")
 
 
+def get_repository(client: Elasticsearch, name: str) -> Repository:
+    """
+    Get the repository object from the status index.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param name: The name of the repository
+    :type name: str
+
+    :returns: The repository
+    :rtype: Repository
+
+    :raises Exception: If the repository does not exist
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    try:
+        doc = client.get(index=STATUS_INDEX, id=name)
+        return Repository(**doc["_source"])
+    except NotFoundError:
+        loggit.warning("Repository document not found")
+        return None
+
+
 def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
     """
     Get the complete list of repos from our index and return a Repository object for each.
@@ -396,11 +419,12 @@ def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
     """
     # logging.debug("Looking for unmounted repos")
     # # Perform search in ES for all repos in the status index
+    # ! This will now include mounted and unmounted repos both!
     query = {"query": {"match": {"doctype": "repository"}}}
     response = client.search(index=STATUS_INDEX, body=query)
     repos = response["hits"]["hits"]
     # return a Repository object for each
-    return [Repository(repo["_source"]) for repo in repos]
+    return [Repository(**repo["_source"]) for repo in repos]
 
 
 def get_matching_repo_names(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
@@ -442,10 +466,13 @@ def get_matching_repos(
 
     :raises Exception: If the repository does not exist
     """
-    return [
-        Repository(name=repo, es=client)
-        for repo in get_matching_repo_names(client, repo_name_prefix)
-    ]
+    query = {"query": {"match": {"doctype": "repository"}}}
+    response = client.search(index=STATUS_INDEX, body=query)
+    repos = response["hits"]["hits"]
+    # ? Make sure this works
+    repos = [repo for repo in repos if repo["name"].startswith(repo_name_prefix)]
+    # return a Repository object for each
+    return [Repository(**repo["_source"]) for repo in repos]
 
 
 def get_thawset(client: Elasticsearch, thawset_id: str) -> ThawSet:
