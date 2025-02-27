@@ -118,7 +118,6 @@ def process_action(client, action_def, dry_run=False):
     logger = logging.getLogger(__name__)
     logger.debug('Configuration dictionary: %s', action_def.action_dict)
     mykwargs = {}
-    search_pattern = '*'
 
     logger.debug('INITIAL Action kwargs: %s', mykwargs)
     # Add some settings to mykwargs...
