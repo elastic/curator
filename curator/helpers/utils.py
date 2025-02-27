@@ -119,6 +119,8 @@ def multitarget_fix(pattern: str) -> str:
     """
     # Split pattern into elements
     elements = pattern.split(',')
+    if len(elements) == 1 and elements[0] == '':
+        return '*'
     # Initialize positive and negative lists
     positives = []
     negatives = []
@@ -128,10 +130,6 @@ def multitarget_fix(pattern: str) -> str:
             negatives.append(element)
         else:
             positives.append(element)
-    # If there are no elements at all, return a wildcard
-    if len(positives) == 0 and len(negatives) == 0:
-        print("No elements in pattern. Returning '*'")
-        return '*'
     # If there are no positive elements, but there are negative elements,
     # add a wildcard to the beginning of the pattern
     if len(positives) == 0 and len(negatives) > 0:
@@ -194,9 +192,8 @@ def multitarget_match(pattern: str, index_list: list) -> list:
         # Replace Elasticsearch wildcard * with .* for Python regex
         matchstr = matchstr.replace('*', '.*')
         # logger.debug('matchstr: %s', matchstr)
-        # If we have a wildcard in the element and it is not an exclude,
-        # add the output of regex_loop to `includes`
-        if '*' in element and not exclude:
+        # If it is not an exclude, add the output of regex_loop to `includes`
+        if not exclude:
             includes += regex_loop(matchstr, index_list)
         # If it is an exclude pattern, add the output of regex_loop to `excludes`
         # Remove the `-` from the matchstr ([1:]) before sending.
