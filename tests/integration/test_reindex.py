@@ -1,6 +1,6 @@
 """Test reindex action functionality"""
 
-# pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
+# pylint: disable=C0115, C0116, invalid-name
 import os
 from unittest.case import SkipTest
 import pytest
