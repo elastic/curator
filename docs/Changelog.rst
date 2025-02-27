@@ -3,6 +3,63 @@
 Changelog
 =========
 
+8.0.18 (27 February 2025)
+-------------------------
+
+**Announcement**
+
+Release 8.0.18 allows Curator v8 to work with Curator v7.14.x and later. All tests
+pass for v7.14.0, v7.14.2, v7.17.7, v7.17.25, v7.17.27. Due to JVM issues with
+M-series processors (OpenJDK 16 > FAIL < OpenJDK 19 ), I'm unable to test v7.15.x -
+v7.17.6 on my MacBook Pro, but I have no reason to believe they won't as there
+are no API changes between the 7.14 and 7.17 series that would affect Curator
+in any way.
+
+Hopefully this is helpful for those who are using Elasticsearch 7 still, and would
+like the improvements in Curator v8. Do note that while the action files used in 
+Curator v7 will work with Curator v8, the client configuration files will not. There
+are a few differences in syntax that are in the documentation.
+See https://www.elastic.co/guide/en/elasticsearch/client/curator/current/configfile.html 
+for more information.
+
+**Changes**
+
+  * Huge number of comment and code line break changes to be more PEP8 compliant.
+    * This includes updates to Integration tests as well
+  * Update to use ``es_client==8.17.2``, which enables Curator v8 to work with
+    Elasticsearch v7.14.x and later.
+  * Add ``VERSION_MAX`` and ``VERSION_MIN`` to ``curator.defaults`` to allow for
+    version compatibility checks. ``VERSION_MIN`` is set to 7.14.0.
+  * Exclude system indices by default. The list of patterns to exclude is in
+    ``curator.defaults``, and is presently
+    
+    .. code-block:: python
+    
+        EXCLUDE_SYSTEM = (
+            '-.kibana*,-.security*,-.watche*,-.triggered_watche*,-.watcher-history*,'
+            '-.ml*,-.geoip_databases*,-.logstas*,-.tasks*'
+        )
+        
+  * Restored and fixed datemath integration tests for patterns that include
+    colons. This was a problem in the past due to Elasticsearch evaluating colon
+    characters as potential indicators of remote indices. This was fixed in version
+    8.7.0 of Elasticsearch.
+
+**Bugfix**
+
+  * All of the testing for this release revealed a shortcoming in the snapshot
+    restore action class. It was relying on the user to provide the exact index
+    names to restore. The restore API call to Elasticsearch allows for multi-target
+    syntax to select and de-select indices by comma-separated patterns. While not
+    expressly allowed, it was possible to use. The problem was that indices could
+    not be properly matched and verified if patterns rather than exact names were
+    used. Three functions were added to ``helpers.utils`` to make this work
+    properly: ``multitarget_match``, ``multitarget_fix``, and ``regex_loop``. The
+    ``Restore`` class now calls ``multitarget_match`` in the
+    ``_get_expected_output`` method to get the names from the snapshot list object.
+    This now works with patterns, and the tests have been updated to ensure this.
+
+
 8.0.17 (25 October 2024)
 ------------------------
 
