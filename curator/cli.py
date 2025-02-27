@@ -18,6 +18,8 @@ from curator.exceptions import ClientException
 from curator.classdef import ActionsFile
 from curator.defaults.settings import (
     CLICK_DRYRUN,
+    VERSION_MAX,
+    VERSION_MIN,
     default_config_file,
     footer,
     snapshot_actions,
@@ -116,7 +118,7 @@ def process_action(client, action_def, dry_run=False):
     logger = logging.getLogger(__name__)
     logger.debug('Configuration dictionary: %s', action_def.action_dict)
     mykwargs = {}
-    search_pattern = '_all'
+    search_pattern = '*'
 
     logger.debug('INITIAL Action kwargs: %s', mykwargs)
     # Add some settings to mykwargs...
@@ -127,8 +129,7 @@ def process_action(client, action_def, dry_run=False):
     mykwargs.update(prune_nones(action_def.options))
 
     # Pop out the search_pattern option, if present.
-    if 'search_pattern' in mykwargs:
-        search_pattern = mykwargs.pop('search_pattern')
+    search_pattern = mykwargs.pop('search_pattern', '*')
 
     logger.debug('Action kwargs: %s', mykwargs)
     logger.debug('Post search_pattern Action kwargs: %s', mykwargs)
@@ -138,8 +139,8 @@ def process_action(client, action_def, dry_run=False):
     if action_def.action == 'alias':
         # Special behavior for this action, as it has 2 index lists
         action_def.instantiate('action_cls', **mykwargs)
-        action_def.instantiate('alias_adds', client)
-        action_def.instantiate('alias_removes', client)
+        action_def.instantiate('alias_adds', client, search_pattern=search_pattern)
+        action_def.instantiate('alias_removes', client, search_pattern=search_pattern)
         if 'remove' in action_def.action_dict:
             logger.debug('Removing indices from alias "%s"', action_def.options['name'])
             action_def.alias_removes.iterate_filters(action_def.action_dict['remove'])
@@ -209,7 +210,11 @@ def run(ctx: click.Context) -> None:
         logger.info('Creating client object and testing connection')
 
         try:
-            client = get_client(configdict=ctx.obj['configdict'])
+            client = get_client(
+                configdict=ctx.obj['configdict'],
+                version_max=VERSION_MAX,
+                version_min=VERSION_MIN,
+            )
         except ClientException as exc:
             # No matter where logging is set to go, make sure we dump these messages to
             # the CLI
