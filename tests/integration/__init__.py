@@ -93,6 +93,11 @@ class CuratorTestCase(TestCase):
         super(CuratorTestCase, self).setUp()
         self.logger = logging.getLogger("CuratorTestCase.setUp")
         self.client = get_client()
+        # ? This would be better in a one-time setup, but repeatedly aplying it won't
+        # ? hurt anything.
+        self.client.cluster.put_settings(
+            body={"persistent": {"indices.lifecycle.poll_interval": "1m"}}
+        )
 
         args = {}
         args["HOST"] = HOST
@@ -348,16 +353,29 @@ class DeepfreezeTestCase(CuratorTestCase):
             time.sleep(INTERVAL)
         return setup
 
-    def do_rotate(self, iterations: int = 1, populate_index=False) -> Rotate:
+    def do_rotate(
+        self, iterations: int = 1, keep: int = None, populate_index=False
+    ) -> Rotate:
         rotate = None
         for _ in range(iterations):
-            rotate = Rotate(
-                client=self.client,
-            )
+            if keep:
+                rotate = Rotate(
+                    client=self.client,
+                    keep=keep,
+                )
+            else:
+                rotate = Rotate(
+                    client=self.client,
+                )
             rotate.do_action()
             if populate_index:
                 # Alter this so it creates an index which the ILM policy will rotate
-                self._populate_index(client, testvars.test_index)
+                idx = f"{testvars.df_test_index}-{random_suffix()}"
+                self._populate_index(index=idx)
+                self.client.indices.put_settings(
+                    index=idx,
+                    body={"index": {"lifecycle": {"name": testvars.df_ilm_policy}}},
+                )
             time.sleep(INTERVAL)
         return rotate
 

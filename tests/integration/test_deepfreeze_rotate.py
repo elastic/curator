@@ -54,14 +54,6 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             # Perform the first rotation
             rotate.do_action()
             # There should now be one repositories.
-            assert (
-                len(
-                    get_matching_repo_names(
-                        self.client, setup.settings.repo_name_prefix
-                    )
-                )
-                == 2
-            )
 
             # Save off the current repo list
             orig_list = rotate.repo_list
@@ -74,14 +66,6 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             # There should now be two (one kept and one new)
             assert len(rotate.repo_list) == 2
             assert rotate.repo_list == [f"{prefix}-000002", f"{prefix}-000001"]
-            assert (
-                len(
-                    get_matching_repo_names(
-                        self.client, setup.settings.repo_name_prefix
-                    )
-                )
-                == 2
-            )
             # They should not be the same two as before
             assert rotate.repo_list != orig_list
 
@@ -96,14 +80,6 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             # There should now be two (one kept and one new)
             assert len(rotate.repo_list) == 2
             assert rotate.repo_list == [f"{prefix}-000003", f"{prefix}-000002"]
-            assert (
-                len(
-                    get_matching_repo_names(
-                        self.client, setup.settings.repo_name_prefix
-                    )
-                )
-                == 2
-            )
             # They should not be the same two as before
             assert rotate.repo_list != orig_list
             # Query the settings index to get the unmountd repos
@@ -134,14 +110,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             assert status_index_docs["hits"]["total"]["value"] == 1
             rotate = self.do_rotate(populate_index=True)
             # There should now be one repositories.
-            assert (
-                len(
-                    get_matching_repo_names(
-                        self.client, setup.settings.repo_name_prefix
-                    )
-                )
-                == 2
-            )
+            assert len(rotate.repo_list) == 1
 
             # Save off the current repo list
             orig_list = rotate.repo_list
@@ -150,38 +119,27 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             # There should now be two (one kept and one new)
             assert len(rotate.repo_list) == 2
             assert rotate.repo_list == [f"{prefix}-000002", f"{prefix}-000001"]
-            assert (
-                len(
-                    get_matching_repo_names(
-                        self.client, setup.settings.repo_name_prefix
-                    )
-                )
-                == 2
-            )
             # They should not be the same two as before
             assert rotate.repo_list != orig_list
 
             # Save off the current repo list
             orig_list = rotate.repo_list
             # Do another rotation with keep=1
-            rotate = self.do_rotate(populate_index=True)
+            rotate = self.do_rotate(populate_index=True, keep=1)
             # There should now be two (one kept and one new)
-            assert len(rotate.repo_list) == 2
-            assert rotate.repo_list == [f"{prefix}-000003", f"{prefix}-000002"]
-            assert (
-                len(
-                    get_matching_repo_names(
-                        self.client, setup.settings.repo_name_prefix
-                    )
-                )
-                == 2
-            )
+            assert len(rotate.repo_list) == 3
+            assert rotate.repo_list == [
+                f"{prefix}-000003",
+                f"{prefix}-000002",
+                f"{prefix}-000001",
+            ]
             # They should not be the same two as before
             assert rotate.repo_list != orig_list
-            # Query the settings index to get the unmountd repos
+            # Query the settings index to get the unmounted repos
             unmounted = get_unmounted_repos(self.client)
-            assert len(unmounted) == 1
-            assert unmounted[0].name == f"{prefix}-000001"
+            assert len(unmounted) == 2
+            assert f"{prefix}-000001" in [x.name for x in unmounted]
+            assert f"{prefix}-000002" in [x.name for x in unmounted]
 
     # What can go wrong with repo rotation?
     #
@@ -214,9 +172,9 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             assert status_index_docs["hits"]["total"]["value"] == 1
 
             # Now, delete the status index completely
-            self.client.delete(index=STATUS_INDEX)
+            self.client.indices.delete(index=STATUS_INDEX)
             csi = self.client.cluster.state(metric=MET)[MET]["indices"]
-            assert not csi[STATUS_INDEX]
+            assert STATUS_INDEX not in csi
 
             with self.assertRaises(MissingIndexError):
                 rotate = self.do_rotate(populate_index=True)

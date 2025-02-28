@@ -257,6 +257,8 @@ def get_settings(client: Elasticsearch) -> Settings:
         {'repo_name_prefix': 'deepfreeze', 'bucket_name_prefix': 'deepfreeze', 'base_path_prefix': 'snapshots', 'canned_acl': 'private', 'storage_class': 'intelligent_tiering', 'provider': 'aws', 'rotate_by': 'path', 'style': 'oneup', 'last_suffix': '000001'}
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
+    if not client.indices.exists(index=STATUS_INDEX):
+        raise MissingIndexError(f"Status index {STATUS_INDEX} is missing")
     try:
         doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
         loggit.info("Settings document found")
@@ -521,35 +523,29 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
     indices = get_all_indices_in_repo(client, repo)
-    repodoc = {}
+    repo_obj = None
     if indices:
-        # ! TODO: This can't be done here; we have to calculate the date range while
-        # ! TODO: the indices are still mounted.
         earliest, latest = get_timestamp_range(client, indices)
-        repodoc = Repository(
-            {
-                "name": repo,
-                "bucket": bucket,
-                "base_path": base_path,
-                "is_mounted": False,
-                "start": decode_date(earliest),
-                "end": decode_date(latest),
-                "doctype": "repository",
-            }
+        repo_obj = Repository(
+            name=repo,
+            bucket=bucket,
+            base_path=base_path,
+            is_mounted=False,
+            start=decode_date(earliest),
+            end=decode_date(latest),
+            doctype="repository",
         )
     else:
-        repodoc = Repository(
-            {
-                "name": repo,
-                "bucket": bucket,
-                "base_path": base_path,
-                "is_mounted": False,
-                "start": None,
-                "end": None,
-                "doctype": "repository",
-            }
+        repo_obj = Repository(
+            name=repo,
+            bucket=bucket,
+            base_path=base_path,
+            is_mounted=False,
+            start=None,
+            end=None,
+            doctype="repository",
         )
-    msg = f"Recording repository details as {repodoc}"
+    msg = f"Recording repository details as {repo_obj}"
     loggit.debug(msg)
     loggit.debug("Removing repo %s", repo)
     try:
@@ -558,9 +554,9 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
         loggit.error(e)
         raise ActionError(e)
     # Don't update the records until the repo has been succesfully removed.
-    client.index(index=STATUS_INDEX, document=repodoc.to_dict())
+    client.index(index=STATUS_INDEX, document=repo_obj.to_dict())
     loggit.debug("Repo %s removed", repo)
-    return repodoc
+    return repo_obj
 
 
 def wait_for_s3_restore(
