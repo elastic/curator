@@ -2,6 +2,7 @@
 
 import logging
 from elasticsearch8 import exceptions as es8exc
+from curator.defaults.settings import EXCLUDE_SYSTEM
 from curator.exceptions import (
     ConfigurationError,
     CuratorException,
@@ -100,7 +101,7 @@ def get_data_tiers(client):
     return retval
 
 
-def get_indices(client, search_pattern='_all'):
+def get_indices(client, search_pattern='*'):
     """
     Calls :py:meth:`~.elasticsearch.client.CatClient.indices`
 
@@ -116,7 +117,7 @@ def get_indices(client, search_pattern='_all'):
         # Doing this in two stages because IndexList also calls for these args,
         # and the unit tests need to Mock this call the same exact way.
         resp = client.cat.indices(
-            index=search_pattern,
+            index=search_pattern + ',' + EXCLUDE_SYSTEM,
             expand_wildcards='open,closed',
             h='index,status',
             format='json',

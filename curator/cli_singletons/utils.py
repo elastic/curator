@@ -1,7 +1,9 @@
 """Singleton Utils Module"""
+
 import json
 from click import BadParameter
 from es_client.helpers.utils import ensure_list
+
 
 # Click functions require ctx and param to be passed positionally even if not used
 # pylint: disable=unused-argument
@@ -13,6 +15,7 @@ def json_to_dict(ctx, param, value):
         return json.loads(value)
     except ValueError as exc:
         raise BadParameter(f'Invalid JSON for {param}: {value}') from exc
+
 
 # Click functions require ctx and param to be passed positionally even if not used
 # pylint: disable=unused-argument

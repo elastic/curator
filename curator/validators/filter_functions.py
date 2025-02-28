@@ -1,4 +1,5 @@
 """Functions validating the ``filter`` Schema of an ``action``"""
+
 import logging
 from voluptuous import Any, In, Required, Schema
 from es_client.helpers.schemacheck import SchemaCheck
@@ -7,6 +8,7 @@ from curator.defaults import settings, filtertypes
 from curator.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
+
 
 def filtertype():
     """
@@ -18,16 +20,17 @@ def filtertype():
     return {
         Required('filtertype'): Any(
             In(settings.all_filtertypes()),
-            msg=f'filtertype must be one of {settings.all_filtertypes()}'
+            msg=f'filtertype must be one of {settings.all_filtertypes()}',
         )
     }
 
+
 def filterstructure():
     """
-    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that uses the return value from
-    :py:func:`~.curator.defaults.settings.structural_filter_elements` to populate acceptable values
-    and updates/merges the Schema object with the return value from
-    :py:func:`filtertype`
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that uses the
+    return value from :py:func:`~.curator.defaults.settings.structural_filter_elements`
+    to populate acceptable values and updates/merges the Schema object with the
+    return value from :py:func:`filtertype`
 
     :returns: A :py:class:`~.voluptuous.schema_builder.Schema` object
     """
@@ -37,16 +40,17 @@ def filterstructure():
     retval.update(filtertype())
     return Schema(retval)
 
+
 def singlefilter(action, data):
     """
-    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that is created using the return
-    value from :py:func:`filtertype` to create a local variable ``ftype``. The values from
-    ``action`` and ``data`` are used to update ``ftype`` based on matching function names in
-    :py:mod:`~.curator.defaults.filtertypes`.
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` object that is created
+    using the return value from :py:func:`filtertype` to create a local variable
+    ``ftype``. The values from ``action`` and ``data`` are used to update ``ftype``
+    based on matching function names in :py:mod:`~.curator.defaults.filtertypes`.
 
-    :py:func:`~.curator.defaults.settings.structural_filter_elements` to populate acceptable values
-    and updates/merges the Schema object with the return value from
-    :py:func:`filtertype`
+    :py:func:`~.curator.defaults.settings.structural_filter_elements` to populate
+    acceptable values and updates/merges the Schema object with the return value
+    from :py:func:`filtertype`
 
     :param action: The Curator action name
     :type action: str
@@ -63,8 +67,10 @@ def singlefilter(action, data):
         ftype.update(each)
     return Schema(ftype)
 
+
 def validfilters(action, location=None):
     """Validate the filters in a list"""
+
     def func(val):
         """This validator method simply validates all filters in the list."""
         for idx, value in enumerate(val):
@@ -73,10 +79,11 @@ def validfilters(action, location=None):
                 pruned,
                 singlefilter(action, pruned),
                 'filter',
-                f'{location}, filter #{idx}: {pruned}'
+                f'{location}, filter #{idx}: {pruned}',
             ).result()
             logger.debug('Filter #%s: %s', idx, filter_dict)
             val[idx] = filter_dict
         # If we've made it here without raising an Exception, it's valid
         return val
+
     return func
