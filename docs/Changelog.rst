@@ -3,6 +3,22 @@
 Changelog
 =========
 
+(? ? ?) (?? ???? ????)
+----------------------
+
+**Changes**
+
+  * Updated ``tests/integration/test_integrations.py::TestFilters`` to have a
+    ``filter_closed`` test to ensure functionality is working as expected. This
+    test was added because of #1733, which is technically about Curator v7.0.1,
+    but since the release of Curator 8.0.18, which supports the version of
+    Elasticsearch being used in that issue, a confirmation integration test was
+    added here.
+  * PEP8 formatting changes to ``tests/integration/testvars.py`` as well as adding
+    the ``filter_closed`` YAML sample.
+  * Updated ``docs/conf.py`` to reflect the modules being used.
+  
+
 8.0.18 (27 February 2025)
 -------------------------
 
