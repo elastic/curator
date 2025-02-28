@@ -7,7 +7,7 @@ name = "elasticsearch-curator"
 authors = [{ name="Elastic", email="info@elastic.co" }]
 dynamic = ["version"]
 description = "Tending your Elasticsearch indices and snapshots"
-license = { text="Apache-2.0" }
+license = {file = "LICENSE"}
 readme = "README.rst"
 requires-python = ">=3.8"
 classifiers = [

@@ -18,7 +18,7 @@ Starting with version 7.0, Filebeat uses index lifecycle management by default w
 
 You can view and edit the policy in the Index lifecycle policies UI in Kibana. For more information about working with the UI, see [Index lifecyle policies](docs-content://manage-data/lifecycle/index-lifecycle-management.md).
 
-Read more about Filebeat and ILM in [](beats://docs/reference/filebeat/ilm.md).
+Read more about Filebeat and ILM in [](beats://reference/filebeat/ilm.md).
 
 
 ## Logstash [ilm-logstash]
@@ -32,6 +32,6 @@ Logstash can use [index lifecycle management](docs-content://manage-data/lifecyc
 
 The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By default, this will automatically detect whether the Elasticsearch instance supports ILM, and will use it if it is available. `ilm_enabled` can also be set to `true` or `false` to override the automatic detection, or disable ILM.
 
-Read more about Logstash and ILM in [](logstash://docs/reference/plugins-outputs-elasticsearch.md#plugins-outputs-elasticsearch-ilm).
+Read more about Logstash and ILM in [](logstash://reference/plugins-outputs-elasticsearch.md#plugins-outputs-elasticsearch-ilm).
 
 

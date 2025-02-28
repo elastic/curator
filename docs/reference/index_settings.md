@@ -48,7 +48,7 @@ PUT /indexname/_settings
 }
 ```
 
-In order to appropriately detect static vs. dynamic [index settings](elasticsearch://docs/reference/elasticsearch/index-settings/index.md) and to be able to verify configurational integrity in the YAML file, **Curator does not support using dotted notation.**
+In order to appropriately detect static vs. dynamic [index settings](elasticsearch://reference/elasticsearch/index-settings/index.md) and to be able to verify configurational integrity in the YAML file, **Curator does not support using dotted notation.**
 
 ::::
 
