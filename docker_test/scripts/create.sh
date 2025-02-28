@@ -1,7 +1,23 @@
 #!/bin/bash
 
-IMAGE=curator_estest
-RUNNAME=curator8-es
+if [ "x$1" == "x" ]; then
+  echo "Error! No Elasticsearch version provided."
+  echo "VERSION must be in Semver format, e.g. X.Y.Z, 7.17.8"
+  echo "USAGE: $0 VERSION"
+  exit 1
+fi
+
+unsupported () {
+  echo "Elasticsearch version ${1} is not supported. Exiting."
+  exit 1
+}
+
+VERSION=$1
+JAVA_OPTS="-Xms512m -Xmx512m"
+MAJOR=$(echo $VERSION | awk -F. '{print $1}')
+MINOR=$(echo $VERSION | awk -F. '{print $2}')
+
+RUNNAME=curator${MAJOR}-es
 LOCAL_NAME=${RUNNAME}-local
 REMOTE_NAME=${RUNNAME}-remote
 LOCAL_PORT=9200
@@ -9,14 +25,18 @@ REMOTE_PORT=9201
 LOCAL_URL=http://127.0.0.1:${LOCAL_PORT}
 REMOTE_URL=http://127.0.0.1:${REMOTE_PORT}
 
-if [ "x$1" == "x" ]; then
-  echo "Error! No Elasticsearch version provided."
-  echo "VERSION must be in Semver format, e.g. X.Y.Z, 8.6.0"
-  echo "USAGE: $0 VERSION"
-  exit 1
+if [[ "$MAJOR" -eq 8 ]]; then
+  MONITORING="xpack.monitoring.templates.enabled"
+  IMAGE=docker.elastic.co/elasticsearch/elasticsearch
+elif [[ "$MAJOR" -eq 7 ]]; then
+  if [[ "$MINOR" -lt 14 ]]; then
+    unsupported $VERSION
+  fi
+  IMAGE=docker.elastic.co/elasticsearch/elasticsearch
+  MONITORING="xpack.monitoring.enabled"
+else
+  unsupported $VERSION
 fi
-
-VERSION=$1
 
 # Determine local IPs
 OS=$(uname -a | awk '{print $1}')
@@ -65,22 +85,23 @@ else
   exit 1
 fi
 
-# Check if the image has been built. If not, build it.
-if [[ "$(docker images -q ${IMAGE}:${VERSION} 2> /dev/null)" == "" ]]; then
-  echo "Docker image ${IMAGE}:${VERSION} not found. Building from Dockerfile..."
-  cd $SCRIPTPATH
-  # Create a Dockerfile from the template
-  cat Dockerfile.tmpl | sed -e "s/ES_VERSION/${VERSION}/" > Dockerfile
-  docker build . -t ${IMAGE}:${VERSION}
-fi
+# # Check if the image has been built. If not, build it.
+# if [[ "$(docker images -q ${IMAGE}:${VERSION} 2> /dev/null)" == "" ]]; then
+#   echo "Docker image ${IMAGE}:${VERSION} not found. Building from Dockerfile..."
+#   cd $SCRIPTPATH
+#   # Create a Dockerfile from the template
+#   cat Dockerfile.tmpl | sed -e "s/ES_VERSION/${VERSION}/" > Dockerfile
+#   docker build . -t ${IMAGE}:${VERSION}
+# fi
 
-### Launch the containers (plural, in 8.x)
+### Launch the containers
 echo -en "\rStarting ${LOCAL_NAME} container... "
 docker run -d --name ${LOCAL_NAME} -p ${LOCAL_PORT}:9200 -v ${REPOPATH}:/media \
+-e ES_JAVA_OPTS="${JAVA_OPTS}" \
 -e "discovery.type=single-node" \
 -e "cluster.name=local-cluster" \
 -e "node.name=local" \
--e "xpack.monitoring.templates.enabled=false" \
+-e "${MONITORING}=false" \
 -e "path.repo=/media" \
 -e "xpack.security.enabled=false" \
 -e "reindex.remote.whitelist=${WHITELIST}" \
@@ -88,10 +109,11 @@ ${IMAGE}:${VERSION}
 
 echo -en "\rStarting ${REMOTE_NAME} container... "
 docker run -d --name ${REMOTE_NAME} -p ${REMOTE_PORT}:9200 -v ${REPOPATH}:/media \
+-e ES_JAVA_OPTS="${JAVA_OPTS}" \
 -e "discovery.type=single-node" \
 -e "cluster.name=remote-cluster" \
 -e "node.name=remote" \
--e "xpack.monitoring.templates.enabled=false" \
+-e "${MONITORING}=false" \
 -e "path.repo=/media" \
 -e "xpack.security.enabled=false" \
 ${IMAGE}:${VERSION}
@@ -123,15 +145,11 @@ echo
 echo "Creation complete. ${LOCAL_NAME} and ${REMOTE_NAME} containers are up using image ${IMAGE}:${VERSION}"
 
 echo
-echo "Please select one of these environment variables to prepend your 'pytest' run:"
+echo "Please select one of these environment variables to prepend your 'pytest --cov=curator' run:"
 echo
 
 for IP in $IPLIST; do
-  REMOTE="REMOTE_ES_SERVER=\"http://$IP:${REMOTE_PORT}\""
-  echo ${REMOTE}
-  cd $SCRIPTPATH
-  cd ..
-  echo "export ${REMOTE}" > .env
+  echo "REMOTE_ES_SERVER=\"$IP:${REMOTE_PORT}\""
 done
 
 echo

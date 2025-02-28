@@ -11,6 +11,7 @@ from es_client.exceptions import ConfigurationError
 from curator.exceptions import CuratorException, FailedExecution, NoIndices
 
 # Separate from es_client
+from curator.defaults.settings import VERSION_MAX
 from curator.exceptions import ConfigurationError as CuratorConfigError
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import report_failure
@@ -203,7 +204,11 @@ class Reindex:
                     }
                 }
                 try:  # let's try to build a remote connection with these!
-                    builder = Builder(configdict=remote_config)
+                    builder = Builder(
+                        configdict=remote_config,
+                        version_max=VERSION_MAX,
+                        version_min=(1, 4, 2),
+                    )
                     builder.version_min = (1, 0, 0)
                     builder.connect()
                     rclient = builder.client

@@ -31,7 +31,7 @@ from curator.validators.filter_functions import filterstructure
 class IndexList:
     """IndexList class"""
 
-    def __init__(self, client, search_pattern='_all'):
+    def __init__(self, client, search_pattern='*'):
         verify_client_object(client)
         self.loggit = logging.getLogger('curator.indexlist')
         #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from

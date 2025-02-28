@@ -1,19 +1,24 @@
 """Alias action"""
+
 import logging
+
 # pylint: disable=import-error
 from curator.exceptions import ActionError, MissingArgument, NoIndices
 from curator.helpers.date_ops import parse_date_pattern, parse_datemath
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import report_failure
 
+
 class Alias:
     """Alias Action Class"""
+
     # pylint: disable=unused-argument
     def __init__(self, name=None, extra_settings=None, **kwargs):
         """
         :param name: The alias name
-        :param extra_settings: Extra settings, including filters and routing. For more information
-            see `here </https://www.elastic.co/guide/en/elasticsearch/reference/8.6/indices-aliases.html>`_.
+        :param extra_settings: Extra settings, including filters and routing.
+            For more information see `here
+            </https://www.elastic.co/guide/en/elasticsearch/reference/8.6/indices-aliases.html>`_.
 
         :type name: str
         :type extra_settings: dict
@@ -25,14 +30,16 @@ class Alias:
         #: The :py:func:`~.curator.helpers.date_ops.parse_date_pattern` rendered
         #: version of what was passed by param ``name``.
         self.name = parse_date_pattern(name)
-        #: The list of actions to perform.  Populated by :py:meth:`~.curator.actions.Alias.add` and
+        #: The list of actions to perform.  Populated by
+        #: :py:meth:`~.curator.actions.Alias.add` and
         #: :py:meth:`~.curator.actions.Alias.remove`
         self.actions = []
-        #: The :py:class:`~.elasticsearch.Elasticsearch` client object which will later be set by
-        #: :py:meth:`~.curator.actions.Alias.add` or :py:meth:`~.curator.actions.Alias.remove`
+        #: The :py:class:`~.elasticsearch.Elasticsearch` client object which will
+        #: later be set by :py:meth:`~.curator.actions.Alias.add` or
+        #: :py:meth:`~.curator.actions.Alias.remove`
         self.client = None
-        #: Any extra things to add to the alias, like filters, or routing. Gets the value from
-        #: param ``extra_settings``.
+        #: Any extra things to add to the alias, like filters, or routing. Gets
+        #: the value from param ``extra_settings``.
         self.extra_settings = extra_settings
         self.loggit = logging.getLogger('curator.actions.alias')
         #: Preset default value to ``False``.
@@ -41,7 +48,8 @@ class Alias:
     def add(self, ilo, warn_if_no_indices=False):
         """
         Create ``add`` statements for each index in ``ilo`` for :py:attr:`name`, then
-        append them to :py:attr:`actions`.  Add any :py:attr:`extra_settings` that may be there.
+        append them to :py:attr:`actions`.  Add any :py:attr:`extra_settings` that
+        may be there.
 
         :param ilo: An IndexList Object
         :type ilo: :py:class:`~.curator.indexlist.IndexList`
@@ -58,16 +66,20 @@ class Alias:
             if warn_if_no_indices:
                 self.warn_if_no_indices = True
                 self.loggit.warning(
-                    'No indices found after processing filters. Nothing to add to %s', self.name)
+                    'No indices found after processing filters. Nothing to add to %s',
+                    self.name,
+                )
                 return
             # Re-raise the exceptions.NoIndices so it will behave as before
             raise NoIndices('No indices to add to alias') from exc
         for index in ilo.working_list():
             self.loggit.debug(
-                'Adding index %s to alias %s with extra settings '
-                '%s', index, self.name, self.extra_settings
+                'Adding index %s to alias %s with extra settings %s',
+                index,
+                self.name,
+                self.extra_settings,
             )
-            add_dict = {'add' : {'index' : index, 'alias': self.name}}
+            add_dict = {'add': {'index': index, 'alias': self.name}}
             add_dict['add'].update(self.extra_settings)
             self.actions.append(add_dict)
 
@@ -92,7 +104,8 @@ class Alias:
                 self.warn_if_no_indices = True
                 self.loggit.warning(
                     'No indices found after processing filters. '
-                    'Nothing to remove from %s', self.name
+                    'Nothing to remove from %s',
+                    self.name,
                 )
                 return
 
@@ -104,19 +117,24 @@ class Alias:
                 self.loggit.debug('Index %s in get_aliases output', index)
                 # Only remove if the index is associated with the alias
                 if self.name in aliases[index]['aliases']:
-                    self.loggit.debug('Removing index %s from alias %s', index, self.name)
+                    self.loggit.debug(
+                        'Removing index %s from alias %s', index, self.name
+                    )
                     self.actions.append(
-                        {'remove' : {'index' : index, 'alias': self.name}})
+                        {'remove': {'index': index, 'alias': self.name}}
+                    )
                 else:
                     self.loggit.debug(
-                        'Can not remove: Index %s is not associated with alias %s', index, self.name
+                        'Can not remove: Index %s is not associated with alias %s',
+                        index,
+                        self.name,
                     )
 
     def check_actions(self):
         """
         :returns: :py:attr:`actions` for use with the
-            :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` API call if actions
-            exist, otherwise an exception is raised.
+            :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` API
+            call if actions exist, otherwise an exception is raised.
         """
         if not self.actions:
             if not self.warn_if_no_indices:
@@ -143,8 +161,8 @@ class Alias:
 
     def do_action(self):
         """
-        :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` for :py:attr:`name` with
-        :py:attr:`actions`
+        :py:meth:`~.elasticsearch.client.IndicesClient.update_aliases` for
+        :py:attr:`name` with :py:attr:`actions`
         """
         self.loggit.info('Updating aliases...')
         self.loggit.info('Alias actions: %s', self.actions)
