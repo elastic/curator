@@ -199,7 +199,14 @@ def get_timestamp_range(
             "latest": {"max": {"field": "@timestamp"}},
         },
     }
-    response = client.search(index=",".join(indices), body=query)
+    logging.debug("starting with %s indices", len(indices))
+    # Remove any indices that do not exist
+    indices = [index for index in indices if client.indices.exists(index=index)]
+    logging.debug("after removing non-existent indices: %s", len(indices))
+
+    response = client.search(
+        index=",".join(indices), body=query, allow_partial_search_results=True
+    )
     logging.debug("Response: %s", response)
 
     earliest = response["aggregations"]["earliest"]["value_as_string"]
@@ -471,7 +478,7 @@ def get_matching_repos(
     query = {"query": {"match": {"doctype": "repository"}}}
     response = client.search(index=STATUS_INDEX, body=query)
     repos = response["hits"]["hits"]
-    # ? Make sure this works
+    logging.debug("Repos retrieved: %s", repos)
     repos = [repo for repo in repos if repo["name"].startswith(repo_name_prefix)]
     # return a Repository object for each
     return [Repository(**repo["_source"]) for repo in repos]
