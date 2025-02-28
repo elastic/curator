@@ -169,7 +169,7 @@ def get_schema(action):
     :type action: str
 
     :returns: A valid :py:class:`~.voluptuous.schema_builder.Schema` of the options
-    for ``action``
+        for ``action``
     """
     options = {}
     defaults = [
