@@ -117,6 +117,12 @@ Utils
 
 .. autofunction:: to_csv
 
+.. autofunction:: multitarget_fix
+
+.. autofunction:: regex_loop
+
+.. autofunction:: multitarget_match
+
 .. _helpers_waiters:
 
 Waiters
