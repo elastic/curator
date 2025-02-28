@@ -5,7 +5,7 @@
 import logging
 import sys
 
-from elasticsearch import Elasticsearch
+from elasticsearch import ApiError, Elasticsearch
 
 from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.helpers import Repository
