@@ -1,0 +1,97 @@
+[[installation]]
+= Installation
+
+[partintro]
+--
+Curator can be installed in a variety of ways, depending on what meets your
+needs.  It is important to note that Curator only requires access to a client
+node in the Elasticsearch cluster to work.  It does not need to be installed on
+one of the nodes in the cluster.
+
+* <<pip,pip>>, the easiest way to use and upgrade.
+* <<python-source,Source Code>>
+* <<docker,Docker>>
+--
+
+[[pip]]
+== pip
+This installation procedure requires a functional Python `pip` executable and requires that the
+target machine has internet connectivity for downloading Curator and the dependencies from
+https://pypi.org[The Python Package Index].
+
+---------------------------------
+pip install elasticsearch-curator
+---------------------------------
+
+=== Upgrading with pip
+
+If you already have Elasticsearch Curator installed, and want to upgrade to the
+latest version, use the `-U` flag:
+
+------------------------------------
+pip install -U elasticsearch-curator
+------------------------------------
+
+=== Installing a specific version with pip
+
+The `-U` flag uninstalls the current version (if any), then installs the latest
+version, or a specified one.  Specify a specific version by adding `==` followed
+by the version you'd like to install, like this:
+
+-------------------------------------------
+pip install -U elasticsearch-curator==X.Y.Z
+-------------------------------------------
+
+For this release, you would type:
+`pip install -U elasticsearch-curator==`+pass:attributes[{curator_version}]+
+
+=== System-wide vs. User-only installation
+
+The above commands each imply a system-wide installation.  This usually
+requires super-user access, or the `sudo` command.  There is a way to install
+Curator into a path for just the current user, using the `--user` flag.
+
+----------------------------------------
+pip install --user elasticsearch-curator
+----------------------------------------
+
+This will result in the `curator` end-point being installed in the current
+user's home directory, in the `.local` directory, in the `bin` subdirectory. The
+full path might look something like this:
+
+-----------------------------
+/home/user/.local/bin/curator
+-----------------------------
+
+You can make an alias or a symlink to this so you can call it more easily.
+
+The `--user` flag can also be used in conjunction with the `-U` flag:
+
+----------------------------------------
+pip install -U --user elasticsearch-curator==X.Y.Z
+----------------------------------------
+
+&nbsp;
+
+[[python-source]]
+== Installation from source
+
+Installing or Curator from source tarball (rather than doing a `git clone`) is also possible.
+
+Download and install Curator from tarball:
+
+. `wget https://github.com/elastic/curator/archive/v`+pass:attributes[{curator_version}].tar.gz -O elasticsearch-curator.tar.gz+
+. `pip install elasticsearch-curator.tar.gz`
+
+&nbsp;
+
+[[docker]]
+== Docker
+
+Curator is periodically published to Docker Hub at
+https://hub.docker.com/repository/docker/untergeek/curator/general[`untergeek/curator`].
+
+Download Curator Docker image:
+
+. `docker pull untergeek/curator:`+pass:attributes[{curator_version}]+
+

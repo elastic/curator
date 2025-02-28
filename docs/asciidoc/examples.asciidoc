@@ -1,0 +1,823 @@
+[[examples]]
+= Examples
+
+[partintro]
+--
+These examples should help illustrate how to build your own <<actions,actions>>.
+
+You can use <<envvars,environment variables>> in your configuration files.
+
+* <<ex_alias,alias>>
+* <<ex_allocation,allocation>>
+* <<ex_close,close>>
+* <<ex_cluster_routing,cluster_routing>>
+* <<ex_create_index,create_index>>
+* <<ex_delete_indices,delete_indices>>
+* <<ex_delete_snapshots,delete_snapshots>>
+* <<ex_forcemerge,forcemerge>>
+* <<ex_open,open>>
+* <<ex_reindex,reindex>>
+* <<ex_replicas,replicas>>
+* <<ex_restore,restore>>
+* <<ex_rollover,rollover>>
+* <<ex_shrink,shrink>>
+* <<ex_snapshot,snapshot>>
+--
+
+[[ex_alias]]
+== alias
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: alias
+    description: >-
+      Alias indices from last week, with a prefix of logstash- to 'last_week',
+      remove indices from the previous week.
+    options:
+      name: last_week
+      warn_if_no_indices: False
+      disable_action: True
+    add:
+      filters:
+      - filtertype: pattern
+        kind: prefix
+        value: logstash-
+        exclude:
+      - filtertype: period
+        period_type: relative
+        source: name
+        range_from: -1
+        range_to: -1
+        timestring: '%Y.%m.%d'
+        unit: weeks
+        week_starts_on: sunday
+    remove:
+      filters:
+      - filtertype: pattern
+        kind: prefix
+        value: logstash-
+      - filtertype: period
+        period_type: relative
+        source: name
+        range_from: -2
+        range_to: -2
+        timestring: '%Y.%m.%d'
+        unit: weeks
+        week_starts_on: sunday
+-------------
+
+
+
+[[ex_allocation]]
+== allocation
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: allocation
+    description: >-
+      Apply shard allocation routing to 'require' 'tag=cold' for hot/cold node
+      setup for logstash- indices older than 3 days, based on index_creation
+      date
+    options:
+      key: tag
+      value: cold
+      allocation_type: require
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: days
+      unit_count: 3
+-------------
+
+
+
+[[ex_close]]
+== close
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: close
+    description: >-
+      Close indices older than 30 days (based on index name), for logstash-
+      prefixed indices.
+    options:
+      skip_flush: False
+      delete_aliases: False
+      ignore_sync_failures: True
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 30
+-------------
+
+
+
+[[ex_cluster_routing]]
+== cluster_routing
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+#
+# This action example has a blank spot at action ID 2.  This is to show that
+# Curator can disable allocation before one or more actions, and then re-enable
+# it afterward.
+actions:
+  1:
+    action: cluster_routing
+    description: >-
+      Disable shard routing for the entire cluster.
+    options:
+      routing_type: allocation
+      value: none
+      setting: enable
+      wait_for_completion: True
+      disable_action: True
+  2:
+    action: (any other action details go here)
+    ...
+  3:
+    action: cluster_routing
+    description: >-
+      Re-enable shard routing for the entire cluster.
+    options:
+      routing_type: allocation
+      value: all
+      setting: enable
+      wait_for_completion: True
+      disable_action: True
+-------------
+
+
+
+[[ex_create_index]]
+== create_index
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: create_index
+    description: Create the index as named, with the specified extra settings.
+    options:
+      name: myindex
+      extra_settings:
+        settings:
+          number_of_shards: 2
+          number_of_replicas: 1
+      disable_action: True
+-------------
+
+
+
+[[ex_delete_indices]]
+== delete_indices
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: delete_indices
+    description: >-
+      Delete indices older than 45 days (based on index name), for logstash-
+      prefixed indices. Ignore the error if the filter does not result in an
+      actionable list of indices (ignore_empty_list) and exit cleanly.
+    options:
+      ignore_empty_list: True
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 45
+-------------
+
+
+
+[[ex_delete_snapshots]]
+== delete_snapshots
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: delete_snapshots
+    description: >-
+      Delete snapshots from the selected repository older than 45 days
+      (based on creation_date), for 'curator-' prefixed snapshots.
+    options:
+      repository:
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: curator-
+      exclude:
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: days
+      unit_count: 45
+-------------
+
+
+
+[[ex_forcemerge]]
+== forcemerge
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: forcemerge
+    description: >-
+      forceMerge logstash- prefixed indices older than 2 days (based on index
+      creation_date) to 2 segments per shard.  Delay 120 seconds between each
+      forceMerge operation to allow the cluster to quiesce. Skip indices that
+      have already been forcemerged to the minimum number of segments to avoid
+      reprocessing.
+    options:
+      max_num_segments: 2
+      delay: 120
+      timeout_override:
+      continue_if_exception: False
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+      exclude:
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: days
+      unit_count: 2
+      exclude:
+    - filtertype: forcemerged
+      max_num_segments: 2
+      exclude:
+-------------
+
+[[ex_index_settings]]
+== index_settings
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: index_settings
+    description: >-
+      Set Logstash indices older than 10 days to be read only (block writes)
+    options:
+      disable_action: True
+      index_settings:
+        index:
+          blocks:
+            write: True
+      ignore_unavailable: False
+      preserve_existing: False
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 10
+-------------
+
+
+[[ex_open]]
+== open
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: open
+    description: >-
+      Open indices older than 30 days but younger than 60 days (based on index
+      name), for logstash- prefixed indices.
+    options:
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+      exclude:
+    - filtertype: age
+      source: name
+      direction: older
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 30
+    - filtertype: age
+      source: name
+      direction: younger
+      timestring: '%Y.%m.%d'
+      unit: days
+      unit_count: 60
+-------------
+
+
+
+[[ex_reindex]]
+== reindex
+
+=== Manually selected reindex of a single index
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+=== Manually selected reindex of a multiple indices
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: "Reindex index1,index2,index3 into new_index"
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: ['index1', 'index2', 'index3']
+        dest:
+          index: new_index
+    filters:
+    - filtertype: none
+-------------
+
+=== Filter-Selected Indices
+
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: >-
+      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          index: REINDEX_SELECTION
+        dest:
+          index: logstash-2017.03
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-2017.03.
+-------------
+
+=== Reindex From Remote
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: >-
+      'Reindex all daily logstash indices from March 2017 into logstash-2017.03'
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: http://otherhost:9200
+            username: myuser
+            password: mypass
+          index: index1
+        dest:
+          index: index1
+    filters:
+    - filtertype: none
+-------------
+
+=== Reindex From Remote With Filter-Selected Indices
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: >-
+      Reindex all remote daily logstash indices from March 2017 into local index
+      logstash-2017.03
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          remote:
+            host: http://otherhost:9200
+            username: myuser
+            password: mypass
+          index: REINDEX_SELECTION
+        dest:
+          index: logstash-2017.03
+      remote_filters:
+      - filtertype: pattern
+      kind: prefix
+      value: logstash-2017.03.
+    filters:
+    - filtertype: none
+-------------
+
+=== Manually selected reindex of a single index with query
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    description: "Reindex index1 into index2"
+    action: reindex
+    options:
+      disable_action: True
+      wait_interval: 9
+      max_wait: -1
+      request_body:
+        source:
+          query:
+            range:
+              timestamp:
+                gte: "now-1h"
+          index: index1
+        dest:
+          index: index2
+    filters:
+    - filtertype: none
+-------------
+
+[[ex_replicas]]
+== replicas
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: replicas
+    description: >-
+      Reduce the replica count to 0 for logstash- prefixed indices older than
+      10 days (based on index creation_date)
+    options:
+      count: 0
+      wait_for_completion: True
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: days
+      unit_count: 10
+-------------
+
+
+
+[[ex_restore]]
+== restore
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: restore
+    description: >-
+      Restore all indices in the most recent curator-* snapshot with state
+      SUCCESS.  Wait for the restore to complete before continuing.  Do not skip
+      the repository filesystem access check.  Use the other options to define
+      the index/shard settings for the restore.
+    options:
+      repository:
+      # If name is blank, the most recent snapshot by age will be selected
+      name:
+      # If indices is blank, all indices in the snapshot will be restored
+      indices:
+      include_aliases: False
+      ignore_unavailable: False
+      include_global_state: False
+      partial: False
+      rename_pattern:
+      rename_replacement:
+      extra_settings:
+      wait_for_completion: True
+      skip_repo_fs_check: True
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: curator-
+    - filtertype: state
+      state: SUCCESS
+-------------
+
+
+
+[[ex_rollover]]
+== rollover
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: rollover
+    description: >-
+      Rollover the index associated with alias 'aliasname', which should be in the
+      format of prefix-000001 (or similar), or prefix-YYYY.MM.DD-1.
+    options:
+      disable_action: True
+      name: aliasname
+      conditions:
+        max_age: 1d
+        max_docs: 1000000
+        max_size: 50g
+      extra_settings:
+        index.number_of_shards: 3
+        index.number_of_replicas: 1
+-------------
+
+
+[[ex_shrink]]
+== shrink
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: shrink
+    description: >-
+      Shrink logstash indices older than 21 days on the node with the most
+      available space, excluding the node named 'not_this_node'.
+      Delete each source index after successful shrink, then reroute the shrunk
+      index with the provided parameters.
+    options:
+      disable_action: True
+      ignore_empty_list: True
+      shrink_node: DETERMINISTIC
+      node_filters:
+        permit_masters: False
+        exclude_nodes: ['not_this_node']
+      number_of_shards: 1
+      number_of_replicas: 1
+      shrink_prefix:
+      shrink_suffix: '-shrink'
+      delete_after: True
+      post_allocation:
+        allocation_type: include
+        key: node_tag
+        value: cold
+      wait_for_active_shards: 1
+      extra_settings:
+        settings:
+          index.codec: best_compression
+      wait_for_completion: True
+      wait_for_rebalance: True
+      wait_interval: 9
+      max_wait: -1
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: days
+      unit_count: 21
+-------------
+
+
+
+[[ex_snapshot]]
+== snapshot
+
+[source,yaml]
+-------------
+---
+# Remember, leave a key empty if there is no value.  None will be a string,
+# not a Python "NoneType"
+#
+# Also remember that all examples have 'disable_action' set to True.  If you
+# want to use this action as a template, be sure to set this to False after
+# copying it.
+actions:
+  1:
+    action: snapshot
+    description: >-
+      Snapshot logstash- prefixed indices older than 1 day (based on index
+      creation_date) with the default snapshot name pattern of
+      'curator-%Y%m%d%H%M%S'.  Wait for the snapshot to complete.  Do not skip
+      the repository filesystem access check.  Use the other options to create
+      the snapshot.
+    options:
+      repository:
+      # Leaving name blank will result in the default 'curator-%Y%m%d%H%M%S'
+      name:
+      ignore_unavailable: False
+      include_global_state: True
+      partial: False
+      wait_for_completion: True
+      skip_repo_fs_check: False
+      disable_action: True
+    filters:
+    - filtertype: pattern
+      kind: prefix
+      value: logstash-
+    - filtertype: age
+      source: creation_date
+      direction: older
+      unit: days
+      unit_count: 1
+-------------
+

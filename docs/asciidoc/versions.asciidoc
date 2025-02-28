@@ -1,0 +1,26 @@
+[[versions]]
+= Versions
+
+[partintro]
+--
+Elasticsearch Curator has been around for many different versions of Elasticsearch.
+Earlier releases of Curator supported multiple versions of Elasticsearch, but this is no longer
+the case.
+
+Curator is now major version locked with Elasticsearch, which means that if
+Curator's major version is {curator_major}, it should support any Elasticsearch {curator_major}.x
+release.
+
+However, in many cases, the API calls that Curator makes do not change between
+the current and previous major releases, or at least the last few minor releases
+of the previous major release. This has proven to be the case, and starting with
+Curator 8.0.18, Curator v8 has been tested to work with Elasticsearch 7.14+.
+
+* <<current_release,Current Release>>
+--
+
+[[current_release]]
+== Current Release
+
+The current version of Curator v{curator_major} is {curator_version}.
+
