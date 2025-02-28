@@ -243,8 +243,8 @@ class Rotate:
             if not dry_run:
                 # ? Do I want to check for existence of snapshots still mounted from
                 # ? the repo here or in unmount_repo?
-                repo = unmount_repo(self.client, repo)
-                push_to_glacier(self.s3, repo)
+                unmounted_repo = unmount_repo(self.client, repo)
+                push_to_glacier(self.s3, unmounted_repo)
 
     def get_repo_details(self, repo: str) -> Repository:
         """Return a Repository object given a repo name
@@ -260,14 +260,12 @@ class Rotate:
         response = self.client.get_repository(repo)
         earliest, latest = get_timestamp_range(self.client, [repo])
         return Repository(
-            {
-                "name": repo,
-                "bucket": response["bucket"],
-                "base_path": response["base_path"],
-                "start": earliest,
-                "end": latest,
-                "is_mounted": False,
-            }
+            name=repo,
+            bucket=response["bucket"],
+            base_path=response["base_path"],
+            start=earliest,
+            end=latest,
+            is_mounted=False,
         )
 
     def do_dry_run(self) -> None:
