@@ -10,7 +10,7 @@ Changelog
 
 Release 8.0.18 allows Curator v8 to work with Curator v7.14.x and later. All tests
 pass for v7.14.0, v7.14.2, v7.17.7, v7.17.25, v7.17.27. Due to JVM issues with
-M-series processors (OpenJDK 16 > FAIL < OpenJDK 19 ), I'm unable to test v7.15.x -
+M-series processors (OpenJDK 16 < FAIL < OpenJDK 19 ), I'm unable to test v7.15.x -
 v7.17.6 on my MacBook Pro, but I have no reason to believe they won't as there
 are no API changes between the 7.14 and 7.17 series that would affect Curator
 in any way.
@@ -36,8 +36,8 @@ for more information.
     .. code-block:: python
     
         EXCLUDE_SYSTEM = (
-            '-.kibana*,-.security*,-.watche*,-.triggered_watche*,-.watcher-history*,'
-            '-.ml*,-.geoip_databases*,-.logstas*,-.tasks*'
+            '-.kibana*,-.security*,-.watch*,-.triggered_watch*,'
+            '-.ml*,-.geoip_databases*,-.logstash*,-.tasks*'
         )
         
   * Restored and fixed datemath integration tests for patterns that include
