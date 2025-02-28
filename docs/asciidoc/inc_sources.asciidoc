@@ -1,0 +1,55 @@
+=== `name`-based ages
+
+Using `name` as the `source` tells Curator to look for a
+<<fe_timestring,`timestring`>> within the index or snapshot name, and convert
+that into an epoch timestamp (epoch implies UTC).
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: name
+   direction: older
+   timestring: '%Y.%m.%d'
+   unit: days
+   unit_count: 3
+-------------
+
+include::inc_timestring_regex.asciidoc[]
+
+=== `creation_date`-based ages
+
+`creation_date` extracts the epoch time of index or snapshot creation.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: creation_date
+   direction: older
+   unit: days
+   unit_count: 3
+-------------
+
+=== `field_stats`-based ages
+
+NOTE: `source` can only be `field_stats` when filtering indices.
+
+In Curator 5.3 and older, source `field_stats` uses the
+http://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-field-stats.html[Field Stats API]
+to calculate either the `min_value` or the `max_value` of the <<fe_field,`field`>>
+as the <<fe_stats_result,`stats_result`>>, and then use that value for age
+comparisons.  In 5.4 and above, even though it is still called `field_stats`, it
+uses an aggregation to calculate the same values, as the `field_stats` API is
+no longer used in Elasticsearch 6.x and up.
+
+<<fe_field,`field`>> must be of type `date` in Elasticsearch.
+
+[source,yaml]
+-------------
+ - filtertype: age
+   source: field_stats
+   direction: older
+   unit: days
+   unit_count: 3
+   field: '@timestamp'
+   stats_result: min_value
+-------------

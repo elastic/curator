@@ -1,0 +1,23 @@
+[NOTE]
+.Filter chaining
+=====================================================================
+It is important to note that while filters can be chained, each is linked by an
+implied logical *AND* operation.  If you want to match from one of several
+different patterns, as with a logical *OR* operation, you can do so with the
+<<filtertype_pattern,pattern>> filtertype using _regex_ as the <<fe_kind,kind>>.
+
+This example shows how to select multiple indices based on them beginning with
+either `alpha-`, `bravo-`, or `charlie-`:
+
+[source,yaml]
+-------------
+  filters:
+  - filtertype: pattern
+    kind: regex
+    value: '^(alpha-|bravo-|charlie-).*$'
+-------------
+
+Explaining all of the different ways in which regular expressions can be used
+is outside the scope of this document, but hopefully this gives you some idea
+of how a regular expression pattern can be used when a logical *OR* is desired.
+=====================================================================
