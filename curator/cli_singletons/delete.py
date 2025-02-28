@@ -12,7 +12,7 @@ from curator.cli_singletons.utils import validate_filter_json
 @click.option(
     '--search_pattern',
     type=str,
-    default='_all',
+    default='*',
     help='Elasticsearch Index Search Pattern',
 )
 @click.option(

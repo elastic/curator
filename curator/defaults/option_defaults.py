@@ -545,9 +545,9 @@ def cluster_routing_value():
 
 def search_pattern():
     """
-    :returns: {Optional('search_pattern', default='_all'): Any(str)}
+    :returns: {Optional('search_pattern', default='*'): Any(str)}
     """
-    return {Optional('search_pattern', default='_all'): Any(str)}
+    return {Optional('search_pattern', default='*'): Any(str)}
 
 
 def shrink_node():

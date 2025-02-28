@@ -1,4 +1,5 @@
 """Test snapshot restore functionality"""
+
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
 import time
@@ -24,12 +25,14 @@ HOST = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
 # '      wait_interval: {13}\n'
 # '      max_wait: {14}\n'
 
+
 class TestActionFileRestore(CuratorTestCase):
     """Test file-based configuration restore operations"""
+
     def test_restore(self):
         """Test restore action"""
         indices = []
-        for i in range(1,4):
+        for i in range(1, 4):
             self.add_docs(f'my_index{i}')
             indices.append(f'my_index{i}')
         snap_name = 'snapshot1'
@@ -41,7 +44,8 @@ class TestActionFileRestore(CuratorTestCase):
         self.assertEqual([], get_indices(self.client))
         assert not get_indices(self.client)
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
-        self.write_config(self.args['actionfile'],
+        self.write_config(
+            self.args['actionfile'],
             testvars.restore_snapshot_proto.format(
                 self.args['repository'],
                 snap_name,
@@ -57,8 +61,8 @@ class TestActionFileRestore(CuratorTestCase):
                 False,
                 301,
                 1,
-                3
-            )
+                3,
+            ),
         )
         self.invoke_runner()
         restored_indices = sorted(get_indices(self.client))
@@ -67,10 +71,11 @@ class TestActionFileRestore(CuratorTestCase):
         # The test runs so fast that it tries to execute the cleanup step
         # and delete the repository before Elasticsearch is actually ready
         time.sleep(0.5)
+
     def test_restore_with_rename(self):
         """Test restore action with renaming enabled"""
         indices = []
-        for i in range(1,4):
+        for i in range(1, 4):
             self.add_docs(f'my_index{i}')
             indices.append(f'my_index{i}')
         snap_name = 'snapshot1'
@@ -83,7 +88,8 @@ class TestActionFileRestore(CuratorTestCase):
         self.assertEqual([], get_indices(self.client))
         assert not get_indices(self.client)
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
-        self.write_config(self.args['actionfile'],
+        self.write_config(
+            self.args['actionfile'],
             testvars.restore_snapshot_proto.format(
                 self.args['repository'],
                 snap_name,
@@ -100,25 +106,23 @@ class TestActionFileRestore(CuratorTestCase):
                 301,
                 1,
                 3,
-            )
+            ),
         )
         self.invoke_runner()
         time.sleep(1)
         restored_indices = sorted(get_indices(self.client))
-        self.assertEqual(
-            ['new_index1', 'new_index2', 'new_index3'],
-            restored_indices
-        )
+        self.assertEqual(['new_index1', 'new_index2', 'new_index3'], restored_indices)
         assert ['new_index1', 'new_index2', 'new_index3'] == restored_indices
         # The test runs so fast that it tries to execute the cleanup step
         # and delete the repository before Elasticsearch is actually ready
         time.sleep(1)
+
     def test_restore_wildcard(self):
         """Test restore with wildcard"""
         indices = []
         my_indices = []
         wildcard = ['my_*']
-        for i in range(1,4):
+        for i in range(1, 4):
             for prefix in ['my_', 'not_my_']:
                 self.add_docs(f'{prefix}index{i}')
                 indices.append(f'{prefix}index{i}')
@@ -133,7 +137,8 @@ class TestActionFileRestore(CuratorTestCase):
         self.assertEqual([], get_indices(self.client))
         assert not get_indices(self.client)
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
-        self.write_config(self.args['actionfile'],
+        self.write_config(
+            self.args['actionfile'],
             testvars.restore_snapshot_proto.format(
                 self.args['repository'],
                 snap_name,
@@ -149,8 +154,8 @@ class TestActionFileRestore(CuratorTestCase):
                 False,
                 301,
                 1,
-                3
-            )
+                3,
+            ),
         )
         self.invoke_runner()
         restored_indices = sorted(get_indices(self.client))
@@ -159,6 +164,7 @@ class TestActionFileRestore(CuratorTestCase):
         # The test runs so fast that it tries to execute the cleanup step
         # and delete the repository before Elasticsearch is actually ready
         time.sleep(0.5)
+
 
 class TestCLIRestore(CuratorTestCase):
     def test_restore(self):
@@ -176,18 +182,29 @@ class TestCLIRestore(CuratorTestCase):
         assert not get_indices(self.client)
         args = self.get_runner_args()
         args += [
-            '--config', self.args['configfile'],
+            '--config',
+            self.args['configfile'],
             'restore',
-            '--repository', self.args['repository'],
-            '--name', snap_name,
-            '--index', indices[0],
-            '--index', indices[1],
-            '--index', indices[2],
-            '--wait_interval', '1',
-            '--max_wait', '3',
-            '--filter_list', '{"filtertype":"none"}',
+            '--repository',
+            self.args['repository'],
+            '--name',
+            snap_name,
+            '--index',
+            indices[0],
+            '--index',
+            indices[1],
+            '--index',
+            indices[2],
+            '--wait_interval',
+            '1',
+            '--max_wait',
+            '3',
+            '--filter_list',
+            '{"filtertype":"none"}',
         ]
-        # self.assertEqual(0, self.run_subprocess(args, logname='TestCLIRestore.test_restore'))
+        # self.assertEqual(
+        #     0, self.run_subprocess(args, logname='TestCLIRestore.test_restore')
+        # )
         assert 0 == self.run_subprocess(args, logname='TestCLIRestore.test_restore')
         restored_indices = sorted(get_indices(self.client))
         self.assertEqual(indices, restored_indices)
