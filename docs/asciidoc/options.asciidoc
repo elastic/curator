@@ -2164,17 +2164,32 @@ NOTE: This setting is only used by the
 action: delete_indices
 description: "Delete selected indices"
 options:
-  search_pattern: 'index-*'
+  search_pattern: 'index-*,-index-00002,named-1'
 filters:
 - filtertype: ...
 -------------
 
-The value of this option can be a comma-separated list of data streams, indices, and aliases used
-to limit the request. Supports wildcards (*). To target all data streams and indices, omit this
-parameter or use * or _all. If using wildcards it is highly recommended to encapsulate the entire
-search pattern in single quotes, e.g. `search_pattern: 'a*,b*,c*'`
+Supports {ref}/api-conventions.html#api-multi-index[Elasticsearch multi-target syntax].
 
-The default value is `_all`.
+The value of this option can be a comma-separated list of data streams, indices,
+and aliases used to limit the request.
+
+To target all data streams and indices, omit this parameter or use *. If using
+wildcards it is highly recommended to encapsulate the entire search pattern in
+single quotes, e.g. `search_pattern: 'a*,b*,c*'`
+
+The default value is `*`.
+
+Even though `*` is the default, system indices are filtered by default. This
+appends the pattern:
+
+[source,python]
+-------------
+EXCLUDE_SYSTEM = (
+    '-.kibana*,-.security*,-.watch*,-.triggered_watch*,'
+    '-.ml*,-.geoip_databases*,-.logstash*,-.tasks*'
+)
+-------------
 
 [[option_setting]]
 == setting
