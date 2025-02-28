@@ -1,6 +1,7 @@
 project: 'Curator index management'
 cross_links:
   - beats
+  - docs-content
   - elasticsearch
   - logstash
 toc:
