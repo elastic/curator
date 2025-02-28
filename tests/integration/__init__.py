@@ -40,7 +40,7 @@ DATEMAP = {
 
 HOST = os.environ.get("TEST_ES_SERVER", "http://127.0.0.1:9200")
 
-INTERVAL = 1
+INTERVAL = 5
 
 
 
