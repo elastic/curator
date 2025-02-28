@@ -12,8 +12,8 @@ CLICK_DRYRUN = {
 }
 DATA_NODE_ROLES = ['data', 'data_content', 'data_hot', 'data_warm']
 EXCLUDE_SYSTEM = (
-    '-.kibana*,-.security*,-.watche*,-.triggered_watche*,-.watcher-history*,'
-    '-.ml*,-.geoip_databases*,-.logstas*,-.tasks*'
+    '-.kibana*,-.security*,-.watch*,-.triggered_watch*,'
+    '-.ml*,-.geoip_databases*,-.logstash*,-.tasks*'
 )
 VERSION_MIN = (7, 14, 0)
 VERSION_MAX = (8, 99, 99)
