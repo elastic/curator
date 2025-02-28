@@ -2,9 +2,11 @@
 Integration tests for the Remount action
 """
 
-from tests.integration import CuratorTestCase
+from curator.actions.deepfreeze.constants import PROVIDERS
+from tests.integration import DeepfreezeTestCase
 
 
-class TestDeepfreezeRemount(CuratorTestCase):
-    def test_remount():
-        pass
+class TestDeepfreezeRemount(DeepfreezeTestCase):
+    def test_remount(self):
+        for provider in PROVIDERS:
+            self.provider = provider

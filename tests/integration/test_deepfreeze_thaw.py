@@ -4,10 +4,10 @@ from curator.actions.deepfreeze.utilities import (
     get_matching_repo_names,
     get_unmounted_repos,
 )
-from tests.integration import CuratorTestCase
+from tests.integration import DeepfreezeTestCase
 
 
-class TestDeepfreezeThaw(CuratorTestCase):
+class TestDeepfreezeThaw(DeepfreezeTestCase):
     def test_deepfreeze_thaw(self):
         for provider in PROVIDERS:
             self.provider = provider
