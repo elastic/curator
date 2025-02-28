@@ -4,17 +4,15 @@ Test deepfreeze setup functionality
 
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 import os
-import time
+import random
 import warnings
 
 from curator.actions.deepfreeze import PROVIDERS
 from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.actions.deepfreeze.rotate import Rotate
-from curator.actions.deepfreeze.utilities import (
-    get_matching_repo_names,
-    get_unmounted_repos,
-)
+from curator.actions.deepfreeze.utilities import get_repository, get_unmounted_repos
+from curator.exceptions import ActionError
 from curator.s3client import s3_client_factory
 from tests.integration import testvars
 
@@ -133,23 +131,23 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
                 f"{prefix}-000002",
                 f"{prefix}-000001",
             ]
-            # They should not be the same two as before
-            assert rotate.repo_list != orig_list
             # Query the settings index to get the unmounted repos
             unmounted = get_unmounted_repos(self.client)
             assert len(unmounted) == 2
             assert f"{prefix}-000001" in [x.name for x in unmounted]
             assert f"{prefix}-000002" in [x.name for x in unmounted]
+            repos = [get_repository(self.client, name=r) for r in rotate.repo_list]
+            assert len(repos) == 3
+            for repo in repos:
+                if repo:
+                    assert repo.earliest is not None
+                    assert repo.latest is not None
+                    assert repo.earliest < repo.latest
+                    assert len(repo.indices) > 1
+                else:
+                    print(f"{repo} is None")
 
-    # What can go wrong with repo rotation?
-    #
-    # 1. Repo deleted outside of our awareness
-    # 2. Bucket deleted so no repos at all
-    # 3. Missing status index - no historical data available
-    # 4. Repo has no indices - what do we do about its time range?
-    # 5. ??
-
-    def testMissingStatusIndex(self):
+    def test_missing_status_index(self):
         warnings.filterwarnings(
             "ignore", category=DeprecationWarning, module="botocore.auth"
         )
@@ -178,3 +176,78 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
 
             with self.assertRaises(MissingIndexError):
                 rotate = self.do_rotate(populate_index=True)
+
+    def test_missing_repo(self):
+        warnings.filterwarnings(
+            "ignore", category=DeprecationWarning, module="botocore.auth"
+        )
+
+        for provider in PROVIDERS:
+            self.provider = provider
+            if self.bucket_name == "":
+                self.bucket_name = f"{testvars.df_bucket_name}-{random_suffix()}"
+
+            setup = self.do_setup(create_ilm_policy=True)
+            prefix = setup.settings.repo_name_prefix
+            csi = self.client.cluster.state(metric=MET)[MET]["indices"]
+
+            # Specific assertions
+            # Settings index should exist
+            assert csi[STATUS_INDEX]
+
+            # Assert that there is only one document in the STATUS_INDEX
+            status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
+            assert status_index_docs["hits"]["total"]["value"] == 1
+
+            rotate = self.do_rotate(6)
+            # There should now be one repositories.
+            assert len(rotate.repo_list) == 6
+
+            # Delete a random repo
+            repo_to_delete = rotate.repo_list[random.randint(0, 5)]
+            self.client.snapshot.delete_repository(
+                name=repo_to_delete,
+            )
+
+            # Do another rotation with keep=1
+            rotate = self.do_rotate(populate_index=True)
+            # There should now be two (one kept and one new)
+            assert len(rotate.repo_list) == 6
+            assert repo_to_delete not in rotate.repo_list
+
+    def test_missing_bucket(self):
+        warnings.filterwarnings(
+            "ignore", category=DeprecationWarning, module="botocore.auth"
+        )
+
+        for provider in PROVIDERS:
+            self.provider = provider
+            if self.bucket_name == "":
+                self.bucket_name = f"{testvars.df_bucket_name}-{random_suffix()}"
+
+            setup = self.do_setup(create_ilm_policy=True)
+            prefix = setup.settings.repo_name_prefix
+            csi = self.client.cluster.state(metric=MET)[MET]["indices"]
+
+            # Specific assertions
+            # Settings index should exist
+            assert csi[STATUS_INDEX]
+
+            # Assert that there is only one document in the STATUS_INDEX
+            status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
+            assert status_index_docs["hits"]["total"]["value"] == 1
+
+            rotate = self.do_rotate(6, populate_index=True)
+            # There should now be one repositories.
+            assert len(rotate.repo_list) == 6
+
+            # Delete the bucket
+            s3 = s3_client_factory(self.provider)
+            s3.delete_bucket(setup.settings.bucket_name_prefix)
+
+            # Do another rotation with keep=1
+            with self.assertRaises(ActionError):
+                rotate = self.do_rotate(populate_index=True)
+
+            # This indicates a Bad Thing, but I'm not sure what the correct response
+            # should be from a DF standpoint.
