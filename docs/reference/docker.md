@@ -9,5 +9,7 @@ Curator is periodically published to Docker Hub at [`untergeek/curator`](https:/
 
 Download Curator Docker image:
 
-1. `docker pull untergeek/curator:``8.0.17`
+```
+docker pull untergeek/curator:{{curator_version}}
+```
 

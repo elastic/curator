@@ -28,8 +28,11 @@ The `-U` flag uninstalls the current version (if any), then installs the latest 
 pip install -U elasticsearch-curator==X.Y.Z
 ```
 
-For this release, you would type: `pip install -U elasticsearch-curator==``8.0.17`
+For example:
 
+```
+pip install -U elasticsearch-curator=={{curator_version}}
+```
 
 ## System-wide vs. User-only installation [_system_wide_vs_user_only_installation]
 
