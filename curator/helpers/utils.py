@@ -144,8 +144,8 @@ def multitarget_fix(pattern: str) -> str:
 
 def regex_loop(matchstr: str, indices: list) -> list:
     """
-    Loop through indices
-    Match against matchstr
+    Loop through indices,
+    Match against matchstr,
     return matches
 
     :param matchstr: The Python regex pattern to match against
