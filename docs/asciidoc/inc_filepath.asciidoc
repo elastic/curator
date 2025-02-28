@@ -1,0 +1,22 @@
+[TIP]
+.File paths
+=====================================================================
+File paths can be specified as follows:
+
+*For Windows:*
+
+[source,sh]
+-------------
+'C:\path\to\file'
+-------------
+
+*For Linux, BSD, Mac OS:*
+
+[source,sh]
+-------------
+'/path/to/file'
+-------------
+
+Using single-quotes around your file path is encouraged, especially with
+Windows file paths.
+=====================================================================
