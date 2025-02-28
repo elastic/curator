@@ -1,6 +1,8 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/pip.html
+sub:
+  curator_v: 8.0.18
 ---
 
 # pip [pip]
@@ -31,7 +33,7 @@ pip install -U elasticsearch-curator==X.Y.Z
 For example:
 
 ```
-pip install -U elasticsearch-curator=={{curator_version}}
+pip install -U elasticsearch-curator=={{curator_v}}
 ```
 
 ## System-wide vs. User-only installation [_system_wide_vs_user_only_installation]
@@ -55,7 +57,3 @@ The `--user` flag can also be used in conjunction with the `-U` flag:
 ```
 pip install -U --user elasticsearch-curator==X.Y.Z
 ```
-
- 
-
-
