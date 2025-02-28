@@ -54,6 +54,22 @@ class TestFilters(CuratorTestCase):
         assert isinstance(self.result.exception, ConfigurationError)
         assert 2 == len(get_indices(self.client))
 
+    def test_filter_closed(self):
+        idx1 = 'dummy'
+        idx2 = 'my_index'
+        ptrn = f'{idx1}*,{idx2}*'
+        self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
+        self.write_config(
+            self.args['actionfile'], testvars.filter_closed.format("True")
+        )
+        self.create_index(idx1)
+        self.create_index(idx2)  # This one will be closed, ergo not deleted
+        self.client.indices.close(index=idx2)
+        self.invoke_runner()
+        assert 1 == len(get_indices(self.client))
+        result = self.client.indices.get(index=ptrn, expand_wildcards='open,closed')
+        assert idx2 == list(dict(result).keys())[0]
+
     def test_field_stats_skips_empty_index(self):
         delete_field_stats = (
             '---\n'
