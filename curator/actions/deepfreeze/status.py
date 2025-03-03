@@ -185,6 +185,7 @@ class Status:
         table = Table(title="Repositories")
         table.add_column("Repository", style="cyan")
         table.add_column("Status", style="magenta")
+        table.add_column("Snapshots", style="magenta")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
         unmounted_repos = get_unmounted_repos(self.client)
@@ -195,7 +196,9 @@ class Status:
                 status = "M"
             if repo.is_thawed:
                 status = "T"
-            table.add_row(repo.name, status, repo.start, repo.end)
+            snapshots = self.client.snapshot.get(repository=repo, snapshot="_all")
+            count = len(snapshots.get("snapshots", []))
+            table.add_row(repo.name, status, str(count), repo.start, repo.end)
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.loggit.warning("No status index found")
             return
@@ -203,10 +206,12 @@ class Status:
         repolist = get_matching_repo_names(self.client, self.settings.repo_name_prefix)
         repolist.sort()
         for repo in repolist:
+            snapshots = self.client.snapshot.get(repository=repo, snapshot="_all")
+            count = len(snapshots.get("snapshots", []))
             if repo == active_repo:
-                table.add_row(repo, "M*")
+                table.add_row(repo, "M*", str(count))
             else:
-                table.add_row(repo, "M")
+                table.add_row(repo, "M", str(count))
         self.console.print(table)
 
     def do_singleton_action(self) -> None:
