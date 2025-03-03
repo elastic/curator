@@ -770,7 +770,7 @@ def warn_if_no_indices():
     }
 
 
-def create_sampel_ilm_polcy():
+def create_sample_ilm_policy():
     """
     Setting to allow creating a sample ILM policy
     """
