@@ -355,11 +355,11 @@ def create_repo(
     except Exception as e:
         loggit.error(e)
         raise ActionError(e)
+    # Get and save a repository object for this repo
+    repository = get_repository(client, repo_name)
+    client.index(index=STATUS_INDEX, document=repository.to_dict())
     #
     # TODO: Gather the reply and parse it to make sure this succeeded
-    #       It should simply bring back '{ "acknowledged": true }' but I
-    #       don't know how client will wrap it.
-    loggit.info("Response: %s", response)
 
 
 def get_next_suffix(style: str, last_suffix: str, year: int, month: int) -> str:
@@ -410,7 +410,7 @@ def get_repository(client: Elasticsearch, name: str) -> Repository:
         return Repository(**doc["_source"])
     except NotFoundError:
         loggit.warning("Repository document not found")
-        return None
+        return Repository(name=name)
 
 
 def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
@@ -479,7 +479,10 @@ def get_matching_repos(
     response = client.search(index=STATUS_INDEX, body=query)
     repos = response["hits"]["hits"]
     logging.debug("Repos retrieved: %s", repos)
-    repos = [repo for repo in repos if repo["name"].startswith(repo_name_prefix)]
+    print(f"Repos retrieved: {repos}")
+    repos = [
+        repo for repo in repos if repo["_source"]["name"].startswith(repo_name_prefix)
+    ]
     # return a Repository object for each
     return [Repository(**repo["_source"]) for repo in repos]
 
