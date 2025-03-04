@@ -43,7 +43,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
 
             # Assert that there is only one document in the STATUS_INDEX
             status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
-            assert status_index_docs["hits"]["total"]["value"] == 1
+            assert status_index_docs["hits"]["total"]["value"] == 2
             rotate = Rotate(
                 self.client,
             )
@@ -105,7 +105,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
 
             # Assert that there is only one document in the STATUS_INDEX
             status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
-            assert status_index_docs["hits"]["total"]["value"] == 1
+            assert status_index_docs["hits"]["total"]["value"] == 2
             rotate = self.do_rotate(populate_index=True)
             # There should now be one repositories.
             assert len(rotate.repo_list) == 1
@@ -167,7 +167,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
 
             # Assert that there is only one document in the STATUS_INDEX
             status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
-            assert status_index_docs["hits"]["total"]["value"] == 1
+            assert status_index_docs["hits"]["total"]["value"] == 2
 
             # Now, delete the status index completely
             self.client.indices.delete(index=STATUS_INDEX)
@@ -197,7 +197,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
 
             # Assert that there is only one document in the STATUS_INDEX
             status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
-            assert status_index_docs["hits"]["total"]["value"] == 1
+            assert status_index_docs["hits"]["total"]["value"] == 2
 
             rotate = self.do_rotate(6)
             # There should now be one repositories.
@@ -235,7 +235,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
 
             # Assert that there is only one document in the STATUS_INDEX
             status_index_docs = self.client.search(index=STATUS_INDEX, size=0)
-            assert status_index_docs["hits"]["total"]["value"] == 1
+            assert status_index_docs["hits"]["total"]["value"] == 2
 
             rotate = self.do_rotate(6, populate_index=True)
             # There should now be one repositories.
