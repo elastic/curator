@@ -311,9 +311,6 @@ class Rotate:
         ensure_settings_index(self.client)
         self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)
-        # Go through mounted repos and make sure the date ranges are up-to-date
-        # FIXME: This doesn't seem to be working correctly!
-        self.update_repo_date_range()
         # Create the new bucket and repo, but only if rotate_by is bucket
         if self.settings.rotate_by == "bucket":
             self.s3.create_bucket(self.new_bucket_name)
@@ -325,5 +322,8 @@ class Rotate:
             self.settings.canned_acl,
             self.settings.storage_class,
         )
+        # Go through mounted repos and make sure the date ranges are up-to-date
+        # FIXME: This doesn't seem to be working correctly!
+        self.update_repo_date_range()
         self.update_ilm_policies()
         self.unmount_oldest_repos()
