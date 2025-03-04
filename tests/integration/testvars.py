@@ -1034,6 +1034,26 @@ ilm_delete_proto = (
     '        epoch: {8}\n'
 )
 df_ilm_policy = "df-test-ilm-policy"
+df_ilm_body = {
+    "policy": {
+        "phases": {
+            "hot": {
+                "min_age": "0s",
+                "actions": {"rollover": {"max_size": "45gb", "max_age": "7s"}},
+            },
+            "frozen": {
+                "min_age": "7s",
+                "actions": {
+                    "searchable_snapshot": {"snapshot_repository": "SNAPSHOT_REPO"}
+                },
+            },
+            "delete": {
+                "min_age": "30s",
+                "actions": {"delete": {"delete_searchable_snapshot": False}},
+            },
+        }
+    }
+}
 df_bucket_name = "df"
 df_bucket_name_2 = "df-test"
 df_repo_name = "df-test-repo"
