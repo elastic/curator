@@ -72,6 +72,12 @@ from curator.cli_singletons.utils import validate_filter_json
     show_default=True,
 )
 @click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--filter_list',
     callback=validate_filter_json,
     help='JSON array of filters selecting indices to act on.',
@@ -92,6 +98,7 @@ def snapshot(
     max_wait,
     ignore_empty_list,
     allow_ilm_indices,
+    include_hidden,
     filter_list,
 ):
     """
@@ -109,6 +116,7 @@ def snapshot(
         'max_wait': max_wait,
         'wait_interval': wait_interval,
         'allow_ilm_indices': allow_ilm_indices,
+        'include_hidden': include_hidden,
     }
     # ctx.info_name is the name of the function or name specified in
     # @click.command decorator

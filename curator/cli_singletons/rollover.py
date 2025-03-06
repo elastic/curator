@@ -38,6 +38,12 @@ from curator.cli_singletons.utils import json_to_dict
     default=False,
     show_default=True,
 )
+@click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
 @click.pass_context
 def rollover(
     ctx,
@@ -49,6 +55,7 @@ def rollover(
     new_index,
     wait_for_active_shards,
     allow_ilm_indices,
+    include_hidden,
 ):
     """
     Rollover Index associated with Alias
@@ -64,6 +71,7 @@ def rollover(
         'name': name,
         'conditions': conditions,
         'allow_ilm_indices': allow_ilm_indices,
+        'include_hidden': include_hidden,
     }
     # ctx.info_name is the name of the function or name specified in
     # @click.command decorator
