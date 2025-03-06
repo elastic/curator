@@ -100,6 +100,7 @@ class CLIAction:
             self.options = option_dict
 
         self.search_pattern = self.options.pop('search_pattern', '*')
+        self.include_hidden = self.options.pop('include_hidden', False)
 
         # Extract allow_ilm_indices so it can be handled separately.
         if 'allow_ilm_indices' in self.options:
@@ -214,7 +215,9 @@ class CLIAction:
             self.list_object = SnapshotList(self.client, repository=self.repository)
         else:
             self.list_object = IndexList(
-                self.client, search_pattern=self.search_pattern
+                self.client,
+                search_pattern=self.search_pattern,
+                include_hidden=self.include_hidden,
             )
 
     def get_alias_obj(self):
@@ -230,7 +233,9 @@ class CLIAction:
                 )
                 self.logger.debug(msg)
                 self.alias[k]['ilo'] = IndexList(
-                    self.client, search_pattern=self.search_pattern
+                    self.client,
+                    search_pattern=self.search_pattern,
+                    include_hidden=self.include_hidden,
                 )
                 self.alias[k]['ilo'].iterate_filters(
                     {'filters': self.alias[k]['filters']}

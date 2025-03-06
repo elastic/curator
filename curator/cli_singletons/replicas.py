@@ -28,6 +28,12 @@ from curator.cli_singletons.utils import validate_filter_json
     show_default=True,
 )
 @click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--filter_list',
     callback=validate_filter_json,
     help='JSON array of filters selecting indices to act on.',
@@ -41,6 +47,7 @@ def replicas(
     wait_for_completion,
     ignore_empty_list,
     allow_ilm_indices,
+    include_hidden,
     filter_list,
 ):
     """
@@ -51,6 +58,7 @@ def replicas(
         'count': count,
         'wait_for_completion': wait_for_completion,
         'allow_ilm_indices': allow_ilm_indices,
+        'include_hidden': include_hidden,
     }
     # ctx.info_name is the name of the function or name specified in
     # @click.command decorator

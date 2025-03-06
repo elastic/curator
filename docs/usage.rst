@@ -7,7 +7,7 @@ Compatibility
 =============
 
 Elasticsearch Curator version 8 is compatible with Elasticsearch version 8.x, and supports Python
-versions 3.8, 3.9, 3.10, and 3.11 officially.
+versions 3.8, 3.9, 3.10, 3.11, and 3.12 officially.
 
 Installation
 ============
@@ -33,7 +33,7 @@ Example API Usage
 
     client = elasticsearch8.Elasticsearch()
 
-    ilo = curator.IndexList(client)
+    ilo = curator.IndexList(client, search_pattern='logstash-*', include_hidden=False)
     ilo.filter_by_regex(kind='prefix', value='logstash-')
     ilo.filter_by_age(source='name', direction='older', timestring='%Y.%m.%d', unit='days', unit_count=30)
     delete_indices = curator.DeleteIndices(ilo)
@@ -97,4 +97,4 @@ Blacklisting logs by way of the ``blacklist`` setting should remain configured w
 Curator action tracing.
 
 .. _the Python ECS Log Formatter: https://www.elastic.co/guide/en/ecs-logging/python/current/index.html
-.. _logging library: http://docs.python.org/3.11/library/logging.html
+.. _logging library: http://docs.python.org/3.12/library/logging.html

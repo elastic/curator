@@ -3,6 +3,57 @@
 Changelog
 =========
 
+(8.0.19) (5 March 2025)
+-----------------------
+
+**Announcement**
+
+The ability to include hidden indices is now available in Curator. This is now
+an option you can include in the ``options`` section of your configuration file.
+
+.. code-block:: yaml
+
+    options:
+      include_hidden: True
+
+This will allow Curator to include hidden indices in its actions. This will not
+suddenly reveal system indices, but it will allow you to include indices that
+are hidden, such as indices backing certain data_streams.
+
+This is also an option flag for the CLI Singletons, e.g. ``--include-hidden``,
+with the default value being the equivalent of ``--no-include_hidden``.
+
+There's an odd caveat to this, however, and it is probaby a bug in Elasticsearch.
+If you have an index that starts with a dot, e.g. ``.my_index``, and you set your
+multi-target search pattern to also start with a dot, e.g. ``.my_*``, and you
+set the index settings for ``.my_index`` to be ``hidden: true``, the index will
+not be excluded from the search results when the ``expand_wildcards`` parameter
+is set to include hidden indices, e.g. ``open,closed,hidden``.
+
+This is a bug in Elasticsearch, and not in Curator. I've reported it to the
+Elasticsearch team at https://github.com/elastic/elasticsearch/issues/124167,
+but I'm not sure when it will be addressed. In the meantime, if you need to
+guarantee hidden indices stay excluded, use ``search_pattern`` and filters
+to exclude anything that needs to stay excluded.
+
+All tests pass on versions 7.17.25 and 8.17.2 of Elasticsearch.
+
+
+**Changes**
+
+  * Updated ``tests/integration/test_integrations.py::TestFilters`` to have a
+    ``filter_closed`` test to ensure functionality is working as expected. This
+    test was added because of #1733, which is technically about Curator v7.0.1,
+    but since the release of Curator 8.0.18, which supports the version of
+    Elasticsearch being used in that issue, a confirmation integration test was
+    added here.
+  * PEP8 formatting changes to ``tests/integration/testvars.py`` as well as adding
+    the ``filter_closed`` YAML sample.
+  * Updated ``docs/conf.py`` to reflect the modules being used.
+  * Add support to include hidden indices. This is done by adding ``hidden`` to
+    the ``expand_wildcards`` keyword arg, which will make it ``open,closed,hidden``.
+  
+
 8.0.18 (27 February 2025)
 -------------------------
 
