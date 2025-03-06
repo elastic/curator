@@ -177,6 +177,7 @@ def get_schema(action):
         option_defaults.continue_if_exception(),
         option_defaults.disable_action(),
         option_defaults.ignore_empty_list(),
+        option_defaults.include_hidden(),
         option_defaults.timeout_override(action),
     ]
     for each in defaults:

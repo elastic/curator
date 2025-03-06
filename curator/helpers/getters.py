@@ -101,24 +101,37 @@ def get_data_tiers(client):
     return retval
 
 
-def get_indices(client, search_pattern='*'):
+def get_indices(client, search_pattern='*', include_hidden=False):
     """
     Calls :py:meth:`~.elasticsearch.client.CatClient.indices`
 
-    :param client: A client connection object
-    :type client: :py:class:`~.elasticsearch.Elasticsearch`
+    Will use the provided ``search_pattern`` to get a list of indices from the
+    cluster. If ``include_hidden`` is ``True``, it will include hidden indices
+    in 'expand_wildcards'.
 
-    :returns: The current list of indices from the cluster
+    :param
+        client: A client connection object
+        search_pattern: The index search pattern to use
+        include_hidden: Include hidden indices in the list
+    :type
+        client: :py:class:`~.elasticsearch.Elasticsearch`
+        search_pattern: str
+        include_hidden: bool
+
+
+    :returns: The matching list of indices from the cluster
     :rtype: list
     """
     logger = logging.getLogger(__name__)
     indices = []
+    expand = 'open,closed,hidden' if include_hidden else 'open,closed'
+    logger.debug('expand = %s', expand)
     try:
         # Doing this in two stages because IndexList also calls for these args,
         # and the unit tests need to Mock this call the same exact way.
         resp = client.cat.indices(
             index=search_pattern + ',' + EXCLUDE_SYSTEM,
-            expand_wildcards='open,closed',
+            expand_wildcards=expand,
             h='index,status',
             format='json',
         )

@@ -31,7 +31,7 @@ from curator.validators.filter_functions import filterstructure
 class IndexList:
     """IndexList class"""
 
-    def __init__(self, client, search_pattern='*'):
+    def __init__(self, client, search_pattern='*', include_hidden=False):
         verify_client_object(client)
         self.loggit = logging.getLogger('curator.indexlist')
         #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from
@@ -48,7 +48,7 @@ class IndexList:
         #: All indices in the cluster at instance creation time.
         #: **Type:** :py:class:`list`
         self.all_indices = []
-        self.__get_indices(search_pattern)
+        self.__get_indices(search_pattern, include_hidden)
         self.age_keyfield = None
 
     def __actionable(self, idx):
@@ -76,13 +76,15 @@ class IndexList:
         if msg:
             self.loggit.debug('%s: %s', text, msg)
 
-    def __get_indices(self, pattern):
+    def __get_indices(self, pattern, include_hidden):
         """
         Pull all indices into ``all_indices``, then populate ``indices`` and
         ``index_info``
         """
         self.loggit.debug('Getting indices matching search_pattern: "%s"', pattern)
-        self.all_indices = get_indices(self.client, search_pattern=pattern)
+        self.all_indices = get_indices(
+            self.client, search_pattern=pattern, include_hidden=include_hidden
+        )
         self.indices = self.all_indices[:]
         # if self.indices:
         #     for index in self.indices:

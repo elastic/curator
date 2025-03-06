@@ -21,6 +21,12 @@ from curator.cli_singletons.utils import validate_filter_json
     show_default=True,
 )
 @click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--filter_list',
     callback=validate_filter_json,
     help='JSON array of filters selecting indices to act on.',
@@ -28,7 +34,12 @@ from curator.cli_singletons.utils import validate_filter_json
 )
 @click.pass_context
 def open_indices(
-    ctx, search_pattern, ignore_empty_list, allow_ilm_indices, filter_list
+    ctx,
+    search_pattern,
+    ignore_empty_list,
+    allow_ilm_indices,
+    include_hidden,
+    filter_list,
 ):
     """
     Open Indices
@@ -38,7 +49,11 @@ def open_indices(
     action = CLIAction(
         ctx.info_name,
         ctx.obj['configdict'],
-        {'search_pattern': search_pattern, 'allow_ilm_indices': allow_ilm_indices},
+        {
+            'search_pattern': search_pattern,
+            'allow_ilm_indices': allow_ilm_indices,
+            'include_hidden': include_hidden,
+        },
         filter_list,
         ignore_empty_list,
     )

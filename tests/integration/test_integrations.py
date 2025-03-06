@@ -4,7 +4,8 @@
 import os
 import warnings
 import pytest
-from elasticsearch8.exceptions import ElasticsearchWarning
+from elasticsearch8 import Elasticsearch
+from elasticsearch8.exceptions import ElasticsearchWarning, NotFoundError
 from curator.exceptions import ConfigurationError
 from curator.helpers.getters import get_indices
 from curator import IndexList
@@ -215,3 +216,77 @@ class TestIndexList(CuratorTestCase):
         ilo2 = IndexList(self.client, search_pattern=pattern)
         assert ilo1.indices == [self.IDX1, self.IDX2, self.IDX3]
         assert ilo2.indices == [self.IDX1, self.IDX2]
+
+
+def cleanup(client, idx):
+    """Cleanup indices"""
+    try:
+        client.indices.delete(index=idx)
+    except NotFoundError:
+        pass
+
+
+@pytest.mark.parametrize(
+    'idx, pattern, hidden, response',
+    [
+        ('my_index', 'my_*', True, ['my_index']),
+        ('my_index', 'my_*', False, []),
+        ('my_index', '*_index', True, ['my_index']),
+        ('my_index', '*_index', False, []),
+        ('.my_index', '.my_*', True, ['.my_index']),
+        # ('.my_index', '.my_*', False, []),  # This is a weird behavior or a bug.
+        # Check in test__bug__include_hidden_dot_prefix_index
+        ('.my_index', '*_index', True, ['.my_index']),
+        ('.my_index', '*_index', False, []),
+    ],
+)
+def test_include_hidden_index(idx, pattern, hidden, response):
+    """Test that a hidden index is included when include_hidden is True"""
+    host = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
+    client = Elasticsearch(hosts=host, request_timeout=300)
+    warnings.filterwarnings("ignore", category=ElasticsearchWarning)
+    cleanup(client, idx)
+    client.indices.create(index=idx)
+    client.indices.put_settings(index=idx, body={'index': {'hidden': True}})
+    ilo = IndexList(client, search_pattern=pattern, include_hidden=hidden)
+    assert ilo.indices == response
+    # Manual teardown because hidden indices are not returned by get_indices
+    del ilo
+    cleanup(client, idx)
+
+
+@pytest.mark.parametrize(
+    'idx, pattern, hidden, response',
+    [
+        ('.my_index', '.my_*', False, ['.my_index']),
+        ('.your_index', '.your_*', False, ['.your_index']),
+    ],
+)
+def test__bug__include_hidden_dot_prefix_index(idx, pattern, hidden, response):
+    """
+    Test that a hidden index is included when include_hidden is True when the
+    multi-target search pattern starts with a leading dot and includes a wildcard,
+    e.g. '.my_*' or '.your_*'
+
+    This is a bug, and the test is to confirm that behavior until it's fixed.
+
+    https://github.com/elastic/elasticsearch/issues/124167
+    """
+    host = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
+    client = Elasticsearch(hosts=host, request_timeout=300)
+    warnings.filterwarnings("ignore", category=ElasticsearchWarning)
+    cleanup(client, idx)
+    client.indices.create(index=idx)
+    client.indices.put_settings(index=idx, body={'index': {'hidden': True}})
+    hidden_test = client.indices.get_settings(
+        index=idx, filter_path=f'\\{idx}.settings.index.hidden', expand_wildcards='all'
+    )
+    # We're confirming that our index that starts with a leading dot is hidden
+    assert hidden_test[idx]['settings']['index']['hidden'] == 'true'
+    ilo = IndexList(client, search_pattern=pattern, include_hidden=hidden)
+    # And now we assert that the index is still included in the list
+    # WHICH SHOULD NOT HAPPEN -- THIS IS A BUG
+    assert ilo.indices == response
+    # Manual teardown because hidden indices are not returned by get_indices
+    del ilo
+    cleanup(client, idx)
