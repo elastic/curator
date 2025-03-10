@@ -7,6 +7,8 @@ cross_links:
 toc:
   - toc: reference
 subs:
+  curator_version: 8.0.18
+  curator_major: 8
   ref:   "https://www.elastic.co/guide/en/elasticsearch/reference/current"
   ref-bare:   "https://www.elastic.co/guide/en/elasticsearch/reference"
   ref-8x:   "https://www.elastic.co/guide/en/elasticsearch/reference/8.1"
