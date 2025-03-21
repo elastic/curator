@@ -31,7 +31,7 @@ Contents
 License
 =======
 
-Copyright (c) 2011–2023 Elasticsearch <http://www.elastic.co>
+Copyright (c) 2011–2025 Elasticsearch <http://www.elastic.co>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

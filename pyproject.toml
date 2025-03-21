@@ -29,7 +29,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.17.3"
+    "es_client==8.17.4"
 ]
 
 [project.optional-dependencies]
@@ -137,5 +137,16 @@ testpaths = [
 ]
 
 [tool.distutils.build_exe]
+excludes = ["tcltk", "tkinter", "unittest"]
+zip_include_packages = ["certifi"]
+
+[tool.cxfreeze]
+executables = [
+    {script="run_curator.py", target_name="curator"},
+    {script="run_singleton.py", target_name="curator_cli"},
+    {script="run_es_repo_mgr.py", target_name="es_repo_mgr"},
+]
+
+[tool.cxfreeze.build_exe]
 excludes = ["tcltk", "tkinter", "unittest"]
 zip_include_packages = ["certifi"]

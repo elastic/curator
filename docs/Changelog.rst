@@ -3,8 +3,30 @@
 Changelog
 =========
 
-(? ? ?) (?? ???? ????)
-----------------------
+(8.0.20) (21 March 2025)
+------------------------
+
+**Patch Release**
+
+There are no code changes in this release.
+
+A package maintainer at Debian raised an issue with the now
+outdated ``cx_Freeze`` dependency in ``setup.py``. As ``cx_Freeze`` is now only
+used in the Docker build, ``setup.py`` has been removed to avoid the unneeded
+dependency. Docker and package builds were tested to ensure that the changes work
+as expected before this release.
+
+**Changes**
+
+  * Move ``cx_Freeze`` configuration from ``setup.py`` to ``pyproject.toml``.
+    The configuration will be read during the Docker image build but not otherwise
+    result in ``cx_Freeze`` being a dependency.
+  * Change how ``cx_Freeze`` is invoked in ``Dockerfile``, removing the need for
+    ``setup.py``.
+  * Remove ``setup.py`` as it is no longer needed for package building.
+  * Use ``es_client==8.17.4`` which fixes a logging issue.
+  * Fix copyright dates in ``docs/index.rst``
+  * Update asciidoc files to reflect the new version numbers.
 
 
 (8.0.19) (5 March 2025)
