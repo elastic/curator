@@ -172,7 +172,7 @@ def process_action(client, action_def, dry_run=False):
                 'list_obj', client, search_pattern=ptrn, include_hidden=hidn
             )
         action_def.list_obj.iterate_filters({'filters': action_def.filters})
-        logger.debug('Pre Instantiation Action kwargs: %s', mykwargs)
+        logger.debug(f'Pre Instantiation Action kwargs: {mykwargs}')
         action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
     # Do the action
     if dry_run:
