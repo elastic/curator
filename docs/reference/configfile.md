@@ -49,7 +49,7 @@ logging:
 
 It is a YAML configuration file.  The two root keys must be `elasticsearch` and `logging`.  The subkeys of each of these will be described here.
 
-There are other keys available for the `client` subkey of the `elasticsearch` root key, many of which are listed [here](https://es-client.readthedocs.io/en/latest/defaults.md). The most commonly used ones (listed above) are described as follows:
+There are other keys available for the `client` subkey of the `elasticsearch` root key, many of which are listed [here](https://es-client.readthedocs.io/en/latest/defaults.html). The most commonly used ones (listed above) are described as follows:
 
 ## hosts [hosts]
 
