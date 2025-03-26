@@ -36,9 +36,22 @@ from curator.cli_singletons.utils import json_to_dict, validate_filter_json
     default=False,
     show_default=True,
 )
+@click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
 @click.pass_context
 def alias(
-    ctx, name, add, remove, warn_if_no_indices, extra_settings, allow_ilm_indices
+    ctx,
+    name,
+    add,
+    remove,
+    warn_if_no_indices,
+    extra_settings,
+    allow_ilm_indices,
+    include_hidden,
 ):
     """
     Add/Remove Indices to/from Alias
@@ -48,6 +61,7 @@ def alias(
         'name': name,
         'extra_settings': extra_settings,
         'allow_ilm_indices': allow_ilm_indices,
+        'include_hidden': include_hidden,
     }
     logger.debug('manual_options %s', manual_options)
     # ctx.info_name is the name of the function or name specified in

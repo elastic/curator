@@ -23,7 +23,7 @@ RUN /bin/sh alpine4docker.sh
 RUN pip3 install .
 
 # Build (or rather Freeze) Curator
-RUN python3 setup.py build_exe
+RUN cxfreeze build
 
 # Rename 'build/exe.{system().lower()}-{machine()}-{MAJOR}.{MINOR}' to curator_build
 RUN python3 post4docker.py

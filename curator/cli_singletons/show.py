@@ -37,6 +37,12 @@ from curator._version import __version__
     show_default=True,
 )
 @click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--filter_list',
     callback=validate_filter_json,
     default='{"filtertype":"none"}',
@@ -51,6 +57,7 @@ def show_indices(
     epoch,
     ignore_empty_list,
     allow_ilm_indices,
+    include_hidden,
     filter_list,
 ):
     """
@@ -61,7 +68,11 @@ def show_indices(
     action = CLIAction(
         'show_indices',
         ctx.obj['configdict'],
-        {'search_pattern': search_pattern, 'allow_ilm_indices': allow_ilm_indices},
+        {
+            'search_pattern': search_pattern,
+            'allow_ilm_indices': allow_ilm_indices,
+            'include_hidden': include_hidden,
+        },
         filter_list,
         ignore_empty_list,
     )
