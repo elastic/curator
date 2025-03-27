@@ -59,7 +59,7 @@ Read more about Filebeat and ILM {fbref}/ilm.html[here].
 NOTE: The Index Lifecycle Management feature requires version 9.3.1 or higher of the
 `logstash-output-elasticsearch` plugin.
 
-Logstash can use [Index Lifecycle Management]docs-content://index-lifecycle-management/index-lifecycle.md 
+Logstash can use [Index Lifecycle Management](docs-content://manage-data/lifecycle/index-lifecycle-management/index-lifecycle.md)
 to automate the management of indices over time.
 
 The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By
