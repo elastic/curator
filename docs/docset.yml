@@ -3,7 +3,7 @@ cross_links:
   - beats
   - docs-content
   - elasticsearch
-  - logstash
+  - logstash-docs-md
 toc:
   - toc: reference
 subs:
