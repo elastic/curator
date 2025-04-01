@@ -1,5 +1,6 @@
 """Object builder"""
 
+# pylint: disable=W0718,R0902,R0912,R0913,R0914,R0917
 import logging
 import sys
 from voluptuous import Schema
@@ -261,10 +262,15 @@ class CLIAction:
                 action_obj.do_dry_run()
             else:
                 action_obj.do_action()
-        # pylint: disable=broad-except
+        except NoIndices:  # Speficically to address #1704
+            if not self.ignore:
+                self.logger.critical('No indices in list after filtering. Exiting.')
+                sys.exit(1)
+            self.logger.info('No indices in list after filtering. Skipping action.')
         except Exception as exc:
             self.logger.critical(
-                'Failed to complete action: %s.  %s: %s', self.action, type(exc), exc
+                'Failed to complete action: %s. Exception: %s', self.action, exc
             )
             sys.exit(1)
         self.logger.info('"%s" action completed.', self.action)
+        sys.exit(0)

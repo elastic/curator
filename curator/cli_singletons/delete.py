@@ -1,10 +1,9 @@
 """Delete Index and Delete Snapshot Singletons"""
 
+# pylint: disable=R0913,R0917
 import click
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
-
-# pylint: disable=R0913
 
 
 # Indices

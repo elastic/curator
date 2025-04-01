@@ -1,5 +1,6 @@
 """Alias Singleton"""
 
+# pylint: disable=R0913,R0917
 import logging
 import click
 from curator.cli_singletons.object_class import CLIAction

@@ -3,8 +3,24 @@
 Changelog
 =========
 
-(8.0.20) (21 March 2025)
-------------------------
+8.0.21 (1 April 2025)
+---------------------
+
+**Bugfix Release**
+
+As was reported in #1704, the ``--ignore_empty_list`` option was not being respected.
+Code changes were made to each singleton that uses the ``--ignore_empty_list`` option
+to ensure that the option is respected.
+
+**Changes**
+
+  * Fix ``--ignore_empty_list`` option to be respected in all singletons.
+  * Add debug message to IndexList class when an empty list condition is encountered.
+  * Dependency version bump: ``es_client`` to ``8.17.5``
+
+
+8.0.20 (21 March 2025)
+----------------------
 
 **Patch Release**
 
@@ -29,8 +45,8 @@ as expected before this release.
   * Update asciidoc files to reflect the new version numbers.
 
 
-(8.0.19) (5 March 2025)
------------------------
+8.0.19 (5 March 2025)
+---------------------
 
 **Announcement**
 
