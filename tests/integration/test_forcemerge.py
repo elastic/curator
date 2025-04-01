@@ -46,36 +46,85 @@ class TestActionFileforceMerge(CuratorTestCase):
 
 
 class TestCLIforceMerge(CuratorTestCase):
-    def test_merge(self):
-        count = 1
-        idx = 'my_index'
-        self.create_index(idx)
-        self.add_docs(idx)
-        ilo1 = IndexList(self.client)
-        ilo1.get_segment_counts()
-        assert 3 == ilo1.index_info[idx]['segments']
-        args = self.get_runner_args()
-        args += [
+    COUNT = 1
+    IDX = 'my_index'
+    ILO = None
+    CLI_ARGS = None
+
+    def setup(self):
+        self.COUNT = 1
+        self.IDX = 'my_index'
+        self.create_index(self.IDX)
+        self.add_docs(self.IDX)
+        self.ILO = IndexList(self.client)
+        self.ILO.get_segment_counts()
+        assert 3 == self.ILO.index_info[self.IDX]['segments']
+        self.CLI_ARGS = self.get_runner_args()
+        self.CLI_ARGS += [
             '--config',
             self.args['configfile'],
             'forcemerge',
             '--max_num_segments',
-            str(count),
+            str(self.COUNT),
             '--delay',
             '0.9',
             '--filter_list',
             '{"filtertype":"pattern","kind":"prefix","value":"my"}',
         ]
-        assert 0 == self.run_subprocess(args, logname='TestCLIforceMerge.test_merge')
-        ilo2 = IndexList(self.client)
+
+    def wait_for_merge(self):
         # This stupid block is only for the benefit of testing
         # It apparently can finish testing before the segments have _reported_
         # as fully merged.
         # This is forcing 3 checks before giving up and reporting the result.
         for _ in range(0, 3):
-            self.client.indices.refresh(index=idx)
-            ilo2.get_segment_counts()
-            if ilo2.index_info[idx]['segments'] == count:
+            self.client.indices.refresh(index=self.IDX)
+            self.ILO.get_segment_counts()
+            if self.ILO.index_info[self.IDX]['segments'] == self.COUNT:
                 break
             sleep(1)
-        assert count == ilo2.index_info[idx]['segments']
+
+    def test_merge(self):
+        self.setup()
+        assert 0 == self.run_subprocess(
+            self.CLI_ARGS, logname='TestCLIforceMerge.test_merge'
+        )
+        self.wait_for_merge()
+        assert self.COUNT == self.ILO.index_info[self.IDX]['segments']
+        self.ILO = None
+        self.CLI_ARGS = None
+
+    def test_empty_list1(self):
+        """Test with an empty list and ignore_empty_list unset"""
+        self.setup()
+        self.client.indices.forcemerge(index=self.IDX, max_num_segments=1)
+        self.wait_for_merge()
+        assert 1 == self.run_subprocess(
+            self.CLI_ARGS, logname='TestCLIforceMerge.test_empty_list1'
+        )
+        self.ILO = None
+        self.CLI_ARGS = None
+
+    def test_empty_list2(self):
+        """Test with an empty list and ignore_empty_list = True"""
+        self.setup()
+        self.client.indices.forcemerge(index=self.IDX, max_num_segments=1)
+        self.wait_for_merge()
+        self.CLI_ARGS = self.get_runner_args()
+        self.CLI_ARGS += [
+            '--config',
+            self.args['configfile'],
+            'forcemerge',
+            '--max_num_segments',
+            str(self.COUNT),
+            '--delay',
+            '0.9',
+            '--ignore_empty_list',
+            '--filter_list',
+            '{"filtertype":"pattern","kind":"prefix","value":"my"}',
+        ]
+        assert 0 == self.run_subprocess(
+            self.CLI_ARGS, logname='TestCLIforceMerge.test_empty_list2'
+        )
+        self.ILO = None
+        self.CLI_ARGS = None

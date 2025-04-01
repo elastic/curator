@@ -18,4 +18,4 @@ Curator is now major version locked with Elasticsearch, which means that if Cura
 
 ### Current release [current_release]
 
-The current version of Curator v8 is 8.0.17.
+The current version of Curator {{curator_major}} is {{curator_version}}.
