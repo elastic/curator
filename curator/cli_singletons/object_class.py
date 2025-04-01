@@ -262,7 +262,11 @@ class CLIAction:
                 action_obj.do_dry_run()
             else:
                 action_obj.do_action()
-
+        except NoIndices:  # Speficically to address #1704
+            if not self.ignore:
+                self.logger.critical('No indices in list after filtering. Exiting.')
+                sys.exit(1)
+            self.logger.info('No indices in list after filtering. Skipping action.')
         except Exception as exc:
             self.logger.critical(
                 'Failed to complete action: %s. Exception: %s', self.action, exc
