@@ -1,6 +1,7 @@
 """Index Rollover Singleton"""
 
 import click
+from curator.exceptions import NoIndices
 from es_client.helpers.utils import prune_nones
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import json_to_dict
@@ -85,4 +86,7 @@ def rollover(
         new_index=new_index,
         wait_for_active_shards=wait_for_active_shards,
     )
-    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    try:
+        action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    except NoIndices:  # Speficically to address #1704
+        action.logger.info('No indices in list after filtering. Skipping action.')

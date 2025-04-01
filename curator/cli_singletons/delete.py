@@ -1,10 +1,10 @@
 """Delete Index and Delete Snapshot Singletons"""
 
+# pylint: disable=R0913,R0917
 import click
+from curator.exceptions import NoIndices
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
-
-# pylint: disable=R0913
 
 
 # Indices
@@ -109,4 +109,8 @@ def delete_snapshots(
         ignore_empty_list,
         repository=repository,
     )
-    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+
+    try:
+        action.do_singleton_action(dry_run=ctx.obj['dry_run'])
+    except NoIndices:  # Speficically to address #1704
+        action.logger.info('No indices in list after filtering. Skipping action.')
