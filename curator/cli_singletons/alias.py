@@ -3,7 +3,6 @@
 # pylint: disable=R0913,R0917
 import logging
 import click
-from curator.exceptions import NoIndices
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import json_to_dict, validate_filter_json
 
@@ -79,7 +78,4 @@ def alias(
         remove=remove,
         warn_if_no_indices=warn_if_no_indices,  # alias specific kwargs
     )
-    try:
-        action.do_singleton_action(dry_run=ctx.obj['dry_run'])
-    except NoIndices:  # Speficically to address #1704
-        action.logger.info('No indices in list after filtering. Skipping action.')
+    action.do_singleton_action(dry_run=ctx.obj['dry_run'])
