@@ -1,5 +1,6 @@
 """Index List Class"""
 
+# pylint: disable=R0904,R0913,R0917
 import re
 import itertools
 import logging
@@ -449,7 +450,9 @@ class IndexList:
         """Raise :py:exc:`~.curator.exceptions.NoIndices` if ``indices`` is empty"""
         self.loggit.debug('Checking for empty list')
         if not self.indices:
-            raise NoIndices('index_list object is empty.')
+            msg = 'IndexList object is empty. No indices to act on.'
+            self.loggit.debug(msg)
+            raise NoIndices(msg)
 
     def working_list(self):
         """

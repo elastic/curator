@@ -1,9 +1,10 @@
 name: docs-build
 
 on:
+  workflow_dispatch: ~
   push:
     branches:
-      - main
+      - master
   pull_request_target: ~
   merge_group: ~
 

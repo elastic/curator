@@ -32,6 +32,6 @@ Logstash can use [index lifecycle management](docs-content://manage-data/lifecyc
 
 The use of Index Lifecycle Management is controlled by the `ilm_enabled` setting. By default, this will automatically detect whether the Elasticsearch instance supports ILM, and will use it if it is available. `ilm_enabled` can also be set to `true` or `false` to override the automatic detection, or disable ILM.
 
-Read more about Logstash and ILM in [](logstash://reference/plugins-outputs-elasticsearch.md#plugins-outputs-elasticsearch-ilm).
+Read more about Logstash and ILM in [](logstash-docs-md://lsr/plugins-outputs-elasticsearch.md#plugins-outputs-elasticsearch-ilm).
 
 
