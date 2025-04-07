@@ -3,7 +3,6 @@
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
 import logging
-from dataclasses import dataclass
 
 from elasticsearch8 import Elasticsearch
 
@@ -185,7 +184,7 @@ class Setup:
             }
             self.loggit.info("Creating ILM policy %s", policy_name)
             self.loggit.debug("ILM policy body: %s", policy_body)
-            response = create_ilm_policy(
+            create_ilm_policy(
                 client=self.client, policy_name=policy_name, policy_body=policy_body
             )
         self.loggit.info(
