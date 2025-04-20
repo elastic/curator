@@ -1,6 +1,12 @@
 """Deepfreeze actions module"""
 
 from .constants import PROVIDERS, SETTINGS_ID, STATUS_INDEX
+from .exceptions import (
+    ActionException,
+    DeepfreezeException,
+    MissingIndexError,
+    MissingSettingsError,
+)
 from .helpers import Deepfreeze, Repository, Settings, ThawedRepo, ThawSet
 from .refreeze import Refreeze
 from .remount import Remount

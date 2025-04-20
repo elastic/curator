@@ -9,7 +9,6 @@ from datetime import datetime, time
 from elasticsearch8 import Elasticsearch, NotFoundError
 
 from curator.actions import CreateIndex
-from curator.actions.deepfreeze import Repository
 from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.exceptions import ActionError
 from curator.s3client import S3Client
@@ -88,7 +87,7 @@ def check_restore_status(s3: S3Client, repo: Repository) -> bool:
                     f"Object {obj['Key']} is not in the restoration process."
                 )
 
-        except Exception as e:
+        except Exception:
             return None
     return True
 
@@ -340,7 +339,7 @@ def create_repo(
     if dry_run:
         return
     try:
-        response = client.snapshot.create_repository(
+        client.snapshot.create_repository(
             name=repo_name,
             body={
                 "type": "s3",
@@ -356,8 +355,10 @@ def create_repo(
         loggit.error(e)
         raise ActionError(e)
     # Get and save a repository object for this repo
+    loggit.debug("Saving repo %s to status index", repo_name)
     repository = get_repository(client, repo_name)
     client.index(index=STATUS_INDEX, document=repository.to_dict())
+    loggit.debug("Repo %s saved to status index", repo_name)
     #
     # TODO: Gather the reply and parse it to make sure this succeeded
 
@@ -405,8 +406,16 @@ def get_repository(client: Elasticsearch, name: str) -> Repository:
     :raises Exception: If the repository does not exist
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
+    logging.debug("Getting repository %s", name)
     try:
-        doc = client.get(index=STATUS_INDEX, id=name)
+        doc = client.search(
+            index=STATUS_INDEX, body={"query": {"match": {"name": name}}}
+        )
+        logging.debug("Got: %s", doc)
+        if doc["hits"]["total"]["value"] == 0:
+            return Repository(name=name)
+        doc = doc["hits"]["hits"][0]
+        loggit.info("Repository document found")
         return Repository(**doc["_source"])
     except NotFoundError:
         loggit.warning("Repository document not found")
@@ -623,7 +632,8 @@ def decode_date(date_in: str) -> datetime:
     if isinstance(date_in, datetime):
         return date_in
     elif isinstance(date_in, str):
-        return datetime.fromisoformat(date_in)
+        logging.debug("Decoding date %s", date_in)
+        return datetime.date.fromisoformat(date_in)
     else:
         raise ValueError("Invalid date format")
 
@@ -678,7 +688,7 @@ def create_ilm_policy(
     loggit = logging.getLogger("curator.actions.deepfreeze")
     loggit.info("Creating ILM policy %s", policy_name)
     try:
-        response = client.ilm.put_lifecycle(name=policy_name, body=policy_body)
+        client.ilm.put_lifecycle(name=policy_name, body=policy_body)
     except Exception as e:
         loggit.error(e)
         raise ActionError(e)
