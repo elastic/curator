@@ -24,3 +24,15 @@ class ActionException(DeepfreezeException):
     """
     Generic class for unexpected coneditions during DF actions
     """
+
+
+class PreconditionError(DeepfreezeException):
+    """
+    Exception raised when preconditions are not met for a deepfreeze action
+    """
+
+
+class RepositoryException(DeepfreezeException):
+    """
+    Exception raised when a probley with a repository occurs
+    """
