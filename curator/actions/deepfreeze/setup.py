@@ -6,15 +6,17 @@ import logging
 
 from elasticsearch8 import Elasticsearch
 
-from curator.exceptions import RepositoryException
 from curator.s3client import s3_client_factory
 
+from .constants import STATUS_INDEX
+from .exceptions import PreconditionError, RepositoryException
 from .helpers import Settings
 from .utilities import (
     create_ilm_policy,
     create_repo,
     ensure_settings_index,
     get_matching_repo_names,
+    get_matching_repos,
     save_settings,
 )
 
@@ -114,6 +116,47 @@ class Setup:
             )
         self.loggit.debug("Deepfreeze Setup initialized")
 
+    def _check_preconditions(self) -> None:
+        """
+        Check preconditions before performing setup. Raise exceptions if any
+        preconditions are not met. If this copletes without raising an exception,
+        the setup can proceed.
+
+        :raises DeepfreezeException: If any preconditions are not met.
+
+        :return: None
+        :rtype: None
+        """
+        # First, make sure the status index does not exist yet
+        self.loggit.debug("Checking if status index %s exists", STATUS_INDEX)
+        if self.client.indices.exists(index=STATUS_INDEX):
+            raise PreconditionError(
+                f"Status index {STATUS_INDEX} already exists. "
+                "Please delete it before running setup."
+            )
+
+        # Second, see if any existing repositories match the prefix
+        self.loggit.debug(
+            "Checking if any existing repositories match %s",
+            self.settings.repo_name_prefix,
+        )
+        repos = self.client.snapshot.get_repository(name="_all")
+        self.loggit.debug("Existing repositories: %s", repos)
+        for repo in repos.keys():
+            if repo.startswith(self.settings.repo_name_prefix):
+                raise PreconditionError(
+                    f"Repository {repo} already exists. "
+                    "Please delete it before running setup."
+                )
+
+        # Third, check if the bucket already exists
+        self.loggit.debug("Checking if bucket %s exists", self.new_bucket_name)
+        if self.s3.bucket_exists(self.new_bucket_name):
+            raise PreconditionError(
+                f"Bucket {self.new_bucket_name} already exists. "
+                "Please delete it before running setup."
+            )
+
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the setup process.
@@ -124,6 +167,8 @@ class Setup:
         self.loggit.info("DRY-RUN MODE.  No changes will be made.")
         msg = f"DRY-RUN: deepfreeze setup of {self.new_repo_name} backed by {self.new_bucket_name}, with base path {self.base_path}."
         self.loggit.info(msg)
+        self._check_preconditions()
+
         self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
         create_repo(
             self.client,
@@ -143,6 +188,7 @@ class Setup:
         :rtype: None
         """
         self.loggit.debug("Starting Setup action")
+        self._check_preconditions()
         ensure_settings_index(self.client, create_if_missing=True)
         save_settings(self.client, self.settings)
         self.s3.create_bucket(self.new_bucket_name)
@@ -155,6 +201,7 @@ class Setup:
             self.settings.storage_class,
         )
         if self.create_sample_ilm_policy:
+            self.loggit.info("Creating sample ILM policy %s", self.ilm_policy_name)
             policy_name = self.ilm_policy_name
             policy_body = {
                 "policy": {

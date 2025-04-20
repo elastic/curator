@@ -157,6 +157,9 @@ class Repository:
         Returns:
             dict: A dictionary representation of the Repository object.
         """
+        logging.debug("Converting Repository to dict")
+        logging.debug(f"Repository start: {self.start}")
+        logging.debug(f"Repository end: {self.end}")
         start_str = self.start.isoformat() if self.start else None
         end_str = self.end.isoformat() if self.end else None
         return {

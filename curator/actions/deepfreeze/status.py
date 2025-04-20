@@ -182,34 +182,45 @@ class Status:
         :return: None
         :rtype: None
         """
+        self.loggit.debug("Showing repositories")
         table = Table(title="Repositories")
         table.add_column("Repository", style="cyan")
         table.add_column("Status", style="magenta")
         table.add_column("Snapshots", style="magenta")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
+        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
+        self.loggit.debug("Getting unmounted repositories")
         unmounted_repos = get_unmounted_repos(self.client)
+        self.loggit.debug("Validating unmounted repositories")
         unmounted_repos.sort()
         for repo in unmounted_repos:
+            self.loggit.debug(f"Validating {repo.name}")
             status = "U"
             if repo.is_mounted:
                 status = "M"
+                if repo.name == active_repo:
+                    status = "M*"
             if repo.is_thawed:
                 status = "T"
-            snapshots = self.client.snapshot.get(repository=repo, snapshot="_all")
+            self.loggit.debug(f"Getting snapshots for {repo.name}")
+            snapshots = self.client.snapshot.get(repository=repo.name, snapshot="_all")
             count = len(snapshots.get("snapshots", []))
+            self.loggit.debug(f"Got {count} snapshots for {repo.name}")
             table.add_row(repo.name, status, str(count), repo.start, repo.end)
+        self.loggit.debug("Validated mounted repositories")
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.loggit.warning("No status index found")
             return
-        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
+        self.loggit.debug("Getting active repositories")
+        self.loggit.debug("Getting mounted repositories")
         repolist = get_matching_repo_names(self.client, self.settings.repo_name_prefix)
         repolist.sort()
         for repo in repolist:
             snapshots = self.client.snapshot.get(repository=repo, snapshot="_all")
             count = len(snapshots.get("snapshots", []))
             if repo == active_repo:
-                table.add_row(repo, "M*", str(count))
+                continue
             else:
                 table.add_row(repo, "M", str(count))
         self.console.print(table)

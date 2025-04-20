@@ -165,6 +165,7 @@ class Rotate:
         :raises Exception: If the policy cannot be updated
         :raises Exception: If the policy does not exist
         """
+        self.loggit.debug("Updating ILM policies")
         if self.latest_repo == self.new_repo_name:
             self.loggit.warning("Already on the latest repo")
             sys.exit(0)
