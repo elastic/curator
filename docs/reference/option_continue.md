@@ -5,7 +5,7 @@ mapped_pages:
 
 # continue_if_exception [option_continue]
 
-::::{admonition} Using `ignore_empty_list` rather than `continue_if_exception`
+::::{admonition} Using ignore_empty_list rather than continue_if_exception
 :class: important
 
 Curator has two general classifications of exceptions: Empty list exceptions, and everything else. The empty list conditions are `curator.exception.NoIndices` and `curator.exception.NoSnapshots`.  The `continue_if_exception` option *only* catches conditions *other* than empty list conditions. In most cases, you will want to use `ignore_empty_list` instead of `continue_if_exception`.

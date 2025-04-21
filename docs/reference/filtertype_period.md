@@ -102,11 +102,11 @@ The period filter is smart enough to calculate `months` and `years` properly.  *
 | --- | --- | --- |
 | `seconds` | `1` | One second |
 | `minutes` | `60` | Calculated as 60 seconds |
-| `hours` | `3600` | Calculated as 60 minutes (60*60) |
-| `days` | `86400` | Calculated as 24 hours (24*60*60) |
-| `weeks` | `604800` | Calculated as 7 days (7*24*60*60) |
-| `months` | `2592000` | Calculated as 30 days (30*24*60*60) |
-| `years` | `31536000` | Calculated as 365 days (365*24*60*60) |
+| `hours` | `3600` | Calculated as 60 minutes (`60 * 60`) |
+| `days` | `86400` | Calculated as 24 hours (`24 * 60 * 60`) |
+| `weeks` | `604800` | Calculated as 7 days (`7 * 24 * 60 * 60`) |
+| `months` | `2592000` | Calculated as 30 days (`30 * 24 * 60 * 60`) |
+| `years` | `31536000` | Calculated as 365 days (`365 * 24 * 60 * 60`) |
 
 ::::
 

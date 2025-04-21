@@ -25,6 +25,6 @@ While it may be desirable to have different life-cycles for your data, sometimes
 
 #### Post-script: [_post_script]
 
-Even though it is neither recommended[¹](#footnote-1) and watch what happens to your segments when you delete data.], nor best practices, it is still possible to perform these search & delete operations yourself, using the [Delete-by-Query API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-delete-by-query). Curator will not be modified to perform operations such as these, however. Curator is meant to manage at the index level, rather than the data level.
+Even though it is neither recommended[¹](#footnote-1), nor best practices, it is still possible to perform these search & delete operations yourself, using the [Delete-by-Query API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-delete-by-query). Curator will not be modified to perform operations such as these, however. Curator is meant to manage at the index level, rather than the data level.
 
-¹ $$$footnote-1$$$ http://blog.mikemccandless.com/2011/02/visualizing-lucenes-segment-merges.md
+¹ $$$footnote-1$$$ There are reasons Elasticsearch does not recommend this, particularly for time-series data. For more information read [http://blog.mikemccandless.com/2011/02/visualizing-lucenes-segment-merges.html](http://blog.mikemccandless.com/2011/02/visualizing-lucenes-segment-merges.html) and watch what happens to your segments when you delete data.
