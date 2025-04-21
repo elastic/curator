@@ -32,7 +32,7 @@ This action migrates the selected non-ILM indices from the cold tier to the froz
 
 Settings that should be added to the index when it is mounted. This should be a YAML dictionary containing anything under what would normally appear in `settings`.
 
-See [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/searchable-snapshots-api-mount-snapshot.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/searchable-snapshots-api-mount-snapshot.md)
+See the [Elasticsearch Searchable snapshots API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-searchable-snapshots-mount).
 
 ```yaml
 action: cold2frozen
@@ -59,7 +59,7 @@ If unset, the default behavior is to ensure that the `_tier_preference` is `data
 
 This should be a YAML list of index settings the migrated index should ignore after mount.
 
-See [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/searchable-snapshots-api-mount-snapshot.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/searchable-snapshots-api-mount-snapshot.md)
+See the [Elasticsearch Searchable snapshots API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-searchable-snapshots-mount).
 
 ```yaml
 action: cold2frozen

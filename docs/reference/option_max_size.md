@@ -21,5 +21,5 @@ At least one of [max_age](/reference/option_max_age.md), [max_docs](/reference/o
 ::::
 
 
-The maximum approximate size an index is allowed to be before triggering a rollover.  Sizes must use Elasticsearch approved [human-readable byte units](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/common-options.md). It *must* be nested under `conditions:` There is no default value.  If this condition is specified, it must have a value, or Curator will generate an error.
+The maximum approximate size an index is allowed to be before triggering a rollover.  Sizes must use Elasticsearch approved [human-readable byte units](elasticsearch://reference/elasticsearch/rest-apis/common-options.md). It *must* be nested under `conditions:` There is no default value.  If this condition is specified, it must have a value, or Curator will generate an error.
 

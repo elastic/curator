@@ -18,7 +18,7 @@ options:
     max_size: 5gb
 ```
 
-This action uses the [Elasticsearch Rollover API](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/indices-rollover-index.md) to create a new index, if any of the described conditions are met.
+This action uses the [Elasticsearch Rollover API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-rollover) to create a new index, if any of the described conditions are met.
 
 ::::{important}
 When choosing `conditions`, **any** one of [max_age](/reference/option_max_age.md), [max_docs](/reference/option_max_docs.md), [max_size](/reference/option_max_size.md), **or any combination of the three** may be used. If multiple are used, then the specified condition for any one of them must be matched for the rollover to occur.
@@ -63,7 +63,7 @@ options:
 
 ## Optional settings [_optional_settings_15]
 
-* [extra_settings](/reference/option_extra_settings.md) No default value.  You can add any acceptable index settings (not mappings) as nested YAML.  See the [Elasticsearch Create Index API documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/indices-create-index.md) for more information.
+* [extra_settings](/reference/option_extra_settings.md) No default value.  You can add any acceptable index settings (not mappings) as nested YAML.  See the [Elasticsearch Create Index API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-create) for more information.
 * [new_index](/reference/option_new_index.md) Specify a new index name.
 * [timeout_override](/reference/option_timeout_override.md)
 * [continue_if_exception](/reference/option_continue.md)

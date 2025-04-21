@@ -14,7 +14,7 @@ The value of this setting is the name of the alias, snapshot, or index, dependin
 
 ## date math [_date_math_2]
 
-This setting may be a valid [Elasticsearch date math string](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names).
+This setting may be a valid [Elasticsearch date math string](elasticsearch://reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names).
 
 A date math name takes the following form:
 
@@ -89,7 +89,7 @@ options:
   # ...
 ```
 
-or use Elasticsearch [date math](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names)
+or use Elasticsearch [date math](elasticsearch://reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names)
 
 ```yaml
 action: create_index

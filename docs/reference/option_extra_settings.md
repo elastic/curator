@@ -50,7 +50,7 @@ options:
 
 ## [restore](/reference/restore.md) [_restore/curator/docs/reference/elasticsearch/elasticsearch-client-curator/restore.md]
 
-See the [official Elasticsearch Documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/snapshots-restore-snapshot.md).
+See the [official Elasticsearch Documentation](docs-content://deploy-manage/tools/snapshot-and-restore/restore-snapshot.md).
 
 ```yaml
 actions:
