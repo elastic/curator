@@ -160,8 +160,8 @@ class Repository:
         logging.debug("Converting Repository to dict")
         logging.debug(f"Repository start: {self.start}")
         logging.debug(f"Repository end: {self.end}")
-        start_str = self.start.isoformat() if self.start else None
-        end_str = self.end.isoformat() if self.end else None
+        start_str = self.start if self.start else None
+        end_str = self.end if self.end else None
         return {
             "name": self.name,
             "bucket": self.bucket,

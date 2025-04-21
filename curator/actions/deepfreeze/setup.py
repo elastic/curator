@@ -16,7 +16,6 @@ from .utilities import (
     create_repo,
     ensure_settings_index,
     get_matching_repo_names,
-    get_matching_repos,
     save_settings,
 )
 
@@ -201,7 +200,6 @@ class Setup:
             self.settings.storage_class,
         )
         if self.create_sample_ilm_policy:
-            self.loggit.info("Creating sample ILM policy %s", self.ilm_policy_name)
             policy_name = self.ilm_policy_name
             policy_body = {
                 "policy": {
