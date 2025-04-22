@@ -130,10 +130,15 @@ class Rotate:
             self.loggit.debug("Found %s indices still mounted", len(indices))
             if indices:
                 earliest, latest = get_timestamp_range(self.client, indices)
-                repo.start = (
-                    decode_date(earliest) if earliest <= repo.start else repo.start
+                self.loggit.debug(
+                    "update_repo_date_range Earliest: %s, Latest: %s",
+                    decode_date(earliest),
+                    decode_date(latest),
                 )
-                repo.end = decode_date(latest) if latest >= repo.end else repo.end
+                self.loggit.debug("Considering start")
+                repo.start = earliest if earliest <= repo.start else repo.start
+                self.loggit.debug("Considering end")
+                repo.end = latest if latest >= repo.end else repo.end
                 # ? Will this produce too many updates? Do I need to only update if one
                 # ? of the dates has changed?
                 if not dry_run:
