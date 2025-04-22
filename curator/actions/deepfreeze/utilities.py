@@ -552,6 +552,7 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     repo_obj = None
     if indices:
         earliest, latest = get_timestamp_range(client, indices)
+        loggit.debug("Confirming Earliest: %s, Latest: %s", earliest, latest)
         repo_obj = Repository(
             name=repo,
             bucket=bucket,
