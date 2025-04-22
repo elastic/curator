@@ -19,36 +19,42 @@ def deepfreeze():
 
 @deepfreeze.command()
 @click.option(
+    "-y",
     "--year",
     type=int,
     default=today.year,
     help="Year for the new repo (default is today)",
 )
 @click.option(
+    "-m",
     "--month",
     type=int,
     default=today.month,
     help="Month for the new repo (default is today)",
 )
 @click.option(
+    "-r",
     "--repo_name_prefix",
     type=str,
     default="deepfreeze",
     help="prefix for naming rotating repositories",
 )
 @click.option(
+    "-b",
     "--bucket_name_prefix",
     type=str,
     default="deepfreeze",
     help="prefix for naming buckets",
 )
 @click.option(
+    "-p",
     "--base_path_prefix",
     type=str,
     default="snapshots",
     help="base path in the bucket to use for searchable snapshots",
 )
 @click.option(
+    "-a",
     "--canned_acl",
     type=click.Choice(
         [
@@ -65,6 +71,7 @@ def deepfreeze():
     help="Canned ACL as defined by AWS",
 )
 @click.option(
+    "-s",
     "--storage_class",
     type=click.Choice(
         [
@@ -79,6 +86,7 @@ def deepfreeze():
     help="What storage class to use, as defined by AWS",
 )
 @click.option(
+    "-o",
     "--provider",
     type=click.Choice(
         [
@@ -91,6 +99,7 @@ def deepfreeze():
     help="What provider to use (AWS only for now)",
 )
 @click.option(
+    "-t",
     "--rotate_by",
     type=click.Choice(
         [
@@ -102,6 +111,7 @@ def deepfreeze():
     help="Rotate by bucket or path within a bucket?",
 )
 @click.option(
+    "-n",
     "--style",
     type=click.Choice(
         [
@@ -113,11 +123,13 @@ def deepfreeze():
     help="How to number (suffix) the rotating repositories",
 )
 @click.option(
+    "-c",
     "--create_sample_ilm_policy",
     is_flag=True,
     help="Create a sample ILM policy",
 )
 @click.option(
+    "-i",
     "--ilm_policy_name",
     type=str,
     default="deepfreeze-sample-policy",
@@ -177,18 +189,21 @@ def setup(
 
 @deepfreeze.command()
 @click.option(
+    "-y",
     "--year",
     type=int,
     default=today.year,
     help="Year for the new repo (default is today)",
 )
 @click.option(
+    "-m",
     "--month",
     type=int,
     default=today.month,
     help="Month for the new repo (default is today)",
 )
 @click.option(
+    "-k",
     "--keep",
     type=int,
     default=6,
