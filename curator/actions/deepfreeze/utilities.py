@@ -357,6 +357,7 @@ def create_repo(
     # Get and save a repository object for this repo
     loggit.debug("Saving repo %s to status index", repo_name)
     repository = get_repository(client, repo_name)
+    loggit.debug("Repo = %s", repository)
     client.index(index=STATUS_INDEX, document=repository.to_dict())
     loggit.debug("Repo %s saved to status index", repo_name)
     #
@@ -413,10 +414,16 @@ def get_repository(client: Elasticsearch, name: str) -> Repository:
         )
         logging.debug("Got: %s", doc)
         if doc["hits"]["total"]["value"] == 0:
+            logging.debug("Got no hits")
             return Repository(name=name)
-        doc = doc["hits"]["hits"][0]
-        loggit.info("Repository document found")
-        return Repository(**doc["_source"])
+        for n in range(len(doc["hits"]["hits"])):
+            if doc["hits"]["hits"][n]["_source"]["name"] == name:
+                logging.debug("Got a match")
+                return Repository(**doc["_source"])
+                break
+        # If we get here, we have no match
+        logging.debug("No match found")
+        return Repository(name=name)
     except NotFoundError:
         loggit.warning("Repository document not found")
         return Repository(name=name)
