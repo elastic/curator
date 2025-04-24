@@ -29,7 +29,7 @@ A new index name for rollover should still end with a dash followed by an increm
 
 ## date_math [_date_math_3]
 
-This setting may be a valid [Elasticsearch date math string](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names).
+This setting may be a valid [Elasticsearch date math string](elasticsearch://reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names).
 
 A date math name takes the following form:
 

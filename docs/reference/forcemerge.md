@@ -24,7 +24,7 @@ Empty values and commented lines will result in the default value, if any, being
 This action performs a forceMerge on the selected indices, merging them to [max_num_segments](/reference/option_mns.md) per shard.
 
 ::::{warning}
-A [`forcemerge`](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/indices-forcemerge.md#indices-forcemerge) should never be executed on an index that is actively receiving data.  It should only ever be performed on indices where no more documents are ever anticipated to be added in the future.
+A [`forcemerge`](https://www.elastic.co/docs/api/doc/elasticsearch/) should never be executed on an index that is actively receiving data.  It should only ever be performed on indices where no more documents are ever anticipated to be added in the future.
 ::::
 
 
