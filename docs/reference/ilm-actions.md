@@ -14,12 +14,12 @@ ILM applies policy actions as indices enter time-oriented phases:
 
 The policy actions include:
 
-* [Set Priority](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-set-priority.html)
-* [Rollover](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-rollover.html)
-* [Unfollow](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-unfollow.html)
-* [Allocate](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-allocate.html)
-* [Read-Only](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-readonly.html)
-* [Force Merge](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-forcemerge.html)
-* [Shrink](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-shrink.html)
-* [Delete](http://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html)
+* [Set Priority](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-set-priority.md)
+* [Rollover](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-rollover.md)
+* [Unfollow](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-unfollow.md)
+* [Allocate](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-allocate.md)
+* [Read-Only](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-readonly.md)
+* [Force Merge](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-forcemerge.md)
+* [Shrink](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-shrink.md)
+* [Delete](elasticsearch://reference/elasticsearch/index-lifecycle-actions/ilm-delete.md)
 
