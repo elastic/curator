@@ -117,40 +117,74 @@ class Rotate:
         self.loggit.debug("Found %s matching repos", len(repos))
         # Now loop through the repos, updating the date range for each
         for repo in repos:
-            self.loggit.debug("Updating date range for %s", repo.name)
+            self.loggit.debug("UDRR: Updating date range for %s", repo.name)
             indices = get_all_indices_in_repo(self.client, repo.name)
-            self.loggit.debug("Checking %s indices for existence", len(indices))
-            indices = [
-                index for index in indices if self.client.indices.exists(index=index)
-            ]
-            self.loggit.debug("Found %s indices still mounted", len(indices))
-            if indices:
-                earliest, latest = get_timestamp_range(self.client, indices)
+            self.loggit.debug("UDRR: Checking %s indices for existence", len(indices))
+            filtered = []
+            for index in indices:
+                index = f"partial-{index}"
+                self.loggit.debug("UDRR: Checking index %s", index)
+                if self.client.indices.exists(index=index):
+                    self.loggit.debug("UDRR: Found index %s", index)
+                    filtered.append(index)
+                else:
+                    self.loggit.debug("UDRR: Index %s does not exist", index)
+            # filtered = [
+            #     index for index in indices if self.client.indices.exists(index=index)
+            # ]
+            self.loggit.debug("UDRR: Found %s indices still mounted", len(filtered))
+            if filtered:
+                earliest, latest = get_timestamp_range(self.client, filtered)
                 self.loggit.debug(
-                    "update_repo_date_range Earliest: %s, Latest: %s",
-                    decode_date(earliest),
-                    decode_date(latest),
+                    "UDRR: update_repo_date_range Earliest: %s, Latest: %s",
+                    earliest,
+                    latest,
                 )
-                self.loggit.debug("Considering start")
-                repo.start = earliest if earliest <= repo.start else repo.start
-                self.loggit.debug("Considering end")
-                repo.end = latest if latest >= repo.end else repo.end
-                # ? Will this produce too many updates? Do I need to only update if one
-                # ? of the dates has changed?
-                if not dry_run:
+                self.loggit.debug("UDRR: Comparing start and end times")
+                self.loggit.debug("UDRR: Repo start: %s", repo.start)
+                self.loggit.debug("UDRR: Repo end: %s", repo.end)
+                self.loggit.debug("UDRR: Earliest: %s", earliest)
+                self.loggit.debug("UDRR: Latest: %s", latest)
+                changed = False
+                decoded_start = (
+                    decode_date(repo.start).astimezone()
+                    if decode_date(repo.start).tzinfo
+                    else decode_date(repo.start)
+                )
+                decoded_end = (
+                    decode_date(repo.end).astimezone()
+                    if decode_date(repo.end).tzinfo
+                    else decode_date(repo.end)
+                )
+                self.loggit.debug(
+                    "UDRR: Decoded start: %s, earliest: %s",
+                    decoded_start,
+                    earliest.astimezone,
+                )
+                if earliest.astimezone() < decoded_start:
+                    repo.start = earliest
+                    changed = True
+                if latest.astimezone() > decoded_end:
+                    repo.end = latest
+                    changed = True
+                if not dry_run and changed:
                     if self.client.exists(index=STATUS_INDEX, id=repo.name):
+                        self.loggit.debug("Updating Repo %s", repo.name)
                         self.client.update(
                             index=STATUS_INDEX,
                             id=repo.name,
                             body={"doc": repo.to_dict()},
                         )
                     else:
+                        self.loggit.debug("UDRR: Creating Repo %s", repo.name)
                         self.client.index(
                             index=STATUS_INDEX, id=repo.name, body=repo.to_dict()
                         )
-                self.loggit.debug("Updated date range for %s", repo.name)
+                    self.loggit.debug("UDRR: Updated date range for %s", repo.name)
+                elif not changed:
+                    self.loggit.debug("UDRR: No change to date range for %s", repo.name)
             else:
-                self.loggit.debug("No update; no indices found for %s", repo.name)
+                self.loggit.debug("UDRR: No update; no indices found for %s", repo.name)
 
     def update_ilm_policies(self, dry_run=False) -> None:
         """
