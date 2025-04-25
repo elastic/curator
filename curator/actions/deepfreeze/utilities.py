@@ -4,7 +4,7 @@
 
 import logging
 import re
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 
 from elasticsearch8 import Elasticsearch, NotFoundError
 
@@ -164,7 +164,7 @@ def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]
     for snapshot in snapshots["snapshots"]:
         indices.update(snapshot["indices"])
 
-    logging.debug("Indices: %s", indices)
+    # logging.debug("Indices: %s", indices)
     return list(indices)
 
 
@@ -495,7 +495,6 @@ def get_matching_repos(
     response = client.search(index=STATUS_INDEX, body=query)
     repos = response["hits"]["hits"]
     logging.debug("Repos retrieved: %s", repos)
-    print(f"Repos retrieved: {repos}")
     repos = [
         repo for repo in repos if repo["_source"]["name"].startswith(repo_name_prefix)
     ]
@@ -638,12 +637,15 @@ def decode_date(date_in: str) -> datetime:
     :raises ValueError: If the date is not valid
     """
     if isinstance(date_in, datetime):
-        return date_in
+        dt = date_in
     elif isinstance(date_in, str):
         logging.debug("Decoding date %s", date_in)
-        return datetime.date.fromisoformat(date_in)
+        dt = datetime.fromisoformat(date_in)
     else:
         raise ValueError("Invalid date format")
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def check_is_s3_thawed(s3: S3Client, thawset: ThawSet) -> bool:
