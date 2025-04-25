@@ -110,10 +110,6 @@ class Rotate:
         :return: None
         :rtype: None
 
-        :raises Exception: If the repository does not exist
-        :raises Exception: If the repository is not empty
-        :raises Exception: If the repository is not mounted
-        :raises Exception: If the repository is not thawed
         """
         self.loggit.debug("Updating repo date ranges")
         # Get the repo objects (not names) which match our prefix
