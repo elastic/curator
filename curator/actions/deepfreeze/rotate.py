@@ -139,7 +139,7 @@ class Rotate:
                     repo.end = latest
                     changed = True
                 if not dry_run and changed:
-                    if self.client.exists(index=STATUS_INDEX, id=repo.name):
+                    if self.client.exists(index=STATUS_INDEX, name=repo.name):
                         self.loggit.debug("UDRR: Updating Repo %s", repo.name)
                         self.client.update(
                             index=STATUS_INDEX,
