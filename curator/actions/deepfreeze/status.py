@@ -10,11 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from curator.actions.deepfreeze.constants import STATUS_INDEX
-from curator.actions.deepfreeze.utilities import (
-    get_matching_repo_names,
-    get_settings,
-    get_unmounted_repos,
-)
+from curator.actions.deepfreeze.utilities import get_settings, get_unmounted_repos
 
 
 class Status:
@@ -43,6 +39,7 @@ class Status:
         self.settings = get_settings(client)
         self.client = client
         self.console = Console()
+        self.console.clear()
 
     def get_cluster_name(self) -> str:
         """
