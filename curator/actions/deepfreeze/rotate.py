@@ -125,9 +125,6 @@ class Rotate:
                 index = f"partial-{index}"
                 if self.client.indices.exists(index=index):
                     filtered.append(index)
-            # filtered = [
-            #     index for index in indices if self.client.indices.exists(index=index)
-            # ]
             self.loggit.debug("Found %s indices still mounted", len(filtered))
             if filtered:
                 earliest, latest = get_timestamp_range(self.client, filtered)
