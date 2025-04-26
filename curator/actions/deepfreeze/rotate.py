@@ -132,10 +132,10 @@ class Rotate:
             if filtered:
                 earliest, latest = get_timestamp_range(self.client, filtered)
                 changed = False
-                if earliest < decode_date(repo.start):
+                if not repo.start or earliest < decode_date(repo.start):
                     repo.start = earliest
                     changed = True
-                if latest > decode_date(repo.end):
+                if not repo.end or latest > decode_date(repo.end):
                     repo.end = latest
                     changed = True
                 if not dry_run and changed:
