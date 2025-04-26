@@ -139,18 +139,18 @@ class Rotate:
                     repo.end = latest
                     changed = True
                 if not dry_run and changed:
-                    if self.client.exists(index=STATUS_INDEX, name=repo.name):
+                    query = {"query": {"term": {"name.keyword": repo.name}}}
+                    response = self.client.search(index=STATUS_INDEX, body=query)
+                    if response["hits"]["total"]["value"] > 0:
                         self.loggit.debug("UDRR: Updating Repo %s", repo.name)
                         self.client.update(
                             index=STATUS_INDEX,
-                            id=repo.name,
+                            id=response["hits"]["hits"][0]["_id"],
                             body={"doc": repo.to_dict()},
                         )
                     else:
                         self.loggit.debug("UDRR: Creating Repo %s", repo.name)
-                        self.client.index(
-                            index=STATUS_INDEX, id=repo.name, body=repo.to_dict()
-                        )
+                        self.client.index(index=STATUS_INDEX, body=repo.to_dict())
                 elif not changed:
                     self.loggit.debug("No change to date range for %s", repo.name)
             else:

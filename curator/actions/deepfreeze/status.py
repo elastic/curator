@@ -111,7 +111,6 @@ class Status:
             self.loggit.warning("No status index found")
             return
         thawsets = self.client.search(index=STATUS_INDEX)
-        self.loggit.debug("Validating thawsets")
         for thawset in thawsets:
             table.add_column(thawset)
             for repo in thawset:
@@ -190,12 +189,9 @@ class Status:
 
         # List unmounted repositories first
         active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
-        self.loggit.debug("Getting unmounted repositories")
         unmounted_repos = get_unmounted_repos(self.client)
-        self.loggit.debug("Validating unmounted repositories: %s", unmounted_repos)
         unmounted_repos.sort()
         for repo in unmounted_repos:
-            self.loggit.debug(f"Validating {repo.name}")
             status = "U"
             if repo.is_mounted:
                 status = "M"
@@ -205,22 +201,10 @@ class Status:
                 status = "T"
             if repo.name == active_repo:
                 status = "M*"
-            self.loggit.debug(f"Getting snapshots for {repo.name}")
             snapshots = self.client.snapshot.get(repository=repo.name, snapshot="_all")
             count = len(snapshots.get("snapshots", []))
             self.loggit.debug(f"Got {count} snapshots for {repo.name}")
             table.add_row(repo.name, status, str(count), repo.start, repo.end)
-        # self.loggit.debug("Validated mounted repositories")
-        # if not self.client.indices.exists(index=STATUS_INDEX):
-        #     self.loggit.warning("No status index found")
-        #     return
-        # self.loggit.debug("Getting active repositories")
-        # self.loggit.debug("Getting mounted repositories")
-        # repolist = get_matching_repo_names(self.client, self.settings.repo_name_prefix)
-        # repolist.sort()
-        # for repo in repolist:
-        #     snapshots = self.client.snapshot.get(repository=repo, snapshot="_all")
-        #     count = len(snapshots.get("snapshots", []))
         self.console.print(table)
 
     def do_singleton_action(self) -> None:

@@ -357,6 +357,10 @@ def create_repo(
     # Get and save a repository object for this repo
     loggit.debug("Saving repo %s to status index", repo_name)
     repository = get_repository(client, repo_name)
+    repository.bucket = bucket_name if not repository.bucket else repository.bucket
+    repository.base_path = (
+        base_path if not repository.base_path else repository.base_path
+    )
     loggit.debug("Repo = %s", repository)
     client.index(index=STATUS_INDEX, document=repository.to_dict())
     loggit.debug("Repo %s saved to status index", repo_name)
