@@ -139,9 +139,8 @@ class Repository:
     name: str = None
     bucket: str = None
     base_path: str = None
-    # These default datetimes are to prevent issues with None.
-    start: datetime = datetime.now()
-    end: datetime = datetime.now()
+    start: datetime = None
+    end: datetime = None
     is_thawed: bool = False
     is_mounted: bool = True
     doctype: str = "repository"
