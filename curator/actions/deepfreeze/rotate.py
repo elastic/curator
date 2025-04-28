@@ -113,7 +113,9 @@ class Rotate:
         """
         self.loggit.debug("Updating repo date ranges")
         # Get the repo objects (not names) which match our prefix
-        repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
+        repos = get_matching_repos(
+            self.client, self.settings.repo_name_prefix, mounted=True
+        )
         self.loggit.debug("Found %s matching repos", len(repos))
         # Now loop through the repos, updating the date range for each
         for repo in repos:

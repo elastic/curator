@@ -479,7 +479,7 @@ def get_matching_repo_names(client: Elasticsearch, repo_name_prefix: str) -> lis
 
 
 def get_matching_repos(
-    client: Elasticsearch, repo_name_prefix: str
+    client: Elasticsearch, repo_name_prefix: str, mounted: bool = False
 ) -> list[Repository]:
     """
     Get the list of repos from our index and return a Repository object for each one
@@ -502,6 +502,12 @@ def get_matching_repos(
     repos = [
         repo for repo in repos if repo["_source"]["name"].startswith(repo_name_prefix)
     ]
+    if mounted:
+        mounted_repos = [
+            repo for repo in repos if repo["_source"]["is_mounted"] is True
+        ]
+        logging.debug("Mounted repos: %s", mounted_repos)
+        return [Repository(**repo["_source"]) for repo in mounted_repos]
     # return a Repository object for each
     return [Repository(**repo["_source"]) for repo in repos]
 
@@ -548,33 +554,20 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     :raises Exception: If the repository cannot be deleted
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
+    # ? Why am I doing it this way? Is there a reason or could this be done using get_repository and the resulting repo object?
     repo_info = client.snapshot.get_repository(name=repo)[repo]
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
     indices = get_all_indices_in_repo(client, repo)
-    repo_obj = None
+    repo_obj = get_repository(client, repo)
+    repo_obj.bucket = bucket if not repo_obj.bucket else repo_obj.bucket
+    repo_obj.base_path = base_path if not repo_obj.base_path else repo_obj.base_path
     if indices:
         earliest, latest = get_timestamp_range(client, indices)
         loggit.debug("Confirming Earliest: %s, Latest: %s", earliest, latest)
-        repo_obj = Repository(
-            name=repo,
-            bucket=bucket,
-            base_path=base_path,
-            is_mounted=False,
-            start=decode_date(earliest),
-            end=decode_date(latest),
-            doctype="repository",
-        )
-    else:
-        repo_obj = Repository(
-            name=repo,
-            bucket=bucket,
-            base_path=base_path,
-            is_mounted=False,
-            start=None,
-            end=None,
-            doctype="repository",
-        )
+        repo_obj.start = decode_date(earliest)
+        repo_obj.end = decode_date(latest)
+    repo_obj.unmount()
     msg = f"Recording repository details as {repo_obj}"
     loggit.debug(msg)
     loggit.debug("Removing repo %s", repo)
@@ -584,6 +577,7 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
         loggit.error(e)
         raise ActionError(e)
     # Don't update the records until the repo has been succesfully removed.
+    loggit.debug("Updating repo: %s", repo_obj)
     client.index(index=STATUS_INDEX, document=repo_obj.to_dict())
     loggit.debug("Repo %s removed", repo)
     return repo_obj
