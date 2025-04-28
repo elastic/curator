@@ -172,6 +172,18 @@ class Repository:
             "doctype": self.doctype,
         }
 
+    def unmount(self) -> None:
+        """
+        Unmount the repository by setting is_mounted to False.
+
+        Params:
+            None
+
+        Returns:
+            None
+        """
+        self.is_mounted = False
+
     def to_json(self) -> str:
         """
         Convert the Repository object to a JSON string.
