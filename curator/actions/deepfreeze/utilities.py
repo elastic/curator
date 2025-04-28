@@ -423,8 +423,7 @@ def get_repository(client: Elasticsearch, name: str) -> Repository:
         for n in range(len(doc["hits"]["hits"])):
             if doc["hits"]["hits"][n]["_source"]["name"] == name:
                 logging.debug("Got a match")
-                return Repository(**doc["_source"])
-                break
+                return Repository(**doc["hits"]["hits"][n]["_source"])
         # If we get here, we have no match
         logging.debug("No match found")
         return Repository(name=name)
@@ -574,8 +573,8 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     try:
         client.snapshot.delete_repository(name=repo)
     except Exception as e:
-        loggit.error(e)
-        raise ActionError(e)
+        loggit.warning("Repository %s could not be unmounted due to %s", repo, e)
+        loggit.warning("Another attempt will be made when rotate runs next")
     # Don't update the records until the repo has been succesfully removed.
     loggit.debug("Updating repo: %s", repo_obj)
     client.index(index=STATUS_INDEX, document=repo_obj.to_dict())
