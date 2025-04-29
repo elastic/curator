@@ -23,27 +23,31 @@ def deepfreeze():
     "--year",
     type=int,
     default=today.year,
-    help="Year for the new repo (default is today)",
+    show_default=True,
+    help="Year for the new repo. Only used if style=date.",
 )
 @click.option(
     "-m",
     "--month",
     type=int,
     default=today.month,
-    help="Month for the new repo (default is today)",
+    show_default=True,
+    help="Month for the new repo. Only used if style=date.",
 )
 @click.option(
     "-r",
     "--repo_name_prefix",
     type=str,
     default="deepfreeze",
+    show_default=True,
     help="prefix for naming rotating repositories",
 )
 @click.option(
     "-b",
     "--bucket_name_prefix",
     type=str,
-    default="deepfreeze",
+    default="deepfreeze",  
+    show_default=True,
     help="prefix for naming buckets",
 )
 @click.option(
@@ -51,6 +55,7 @@ def deepfreeze():
     "--base_path_prefix",
     type=str,
     default="snapshots",
+    show_default=True,
     help="base path in the bucket to use for searchable snapshots",
 )
 @click.option(
@@ -68,6 +73,7 @@ def deepfreeze():
         ]
     ),
     default="private",
+    show_default=True,
     help="Canned ACL as defined by AWS",
 )
 @click.option(
@@ -82,7 +88,8 @@ def deepfreeze():
             "onezone_ia",
         ]
     ),
-    default="intelligent_tiering",
+    default="standard",
+    show_default=True,
     help="What storage class to use, as defined by AWS",
 )
 @click.option(
@@ -103,35 +110,40 @@ def deepfreeze():
     "--rotate_by",
     type=click.Choice(
         [
-            "bucket",
+        #    "bucket",
             "path",
         ]
     ),
     default="path",
-    help="Rotate by bucket or path within a bucket?",
+    help="Rotate by path. This is the only option available for now",
+#    help="Rotate by bucket or path within a bucket?",
 )
 @click.option(
     "-n",
     "--style",
     type=click.Choice(
         [
-            "date",
+            # "date",
             "oneup",
         ]
     ),
     default="oneup",
-    help="How to number (suffix) the rotating repositories",
+    help="How to number (suffix) the rotating repositories. Oneup is the only option available for now.",
+    # help="How to number (suffix) the rotating repositories",
 )
 @click.option(
     "-c",
     "--create_sample_ilm_policy",
     is_flag=True,
+    default=False,
+    show_default=True,
     help="Create a sample ILM policy",
 )
 @click.option(
     "-i",
     "--ilm_policy_name",
     type=str,
+    show_default=True,
     default="deepfreeze-sample-policy",
     help="Name of the sample ILM policy",
 )
