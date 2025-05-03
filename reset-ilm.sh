@@ -1,4 +1,4 @@
 #!/bin/bash
 
-curl -sku bret:2xqT2IO1OQ%tfMHP -X PUT -H "Content-Type: application/json" -d '{"policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_age":"7m","max_primary_shard_size":"40gb"},"set_priority":{"priority":100}}},"frozen":{"min_age":"90m","actions":{"searchable_snapshot":{"snapshot_repository":"df-eah-test-000001","force_merge_index":true}}},"delete":{"min_age":"365m","actions":{"delete":{"delete_searchable_snapshot":false}}}}}}' "https://192.168.10.31:9200/_ilm/policy/deepfreeze-policy"
+curl -sku bret:2xqT2IO1OQ%tfMHP -X PUT -H "Content-Type: application/json" -d '{"policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_age":"7m","max_primary_shard_size":"40gb"},"set_priority":{"priority":100}}},"frozen":{"min_age":"30m","actions":{"searchable_snapshot":{"snapshot_repository":"df-eah-test-000001","force_merge_index":true}}},"delete":{"min_age":"90m","actions":{"delete":{"delete_searchable_snapshot":false}}}}}}' "https://192.168.10.31:9200/_ilm/policy/deepfreeze-policy"
 echo
