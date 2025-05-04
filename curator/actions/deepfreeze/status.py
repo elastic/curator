@@ -69,7 +69,6 @@ class Status:
         self.do_repositories()
         self.do_buckets()
         self.do_ilm_policies()
-        # self.do_thawsets()
         self.do_config()
 
     def do_config(self):
@@ -95,26 +94,6 @@ class Status:
         table.add_row("Cluster Name", self.get_cluster_name())
 
         self.console.print(table)
-
-    def do_thawsets(self):
-        """
-        Print the thawed repositories
-
-        :return: None
-        :rtype: None
-        """
-        self.loggit.debug("Getting thawsets")
-        table = Table(title="ThawSets")
-        table.add_column("ThawSet", style="cyan")
-        table.add_column("Repositories", style="magenta")
-        if not self.client.indices.exists(index=STATUS_INDEX):
-            self.loggit.warning("No status index found")
-            return
-        thawsets = self.client.search(index=STATUS_INDEX)
-        for thawset in thawsets:
-            table.add_column(thawset)
-            for repo in thawset:
-                table.add_row(thawset["_id"], repo)
 
     def do_ilm_policies(self):
         """
