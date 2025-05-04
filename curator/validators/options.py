@@ -76,19 +76,6 @@ def action_specific(action):
             option_defaults.year(),
             option_defaults.month(),
         ],
-        "thaw": [
-            option_defaults.start(),
-            option_defaults.end(),
-            option_defaults.retain(),
-            option_defaults.storage_class(),
-            option_defaults.enable_multiple_buckets(),
-        ],
-        "remount": [
-            option_defaults.thawset(),
-        ],
-        "refreeze": [
-            option_defaults.thawset(),
-        ],
         "status": [],
         "delete_indices": [
             option_defaults.search_pattern(),
