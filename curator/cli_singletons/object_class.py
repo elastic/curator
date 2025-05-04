@@ -21,7 +21,6 @@ from curator.actions import (
     ForceMerge,
     IndexSettings,
     Open,
-    Refreeze,
     Reindex,
     Replicas,
     Restore,
@@ -31,7 +30,6 @@ from curator.actions import (
     Shrink,
     Snapshot,
     Status,
-    Thaw,
 )
 from curator.defaults.settings import VERSION_MAX, VERSION_MIN, snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -59,8 +57,6 @@ CLASS_MAP = {
     "rotate": Rotate,
     "setup": Setup,
     "status": Status,
-    "thaw": Thaw,
-    "refreeze": Refreeze,
 }
 
 EXCLUDED_OPTIONS = [
@@ -126,9 +122,11 @@ class CLIAction:
             self.alias = {
                 "name": option_dict["name"],
                 "extra_settings": option_dict["extra_settings"],
-                "wini": kwargs["warn_if_no_indices"]
-                if "warn_if_no_indices" in kwargs
-                else False,
+                "wini": (
+                    kwargs["warn_if_no_indices"]
+                    if "warn_if_no_indices" in kwargs
+                    else False
+                ),
             }
             for k in ["add", "remove"]:
                 if k in kwargs:
