@@ -275,28 +275,6 @@ class Rotate:
                     )
                     raise
 
-    def get_repo_details(self, repo: str) -> Repository:
-        """Return a Repository object given a repo name
-
-        :param repo: The name of the repository
-        :type repo: str
-
-        :return: The repository object
-        :rtype: Repository
-
-        :raises Exception: If the repository does not exist
-        """
-        response = self.client.get_repository(repo)
-        earliest, latest = get_timestamp_range(self.client, [repo])
-        return Repository(
-            name=repo,
-            bucket=response["bucket"],
-            base_path=response["base_path"],
-            start=earliest,
-            end=latest,
-            is_mounted=False,
-        )
-
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the rotation process.

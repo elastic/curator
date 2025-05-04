@@ -4,7 +4,7 @@
 
 import logging
 import re
-from datetime import datetime, time, timezone
+from datetime import datetime, timezone
 
 from elasticsearch8 import Elasticsearch, NotFoundError
 
@@ -14,7 +14,7 @@ from curator.exceptions import ActionError
 from curator.s3client import S3Client
 
 from .constants import SETTINGS_ID, STATUS_INDEX
-from .helpers import Repository, Settings, ThawSet
+from .helpers import Repository, Settings
 
 
 def push_to_glacier(s3: S3Client, repo: Repository) -> None:
@@ -51,97 +51,6 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
         )
 
     print("Freezing to Glacier initiated for {count} objects")
-
-
-def check_restore_status(s3: S3Client, repo: Repository) -> bool:
-    """
-    Check the status of the restore request for each object in the repository.
-
-    :param s3:  The S3 client object
-    :type s3: S3Client
-    :param repo: The repository to check
-    :type repo: Repository
-    :raises Exception:  If the object is not in the restoration process
-    :return:   True if the restore request is complete, False otherwise
-    :rtype: bool
-    """
-    response = s3.list_objects(repo.bucket, repo.base_path)
-
-    # Check if objects were found
-    if "Contents" not in response:
-        return
-
-    # Loop through each object and initiate restore for Glacier objects
-    for obj in response["Contents"]:
-        try:
-            response = s3.head_object(Bucket=repo.bucket, Key=obj["Key"])
-
-            # Check if the object has the 'Restore' header
-            restore_status = response.get("Restore")
-
-            if restore_status:
-                if 'ongoing-request="true"' in restore_status:
-                    return False
-            else:
-                raise Exception(
-                    f"Object {obj['Key']} is not in the restoration process."
-                )
-
-        except Exception:
-            return None
-    return True
-
-
-def thaw_repo(
-    s3: S3Client,
-    bucket_name: str,
-    base_path: str,
-    restore_days: int = 7,
-    retrieval_tier: str = "Standard",
-) -> None:
-    """
-    Restore objects from Glacier storage
-
-    :param s3: The S3 client object
-    :type s3: S3Client
-    :param bucket_name: Bucket name
-    :type bucket_name: str
-    :param base_path: Base path of the repository
-    :type base_path: str
-    :param restore_days: Number of days to retain before returning to Glacier, defaults to 7
-    :type restore_days: int, optional
-    :param retrieval_tier: Storage tier to return objects to, defaults to "Standard"
-    :type retrieval_tier: str, optional
-
-    :raises Exception: If the object is not in the restoration process
-
-    :return: None
-    :rtype: None
-    """
-    response = s3.list_objects(bucket_name, base_path)
-
-    # Check if objects were found
-    if "Contents" not in response:
-        return
-
-    # Loop through each object and initiate restore for Glacier objects
-    count = 0
-    for obj in response["Contents"]:
-        count += 1
-
-        # Initiate the restore request for each object
-        s3.restore_object(
-            Bucket=bucket_name,
-            Key=obj["Key"],
-            RestoreRequest={
-                "Days": restore_days,
-                "GlacierJobParameters": {
-                    "Tier": retrieval_tier  # You can change to 'Expedited' or 'Bulk' if needed
-                },
-            },
-        )
-
-    print(f"Restore request initiated for {count} objects")
 
 
 def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]:
@@ -535,30 +444,6 @@ def get_matching_repos(
     return [Repository(**repo["_source"], docid=response["_id"]) for repo in repos]
 
 
-def get_thawset(client: Elasticsearch, thawset_id: str) -> ThawSet:
-    """
-    Get the thawset from the status index.
-
-    :param client: A client connection object
-    :type client: Elasticsearch
-    :param thawset_id: The ID of the thawset
-    :type thawset_id: str
-
-    :returns: The thawset
-    :rtype: ThawSet
-
-    :raises Exception: If the thawset document does not exist
-    """
-    loggit = logging.getLogger("curator.actions.deepfreeze")
-    try:
-        doc = client.get(index=STATUS_INDEX, id=thawset_id)
-        loggit.info("ThawSet document found")
-        return ThawSet(doc["_source"])
-    except NotFoundError:
-        loggit.info("ThawSet document not found")
-        return None
-
-
 def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     """
     Encapsulate the actions of deleting the repo and, at the same time,
@@ -606,45 +491,6 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     return repo_obj
 
 
-def wait_for_s3_restore(
-    s3: S3Client, thawset: ThawSet, wait_interval: int = 60, max_wait: int = -1
-) -> None:
-    """
-    Wait for the S3 objects to be restored.
-
-    :param s3: The S3 client object
-    :type s3: S3Client
-    :param thawset: The thawset to wait for
-    :type thawset: ThawSet
-    :param wait_interval: The interval to wait between checks
-    :type wait_interval: int
-    :param max_wait: The maximum time to wait
-    :type max_wait: int
-
-    :return: None
-    :rtype: None
-
-    :raises Exception: If the S3 objects are not restored
-    :raises Exception: If the S3 objects are not found
-    :raises Exception: If the S3 objects are not in the restoration process
-    :raises Exception: If the S3 objects are not in the correct storage class
-    :raises Exception: If the S3 objects are not in the correct bucket
-    :raises Exception: If the S3 objects are not in the correct base path
-    """
-    loggit = logging.getLogger("curator.actions.deepfreeze")
-    loggit.info("Waiting for S3 objects to be restored")
-    start_time = datetime.now()
-    while True:
-        if check_is_s3_thawed(s3, thawset):
-            loggit.info("S3 objects restored")
-            break
-        if max_wait > 0 and (datetime.now() - start_time).seconds > max_wait:
-            loggit.warning("Max wait time exceeded")
-            break
-        loggit.info("Waiting for S3 objects to be restored")
-        time.sleep(wait_interval)
-
-
 def decode_date(date_in: str) -> datetime:
     """
     Decode a date from a string or datetime object.
@@ -667,34 +513,6 @@ def decode_date(date_in: str) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
-
-
-def check_is_s3_thawed(s3: S3Client, thawset: ThawSet) -> bool:
-    """
-    Check the status of the thawed repositories.
-
-    :param s3: The S3 client object
-    :type s3: S3Client
-    :param thawset: The thawset to check
-    :type thawset: ThawSet
-
-    :returns: True if the repositories are thawed, False otherwise
-    :rtype: bool
-
-    :raises Exception: If the repository does not exist
-    :raises Exception: If the repository is not empty
-    :raises Exception: If the repository is not mounted
-    :raises Exception: If the repository is not thawed
-    :raises Exception: If the repository is not in the correct storage class
-    :raises Exception: If the repository is not in the correct bucket
-    :raises Exception: If the repository is not in the correct base path
-    """
-    for repo in thawset:
-        logging.info("Checking status of %s", repo)
-        if not check_restore_status(s3, repo):
-            logging.warning("Restore not complete for %s", repo)
-            return False
-    return True
 
 
 def create_ilm_policy(
