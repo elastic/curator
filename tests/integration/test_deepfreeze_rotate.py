@@ -11,7 +11,7 @@ from curator.actions.deepfreeze import PROVIDERS
 from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.actions.deepfreeze.rotate import Rotate
-from curator.actions.deepfreeze.utilities import get_repository, get_unmounted_repos
+from curator.actions.deepfreeze.utilities import get_all_repos, get_repository
 from curator.exceptions import ActionError
 from curator.s3client import s3_client_factory
 from tests.integration import testvars
@@ -81,7 +81,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
             # They should not be the same two as before
             assert rotate.repo_list != orig_list
             # Query the settings index to get the unmountd repos
-            unmounted = get_unmounted_repos(self.client)
+            unmounted = get_all_repos(self.client)
             assert len(unmounted) == 1
             assert unmounted[0].name == f"{prefix}-000001"
 
@@ -132,7 +132,7 @@ class TestDeepfreezeRotate(DeepfreezeTestCase):
                 f"{prefix}-000001",
             ]
             # Query the settings index to get the unmounted repos
-            unmounted = get_unmounted_repos(self.client)
+            unmounted = get_all_repos(self.client)
             assert len(unmounted) == 2
             assert f"{prefix}-000001" in [x.name for x in unmounted]
             assert f"{prefix}-000002" in [x.name for x in unmounted]

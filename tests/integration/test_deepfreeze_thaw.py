@@ -3,10 +3,7 @@ import warnings
 
 from curator.actions.deepfreeze.constants import PROVIDERS, STATUS_INDEX
 from curator.actions.deepfreeze.thaw import Thaw
-from curator.actions.deepfreeze.utilities import (
-    get_matching_repo_names,
-    get_unmounted_repos,
-)
+from curator.actions.deepfreeze.utilities import get_all_repos, get_matching_repo_names
 from tests.integration import DeepfreezeTestCase, random_suffix, testvars
 
 HOST = os.environ.get("TEST_ES_SERVER", "http://127.0.0.1:9200")
@@ -41,10 +38,10 @@ class TestDeepfreezeThaw(DeepfreezeTestCase):
             # We should now have 6 mounted repos
             assert len(rotate.repo_list) == 7
             # ...and one unmounted repo
-            assert len(get_unmounted_repos(self.client)) == 1
+            assert len(get_all_repos(self.client)) == 1
             # Thaw the unmounted repository
             # Find a date contained in the unmounted repo
-            unmounted_repo = get_unmounted_repos(self.client)[0]
+            unmounted_repo = get_all_repos(self.client)[0]
             selected_start = (
                 unmounted_repo.start + (unmounted_repo.end - unmounted_repo.start) / 3
             )
