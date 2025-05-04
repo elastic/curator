@@ -130,6 +130,12 @@ class Rotate:
             self.loggit.debug("Found %s indices still mounted", len(filtered))
             if filtered:
                 earliest, latest = get_timestamp_range(self.client, filtered)
+                self.loggit.debug(
+                    "BDW: For repo %s: Earliest: %s, Latest: %s",
+                    repo.name,
+                    earliest,
+                    latest,
+                )
                 changed = False
                 if not repo.start or earliest < decode_date(repo.start):
                     repo.start = earliest
@@ -250,6 +256,23 @@ class Rotate:
                 # ? the repo here or in unmount_repo?
                 unmounted_repo = unmount_repo(self.client, repo)
                 push_to_glacier(self.s3, unmounted_repo)
+                try:
+                    self.loggit.debug("Fetching repo %s doc", repo)
+                    repository = Repository.from_elasticsearch(
+                        self.client, repo, STATUS_INDEX
+                    )
+                    self.loggit.debug("Looking for %s, found %s", repo, repository)
+                    repository.unmount()
+                    self.loggit.debug("preparing to persist %s", repo)
+                    repository.persist(self.client)
+                    self.loggit.info(
+                        "Updated status to unmounted for repo %s", repository.name
+                    )
+                except Exception as e:
+                    self.loggit.error(
+                        "Failed to update doc unmounting repo %s: %s", repo, str(e)
+                    )
+                    raise
 
     def get_repo_details(self, repo: str) -> Repository:
         """Return a Repository object given a repo name
