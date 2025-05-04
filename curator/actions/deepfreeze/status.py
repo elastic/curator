@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 
 from curator.actions.deepfreeze.constants import STATUS_INDEX
-from curator.actions.deepfreeze.utilities import get_settings, get_unmounted_repos
+from curator.actions.deepfreeze.utilities import get_all_repos, get_settings
 
 
 class Status:
@@ -189,8 +189,10 @@ class Status:
 
         # List unmounted repositories first
         active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
-        unmounted_repos = get_unmounted_repos(self.client)
+        self.loggit.debug("Getting repositories")
+        unmounted_repos = get_all_repos(self.client)
         unmounted_repos.sort()
+        self.loggit.debug("Got %s repositories", len(unmounted_repos))
         for repo in unmounted_repos:
             status = "U"
             if repo.is_mounted:
@@ -201,9 +203,22 @@ class Status:
                 status = "T"
             if repo.name == active_repo:
                 status = "M*"
-            snapshots = self.client.snapshot.get(repository=repo.name, snapshot="_all")
-            count = len(snapshots.get("snapshots", []))
-            self.loggit.debug(f"Got {count} snapshots for {repo.name}")
+            count = "--"
+            self.loggit.debug(f"Checking mount status for {repo.name}")
+            if repo.is_mounted:
+                try:
+                    snapshots = self.client.snapshot.get(
+                        repository=repo.name, snapshot="_all"
+                    )
+                    count = len(snapshots.get("snapshots", []))
+                    self.loggit.debug(f"Got {count} snapshots for {repo.name}")
+                except Exception as e:
+                    self.loggit.warning("Repository %s not mounted: %s", repo.name, e)
+                    repo.unmount()
+                    # FiXME: Push this to the status index
+                    # repo.persist(self.client)
+                    # We're still getting duplication of repository documents in the status
+                    # index.
             table.add_row(repo.name, status, str(count), repo.start, repo.end)
         self.console.print(table)
 

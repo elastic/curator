@@ -12,8 +12,8 @@ from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.helpers import Repository, ThawedRepo, ThawSet
 from curator.actions.deepfreeze.utilities import (
     decode_date,
+    get_all_repos,
     get_settings,
-    get_unmounted_repos,
     thaw_repo,
     wait_for_s3_restore,
 )
@@ -91,7 +91,7 @@ class Thaw:
         :raises Exception: If the repository is not empty
         """
         loggit = logging.getLogger("curator.actions.deepfreeze")
-        repos = get_unmounted_repos(self.client)
+        repos = get_all_repos(self.client)
         overlapping_repos = []
         for repo in repos:
             if repo.start <= end and repo.end >= start:

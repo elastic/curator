@@ -6,6 +6,7 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from elasticsearch import Elasticsearch
 
@@ -115,6 +116,7 @@ class Repository:
         is_thawed (bool): Whether the repository is thawed.
         is_mounted (bool): Whether the repository is mounted.
         doctype (str): The document type of the repository.
+        id [str]: The ID of the repository in Elasticsearch.
 
     Methods:
         to_dict() -> dict:
@@ -144,6 +146,49 @@ class Repository:
     is_thawed: bool = False
     is_mounted: bool = True
     doctype: str = "repository"
+    docid: str = None
+
+    @classmethod
+    def from_elasticsearch(
+        cls, client: Elasticsearch, name: str, index: str = STATUS_INDEX
+    ) -> Optional['Repository']:
+        """
+        Fetch a document from Elasticsearch by name and create a Repository instance.
+
+        Args:
+            name: The name of the repository to fetch
+            client: Elasticsearch client instance
+            index: The Elasticsearch index to query (default: 'repositories')
+
+        Returns:
+            Repository instance or None if not found
+        """
+        try:
+            # Query Elasticsearch for a document matching the name
+            logging.debug(f"Fetching Repository from Elasticsearch: {name}")
+            response = client.search(
+                index=index,
+                query={"match": {"name.keyword": name}},  # Use .keyword for exact match
+                size=1,
+            )
+
+            # Check if we got any hits
+            hits = response['hits']['hits']
+            if not hits:
+                return None
+
+            # Extract the document source
+            doc = hits[0]['_source']
+            id = hits[0]['_id']
+
+            logging.debug(f"Document fetched: {doc}")
+
+            # Create and return a new Repository instance
+            return cls(**doc, docid=id)
+
+        except Exception as e:
+            print(f"Error fetching Repository from Elasticsearch: {e}")
+            return None
 
     def to_dict(self) -> dict:
         """
@@ -218,7 +263,11 @@ class Repository:
         Returns:
             None
         """
-        es.index(index=STATUS_INDEX, id=self.name, body=self.to_dict())
+        logging.debug("Persisting Repository to Elasticsearch")
+        logging.debug(f"Repository name: {self.name}")
+        logging.debug(f"Repository id: {self.docid}")
+        logging.debug(f"Repository body: {self.to_dict()}")
+        es.update(index=STATUS_INDEX, id=self.docid, doc=self.to_dict())
 
 
 @dataclass
