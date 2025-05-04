@@ -8,12 +8,9 @@ from .exceptions import (
     MissingSettingsError,
 )
 from .helpers import Deepfreeze, Repository, Settings, ThawedRepo, ThawSet
-from .refreeze import Refreeze
-from .remount import Remount
 from .rotate import Rotate
 from .setup import Setup
 from .status import Status
-from .thaw import Thaw
 from .utilities import (
     check_is_s3_thawed,
     check_restore_status,
@@ -43,8 +40,5 @@ CLASS_MAP = {
     "thawset": ThawSet,
     "setup": Setup,
     "rotate": Rotate,
-    "thaw": Thaw,
-    "remount": Remount,
-    "refreeze": Refreeze,
     "status": Status,
 }
