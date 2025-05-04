@@ -9,7 +9,6 @@ from rich import print
 from rich.console import Console
 from rich.table import Table
 
-from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.utilities import get_all_repos, get_settings
 
 
