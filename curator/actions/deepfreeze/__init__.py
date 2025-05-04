@@ -7,13 +7,11 @@ from .exceptions import (
     MissingIndexError,
     MissingSettingsError,
 )
-from .helpers import Deepfreeze, Repository, Settings, ThawedRepo, ThawSet
+from .helpers import Deepfreeze, Repository, Settings
 from .rotate import Rotate
 from .setup import Setup
 from .status import Status
 from .utilities import (
-    check_is_s3_thawed,
-    check_restore_status,
     create_repo,
     decode_date,
     ensure_settings_index,
@@ -23,21 +21,16 @@ from .utilities import (
     get_matching_repos,
     get_next_suffix,
     get_settings,
-    get_thawset,
     get_timestamp_range,
     push_to_glacier,
     save_settings,
-    thaw_repo,
     unmount_repo,
-    wait_for_s3_restore,
 )
 
 CLASS_MAP = {
     "deepfreeze": Deepfreeze,
     "repository": Repository,
     "settings": Settings,
-    "thawedrepo": ThawedRepo,
-    "thawset": ThawSet,
     "setup": Setup,
     "rotate": Rotate,
     "status": Status,
