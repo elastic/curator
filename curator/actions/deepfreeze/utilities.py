@@ -200,16 +200,22 @@ def get_timestamp_range(
     }
     logging.debug("starting with %s indices", len(indices))
     # Remove any indices that do not exist
-    indices = [index for index in indices if client.indices.exists(index=index)]
-    logging.debug("after removing non-existent indices: %s", len(indices))
+    filtered = [index for index in indices if client.indices.exists(index=index)]
+    logging.debug("after removing non-existent indices: %s", len(filtered))
 
-    response = client.search(
-        index=",".join(indices), body=query, allow_partial_search_results=True
-    )
-    logging.debug("Response: %s", response)
+    try:
+        response = client.search(
+            index=",".join(filtered), body=query, allow_partial_search_results=True
+        )
+        logging.debug("Response: %s", response)
+    except Exception as e:
+        logging.error("Error retrieving timestamp range: %s", e)
+        return None, None
 
     earliest = response["aggregations"]["earliest"]["value_as_string"]
     latest = response["aggregations"]["latest"]["value_as_string"]
+
+    logging.debug("BDW from query: Earliest: %s, Latest: %s", earliest, latest)
 
     logging.debug("Earliest: %s, Latest: %s", earliest, latest)
 
@@ -362,7 +368,7 @@ def create_repo(
         base_path if not repository.base_path else repository.base_path
     )
     loggit.debug("Repo = %s", repository)
-    client.index(index=STATUS_INDEX, document=repository.to_dict())
+    client.index(index=STATUS_INDEX, body=repository.to_dict())
     loggit.debug("Repo %s saved to status index", repo_name)
     #
     # TODO: Gather the reply and parse it to make sure this succeeded
@@ -423,7 +429,10 @@ def get_repository(client: Elasticsearch, name: str) -> Repository:
         for n in range(len(doc["hits"]["hits"])):
             if doc["hits"]["hits"][n]["_source"]["name"] == name:
                 logging.debug("Got a match")
-                return Repository(**doc["hits"]["hits"][n]["_source"])
+                return Repository(
+                    **doc["hits"]["hits"][n]["_source"],
+                    docid=doc["hits"]["hits"][n]["_id"],
+                )
         # If we get here, we have no match
         logging.debug("No match found")
         return Repository(name=name)
@@ -432,7 +441,7 @@ def get_repository(client: Elasticsearch, name: str) -> Repository:
         return Repository(name=name)
 
 
-def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
+def get_all_repos(client: Elasticsearch) -> list[Repository]:
     """
     Get the complete list of repos from our index and return a Repository object for each.
 
@@ -449,10 +458,24 @@ def get_unmounted_repos(client: Elasticsearch) -> list[Repository]:
     # # Perform search in ES for all repos in the status index
     # ! This will now include mounted and unmounted repos both!
     query = {"query": {"match": {"doctype": "repository"}}}
-    response = client.search(index=STATUS_INDEX, body=query)
+    logging.debug("Searching for repos")
+    response = client.search(index=STATUS_INDEX, body=query, size=10000)
+    logging.debug("Response: %s", response)
     repos = response["hits"]["hits"]
+    logging.debug("Repos retrieved: %s", repos)
     # return a Repository object for each
-    return [Repository(**repo["_source"]) for repo in repos]
+    # TEMP:
+    rv = []
+    for repo in repos:
+        logging.debug("Repo: %s", repo)
+        logging.debug("Repo ID: %s", repo["_id"])
+        logging.debug("Repo Source: %s", repo["_source"])
+        rv.append(Repository(**repo["_source"], docid=repo["_id"]))
+        logging.debug("Repo object: %s", rv[-1])
+    return rv
+
+
+#    return [Repository(**repo["_source"], docid=response["_id"]) for repo in repos]
 
 
 def get_matching_repo_names(client: Elasticsearch, repo_name_prefix: str) -> list[str]:
@@ -508,7 +531,7 @@ def get_matching_repos(
         logging.debug("Mounted repos: %s", mounted_repos)
         return [Repository(**repo["_source"]) for repo in mounted_repos]
     # return a Repository object for each
-    return [Repository(**repo["_source"]) for repo in repos]
+    return [Repository(**repo["_source"], docid=response["_id"]) for repo in repos]
 
 
 def get_thawset(client: Elasticsearch, thawset_id: str) -> ThawSet:
@@ -577,7 +600,7 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
         loggit.warning("Another attempt will be made when rotate runs next")
     # Don't update the records until the repo has been succesfully removed.
     loggit.debug("Updating repo: %s", repo_obj)
-    client.index(index=STATUS_INDEX, document=repo_obj.to_dict())
+    client.update(index=STATUS_INDEX, doc=repo_obj.to_dict(), id=repo_obj.docid)
     loggit.debug("Repo %s removed", repo)
     return repo_obj
 
