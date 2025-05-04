@@ -243,6 +243,7 @@ class Rotate:
 
         :raises Exception: If the repository cannot be removed
         """
+        # TODO: Use a list of Repositories, not a list of names. Be consistent and always use Repositories.
         self.loggit.debug("Total list: %s", self.repo_list)
         s = self.repo_list[self.keep :]
         self.loggit.debug("Repos to remove: %s", s)
@@ -351,7 +352,6 @@ class Rotate:
             self.settings.storage_class,
         )
         # Go through mounted repos and make sure the date ranges are up-to-date
-        # FIXME: This doesn't seem to be working correctly!
         self.update_repo_date_range()
         self.update_ilm_policies()
         self.unmount_oldest_repos()

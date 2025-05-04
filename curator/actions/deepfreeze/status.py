@@ -193,10 +193,6 @@ class Status:
                 except Exception as e:
                     self.loggit.warning("Repository %s not mounted: %s", repo.name, e)
                     repo.unmount()
-                    # FiXME: Push this to the status index
-                    # repo.persist(self.client)
-                    # We're still getting duplication of repository documents in the status
-                    # index.
             table.add_row(repo.name, status, str(count), repo.start, repo.end)
         self.console.print(table)
 
