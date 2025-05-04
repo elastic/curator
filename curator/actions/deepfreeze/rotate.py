@@ -177,9 +177,9 @@ class Rotate:
         """
         self.loggit.debug("Updating ILM policies")
         if self.latest_repo == self.new_repo_name:
-            self.loggit.warning("Already on the latest repo")
+            self.loggit.info("Already on the latest repo")
             sys.exit(0)
-        self.loggit.warning(
+        self.loggit.info(
             "Switching from %s to %s", self.latest_repo, self.new_repo_name
         )
         policies = self.client.ilm.get_lifecycle()
