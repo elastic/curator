@@ -257,7 +257,7 @@ class CLIAction:
                 action_obj = self.get_alias_obj()
             elif self.action in ["cluster_routing", "create_index", "rollover"]:
                 action_obj = self.action_class(self.client, **self.options)
-            elif self.action in ["setup", "rotate", "thaw", "refreeze", "status"]:
+            elif self.action in ["setup", "rotate", "status"]:
                 self.logger.debug(
                     f"Declaring Deepfreeze action object with options: {self.options}"
                 )
