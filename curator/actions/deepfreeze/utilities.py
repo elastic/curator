@@ -518,7 +518,8 @@ def get_matching_repos(
     :raises Exception: If the repository does not exist
     """
     query = {"query": {"match": {"doctype": "repository"}}}
-    response = client.search(index=STATUS_INDEX, body=query)
+    response = client.search(index=STATUS_INDEX, body=query, size=10000)
+    logging.debug("Response: %s", response)
     repos = response["hits"]["hits"]
     logging.debug("Repos retrieved: %s", repos)
     repos = [
