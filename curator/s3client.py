@@ -7,6 +7,7 @@ Encapsulate the S3 client here so it can be used by all Curator classes, not jus
 deepfreeze.
 """
 
+import abc
 import logging
 
 import boto3
@@ -17,7 +18,7 @@ from curator.exceptions import ActionError
 # from botocore.exceptions import ClientError
 
 
-class S3Client:
+class S3Client(metaclass=abc.ABCMeta):
     """
     Superclass for S3 Clients.
 
@@ -26,6 +27,7 @@ class S3Client:
     methods should handle that.
     """
 
+    @abc.abstractmethod
     def create_bucket(self, bucket_name: str) -> None:
         """
         Create a bucket with the given name.
@@ -36,8 +38,9 @@ class S3Client:
         Returns:
             None
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def bucket_exists(self, bucket_name: str) -> bool:
         """
         Test whether or not the named bucket exists
@@ -47,8 +50,9 @@ class S3Client:
         :return: Existence state of named bucket
         :rtype: bool
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def thaw(
         self,
         bucket_name: str,
@@ -70,8 +74,9 @@ class S3Client:
         Returns:
             None
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def refreeze(
         self, bucket_name: str, path: str, storage_class: str = "GLACIER"
     ) -> None:
@@ -84,8 +89,9 @@ class S3Client:
             storage_class (str): The storage class to send the data to.
 
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def list_objects(self, bucket_name: str, prefix: str) -> list[str]:
         """
         List objects in a bucket with a given prefix.
@@ -97,8 +103,9 @@ class S3Client:
         Returns:
             list[str]: A list of object keys.
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def delete_bucket(self, bucket_name: str) -> None:
         """
         Delete a bucket with the given name.
@@ -109,8 +116,9 @@ class S3Client:
         Returns:
             None
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def put_object(self, bucket_name: str, key: str, body: str = "") -> None:
         """
         Put an object in a bucket at the given path.
@@ -123,8 +131,9 @@ class S3Client:
         Returns:
             None
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
+    @abc.abstractmethod
     def list_buckets(self, prefix: str = None) -> list[str]:
         """
         List all buckets.
@@ -132,7 +141,7 @@ class S3Client:
         Returns:
             list[str]: A list of bucket names.
         """
-        raise NotImplementedError("Subclasses should implement this method")
+        return
 
 
 class AwsS3Client(S3Client):
