@@ -10,7 +10,6 @@ import string
 import sys
 import tempfile
 import time
-import warnings
 from datetime import date, datetime, timedelta, timezone
 from subprocess import PIPE, Popen
 from unittest import SkipTest, TestCase
@@ -333,6 +332,32 @@ class DeepfreezeTestCase(CuratorTestCase):
         self, do_action=True, rotate_by: str = None, create_ilm_policy: bool = False
     ) -> Setup:
         s3 = s3_client_factory(self.provider)
+
+        # Clean up any existing settings
+        try:
+            self.client.indices.delete(index=STATUS_INDEX)
+        except Exception:
+            pass
+        try:
+            self.client.snapshot.delete_repository(
+                name=f"{testvars.df_repo_name}-000001"
+            )
+        except Exception:
+            pass
+        try:
+            self.client.snapshot.delete_repository(name=f"{testvars.df_repo_name}*")
+        except Exception:
+            pass
+        try:
+            s3 = s3_client_factory(self.provider)
+            s3.delete_bucket(self.bucket_name)
+        except Exception:
+            pass
+        # Clean up any existing ILM policy
+        try:
+            self.client.ilm.delete_lifecycle(name=testvars.df_ilm_policy)
+        except Exception:
+            pass
 
         if rotate_by:
             testvars.df_rotate_by = rotate_by
