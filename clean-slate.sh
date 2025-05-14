@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Elasticsearch host
-ES_HOST="192.168.10.31:9200"
+ES_HOST="elasticsearch.bwortman.us"
 
 echo "Removing status index"
 curl -sku bret:2xqT2IO1OQ%tfMHP -X DELETE "https://$ES_HOST/deepfreeze-status"
