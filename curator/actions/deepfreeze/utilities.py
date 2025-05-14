@@ -6,6 +6,7 @@ import logging
 import re
 from datetime import datetime, timezone
 
+import botocore
 from elasticsearch8 import Elasticsearch, NotFoundError
 
 from curator.actions import CreateIndex
@@ -30,27 +31,80 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
 
     :raises Exception: If the object is not in the restoration process
     """
-    logging.debug("Pushing objects to Glacier storage")
-    response = s3.list_objects(repo.bucket, repo.base_path)
+    try:
+        # Normalize base_path: remove leading/trailing slashes, ensure it ends with /
+        base_path = repo.base_path.strip('/')
+        if base_path:
+            base_path += '/'
 
-    # Check if objects were found
-    if "Contents" not in response:
-        return
+        # Initialize variables for pagination
+        continuation_token = None
+        success = True
+        object_count = 0
 
-    # Loop through each object and initiate restore for Glacier objects
-    count = 0
-    for obj in response["Contents"]:
-        count += 1
+        # Paginate through objects in the bucket and prefix
+        while True:
+            # Prepare list_objects_v2 parameters
+            list_params = {'Bucket': repo.bucket, 'Prefix': base_path}
+            if continuation_token:
+                list_params['ContinuationToken'] = continuation_token
 
-        # Initiate the restore request for each object
-        s3.copy_object(
-            Bucket=repo.bucket,
-            Key=obj["Key"],
-            CopySource={"Bucket": repo.bucket, "Key": obj["Key"]},
-            StorageClass="GLACIER",
+            # List objects
+            response = s3.list_objects(**list_params)
+
+            # Process each object
+            for obj in response.get('Contents', []):
+                key = obj['Key']
+                current_storage_class = obj.get('StorageClass', 'STANDARD')
+
+                # Log the object being processed
+                logging.info(
+                    f"Processing object: s3://{repo.bucket}/{key} (Current: {current_storage_class})"
+                )
+
+                try:
+                    # Copy object to itself with new storage class
+                    copy_source = {'Bucket': repo.bucket, 'Key': key}
+                    s3.copy_object(
+                        Bucket=repo.bucket,
+                        Key=key,
+                        CopySource=copy_source,
+                        StorageClass='GLACIER',
+                        MetadataDirective='COPY',  # Preserve metadata
+                        TaggingDirective='COPY',  # Preserve tags
+                    )
+
+                    # Log success
+                    logging.info(
+                        f"Successfully moved s3://{repo.bucket}/{key} to GLACIER"
+                    )
+                    object_count += 1
+
+                except botocore.exceptions.ClientError as e:
+                    logging.error(f"Failed to move s3://{repo.bucket}/{key}: {e}")
+                    success = False
+                    continue
+
+            # Check for more objects (pagination)
+            if response.get('IsTruncated'):
+                continuation_token = response.get('NextContinuationToken')
+            else:
+                break
+
+        # Log summary
+        logging.info(
+            f"Processed {object_count} objects in s3://{repo.bucket}/{base_path}"
         )
+        if success:
+            logging.info("All objects successfully moved to GLACIER")
+        else:
+            logging.warning("Some objects failed to move to GLACIER")
 
-    print("Freezing to Glacier initiated for {count} objects")
+        return success
+
+    except botocore.exceptions.ClientError as e:
+        logging.error(f"Failed to process bucket s3://{repo.bucket}: {e}")
+        return False
 
 
 def get_all_indices_in_repo(client: Elasticsearch, repository: str) -> list[str]:
