@@ -284,7 +284,7 @@ class AwsS3Client(S3Client):
         for page in pages:
             if "Contents" in page:
                 for obj in page["Contents"]:
-                    object_keys.append(obj["Key"])
+                    object_keys.append(obj)
 
         return object_keys
 
