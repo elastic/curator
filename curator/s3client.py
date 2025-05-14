@@ -143,6 +143,27 @@ class S3Client(metaclass=abc.ABCMeta):
         """
         return
 
+    @abc.abstractmethod
+    def copy_object(
+        Bucket: str,
+        Key: str,
+        CopySource: dict[str, str],
+        StorageClass: str,
+    ) -> None:
+        """
+        Copy an object from one bucket to another.
+
+        Args:
+            source_bucket (str): The name of the source bucket.
+            source_key (str): The key of the object to copy.
+            dest_bucket (str): The name of the destination bucket.
+            dest_key (str): The key for the copied object.
+
+        Returns:
+            None
+        """
+        return
+
 
 class AwsS3Client(S3Client):
     """
@@ -256,7 +277,6 @@ class AwsS3Client(S3Client):
                             CopySource={"Bucket": bucket_name, "Key": key},
                             Key=key,
                             StorageClass=storage_class,
-                            MetadataDirective="COPY",
                         )
                         self.loggit.info(f"Refrozen: {key} to {storage_class}")
 
@@ -279,14 +299,14 @@ class AwsS3Client(S3Client):
         )
         paginator = self.client.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
-        object_keys = []
+        objects = []
 
         for page in pages:
             if "Contents" in page:
                 for obj in page["Contents"]:
-                    object_keys.append(obj)
+                    objects.append(obj)
 
-        return object_keys
+        return objects
 
     def delete_bucket(self, bucket_name: str) -> None:
         """
@@ -341,6 +361,37 @@ class AwsS3Client(S3Client):
                     name for name in bucket_names if name.startswith(prefix)
                 ]
             return bucket_names
+        except ClientError as e:
+            self.loggit.error(e)
+            raise ActionError(e)
+
+    def copy_object(
+        self,
+        Bucket: str,
+        Key: str,
+        CopySource: dict[str, str],
+        StorageClass: str = "GLACIER",
+    ) -> None:
+        """
+        Copy an object from one bucket to another.
+
+        Args:
+            Bucket (str): The name of the destination bucket.
+            Key (str): The key for the copied object.
+            CopySource (dict[str, str]): The source bucket and key.
+            StorageClass (str): The storage class to use.
+
+        Returns:
+            None
+        """
+        self.loggit.info(f"Copying object {Key} to bucket {Bucket}")
+        try:
+            self.client.copy_object(
+                Bucket=Bucket,
+                CopySource=CopySource,
+                Key=Key,
+                StorageClass=StorageClass,
+            )
         except ClientError as e:
             self.loggit.error(e)
             raise ActionError(e)

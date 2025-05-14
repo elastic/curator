@@ -38,59 +38,40 @@ def push_to_glacier(s3: S3Client, repo: Repository) -> None:
             base_path += '/'
 
         # Initialize variables for pagination
-        continuation_token = None
         success = True
         object_count = 0
 
-        # Paginate through objects in the bucket and prefix
-        while True:
-            # Prepare list_objects_v2 parameters
-            list_params = {'Bucket': repo.bucket, 'Prefix': base_path}
-            if continuation_token:
-                list_params['ContinuationToken'] = continuation_token
+        # List objects
+        objects = s3.list_objects(repo.bucket, base_path)
 
-            # List objects
-            response = s3.list_objects(**list_params)
+        # Process each object
+        for obj in objects:
+            key = obj['Key']
+            current_storage_class = obj.get('StorageClass', 'STANDARD')
 
-            # Process each object
-            for obj in response.get('Contents', []):
-                key = obj['Key']
-                current_storage_class = obj.get('StorageClass', 'STANDARD')
+            # Log the object being processed
+            logging.info(
+                f"Processing object: s3://{repo.bucket}/{key} (Current: {current_storage_class})"
+            )
 
-                # Log the object being processed
-                logging.info(
-                    f"Processing object: s3://{repo.bucket}/{key} (Current: {current_storage_class})"
+            try:
+                # Copy object to itself with new storage class
+                copy_source = {'Bucket': repo.bucket, 'Key': key}
+                s3.copy_object(
+                    Bucket=repo.bucket,
+                    Key=key,
+                    CopySource=copy_source,
+                    StorageClass='GLACIER',
                 )
 
-                try:
-                    # Copy object to itself with new storage class
-                    copy_source = {'Bucket': repo.bucket, 'Key': key}
-                    s3.copy_object(
-                        Bucket=repo.bucket,
-                        Key=key,
-                        CopySource=copy_source,
-                        StorageClass='GLACIER',
-                        MetadataDirective='COPY',  # Preserve metadata
-                        TaggingDirective='COPY',  # Preserve tags
-                    )
+                # Log success
+                logging.info(f"Successfully moved s3://{repo.bucket}/{key} to GLACIER")
+                object_count += 1
 
-                    # Log success
-                    logging.info(
-                        f"Successfully moved s3://{repo.bucket}/{key} to GLACIER"
-                    )
-                    object_count += 1
-
-                except botocore.exceptions.ClientError as e:
-                    logging.error(f"Failed to move s3://{repo.bucket}/{key}: {e}")
-                    success = False
-                    continue
-
-            # Check for more objects (pagination)
-            if response.get('IsTruncated'):
-                continuation_token = response.get('NextContinuationToken')
-            else:
-                break
-
+            except botocore.exceptions.ClientError as e:
+                logging.error(f"Failed to move s3://{repo.bucket}/{key}: {e}")
+                success = False
+                continue
         # Log summary
         logging.info(
             f"Processed {object_count} objects in s3://{repo.bucket}/{base_path}"
