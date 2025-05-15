@@ -1,6 +1,6 @@
 project: 'Curator index management'
 products:
-  - elasticsearch
+  - id: elasticsearch
 cross_links:
   - beats
   - docs-content
