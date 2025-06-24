@@ -10,7 +10,7 @@ This setting is only used by the [reindex](/reference/reindex.md) action.
 ::::
 
 
-This setting can speed up reindexing operations by using [Sliced Scroll](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/paginate-search-results.md#slice-scroll) to slice on the \_uid.
+This setting can speed up reindexing operations by using [Sliced Scroll](elasticsearch://reference/elasticsearch/rest-apis/paginate-search-results.md#slice-scroll) to slice on the \_uid.
 
 ```yaml
 actions:

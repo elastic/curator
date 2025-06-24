@@ -20,11 +20,11 @@ This [filtertype](/reference/filtertype.md) will iterate over the actionable lis
 | --- | --- | --- |
 | `seconds` | `1` | One second |
 | `minutes` | `60` | Calculated as 60 seconds |
-| `hours` | `3600` | Calculated as 60 minutes (60*60) |
-| `days` | `86400` | Calculated as 24 hours (24*60*60) |
-| `weeks` | `604800` | Calculated as 7 days (7*24*60*60) |
-| `months` | `2592000` | Calculated as 30 days (30*24*60*60) |
-| `years` | `31536000` | Calculated as 365 days (365*24*60*60) |
+| `hours` | `3600` | Calculated as 60 minutes (`60 * 60`) |
+| `days` | `86400` | Calculated as 24 hours (`24 * 60 * 60`) |
+| `weeks` | `604800` | Calculated as 7 days (`7 * 24 * 60 * 60`) |
+| `months` | `2592000` | Calculated as 30 days (`30 * 24 * 60 * 60`) |
+| `years` | `31536000` | Calculated as 365 days (`365 * 24 * 60 * 60`) |
 
 All calculations are in epoch time, which is the number of seconds elapsed since 1 Jan 1970.  If no [`epoch`](/reference/fe_epoch.md) is specified in the filter, then the current epoch time-which is always UTC-is used as the basis for comparison.
 
@@ -44,7 +44,7 @@ For example, if the time at execution were 2017-04-07T15:00:00Z (UTC), then the 
 
 The time differential would be `3*24*60*60` seconds, which is `259200` seconds. Subtracting this value from `1491577200` gives us `1491318000`, which is 2017-04-04T15:00:00Z (UTC), exactly 3 days in the past.  The `creation_date` of indices or snapshots is compared to this timestamp. If it is `older`, it stays in the actionable list, otherwise it is removed from the actionable list.
 
-::::{admonition} `age` filter vs. `period` filter
+::::{admonition} age filter vs. period filter
 :class: important
 
 The time differential means of calculation can lead to frustration.

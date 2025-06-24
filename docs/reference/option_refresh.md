@@ -30,7 +30,7 @@ actions:
 
 Setting `refresh` to `True` will cause all re-indexed indexes to be refreshed. This differs from the Index API’s refresh parameter which causes just the *shard* that received the new data to be refreshed.
 
-Read more about this setting at [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/docs-reindex.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/docs-reindex.html)
+Read more about this setting in [the Elasticsearch API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-reindex).
 
 The default value is `True`.
 

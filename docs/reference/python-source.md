@@ -9,8 +9,14 @@ Installing or Curator from source tarball (rather than doing a `git clone`) is a
 
 Download and install Curator from tarball:
 
-1. `wget https://github.com/elastic/curator/archive/v``8.0.17.tar.gz -O elasticsearch-curator.tar.gz`
-2. `pip install elasticsearch-curator.tar.gz`
+1. Run:
+    ```sh subs=true
+    wget https://github.com/elastic/curator/archive/v{{curator_version}}.tar.gz -O elasticsearch-curator.tar.gz
+    ```
+2. Run:
+    ```sh
+    pip install elasticsearch-curator.tar.gz
+    ```
 
  
 

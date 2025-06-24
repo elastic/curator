@@ -21,7 +21,7 @@ Empty values and commented lines will result in the default value, if any, being
 
 This action changes the shard routing allocation for the selected indices.
 
-See [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/shards-allocation.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/shards-allocation.md) for more information.
+See [Cluster-level shard allocation settings](elasticsearch://reference/elasticsearch/configuration-reference/cluster-level-shard-allocation-routing-settings.md#cluster-shard-allocation-settings) for more information.
 
 You can optionally set `wait_for_completion` to `True` to have Curator wait for the shard routing to complete before continuing:
 
