@@ -5,7 +5,7 @@ mapped_pages:
 
 # Installation from source [python-source]
 
-Installing or Curator from source tarball (rather than doing a `git clone`) is also possible.
+You can instal Curator from a source tarball (rather than doing a `git clone`).
 
 
 1. Download the Curator tarball:
