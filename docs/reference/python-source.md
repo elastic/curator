@@ -7,10 +7,15 @@ mapped_pages:
 
 Installing or Curator from source tarball (rather than doing a `git clone`) is also possible.
 
-Download and install Curator from tarball:
 
-1. `wget https://github.com/elastic/curator/archive/v``8.0.17.tar.gz -O elasticsearch-curator.tar.gz`
-2. `pip install elasticsearch-curator.tar.gz`
+1. Download the Curator tarball:
+```sh subs=true
+wget https://github.com/elastic/curator/archive/v{{curator_version}}.tar.gz -O elasticsearch-curator.tar.gz
+```
+2. Install the tarball:
+```sh
+pip install elasticsearch-curator.tar.gz
+```
 
- 
+ 
 
