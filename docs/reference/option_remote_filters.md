@@ -23,7 +23,7 @@ actions:
       request_body:
         source:
           remote:
-            host: https://otherhost:9200
+            host: <OTHER_HOST_URL>:9200
           index: REINDEX_SELECTION
         dest:
           index: index2
