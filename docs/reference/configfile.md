@@ -79,22 +79,22 @@ Curator can only work with one cluster at a time.  Including clients from multip
 Flow:
 
 ```sh
-hosts: [ "<YOUR_HOST_URL_1>:9200", "<YOUR_HOST_URL_2>:9200" ]
+hosts: [ "<HOST_URL_1>:9200", "<HOST_URL_2>:9200" ]
 ```
 
 Spanning:
 
 ```sh
-hosts: [ "<YOUR_HOST_URL_1>:9200",
-    "<YOUR_HOST_URL_2>:9200" ]
+hosts: [ "<HOST_IP_1>:9200",
+    "<HOST_IP_2>:9200" ]
 ```
 
 Block:
 
 ```sh
 hosts:
-  - <YOUR_HOST_URL_1>:9200
-  - <YOUR_HOST_URL_2>:9200
+  - <HOST_IP_1>:9200
+  - <HOST_IP_2>:9200
 ```
 
 
