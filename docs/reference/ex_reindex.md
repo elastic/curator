@@ -114,7 +114,7 @@ actions:
       request_body:
         source:
           remote:
-            host: http://otherhost:9200
+            host: <OTHER_HOST_URL>:9200
             username: myuser
             password: mypass
           index: index1
@@ -148,7 +148,7 @@ actions:
       request_body:
         source:
           remote:
-            host: http://otherhost:9200
+            host: <OTHER_HOST_URL>:9200
             username: myuser
             password: mypass
           index: REINDEX_SELECTION
