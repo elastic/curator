@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_reindex.html
+navigation_tite: reindex
 ---
 
-# reindex [ex_reindex]
+# reindex action examples [ex_reindex]
 
 ## Manually selected reindex of a single index [_manually_selected_reindex_of_a_single_index]
 

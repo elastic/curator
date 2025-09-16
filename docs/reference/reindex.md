@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/reindex.html
+navigation_title: Reindex
 ---
 
-# Reindex [reindex]
+# Reindex action [reindex]
 
 ```yaml
 actions:
@@ -27,7 +28,6 @@ There are many options for the reindex option.  The best place to start is in th
 ## Required settings [_required_settings_7]
 
 * [request_body](/reference/option_request_body.md)
-
 
 ## Optional settings [_optional_settings_12]
 
@@ -56,10 +56,6 @@ There are many options for the reindex option.  The best place to start is in th
 See an example of this action in an [actionfile](/reference/actionfile.md) [here](/reference/ex_reindex.md).
 ::::
 
-
-
 ## Compatibility [_compatibility]
 
 Generally speaking, the Curator should be able to perform a remote reindex from any version of Elasticsearch, 1.4 and newer. Strictly speaking, the Reindex API in Elasticsearch *is* able to reindex from older clusters, but Curator cannot be used to facilitate this due to Curator’s dependency on changes released in 1.4.
-
-
