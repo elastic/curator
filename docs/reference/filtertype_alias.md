@@ -3,7 +3,7 @@ mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/filtertype_alias.html
 ---
 
-# alias [filtertype_alias]
+# Using the alias filter in Elasticsearch Curator [filtertype_alias]
 
 ```yaml
 - filtertype: alias

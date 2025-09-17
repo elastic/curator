@@ -3,7 +3,7 @@ mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/fe_allocation_type.html
 ---
 
-# allocation_type [fe_allocation_type]
+# Elasticsearch Curator allocation filter setting: allocation_type [fe_allocation_type]
 
 ::::{note}
 This setting is used only when using the [allocated](/reference/filtertype_allocated.md) filter.

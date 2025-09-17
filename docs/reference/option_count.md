@@ -3,7 +3,7 @@ mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/option_count.html
 ---
 
-# count [option_count]
+# Count option for replicas [option_count]
 
 ::::{note}
 This setting is required when using the [replicas action](/reference/replicas.md).

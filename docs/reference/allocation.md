@@ -3,7 +3,7 @@ mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/allocation.html
 ---
 
-# Allocation [allocation]
+# Using the allocation action in Elasticsearch Curator [allocation]
 
 ```yaml
 action: allocation

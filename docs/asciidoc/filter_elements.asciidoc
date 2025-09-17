@@ -116,7 +116,7 @@ The default value for this setting is `require`.
 
 
 [[fe_count]]
-== count
+== Elasticsearch Curator count filter setting
 
 NOTE: This setting is only used with the <<filtertype_count,count>> filtertype +
     and is a required setting.
