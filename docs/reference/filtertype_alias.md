@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/filtertype_alias.html
+navigation_title: alias
 ---
 
-# alias [filtertype_alias]
+# Using the alias filter in {{es}} Curator [filtertype_alias]
 
 ```yaml
 - filtertype: alias

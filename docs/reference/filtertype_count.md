@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/filtertype_count.html
+navigation_title: count
 ---
 
-# count [filtertype_count]
+# {{es}} Curator count filtertype for sorting [filtertype_count]
 
 ```yaml
 - filtertype: count
@@ -13,7 +14,7 @@ mapped_pages:
 ::::{note}
 Empty values and commented lines will result in the default value, if any, being selected.  If a setting is set, but not used by a given [filtertype](/reference/filtertype.md), it may generate an error.
 ::::
-
+    
 
 This [filtertype](/reference/filtertype.md) will iterate over the actionable list of indices *or* snapshots. They are ordered by age, or by alphabet, so as to guarantee that the correct items will remain in, or be removed from the actionable list based on the values of [count](/reference/fe_count.md), [exclude](/reference/fe_exclude.md), and [reverse](/reference/fe_reverse.md).
 

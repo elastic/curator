@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_alias.html
+navigation_title: alias
 ---
 
-# alias [ex_alias]
+# Alias action example in {{es}} Curator [ex_alias]
 
 ```yaml
 ---

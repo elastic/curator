@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/allocation.html
+navigation_title: Allocation
 ---
 
-# Allocation [allocation]
+# Using the allocation action in {{es}} Curator [allocation]
 
 ```yaml
 action: allocation

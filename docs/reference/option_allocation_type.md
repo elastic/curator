@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/option_allocation_type.html
+navigation_title: allocation_type
 ---
 
-# allocation_type [option_allocation_type]
+# {{es}} Curator allocation action option: allocation_type [option_allocation_type]
 
 ::::{note}
 This setting is used only when using the [allocation action](/reference/allocation.md)
