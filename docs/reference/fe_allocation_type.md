@@ -1,6 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/fe_allocation_type.html
+navigation_title: allocation_type
 ---
 
 # Elasticsearch Curator allocation filter setting: allocation_type [fe_allocation_type]

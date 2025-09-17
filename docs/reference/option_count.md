@@ -1,6 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/option_count.html
+navigation_title: count
 ---
 
 # Count option for replicas [option_count]

@@ -1,6 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_close.html
+navigation_title: close
 ---
 
 # Close indices Using Elasticsearch Curator [ex_close]

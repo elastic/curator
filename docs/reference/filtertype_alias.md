@@ -1,6 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/filtertype_alias.html
+navigation_title: alias
 ---
 
 # Using the alias filter in Elasticsearch Curator [filtertype_alias]

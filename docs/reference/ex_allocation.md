@@ -1,6 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_allocation.html
+navigation_title: allocation
 ---
 
 # Elasticsearch Curator allocation example [ex_allocation]

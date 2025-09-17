@@ -1,6 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/fe_count.html
+navigation_title: count
 ---
 
 # count [fe_count]
