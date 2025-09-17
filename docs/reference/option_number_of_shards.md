@@ -2,7 +2,7 @@
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/option_number_of_shards.html
 applies_to:
-  stack:
+  stack: both
   serverless: unavailable
 products:
   - id: elasticsearch
