@@ -3,7 +3,7 @@ mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_alias.html
 ---
 
-# Alias action example in Elasticsearch Curator [ex_alias]
+# Alias action example in {{es}} Curator [ex_alias]
 
 ```yaml
 ---
