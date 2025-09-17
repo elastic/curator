@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/snapshot.html
+navigation_title: Snapshot
 ---
 
-# Snapshot [snapshot]
+# Snapshot action [snapshot]
 
 ```yaml
 action: snapshot

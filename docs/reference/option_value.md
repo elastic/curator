@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/option_value.html
+navigation_title: value
 ---
 
-# value [option_value]
+# value option [option_value]
 
 ::::{note}
 This setting is optional when using the [allocation action](/reference/allocation.md) and required when using the [cluster_routing action](/reference/cluster_routing.md).

@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/filtertype_state.html
+navigation_title: state
 ---
 
-# state [filtertype_state]
+# state filter type [filtertype_state]
 
 ```yaml
 - filtertype: state
