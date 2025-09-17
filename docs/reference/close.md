@@ -3,7 +3,7 @@ mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/close.html
 ---
 
-# Curator close action for Elasticsearch indices [close]
+# Curator close action for {{es}} indices [close]
 
 ```yaml
 action: close
