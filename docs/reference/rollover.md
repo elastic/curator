@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/rollover.html
+navigation_title: Rollover
 ---
 
-# Rollover [rollover]
+# Rollover action [rollover]
 
 ```yaml
 action: rollover

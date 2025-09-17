@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_restore.html
+navigation_title: restore
 ---
 
-# restore [ex_restore]
+# restore action examples [ex_restore]
 
 ```yaml
 ---
