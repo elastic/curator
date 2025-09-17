@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/shrink.html
+navigation_title: Shrink
 ---
 
-# Shrink [shrink]
+# Shrink action [shrink]
 
 ```yaml
 action: shrink

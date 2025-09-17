@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/fe_value.html
+navigation_title: value
 ---
 
-# value [fe_value]
+# value filter element [fe_value]
 
 ::::{note}
 This setting is only used with the [pattern](/reference/filtertype_pattern.md) filtertype and is a required setting.  There is a separate [value option](/reference/option_value.md) associated with the [allocation action](/reference/allocation.md), and the [allocated filtertype](/reference/filtertype_allocated.md).
