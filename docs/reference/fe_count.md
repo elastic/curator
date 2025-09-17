@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: count
 ---
 
-# count [fe_count]
+# Elasticsearch Curator count filter setting [fe_count]
 
 ::::{note}
 This setting is only used with the [count](/reference/filtertype_count.md) filtertype<br> and is a required setting.
