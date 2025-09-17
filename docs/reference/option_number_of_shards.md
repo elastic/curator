@@ -29,7 +29,7 @@ The value of `number_of_shards` must meet the following criteria:
 
 For example, a source index with 8 primary shards can be shrunk to 4, 2, or 1, and cannot be shrunk to 3 or 5.
 ::::
-  
+  ## number_of_shards example [option-number-of-shards-example]
 ```yaml
 action: shrink
 description: >-
