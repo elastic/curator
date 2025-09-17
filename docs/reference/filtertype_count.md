@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: count
 ---
 
-# {{es}} Curator count filtertype limit indices or snapshots [filtertype_count]
+# {{es}} Curator count filtertype for sorting [filtertype_count]
 
 ```yaml
 - filtertype: count
