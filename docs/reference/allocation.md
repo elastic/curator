@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: Allocation
 ---
 
-# Using the allocation action in Elasticsearch Curator [allocation]
+# Using the allocation action in {{es}} Curator [allocation]
 
 ```yaml
 action: allocation

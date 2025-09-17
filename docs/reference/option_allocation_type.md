@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: allocation_type
 ---
 
-# Elasticsearch Curator allocation action option: allocation_type [option_allocation_type]
+# {{es}} Curator allocation action option: allocation_type [option_allocation_type]
 
 ::::{note}
 This setting is used only when using the [allocation action](/reference/allocation.md)

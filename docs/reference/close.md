@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: Close
 ---
 
-# Curator close action for Elasticsearch indices [close]
+# Curator close action for {{es}} indices [close]
 
 ```yaml
 action: close

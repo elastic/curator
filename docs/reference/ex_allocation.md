@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: allocation
 ---
 
-# Elasticsearch Curator allocation example [ex_allocation]
+# {{es}} Curator allocation example [ex_allocation]
 
 ```yaml
 ---

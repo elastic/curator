@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: alias
 ---
 
-# Using the alias filter in Elasticsearch Curator [filtertype_alias]
+# Using the alias filter in {{es}} Curator [filtertype_alias]
 
 ```yaml
 - filtertype: alias

@@ -4,7 +4,7 @@ mapped_pages:
 navigation_title: ex_alias
 ---
 
-# Alias action example in Elasticsearch Curator [ex_alias]
+# Alias action example in {{es}} Curator [ex_alias]
 
 ```yaml
 ---
