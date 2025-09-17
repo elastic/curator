@@ -10,7 +10,7 @@ products:
 
 # number_of_shards [option_number_of_shards]
 
-The number_of_shards option specifies the number of primary shards in the target index created by the shrink action.
+The `number_of_shards` option specifies the number of primary shards in the target index created by the shrink action.
 
 ::::{note}
 `number_of_shards` is used only by the [shrink](/reference/shrink.md) action.
