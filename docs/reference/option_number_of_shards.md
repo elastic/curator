@@ -17,7 +17,7 @@ The `number_of_shards` option specifies the number of primary shards in the targ
 ::::
 
 * **Type:** Integer
-* **Default value:** 1
+* **Required:** Optional
 * **Required:** Optional
 
 The value of `number_of_shards` determines the number of primary shards in the target index after the shrink operation.
