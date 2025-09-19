@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/filtertype_pattern.html
+navigation_title: pattern
 ---
 
-# pattern [filtertype_pattern]
+# pattern filter type [filtertype_pattern]
 
 ```yaml
 - filtertype: pattern

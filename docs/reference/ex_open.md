@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_open.html
+navigation_title: open
 ---
 
-# open [ex_open]
+# open action examples [ex_open]
 
 ```yaml
 ---
