@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/fe_max_num_segments.html
+navigation_title: max_num_segments
 ---
 
-# max_num_segments [fe_max_num_segments]
+# max_num_segments filter element [fe_max_num_segments]
 
 ::::{note}
 This setting is only used with the [forcemerged](/reference/filtertype_forcemerged.md) filtertype.

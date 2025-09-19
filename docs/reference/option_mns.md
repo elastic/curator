@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/option_mns.html
+navigation_title: max_num_segments
 ---
 
-# max_num_segments [option_mns]
+# max_num_segments option [option_mns]
 
 ::::{note}
 This setting is required when using the [forceMerge action](/reference/forcemerge.md).

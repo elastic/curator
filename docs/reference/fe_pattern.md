@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/fe_pattern.html
+navigation_title: pattern
 ---
 
-# pattern [fe_pattern]
+# pattern filter element [fe_pattern]
 
 ::::{note}
 This setting is only used with the [count](/reference/filtertype_count.md) filtertype
