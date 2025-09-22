@@ -1,9 +1,10 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_forcemerge.html
+navigation_title: forcemerge
 ---
 
-# forcemerge [ex_forcemerge]
+# Forcemerge examples in Elastic Curator [ex_forcemerge]
 
 ```yaml
 ---
