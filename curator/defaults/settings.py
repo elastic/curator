@@ -11,6 +11,12 @@ CLICK_DRYRUN = {
     'dry-run': {'help': 'Do not perform any changes.', 'is_flag': True},
 }
 DATA_NODE_ROLES = ['data', 'data_content', 'data_hot', 'data_warm']
+EXCLUDE_SYSTEM = (
+    '-.kibana*,-.security*,-.watch*,-.triggered_watch*,'
+    '-.ml*,-.geoip_databases*,-.logstash*,-.tasks*'
+)
+VERSION_MIN = (7, 14, 0)
+VERSION_MAX = (8, 99, 99)
 
 # Click specifics
 
@@ -183,13 +189,14 @@ def default_options():
     :returns: The default values for these options:
         {'allow_ilm_indices': False, 'continue_if_exception': False,
         'disable_action': False, 'ignore_empty_list': False,
-        'timeout_override': None}
+        'include_hidden': False, 'timeout_override': None}
     """
     return {
         'allow_ilm_indices': False,
         'continue_if_exception': False,
         'disable_action': False,
         'ignore_empty_list': False,
+        'include_hidden': False,
         'timeout_override': None,
     }
 

@@ -2,11 +2,10 @@
 localhost.es
 oneliners.py
 cacert.pem
-docs/
+docs/asciidoc.bak
 docker_test/.env
 docker_test/repo/
 docker_test/curatortestenv
-docker_test/scripts/Dockerfile
 html_docs/
 
 # Byte-compiled / optimized / DLL files

@@ -7,7 +7,7 @@ name = "elasticsearch-curator"
 authors = [{ name="Elastic", email="info@elastic.co" }]
 dynamic = ["version"]
 description = "Tending your Elasticsearch indices and snapshots"
-license = { text="Apache-2.0" }
+license = {file = "LICENSE"}
 readme = "README.rst"
 requires-python = ">=3.8"
 classifiers = [
@@ -29,7 +29,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.15.2",
+    "es_client==8.17.5"
     "boto3"
 ]
 
@@ -138,5 +138,16 @@ testpaths = [
 ]
 
 [tool.distutils.build_exe]
+excludes = ["tcltk", "tkinter", "unittest"]
+zip_include_packages = ["certifi"]
+
+[tool.cxfreeze]
+executables = [
+    {script="run_curator.py", target_name="curator"},
+    {script="run_singleton.py", target_name="curator_cli"},
+    {script="run_es_repo_mgr.py", target_name="es_repo_mgr"},
+]
+
+[tool.cxfreeze.build_exe]
 excludes = ["tcltk", "tkinter", "unittest"]
 zip_include_packages = ["certifi"]

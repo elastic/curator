@@ -3,12 +3,14 @@ Test cold2frozen functionality
 
 This cannot work with the open-source release, so any testing must be manual
 """
+
 # pylint: disable=missing-function-docstring, missing-class-docstring, line-too-long
 # import os
 # from time import sleep
 # from curator import IndexList
 # from curator.actions import Cold2Frozen, Snapshot
-# from curator.exceptions import CuratorException, FailedExecution, SearchableSnapshotException
+# from curator.exceptions import (
+#     CuratorException, FailedExecution, SearchableSnapshotException)
 # from curator.helpers.getters import get_snapshot
 # from . import CuratorTestCase
 # from . import testvars
@@ -44,7 +46,10 @@ This cannot work with the open-source release, so any testing must be manual
 #         # Get an indexlist object
 #         ilo = IndexList(self.client)
 #         # Snapshot the single index in it
-#         snp = Snapshot(ilo, repository=self.args['repository'], name=self.SNAP, wait_interval=0.5)
+#         snp = Snapshot(
+#             ilo, repository=self.args['repository'], name=self.SNAP,
+#             wait_interval=0.5
+#         )
 #         snp.do_action()
 #         # Verify the snapshot
 #         snapshot = get_snapshot(self.client, self.args['repository'], self.SNAP)
@@ -53,7 +58,8 @@ This cannot work with the open-source release, so any testing must be manual
 #         # Mount the index in the snapshot in the cold tier
 #         self.client.searchable_snapshots.mount(
 #             repository=self.args['repository'], snapshot=self.SNAP, index=self.ORIG,
-#             renamed_index=f'restored-{self.ORIG}', index_settings=self.COLD, storage='full_copy')
+#             renamed_index=f'restored-{self.ORIG}', index_settings=self.COLD,
+#             storage='full_copy')
 #         # Update the new index to have the aliases of the original one
 #         self.client.indices.update_aliases(actions=self.AL2)
 #         # Delete the original index
@@ -63,7 +69,8 @@ This cannot work with the open-source release, so any testing must be manual
 #         # Verify it only has one index in it
 #         assert 1 == len(ilo.indices)
 #         # ...and that the index is our restored- cold-tier mount
-#         settings = self.client.indices.get(index=f'restored-{self.ORIG}')[f'restored-{self.ORIG}']
+#         settings = self.client.indices.get(
+#             index=f'restored-{self.ORIG}')[f'restored-{self.ORIG}']
 #         # ...and that it has our alias
 #         assert {self.ALIAS: {}} == settings['aliases']
 #         # ...and that it has the appropriate settings

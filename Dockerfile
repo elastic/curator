@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-ARG PYVER=3.11.9
-ARG ALPTAG=3.20
-FROM python:${PYVER}-alpine${ALPTAG} as builder
+ARG PYVER=3.12.9
+ARG ALPTAG=3.21
+FROM python:${PYVER}-alpine${ALPTAG} AS builder
 
 # Add the community repo for access to patchelf binary package
 ARG ALPTAG
@@ -23,7 +23,7 @@ RUN /bin/sh alpine4docker.sh
 RUN pip3 install .
 
 # Build (or rather Freeze) Curator
-RUN python3 setup.py build_exe
+RUN cxfreeze build
 
 # Rename 'build/exe.{system().lower()}-{machine()}-{MAJOR}.{MINOR}' to curator_build
 RUN python3 post4docker.py
@@ -39,6 +39,6 @@ COPY --from=builder curator_build /curator/
 RUN mkdir /.curator
 
 USER nobody:nobody
-ENV LD_LIBRARY_PATH /curator/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/curator/lib:\$LD_LIBRARY_PATH
 ENTRYPOINT ["/curator/curator"]
 

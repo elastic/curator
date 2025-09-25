@@ -1,0 +1,67 @@
+---
+mapped_pages:
+  - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/options.html
+---
+
+# Options [options]
+
+Options are settings used by [actions](/reference/actions.md).
+
+* [allocation_type](/reference/option_allocation_type.md)
+* [allow_ilm_indices](/reference/option_allow_ilm.md)
+* [continue_if_exception](/reference/option_continue.md)
+* [count](/reference/option_count.md)
+* [delay](/reference/option_delay.md)
+* [delete_aliases](/reference/option_delete_aliases.md)
+* [skip_flush](/reference/option_skip_flush.md)
+* [disable_action](/reference/option_disable.md)
+* [extra_settings](/reference/option_extra_settings.md)
+* [ignore_empty_list](/reference/option_ignore_empty.md)
+* [ignore_unavailable](/reference/option_ignore.md)
+* [include_aliases](/reference/option_include_aliases.md)
+* [include_global_state](/reference/option_include_gs.md)
+* [indices](/reference/option_indices.md)
+* [key](/reference/option_key.md)
+* [max_age](/reference/option_max_age.md)
+* [max_docs](/reference/option_max_docs.md)
+* [max_size](/reference/option_max_size.md)
+* [max_num_segments](/reference/option_mns.md)
+* [max_wait](/reference/option_max_wait.md)
+* [migration_prefix](/reference/option_migration_prefix.md)
+* [migration_suffix](/reference/option_migration_suffix.md)
+* [name](/reference/option_name.md)
+* [new_index](/reference/option_new_index.md)
+* [node_filters](/reference/option_node_filters.md)
+* [number_of_replicas](/reference/option_number_of_replicas.md)
+* [number_of_shards](/reference/option_number_of_shards.md)
+* [partial](/reference/option_partial.md)
+* [refresh](/reference/option_refresh.md)
+* [remote_certificate](/reference/option_remote_certificate.md)
+* [remote_client_cert](/reference/option_remote_client_cert.md)
+* [remote_client_key](/reference/option_remote_client_key.md)
+* [remote_filters](/reference/option_remote_filters.md)
+* [remote_url_prefix](/reference/option_remote_url_prefix.md)
+* [rename_pattern](/reference/option_rename_pattern.md)
+* [rename_replacement](/reference/option_rename_replacement.md)
+* [repository](/reference/option_repository.md)
+* [request_body](/reference/option_request_body.md)
+* [requests_per_second](/reference/option_requests_per_second.md)
+* [retry_count](/reference/option_retry_count.md)
+* [retry_interval](/reference/option_retry_interval.md)
+* [routing_type](/reference/option_routing_type.md)
+* [search_pattern](/reference/option_search_pattern.md)
+* [setting](/reference/option_setting.md)
+* [shrink_node](/reference/option_shrink_node.md)
+* [slices](/reference/option_slices.md)
+* [skip_repo_fs_check](/reference/option_skip_fsck.md)
+* [timeout](/reference/option_timeout.md)
+* [timeout_override](/reference/option_timeout_override.md)
+* [value](/reference/option_value.md)
+* [wait_for_active_shards](/reference/option_wait_for_active_shards.md)
+* [wait_for_completion](/reference/option_wfc.md)
+* [wait_for_rebalance](/reference/option_wait_for_rebalance.md)
+* [wait_interval](/reference/option_wait_interval.md)
+* [warn_if_no_indices](/reference/option_warn_if_no_indices.md)
+
+You can use [environment variables](/reference/envvars.md) in your configuration files.
+

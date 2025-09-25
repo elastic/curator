@@ -1,21 +1,32 @@
 """Index settings action class"""
+
 import logging
+
 # pylint: disable=import-error
 from curator.exceptions import ActionError, ConfigurationError, MissingArgument
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 
+
 class IndexSettings:
     """Index Settings Action Class"""
+
     def __init__(
-            self, ilo, index_settings=None, ignore_unavailable=False, preserve_existing=False):
+        self,
+        ilo,
+        index_settings=None,
+        ignore_unavailable=False,
+        preserve_existing=False,
+    ):
         """
         :param ilo: An IndexList Object
-        :param index_settings: A settings structure with one or more index settings to change.
-        :param ignore_unavailable: Whether specified concrete indices should be ignored when
-            unavailable (missing or closed)
-        :param preserve_existing: Whether to update existing settings. If set to ``True``, existing
-            settings on an index remain unchanged. The default is ``False``
+        :param index_settings: A settings structure with one or more index
+            settings to change.
+        :param ignore_unavailable: Whether specified concrete indices should be
+            ignored when unavailable (missing or closed)
+        :param preserve_existing: Whether to update existing settings. If set to
+            ``True``, existing settings on an index remain unchanged. The default
+            is ``False``
 
         :type ilo: :py:class:`~.curator.indexlist.IndexList`
         :type index_settings: dict
@@ -27,7 +38,8 @@ class IndexSettings:
         verify_index_list(ilo)
         if not index_settings:
             raise MissingArgument('Missing value for "index_settings"')
-        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from
+        #: param ``ilo``
         self.index_list = ilo
         #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
         #: :py:attr:`index_list`
@@ -90,9 +102,10 @@ class IndexSettings:
                 if not self.ignore_unavailable:
                     if open_indices:
                         msg = (
-                            f'Static Setting "{k}" detected with open indices: {open_index_list}. '
-                            f'Static settings can only be used with closed indices.  Recommend '
-                            f'filtering out open indices, or setting ignore_unavailable to True'
+                            f'Static Setting "{k}" detected with open indices: '
+                            f'{open_index_list}. Static settings can only be used '
+                            f'with closed indices.  Recommend filtering out open '
+                            f'indices, or setting ignore_unavailable to True'
                         )
                         raise ActionError(msg)
             elif k in self._dynamic_settings():
@@ -100,7 +113,10 @@ class IndexSettings:
                 # Act here if the case is different for some settings.
                 pass
             else:
-                msg = f'"{k}" is not a setting Curator recognizes and may or may not work.'
+                msg = (
+                    f'"{k}" is not a setting Curator recognizes and may or may '
+                    f' not work.'
+                )
                 self.loggit.warning(msg)
 
     def do_dry_run(self):
@@ -109,8 +125,8 @@ class IndexSettings:
 
     def do_action(self):
         """
-        :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` in :py:attr:`body` to indices
-        in :py:attr:`index_list`
+        :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` in :py:attr:`body`
+        to indices in :py:attr:`index_list`
         """
         self._settings_check()
         # Ensure that the open indices filter applied in _settings_check()
@@ -125,9 +141,10 @@ class IndexSettings:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
                 response = self.client.indices.put_settings(
-                    index=to_csv(lst), body=self.body,
+                    index=to_csv(lst),
+                    body=self.body,
                     ignore_unavailable=self.ignore_unavailable,
-                    preserve_existing=self.preserve_existing
+                    preserve_existing=self.preserve_existing,
                 )
                 self.loggit.debug('PUT SETTINGS RESPONSE: %s', response)
         # pylint: disable=broad-except

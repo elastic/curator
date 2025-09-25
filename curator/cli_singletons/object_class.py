@@ -1,4 +1,6 @@
 """Object builder"""
+
+# pylint: disable=W0718,R0902,R0912,R0913,R0914,R0917
 import logging
 import sys
 
@@ -31,26 +33,26 @@ from curator.actions import (
     Snapshot,
     Thaw,
 )
-from curator.defaults.settings import snapshot_actions
+from curator.defaults.settings import VERSION_MAX, VERSION_MIN, snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
 from curator.helpers.testers import validate_filters
 from curator.validators import options
 from curator.validators.filter_functions import validfilters
 
 CLASS_MAP = {
-    'alias' :  Alias,
-    'allocation' : Allocation,
-    'close' : Close,
-    'cluster_routing' : ClusterRouting,
-    'create_index' : CreateIndex,
-    'delete_indices' : DeleteIndices,
-    'delete_snapshots' : DeleteSnapshots,
-    'forcemerge' : ForceMerge,
-    'index_settings' : IndexSettings,
-    'open' : Open,
-    'reindex' : Reindex,
-    'replicas' : Replicas,
-    'restore' : Restore,
+    'alias': Alias,
+    'allocation': Allocation,
+    'close': Close,
+    'cluster_routing': ClusterRouting,
+    'create_index': CreateIndex,
+    'delete_indices': DeleteIndices,
+    'delete_snapshots': DeleteSnapshots,
+    'forcemerge': ForceMerge,
+    'index_settings': IndexSettings,
+    'open': Open,
+    'reindex': Reindex,
+    'replicas': Replicas,
+    'restore': Restore,
     'rollover': Rollover,
     'shrink': Shrink,
     'snapshot' : Snapshot,
@@ -61,15 +63,21 @@ CLASS_MAP = {
 }
 
 EXCLUDED_OPTIONS = [
-    'ignore_empty_list', 'timeout_override',
-    'continue_if_exception', 'disable_action'
+    'ignore_empty_list',
+    'timeout_override',
+    'continue_if_exception',
+    'disable_action',
 ]
 
-class CLIAction():
+
+class CLIAction:
     """
     Unified class for all CLI singleton actions
     """
-    def __init__(self, action, configdict, option_dict, filter_list, ignore_empty_list, **kwargs):
+
+    def __init__(
+        self, action, configdict, option_dict, filter_list, ignore_empty_list, **kwargs
+    ):
         """Class setup
         :param action: The action name.
         :param configdict: ``dict`` containing everything needed for
@@ -77,7 +85,8 @@ class CLIAction():
             :py:class:`~.elasticsearch.Elasticsearch` client object.
         :param option_dict: Options for ``action``.
         :param filter_list: Filters to select indices for ``action``.
-        :param ignore_empty_list: Exit ``0`` even if filters result in no indices for ``action``.
+        :param ignore_empty_list: Exit ``0`` even if filters result in no indices
+            for ``action``.
         :param kwargs: Other keyword args to pass to ``action``.
 
         :type action: str
@@ -92,7 +101,7 @@ class CLIAction():
         self.action = action
         self.list_object = None
         self.repository = kwargs['repository'] if 'repository' in kwargs else None
-        if action[:5] != 'show_': # Ignore CLASS_MAP for show_indices/show_snapshots
+        if action[:5] != 'show_':  # Ignore CLASS_MAP for show_indices/show_snapshots
             try:
                 self.action_class = CLASS_MAP[action]
             except KeyError:
@@ -101,10 +110,8 @@ class CLIAction():
         else:
             self.options = option_dict
 
-        # Pop out search_pattern if it's there
-        self.search_pattern = '_all'
-        if 'search_pattern' in self.options:
-            self.search_pattern = self.options.pop('search_pattern')
+        self.search_pattern = self.options.pop('search_pattern', '*')
+        self.include_hidden = self.options.pop('include_hidden', False)
 
         # Extract allow_ilm_indices so it can be handled separately.
         if 'allow_ilm_indices' in self.options:
@@ -116,7 +123,11 @@ class CLIAction():
             self.alias = {
                 'name': option_dict['name'],
                 'extra_settings': option_dict['extra_settings'],
-                'wini': kwargs['warn_if_no_indices'] if 'warn_if_no_indices' in kwargs else False
+                'wini': (
+                    kwargs['warn_if_no_indices']
+                    if 'warn_if_no_indices' in kwargs
+                    else False
+                ),
             }
             for k in ['add', 'remove']:
                 if k in kwargs:
@@ -124,7 +135,7 @@ class CLIAction():
                     self.check_filters(kwargs[k], loc='alias singleton', key=k)
                     self.alias[k]['filters'] = self.filters
                     if self.allow_ilm:
-                        self.alias[k]['filters'].append({'filtertype':'ilm'})
+                        self.alias[k]['filters'].append({'filtertype': 'ilm'})
         # No filters for these actions
         elif action in ['cluster_routing', 'create_index', 'rollover']:
             self.action_kwargs = {}
@@ -133,12 +144,15 @@ class CLIAction():
         else:
             self.check_filters(filter_list)
         try:
-            builder = Builder(configdict=configdict)
+            builder = Builder(
+                configdict=configdict, version_max=VERSION_MAX, version_min=VERSION_MIN
+            )
             builder.connect()
         # pylint: disable=broad-except
         except Exception as exc:
             raise ConfigurationError(
-                f'Unable to connect to Elasticsearch as configured: {exc}') from exc
+                f'Unable to connect to Elasticsearch as configured: {exc}'
+            ) from exc
         # If we're here, we'll see the output from GET http(s)://hostname.tld:PORT
         self.logger.debug('Connection result: %s', builder.client.info())
         self.client = builder.client
@@ -163,10 +177,11 @@ class CLIAction():
                 prune_nones(option_dict),
                 options.get_schema(self.action),
                 'options',
-                f'{self.action} singleton action "options"'
+                f'{self.action} singleton action "options"',
             ).result()
             self.options = self.prune_excluded(_)
-            # Remove this after the schema check, as the action class won't need it as an arg
+            # Remove this after the schema check, as the action class won't need
+            # it as an arg
             if self.action in ['delete_snapshots', 'restore']:
                 del self.options['repository']
         except FailedValidation as exc:
@@ -181,7 +196,7 @@ class CLIAction():
                 filter_dict,
                 Schema(validfilters(self.action, location=loc)),
                 key,
-                f'{self.action} singleton action "{key}"'
+                f'{self.action} singleton action "{key}"',
             ).result()
             self.filters = validate_filters(self.action, _)
         except FailedValidation as exc:
@@ -192,9 +207,9 @@ class CLIAction():
         """Actually run the filters"""
         self.logger.debug('Running filters and testing for empty list object')
         if self.allow_ilm:
-            self.filters.append({'filtertype':'ilm', 'exclude':True})
+            self.filters.append({'filtertype': 'ilm', 'exclude': True})
         try:
-            self.list_object.iterate_filters({'filters':self.filters})
+            self.list_object.iterate_filters({'filters': self.filters})
             self.list_object.empty_list_check()
         except (NoIndices, NoSnapshots) as exc:
             otype = 'index' if isinstance(exc, NoIndices) else 'snapshot'
@@ -210,11 +225,17 @@ class CLIAction():
         if self.action in snapshot_actions() or self.action == 'show_snapshots':
             self.list_object = SnapshotList(self.client, repository=self.repository)
         else:
-            self.list_object = IndexList(self.client)
+            self.list_object = IndexList(
+                self.client,
+                search_pattern=self.search_pattern,
+                include_hidden=self.include_hidden,
+            )
 
     def get_alias_obj(self):
         """Get the Alias object"""
-        action_obj = Alias(name=self.alias['name'], extra_settings=self.alias['extra_settings'])
+        action_obj = Alias(
+            name=self.alias['name'], extra_settings=self.alias['extra_settings']
+        )
         for k in ['remove', 'add']:
             if k in self.alias:
                 msg = (
@@ -222,8 +243,14 @@ class CLIAction():
                     f"{'to' if k == 'add' else 'from'} alias \"{self.alias['name']}\""
                 )
                 self.logger.debug(msg)
-                self.alias[k]['ilo'] = IndexList(self.client)
-                self.alias[k]['ilo'].iterate_filters({'filters':self.alias[k]['filters']})
+                self.alias[k]['ilo'] = IndexList(
+                    self.client,
+                    search_pattern=self.search_pattern,
+                    include_hidden=self.include_hidden,
+                )
+                self.alias[k]['ilo'].iterate_filters(
+                    {'filters': self.alias[k]['filters']}
+                )
                 fltr = getattr(action_obj, k)
                 fltr(self.alias[k]['ilo'], warn_if_no_indices=self.alias['wini'])
         return action_obj
@@ -249,9 +276,15 @@ class CLIAction():
                 action_obj.do_dry_run()
             else:
                 action_obj.do_action()
-        # pylint: disable=broad-except
+        except NoIndices:  # Speficically to address #1704
+            if not self.ignore:
+                self.logger.critical('No indices in list after filtering. Exiting.')
+                sys.exit(1)
+            self.logger.info('No indices in list after filtering. Skipping action.')
         except Exception as exc:
             self.logger.critical(
-                'Failed to complete action: %s.  %s: %s', self.action, type(exc), exc)
+                'Failed to complete action: %s. Exception: %s', self.action, exc
+            )
             sys.exit(1)
         self.logger.info('"%s" action completed.', self.action)
+        sys.exit(0)

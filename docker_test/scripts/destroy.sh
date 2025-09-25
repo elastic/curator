@@ -1,8 +1,35 @@
 #!/bin/bash
 
-# First, stop and remove the docker container
-docker stop curator8-es-local curator8-es-remote
-docker rm curator8-es-local curator8-es-remote
+if [ "x${1}" != "verbose" ]; then
+  DEBUG=0
+else
+  DEBUG=1
+fi
+
+log_out () {
+  # $1 is the log line
+  if [ ${DEBUG} -eq 1 ]; then
+    echo ${1}
+  fi
+}
+
+
+# Stop running containers
+echo
+echo "Stopping all containers..."
+RUNNING=$(docker ps | egrep 'curator.?-es-(remote|local)' | awk '{print $NF}')
+for container in ${RUNNING}; do
+  log_out "Stopping container ${container}..."
+  log_out "$(docker stop ${container}) stopped."
+done
+
+# Remove existing containers
+echo "Removing all containers..."
+EXISTS=$(docker ps -a | egrep 'curator.?-es-(remote|local)' | awk '{print $NF}')
+for container in ${EXISTS}; do
+  log_out "Removing container ${container}..."
+  log_out "$(docker rm -f ${container}) deleted."
+done
 
 ### Now begins the repo cleanup phase
 
@@ -26,7 +53,6 @@ UPONE=$(pwd | awk -F\/ '{print $NF}')
 
 if [[ "$UPONE" = "docker_test" ]]; then
   rm -rf $(pwd)/repo/*
-  cp /dev/null $(pwd)/.env
 else
   echo "WARNING: Unable to automatically empty bind mounted repo path."
   echo "Please manually empty the contents of the repo directory!"
@@ -36,4 +62,3 @@ fi
 cd $EXECPATH
 
 echo "Cleanup complete."
-

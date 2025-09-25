@@ -220,6 +220,17 @@ def include_global_state(action):
     }
 
 
+def include_hidden():
+    """
+    :returns:
+        {Optional('include_hidden', default=False):
+            Any(bool, All(Any(str), Boolean()))}
+    """
+    return {
+        Optional('include_hidden', default=False): Any(bool, All(Any(str), Boolean()))
+    }
+
+
 def index_settings():
     """
     :returns: {Required('index_settings'): {'index': dict}}
@@ -547,9 +558,9 @@ def cluster_routing_value():
 
 def search_pattern():
     """
-    :returns: {Optional('search_pattern', default='_all'): Any(str)}
+    :returns: {Optional('search_pattern', default='*'): Any(str)}
     """
-    return {Optional("search_pattern", default="_all"): Any(str)}
+    return {Optional('search_pattern', default='*'): Any(str)}
 
 
 def shrink_node():

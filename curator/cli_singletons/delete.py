@@ -1,10 +1,9 @@
 """Delete Index and Delete Snapshot Singletons"""
 
+# pylint: disable=R0913,R0917
 import click
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
-
-# pylint: disable=R0913
 
 
 # Indices
@@ -12,7 +11,7 @@ from curator.cli_singletons.utils import validate_filter_json
 @click.option(
     '--search_pattern',
     type=str,
-    default='_all',
+    default='*',
     help='Elasticsearch Index Search Pattern',
 )
 @click.option(
@@ -68,6 +67,12 @@ def delete_indices(
     show_default=True,
 )
 @click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--filter_list',
     callback=validate_filter_json,
     help='JSON array of filters selecting snapshots to act on.',
@@ -81,6 +86,7 @@ def delete_snapshots(
     retry_interval,
     ignore_empty_list,
     allow_ilm_indices,
+    include_hidden,
     filter_list,
 ):
     """
@@ -90,6 +96,7 @@ def delete_snapshots(
         'retry_count': retry_count,
         'retry_interval': retry_interval,
         'allow_ilm_indices': allow_ilm_indices,
+        'include_hidden': include_hidden,
     }
     # ctx.info_name is the name of the function or name specified in @click.command
     # decorator

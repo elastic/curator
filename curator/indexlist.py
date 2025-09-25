@@ -1,5 +1,6 @@
 """Index List Class"""
 
+# pylint: disable=R0904,R0913,R0917
 import re
 import itertools
 import logging
@@ -31,7 +32,7 @@ from curator.validators.filter_functions import filterstructure
 class IndexList:
     """IndexList class"""
 
-    def __init__(self, client, search_pattern='_all'):
+    def __init__(self, client, search_pattern='*', include_hidden=False):
         verify_client_object(client)
         self.loggit = logging.getLogger('curator.indexlist')
         #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from
@@ -48,7 +49,7 @@ class IndexList:
         #: All indices in the cluster at instance creation time.
         #: **Type:** :py:class:`list`
         self.all_indices = []
-        self.__get_indices(search_pattern)
+        self.__get_indices(search_pattern, include_hidden)
         self.age_keyfield = None
 
     def __actionable(self, idx):
@@ -76,13 +77,15 @@ class IndexList:
         if msg:
             self.loggit.debug('%s: %s', text, msg)
 
-    def __get_indices(self, pattern):
+    def __get_indices(self, pattern, include_hidden):
         """
         Pull all indices into ``all_indices``, then populate ``indices`` and
         ``index_info``
         """
         self.loggit.debug('Getting indices matching search_pattern: "%s"', pattern)
-        self.all_indices = get_indices(self.client, search_pattern=pattern)
+        self.all_indices = get_indices(
+            self.client, search_pattern=pattern, include_hidden=include_hidden
+        )
         self.indices = self.all_indices[:]
         # if self.indices:
         #     for index in self.indices:
@@ -447,7 +450,9 @@ class IndexList:
         """Raise :py:exc:`~.curator.exceptions.NoIndices` if ``indices`` is empty"""
         self.loggit.debug('Checking for empty list')
         if not self.indices:
-            raise NoIndices('index_list object is empty.')
+            msg = 'IndexList object is empty. No indices to act on.'
+            self.loggit.debug(msg)
+            raise NoIndices(msg)
 
     def working_list(self):
         """
