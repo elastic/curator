@@ -17,6 +17,7 @@ from curator.cli_singletons import (
     alias,
     allocation,
     close,
+    deepfreeze,
     delete_indices,
     delete_snapshots,
     forcemerge,
@@ -94,6 +95,7 @@ curator_cli.add_command(allocation)
 curator_cli.add_command(close)
 curator_cli.add_command(delete_indices)
 curator_cli.add_command(delete_snapshots)
+curator_cli.add_command(deepfreeze)
 curator_cli.add_command(forcemerge)
 curator_cli.add_command(open_indices)
 curator_cli.add_command(replicas)

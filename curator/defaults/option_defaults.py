@@ -1,5 +1,7 @@
 """Action Option Schema definitions"""
 
+from datetime import datetime
+
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 # pylint: disable=E1120
@@ -12,8 +14,8 @@ def allocation_type():
             All(Any(str), Any('require', 'include', 'exclude'))}
     """
     return {
-        Optional('allocation_type', default='require'): All(
-            Any(str), Any('require', 'include', 'exclude')
+        Optional("allocation_type", default="require"): All(
+            Any(str), Any("require", "include", "exclude")
         )
     }
 
@@ -25,7 +27,7 @@ def allow_ilm_indices():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('allow_ilm_indices', default=False): Any(
+        Optional("allow_ilm_indices", default=False): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -39,10 +41,10 @@ def conditions():
                 Coerce(int), Optional('max_size'): Any(str)}}
     """
     return {
-        Optional('conditions'): {
-            Optional('max_age'): Any(str),
-            Optional('max_docs'): Coerce(int),
-            Optional('max_size'): Any(str),
+        Optional("conditions"): {
+            Optional("max_age"): Any(str),
+            Optional("max_docs"): Coerce(int),
+            Optional("max_size"): Any(str),
         }
     }
 
@@ -54,7 +56,7 @@ def continue_if_exception():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('continue_if_exception', default=False): Any(
+        Optional("continue_if_exception", default=False): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -64,7 +66,7 @@ def count():
     """
     :returns: {Required('count'): All(Coerce(int), Range(min=0, max=10))}
     """
-    return {Required('count'): All(Coerce(int), Range(min=0, max=10))}
+    return {Required("count"): All(Coerce(int), Range(min=0, max=10))}
 
 
 def delay():
@@ -74,7 +76,7 @@ def delay():
             All(Coerce(float), Range(min=0.0, max=3600.0))}
     """
     return {
-        Optional('delay', default=0): All(Coerce(float), Range(min=0.0, max=3600.0))
+        Optional("delay", default=0): All(Coerce(float), Range(min=0.0, max=3600.0))
     }
 
 
@@ -84,7 +86,7 @@ def c2f_index_settings():
 
     :returns: {Optional('index_settings'):  Any(None, dict)}
     """
-    return {Optional('index_settings', default=None): Any(None, dict)}
+    return {Optional("index_settings", default=None): Any(None, dict)}
 
 
 def c2f_ignore_index_settings():
@@ -93,7 +95,7 @@ def c2f_ignore_index_settings():
 
     :returns: {Optional('ignore_index_settings'):  Any(None, list)}
     """
-    return {Optional('ignore_index_settings', default=None): Any(None, list)}
+    return {Optional("ignore_index_settings", default=None): Any(None, list)}
 
 
 def copy_aliases():
@@ -103,7 +105,7 @@ def copy_aliases():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('copy_aliases', default=False): Any(bool, All(Any(str), Boolean()))
+        Optional("copy_aliases", default=False): Any(bool, All(Any(str), Boolean()))
     }
 
 
@@ -113,7 +115,7 @@ def delete_after():
         {Optional('delete_after', default=True):
             Any(bool, All(Any(str), Boolean()))}
     """
-    return {Optional('delete_after', default=True): Any(bool, All(Any(str), Boolean()))}
+    return {Optional("delete_after", default=True): Any(bool, All(Any(str), Boolean()))}
 
 
 def delete_aliases():
@@ -123,7 +125,7 @@ def delete_aliases():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('delete_aliases', default=False): Any(bool, All(Any(str), Boolean()))
+        Optional("delete_aliases", default=False): Any(bool, All(Any(str), Boolean()))
     }
 
 
@@ -133,7 +135,7 @@ def skip_flush():
         {Optional('skip_flush', default=False):
             Any(bool, All(Any(str), Boolean()))}
     """
-    return {Optional('skip_flush', default=False): Any(bool, All(Any(str), Boolean()))}
+    return {Optional("skip_flush", default=False): Any(bool, All(Any(str), Boolean()))}
 
 
 def disable_action():
@@ -143,7 +145,7 @@ def disable_action():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('disable_action', default=False): Any(bool, All(Any(str), Boolean()))
+        Optional("disable_action", default=False): Any(bool, All(Any(str), Boolean()))
     }
 
 
@@ -151,7 +153,7 @@ def extra_settings():
     """
     :returns: {Optional('extra_settings', default={}): dict}
     """
-    return {Optional('extra_settings', default={}): dict}
+    return {Optional("extra_settings", default={}): dict}
 
 
 def ignore_empty_list():
@@ -161,7 +163,7 @@ def ignore_empty_list():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('ignore_empty_list', default=False): Any(
+        Optional("ignore_empty_list", default=False): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -174,7 +176,7 @@ def ignore_existing():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('ignore_existing', default=False): Any(bool, All(Any(str), Boolean()))
+        Optional("ignore_existing", default=False): Any(bool, All(Any(str), Boolean()))
     }
 
 
@@ -185,7 +187,7 @@ def ignore_unavailable():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('ignore_unavailable', default=False): Any(
+        Optional("ignore_unavailable", default=False): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -198,7 +200,7 @@ def include_aliases():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('include_aliases', default=False): Any(bool, All(Any(str), Boolean()))
+        Optional("include_aliases", default=False): Any(bool, All(Any(str), Boolean()))
     }
 
 
@@ -209,10 +211,10 @@ def include_global_state(action):
             Any(bool, All(Any(str), Boolean()))}
     """
     default = False
-    if action == 'snapshot':
+    if action == "snapshot":
         default = True
     return {
-        Optional('include_global_state', default=default): Any(
+        Optional("include_global_state", default=default): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -233,21 +235,21 @@ def index_settings():
     """
     :returns: {Required('index_settings'): {'index': dict}}
     """
-    return {Required('index_settings'): {'index': dict}}
+    return {Required("index_settings"): {"index": dict}}
 
 
 def indices():
     """
     :returns: {Optional('indices', default=None): Any(None, list)}
     """
-    return {Optional('indices', default=None): Any(None, list)}
+    return {Optional("indices", default=None): Any(None, list)}
 
 
 def key():
     """
     :returns: {Required('key'): Any(str)}
     """
-    return {Required('key'): Any(str)}
+    return {Required("key"): Any(str)}
 
 
 def max_num_segments():
@@ -256,7 +258,7 @@ def max_num_segments():
         {Required('max_num_segments'):
             All(Coerce(int), Range(min=1, max=32768))}
     """
-    return {Required('max_num_segments'): All(Coerce(int), Range(min=1, max=32768))}
+    return {Required("max_num_segments"): All(Coerce(int), Range(min=1, max=32768))}
 
 
 # pylint: disable=unused-argument
@@ -270,21 +272,21 @@ def max_wait(action):
     #     defval = -1
     # elif action in ['restore', 'snapshot', 'reindex', 'shrink']:
     #     defval = -1
-    return {Optional('max_wait', default=defval): Any(-1, Coerce(int), None)}
+    return {Optional("max_wait", default=defval): Any(-1, Coerce(int), None)}
 
 
 def migration_prefix():
     """
     :returns: {Optional('migration_prefix', default=''): Any(None, str)}
     """
-    return {Optional('migration_prefix', default=''): Any(None, str)}
+    return {Optional("migration_prefix", default=""): Any(None, str)}
 
 
 def migration_suffix():
     """
     :returns: {Optional('migration_suffix', default=''): Any(None, str)}
     """
-    return {Optional('migration_suffix', default=''): Any(None, str)}
+    return {Optional("migration_suffix", default=""): Any(None, str)}
 
 
 def name(action):
@@ -294,19 +296,19 @@ def name(action):
         ``snapshot``: {Optional('name', default='curator-%Y%m%d%H%M%S'): Any(str)}
         ``restore``: {Optional('name'): Any(str)}
     """
-    if action in ['alias', 'create_index', 'rollover']:
-        return {Required('name'): Any(str)}
-    if action == 'snapshot':
-        return {Optional('name', default='curator-%Y%m%d%H%M%S'): Any(str)}
-    if action == 'restore':
-        return {Optional('name'): Any(str)}
+    if action in ["alias", "create_index", "rollover"]:
+        return {Required("name"): Any(str)}
+    if action == "snapshot":
+        return {Optional("name", default="curator-%Y%m%d%H%M%S"): Any(str)}
+    if action == "restore":
+        return {Optional("name"): Any(str)}
 
 
 def new_index():
     """
     :returns: {Optional('new_index', default=None): Any(None, str)}
     """
-    return {Optional('new_index', default=None): Any(None, str)}
+    return {Optional("new_index", default=None): Any(None, str)}
 
 
 def node_filters():
@@ -315,11 +317,11 @@ def node_filters():
         See code for more details.
     """
     return {
-        Optional('node_filters', default={}): {
-            Optional('permit_masters', default=False): Any(
+        Optional("node_filters", default={}): {
+            Optional("permit_masters", default=False): Any(
                 bool, All(Any(str), Boolean())
             ),
-            Optional('exclude_nodes', default=[]): Any(list, None),
+            Optional("exclude_nodes", default=[]): Any(list, None),
         }
     }
 
@@ -331,7 +333,7 @@ def number_of_replicas():
             All(Coerce(int), Range(min=0, max=10))}
     """
     return {
-        Optional('number_of_replicas', default=1): All(
+        Optional("number_of_replicas", default=1): All(
             Coerce(int), Range(min=0, max=10)
         )
     }
@@ -344,7 +346,7 @@ def number_of_shards():
             All(Coerce(int), Range(min=1, max=99))}
     """
     return {
-        Optional('number_of_shards', default=1): All(Coerce(int), Range(min=1, max=99))
+        Optional("number_of_shards", default=1): All(Coerce(int), Range(min=1, max=99))
     }
 
 
@@ -353,7 +355,7 @@ def partial():
     :returns:
         {Optional('partial', default=False): Any(bool, All(Any(str), Boolean()))}
     """
-    return {Optional('partial', default=False): Any(bool, All(Any(str), Boolean()))}
+    return {Optional("partial", default=False): Any(bool, All(Any(str), Boolean()))}
 
 
 def post_allocation():
@@ -362,15 +364,15 @@ def post_allocation():
         See code for more details.
     """
     return {
-        Optional('post_allocation', default={}): Any(
+        Optional("post_allocation", default={}): Any(
             {},
             All(
                 {
-                    Required('allocation_type', default='require'): All(
-                        Any(str), Any('require', 'include', 'exclude')
+                    Required("allocation_type", default="require"): All(
+                        Any(str), Any("require", "include", "exclude")
                     ),
-                    Required('key'): Any(str),
-                    Required('value', default=None): Any(None, str),
+                    Required("key"): Any(str),
+                    Required("value", default=None): Any(None, str),
                 }
             ),
         )
@@ -384,7 +386,7 @@ def preserve_existing():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('preserve_existing', default=False): Any(
+        Optional("preserve_existing", default=False): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -395,28 +397,28 @@ def refresh():
     :returns:
         {Optional('refresh', default=True): Any(bool, All(Any(str), Boolean()))}
     """
-    return {Optional('refresh', default=True): Any(bool, All(Any(str), Boolean()))}
+    return {Optional("refresh", default=True): Any(bool, All(Any(str), Boolean()))}
 
 
 def remote_certificate():
     """
     :returns: {Optional('remote_certificate', default=None): Any(None, str)}
     """
-    return {Optional('remote_certificate', default=None): Any(None, str)}
+    return {Optional("remote_certificate", default=None): Any(None, str)}
 
 
 def remote_client_cert():
     """
     :returns: {Optional('remote_client_cert', default=None): Any(None, str)}
     """
-    return {Optional('remote_client_cert', default=None): Any(None, str)}
+    return {Optional("remote_client_cert", default=None): Any(None, str)}
 
 
 def remote_client_key():
     """
     :returns: {Optional('remote_client_key', default=None): Any(None, str)}
     """
-    return {Optional('remote_client_key', default=None): Any(None, str)}
+    return {Optional("remote_client_key", default=None): Any(None, str)}
 
 
 def remote_filters():
@@ -428,13 +430,13 @@ def remote_filters():
     # validate_actions() method in utils.py
     return {
         Optional(
-            'remote_filters',
+            "remote_filters",
             default=[
                 {
-                    'filtertype': 'pattern',
-                    'kind': 'regex',
-                    'value': '.*',
-                    'exclude': True,
+                    "filtertype": "pattern",
+                    "kind": "regex",
+                    "value": ".*",
+                    "exclude": True,
                 }
             ],
         ): Any(list, None)
@@ -445,21 +447,21 @@ def rename_pattern():
     """
     :returns: {Optional('rename_pattern'): Any(str)}
     """
-    return {Optional('rename_pattern'): Any(str)}
+    return {Optional("rename_pattern"): Any(str)}
 
 
 def rename_replacement():
     """
     :returns: {Optional('rename_replacement'): Any(str)}
     """
-    return {Optional('rename_replacement'): Any(str)}
+    return {Optional("rename_replacement"): Any(str)}
 
 
 def repository():
     """
     :returns: {Required('repository'): Any(str)}
     """
-    return {Required('repository'): Any(str)}
+    return {Required("repository"): Any(str)}
 
 
 def request_body():
@@ -468,34 +470,34 @@ def request_body():
         See code for more details.
     """
     return {
-        Required('request_body'): {
-            Optional('conflicts'): Any('proceed', 'abort'),
-            Optional('max_docs'): Coerce(int),
-            Required('source'): {
-                Required('index'): Any(Any(str), list),
-                Optional('query'): dict,
-                Optional('remote'): {
-                    Optional('host'): Any(str),
-                    Optional('username'): Any(str),
-                    Optional('password'): Any(str),
-                    Optional('socket_timeout'): Any(str),
-                    Optional('connect_timeout'): Any(str),
-                    Optional('headers'): Any(str),
+        Required("request_body"): {
+            Optional("conflicts"): Any("proceed", "abort"),
+            Optional("max_docs"): Coerce(int),
+            Required("source"): {
+                Required("index"): Any(Any(str), list),
+                Optional("query"): dict,
+                Optional("remote"): {
+                    Optional("host"): Any(str),
+                    Optional("username"): Any(str),
+                    Optional("password"): Any(str),
+                    Optional("socket_timeout"): Any(str),
+                    Optional("connect_timeout"): Any(str),
+                    Optional("headers"): Any(str),
                 },
-                Optional('size'): Coerce(int),
-                Optional('_source'): Any(bool, Boolean()),
+                Optional("size"): Coerce(int),
+                Optional("_source"): Any(bool, Boolean()),
             },
-            Required('dest'): {
-                Required('index'): Any(str),
-                Optional('version_type'): Any(
-                    'internal', 'external', 'external_gt', 'external_gte'
+            Required("dest"): {
+                Required("index"): Any(str),
+                Optional("version_type"): Any(
+                    "internal", "external", "external_gt", "external_gte"
                 ),
-                Optional('op_type'): Any(str),
-                Optional('pipeline'): Any(str),
+                Optional("op_type"): Any(str),
+                Optional("pipeline"): Any(str),
             },
-            Optional('script'): {
-                Optional('source'): Any(str),
-                Optional('lang'): Any('painless', 'expression', 'mustache', 'java'),
+            Optional("script"): {
+                Optional("source"): Any(str),
+                Optional("lang"): Any("painless", "expression", "mustache", "java"),
             },
         }
     }
@@ -506,7 +508,7 @@ def requests_per_second():
     :returns:
         {Optional('requests_per_second', default=-1): Any(-1, Coerce(int), None)}
     """
-    return {Optional('requests_per_second', default=-1): Any(-1, Coerce(int), None)}
+    return {Optional("requests_per_second", default=-1): Any(-1, Coerce(int), None)}
 
 
 def retry_count():
@@ -515,7 +517,7 @@ def retry_count():
         {Optional('retry_count', default=3):
             All(Coerce(int), Range(min=0, max=100))}
     """
-    return {Optional('retry_count', default=3): All(Coerce(int), Range(min=0, max=100))}
+    return {Optional("retry_count", default=3): All(Coerce(int), Range(min=0, max=100))}
 
 
 def retry_interval():
@@ -525,7 +527,7 @@ def retry_interval():
             All(Coerce(int), Range(min=1, max=600))}
     """
     return {
-        Optional('retry_interval', default=120): All(Coerce(int), Range(min=1, max=600))
+        Optional("retry_interval", default=120): All(Coerce(int), Range(min=1, max=600))
     }
 
 
@@ -533,14 +535,14 @@ def routing_type():
     """
     :returns: {Required('routing_type'): Any('allocation', 'rebalance')}
     """
-    return {Required('routing_type'): Any('allocation', 'rebalance')}
+    return {Required("routing_type"): Any("allocation", "rebalance")}
 
 
 def cluster_routing_setting():
     """
     :returns: {Required('setting'): Any('enable')}
     """
-    return {Required('setting'): Any('enable')}
+    return {Required("setting"): Any("enable")}
 
 
 def cluster_routing_value():
@@ -550,7 +552,7 @@ def cluster_routing_value():
             Any('all', 'primaries', 'none', 'new_primaries', 'replicas')}
     """
     return {
-        Required('value'): Any('all', 'primaries', 'none', 'new_primaries', 'replicas')
+        Required("value"): Any("all", "primaries", "none", "new_primaries", "replicas")
     }
 
 
@@ -565,21 +567,21 @@ def shrink_node():
     """
     :returns: {Required('shrink_node'): Any(str)}
     """
-    return {Required('shrink_node'): Any(str)}
+    return {Required("shrink_node"): Any(str)}
 
 
 def shrink_prefix():
     """
     :returns: {Optional('shrink_prefix', default=''): Any(None, str)}
     """
-    return {Optional('shrink_prefix', default=''): Any(None, str)}
+    return {Optional("shrink_prefix", default=""): Any(None, str)}
 
 
 def shrink_suffix():
     """
     :returns: {Optional('shrink_suffix', default='-shrink'): Any(None, str)}
     """
-    return {Optional('shrink_suffix', default='-shrink'): Any(None, str)}
+    return {Optional("shrink_suffix", default="-shrink"): Any(None, str)}
 
 
 def skip_repo_fs_check():
@@ -589,7 +591,7 @@ def skip_repo_fs_check():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('skip_repo_fs_check', default=True): Any(
+        Optional("skip_repo_fs_check", default=True): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -602,7 +604,7 @@ def slices():
             Any(All(Coerce(int), Range(min=1, max=500)), None)}
     """
     return {
-        Optional('slices', default=1): Any(
+        Optional("slices", default=1): Any(
             All(Coerce(int), Range(min=1, max=500)), None
         )
     }
@@ -614,7 +616,7 @@ def timeout(action):
     """
     # if action == 'reindex':
     defval = 60
-    return {Optional('timeout', default=defval): Any(Coerce(int), None)}
+    return {Optional("timeout", default=defval): Any(Coerce(int), None)}
 
 
 def timeout_override(action):
@@ -629,22 +631,22 @@ def timeout_override(action):
 
         ``delete_snapshots`` = ``300``
     """
-    if action in ['forcemerge', 'restore', 'snapshot']:
+    if action in ["forcemerge", "restore", "snapshot"]:
         defval = 21600
-    elif action == 'close':
+    elif action == "close":
         defval = 180
-    elif action == 'delete_snapshots':
+    elif action == "delete_snapshots":
         defval = 300
     else:
         defval = None
-    return {Optional('timeout_override', default=defval): Any(Coerce(int), None)}
+    return {Optional("timeout_override", default=defval): Any(Coerce(int), None)}
 
 
 def value():
     """
     :returns: {Required('value', default=None): Any(None, str)}
     """
-    return {Required('value', default=None): Any(None, str)}
+    return {Required("value", default=None): Any(None, str)}
 
 
 def wait_for_active_shards(action):
@@ -656,11 +658,11 @@ def wait_for_active_shards(action):
             ``shrink`` actions.
     """
     defval = 0
-    if action in ['reindex', 'shrink']:
+    if action in ["reindex", "shrink"]:
         defval = 1
     return {
-        Optional('wait_for_active_shards', default=defval): Any(
-            Coerce(int), 'all', None
+        Optional("wait_for_active_shards", default=defval): Any(
+            Coerce(int), "all", None
         )
     }
 
@@ -675,10 +677,10 @@ def wait_for_completion(action):
     """
     # if action in ['cold2frozen', 'reindex', 'restore', 'snapshot']:
     defval = True
-    if action in ['allocation', 'cluster_routing', 'replicas']:
+    if action in ["allocation", "cluster_routing", "replicas"]:
         defval = False
     return {
-        Optional('wait_for_completion', default=defval): Any(
+        Optional("wait_for_completion", default=defval): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -691,7 +693,7 @@ def wait_for_rebalance():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('wait_for_rebalance', default=True): Any(
+        Optional("wait_for_rebalance", default=True): Any(
             bool, All(Any(str), Boolean())
         )
     }
@@ -711,10 +713,10 @@ def wait_interval(action):
     maxval = 30
     # if action in ['allocation', 'cluster_routing', 'replicas']:
     defval = 3
-    if action in ['restore', 'snapshot', 'reindex', 'shrink']:
+    if action in ["restore", "snapshot", "reindex", "shrink"]:
         defval = 9
     return {
-        Optional('wait_interval', default=defval): Any(
+        Optional("wait_interval", default=defval): Any(
             All(Coerce(int), Range(min=minval, max=maxval)), None
         )
     }
@@ -727,7 +729,177 @@ def warn_if_no_indices():
             Any(bool, All(Any(str), Boolean()))}
     """
     return {
-        Optional('warn_if_no_indices', default=False): Any(
+        Optional("warn_if_no_indices", default=False): Any(
             bool, All(Any(str), Boolean())
         )
     }
+
+
+def repo_name_prefix():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `repo_name_prefix`
+    """
+    return {Optional("repo_name_prefix"): All(Any(str), default="deepfreeze")}
+
+
+def bucket_name_prefix():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `bucket_name_prefix`
+    """
+    return {Optional("bucket_name_prefix"): All(Any(str), default="deepfreeze")}
+
+
+def base_path_prefix():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `base_path_prefix`
+    """
+    return {Optional("base_path_prefix"): All(Any(str), default="snapshots")}
+
+
+def rotate_by():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `rotate_by`
+    """
+    return {Optional("rotate_by"): All(Any(str), default="path")}
+
+
+def style():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `style`
+    """
+    return {
+        Optional("style"): All(
+            Any("oneup", "date"),
+            default="oneup",
+        )
+    }
+
+
+def canned_acl():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `canned_acl`
+    """
+    return {
+        Optional("canned_acl"): All(
+            Any(
+                "private",
+                "public-read",
+                "public-read-write",
+                "authenticated-read",
+                "log-delivery-write",
+                "bucket-owner-read",
+                "bucket-owner-full-control",
+            ),
+            default="private",
+        )
+    }
+
+
+def storage_class():
+    """
+    Return a :class:`voluptuous.schema_builder.Schema` object for `storage_class`
+    """
+    return {
+        Optional("storage_class"): All(
+            Any(
+                "standard",
+                "reduced_redundancy",
+                "standard_ia",
+                "intelligent_tiering",
+                "onezone_ia",
+            ),
+            default="intelligent_tiering",
+        )
+    }
+
+
+def keep():
+    """
+    This setting is required.
+    Return a :class:`voluptuous.schema_builder.Schema` object for `keep`
+    """
+    return {Required("keep"): All(Coerce(int), Range(min=1))}
+
+
+def year():
+    """
+    This setting is only used to override the current year value.
+    Return a :class:`voluptuous.schema_builder.Schema` object for `year`
+    """
+    return {Optional("year"): All(Coerce(int), Range(min=2000, max=2100))}
+
+
+def month():
+    """
+    This setting is only used to override the current month value.
+    Return a :class:`voluptuous.schema_builder.Schema` object for `month`
+    """
+    return {Optional("month"): All(Coerce(int), Range(min=1, max=12))}
+
+
+def provider():
+    """
+    This setting will determine the cloud provider to use.
+    """
+    return {Optional("provider"): All(Any("aws"), default="aws")}
+
+
+def thawset():
+    """
+    This setting will allow users to set a thawset for refreezing.
+    """
+    return {Optional("thawset"): All(Coerce(int), default=0)}
+
+
+def start():
+    """
+    Start of a time window
+    """
+    return {
+        Required("start"): All(str, Coerce(lambda s: datetime.strptime(s, "%Y-%m-%d")))
+    }
+
+
+def end():
+    """
+    End of a time window
+    """
+    return {
+        Required("end"): All(str, Coerce(lambda s: datetime.strptime(s, "%Y-%m-%d")))
+    }
+
+
+def retain():
+    """
+    Number of days to keep the object restored
+    """
+    return {Optional("retain", default=7): All(Coerce(int), Range(min=1))}
+
+
+def enable_multiple_buckets():
+    """
+    Setting to allow referencing multiple buckets
+    """
+    return {
+        Optional("enable_multiple_buckets", default=False): Any(
+            bool, All(Any(str), Boolean())
+        )
+    }
+
+
+def create_sample_ilm_policy():
+    """
+    Setting to allow creating a sample ILM policy
+    """
+    return {
+        Optional("create_sample_ilm_policy", default=False): Any(
+            bool, All(Any(str), Boolean())
+        )
+    }
+
+
+def ilm_policy_name():
+    """
+    Setting to allow setting a custom ILM policy name
+    """
+    return {Optional("ilm_policy_name", default="deepfreeze-sample-policy"): Any(str)}
