@@ -1,7 +1,7 @@
 """Index Rollover Singleton"""
 
 import click
-from es_client.helpers.utils import prune_nones
+from es_client.utils import prune_nones
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import json_to_dict
 

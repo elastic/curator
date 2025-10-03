@@ -6,8 +6,8 @@ import sys
 from voluptuous import Schema
 from es_client.builder import Builder
 from es_client.exceptions import FailedValidation
-from es_client.helpers.schemacheck import SchemaCheck
-from es_client.helpers.utils import prune_nones
+from es_client.schemacheck import SchemaCheck
+from es_client.utils import prune_nones
 from curator import IndexList, SnapshotList
 from curator.actions import (
     Alias,

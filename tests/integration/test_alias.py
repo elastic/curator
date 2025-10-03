@@ -5,11 +5,11 @@ import os
 import logging
 from datetime import datetime, timedelta, timezone
 import pytest
-from elasticsearch8.exceptions import NotFoundError
+from elasticsearch9.exceptions import NotFoundError
 from . import CuratorTestCase
 from . import testvars
 
-LOGGER = logging.getLogger('test_alias')
+LOGGER = logging.getLogger(__name__)
 
 HOST = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
 
@@ -41,7 +41,8 @@ class TestActionFileAlias(CuratorTestCase):
                 'aliases': {'testalias': {'filter': {'term': {'user': 'kimchy'}}}}
             }
         }
-        assert expected == self.client.indices.get_alias(name=alias)
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_alias_remove_only(self):
         alias = 'testalias'
@@ -55,7 +56,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx2, name=alias)
         self.invoke_runner()
         expected = {idx2: {'aliases': {}}, idx1: {'aliases': {}}}
-        assert expected == self.client.indices.get_alias(index=f'{idx1},{idx2}')
+        result = self.client.indices.get_alias(index=f'{idx1},{idx2}')
+        assert expected == result.body
 
     def test_add_only_skip_closed(self):
         alias = 'testalias'
@@ -83,7 +85,17 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx1, name=alias)
         self.invoke_runner()
         expected = {idx2: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        success = False
+        result = self.client.indices.get_alias(name=alias)
+        tries = 0
+        max_tries = 10
+        while not success and tries < max_tries:
+            if expected == result.body:
+                success = True
+            else:
+                tries += 1
+                result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_add_and_remove_datemath(self):
         alias = '<testalias-{now-1d/d}>'
@@ -99,7 +111,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx1, name=alias_parsed)
         self.invoke_runner()
         expected = {idx2: {'aliases': {alias_parsed: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias_parsed)
+        result = self.client.indices.get_alias(name=alias_parsed)
+        assert expected == result.body
 
     def test_add_with_empty_remove(self):
         alias = 'testalias'
@@ -113,7 +126,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx1, name=alias)
         self.invoke_runner()
         expected = {idx1: {'aliases': {alias: {}}}, idx2: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_remove_with_empty_add(self):
         alias = 'testalias'
@@ -127,7 +141,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=f'{idx1},{idx2}', name=alias)
         self.invoke_runner()
         expected = {idx2: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_add_with_empty_list(self):
         alias = 'testalias'
@@ -142,7 +157,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx1, name=alias)
         self.invoke_runner()
         expected = {idx1: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_remove_with_empty_list(self):
         alias = 'testalias'
@@ -157,7 +173,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx1, name=alias)
         self.invoke_runner()
         expected = {idx1: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_remove_index_not_in_alias(self):
         alias = 'testalias'
@@ -235,7 +252,8 @@ class TestActionFileAlias(CuratorTestCase):
         self.client.indices.put_alias(index=idx2, name=alias)
         self.invoke_runner()
         expected = {idx1: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
 
 class TestCLIAlias(CuratorTestCase):
@@ -262,7 +280,17 @@ class TestCLIAlias(CuratorTestCase):
         ]
         assert 0 == self.run_subprocess(args)
         expected = {idx1: {'aliases': {alias: {}}}}
-        assert expected == self.client.indices.get_alias(name=alias)
+        success = False
+        result = self.client.indices.get_alias(name=alias)
+        tries = 0
+        max_tries = 1
+        while not success and tries < max_tries:
+            if expected == result.body:
+                success = True
+            else:
+                tries += 1
+                result = self.client.indices.get_alias(name=alias)
+        assert success
 
     def test_warn_if_no_indices(self):
         """test_warn_if_no_indices"""
@@ -287,7 +315,8 @@ class TestCLIAlias(CuratorTestCase):
         LOGGER.debug('ARGS = %s', args)
         assert 0 == self.run_subprocess(args)
         expected = {idx1: {'aliases': {alias: {}}}, idx2: {'aliases': {alias: {}}}}
-        assert expected == dict(self.client.indices.get_alias(name=alias))
+        result = self.client.indices.get_alias(name=alias)
+        assert expected == result.body
 
     def test_exit_1_on_empty_list(self):
         """test_exit_1_on_empty_list"""

@@ -3,7 +3,7 @@
 import logging
 
 # pylint: disable=import-error, broad-except
-from elasticsearch8.exceptions import RequestError
+from elasticsearch9.exceptions import RequestError
 from curator.exceptions import ConfigurationError, FailedExecution
 from curator.helpers.date_ops import parse_date_pattern
 from curator.helpers.utils import report_failure

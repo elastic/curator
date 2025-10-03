@@ -4,7 +4,7 @@ from unittest import TestCase
 from unittest.mock import Mock
 import pytest
 from elastic_transport import ApiResponseMeta
-from elasticsearch8 import NotFoundError, TransportError
+from elasticsearch9 import NotFoundError, TransportError
 from curator.exceptions import CuratorException, FailedExecution, MissingArgument
 from curator.helpers import getters
 

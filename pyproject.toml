@@ -9,18 +9,17 @@ dynamic = ["version"]
 description = "Tending your Elasticsearch indices and snapshots"
 license = {file = "LICENSE"}
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 keywords = [
     'elasticsearch',
@@ -29,7 +28,7 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.17.5"
+    "es_client==9.0.1"
 ]
 
 [project.optional-dependencies]
@@ -105,7 +104,7 @@ all = ["python", "templates"]
 max-line-length = "88"
 
 [tool.black]
-target-version = ['py38']
+target-version = ['py310']
 line-length = 88
 skip-string-normalization = true
 include = '\.pyi?$'
@@ -116,11 +115,11 @@ platforms = ["linux", "macos"]
 dependencies = [
     "requests",
     "pytest >=7.2.1",
-    "pytest-cov"
+    "pytest-cov",
 ]
 
 [[tool.hatch.envs.test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.10", "3.11", "3.12", "3.13"]
 
 [tool.hatch.envs.test.scripts]
 pytest = "source docker_test/.env; pytest"

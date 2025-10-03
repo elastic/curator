@@ -1,7 +1,7 @@
 """Validate root ``actions`` and individual ``action`` Schemas"""
 
 from voluptuous import Any, In, Schema, Optional, Required
-from es_client.helpers.schemacheck import SchemaCheck
+from es_client.schemacheck import SchemaCheck
 from curator.defaults import settings
 
 

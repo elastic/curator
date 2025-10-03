@@ -4,9 +4,9 @@
 import re
 import itertools
 import logging
-from elasticsearch8.exceptions import NotFoundError, TransportError
-from es_client.helpers.schemacheck import SchemaCheck
-from es_client.helpers.utils import ensure_list
+from elasticsearch9.exceptions import NotFoundError, TransportError
+from es_client.schemacheck import SchemaCheck
+from es_client.utils import ensure_list
 from curator.defaults import settings
 from curator.exceptions import (
     ActionError,

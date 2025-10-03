@@ -2,7 +2,7 @@
 
 import logging
 import re
-from es_client.helpers.utils import ensure_list
+from es_client.utils import ensure_list
 from curator.helpers.date_ops import parse_datemath, parse_date_pattern
 from curator.helpers.getters import get_indices
 from curator.helpers.testers import (

@@ -2,7 +2,7 @@
 
 import logging
 import warnings
-from elasticsearch8.exceptions import ElasticsearchWarning
+from elasticsearch9.exceptions import ElasticsearchWarning
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 

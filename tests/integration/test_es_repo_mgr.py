@@ -202,4 +202,7 @@ class TestCLIShowRepositories(CuratorTestCase):
         )
         # The splitlines()[-1] allows me to only capture the last line and ignore
         # other output
-        assert self.args['repository'] == result.output.splitlines()[-1]
+        assert (
+            self.args['repository']
+            == result.stdout_bytes.decode('utf-8').splitlines()[-1]
+        )

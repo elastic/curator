@@ -2,8 +2,8 @@
 
 import logging
 from voluptuous import Any, In, Required, Schema
-from es_client.helpers.schemacheck import SchemaCheck
-from es_client.helpers.utils import prune_nones
+from es_client.schemacheck import SchemaCheck
+from es_client.utils import prune_nones
 from curator.defaults import settings, filtertypes
 from curator.exceptions import ConfigurationError
 

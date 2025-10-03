@@ -25,7 +25,7 @@ REMOTE_PORT=9201
 LOCAL_URL=http://127.0.0.1:${LOCAL_PORT}
 REMOTE_URL=http://127.0.0.1:${REMOTE_PORT}
 
-if [[ "$MAJOR" -eq 8 ]]; then
+if [[ "$MAJOR" -ge 8 ]]; then
   MONITORING="xpack.monitoring.templates.enabled"
   IMAGE=docker.elastic.co/elasticsearch/elasticsearch
 elif [[ "$MAJOR" -eq 7 ]]; then
