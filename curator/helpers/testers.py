@@ -2,10 +2,10 @@
 
 import logging
 from voluptuous import Schema
-from elasticsearch8 import Elasticsearch
-from elasticsearch8.exceptions import NotFoundError
-from es_client.helpers.schemacheck import SchemaCheck
-from es_client.helpers.utils import prune_nones
+from elasticsearch9 import Elasticsearch
+from elasticsearch9.exceptions import NotFoundError
+from es_client.schemacheck import SchemaCheck
+from es_client.utils import prune_nones
 from curator.helpers.getters import get_repository, get_write_index
 from curator.exceptions import (
     ConfigurationError,

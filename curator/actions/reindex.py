@@ -6,7 +6,7 @@ from dotmap import DotMap  # type: ignore
 
 # pylint: disable=broad-except, R0902,R0912,R0913,R0914,R0915
 from es_client.builder import Builder
-from es_client.helpers.utils import ensure_list, verify_url_schema
+from es_client.utils import ensure_list, verify_url_schema
 from es_client.exceptions import ConfigurationError
 from curator.exceptions import CuratorException, FailedExecution, NoIndices
 

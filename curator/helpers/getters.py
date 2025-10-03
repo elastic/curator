@@ -1,7 +1,7 @@
 """Utility functions that get things"""
 
 import logging
-from elasticsearch8 import exceptions as es8exc
+from elasticsearch9 import exceptions as es8exc
 from curator.defaults.settings import EXCLUDE_SYSTEM
 from curator.exceptions import (
     ConfigurationError,

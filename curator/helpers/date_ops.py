@@ -6,7 +6,7 @@ import re
 import string
 import time
 from datetime import timedelta, datetime, timezone
-from elasticsearch8.exceptions import NotFoundError
+from elasticsearch9.exceptions import NotFoundError
 from curator.exceptions import ConfigurationError
 from curator.defaults.settings import date_regex
 

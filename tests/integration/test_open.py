@@ -3,7 +3,7 @@
 # pylint: disable=C0115, C0116, invalid-name
 import os
 import warnings
-from elasticsearch8.exceptions import ElasticsearchWarning
+from elasticsearch9.exceptions import ElasticsearchWarning
 from . import CuratorTestCase
 from . import testvars
 
@@ -27,9 +27,14 @@ class TestActionFileOpenClosed(CuratorTestCase):
         warnings.filterwarnings("ignore", category=ElasticsearchWarning)
         self.client.indices.close(index=idx2, ignore_unavailable=True)
         self.invoke_runner()
+        check = {idx1: False, idx2: False}
+        success = False
         csi = self.client.cluster.state(metric=MET)[MET]['indices']
         for idx in (idx1, idx2):
-            assert 'close' != csi[idx]['state']
+            if 'close' != csi[idx]['state']:
+                check[idx] = True
+        success = all(check.values())
+        assert success
 
     def test_extra_option(self):
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))

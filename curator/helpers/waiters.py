@@ -7,7 +7,7 @@ import logging
 import warnings
 from time import localtime, sleep, strftime
 from datetime import datetime
-from elasticsearch8.exceptions import GeneralAvailabilityWarning
+from elasticsearch9.exceptions import GeneralAvailabilityWarning
 from curator.exceptions import (
     ActionTimeout,
     ConfigurationError,

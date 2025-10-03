@@ -3,6 +3,40 @@
 Changelog
 =========
 
+[9.0.0] - 2025-10-03
+--------------------
+
+**BREAKING CHANGE**
+
+Curator 9.x requires Python 3.10 or later. Python 3.8 and 3.9 are no longer supported. It has not yet been tested with Python 3.14.
+
+**Announcement**
+
+This the first major release supporting Elasticsearch 9.x. Only Elasticsearch 9 is supported by this release. If you need to use Curator with Elasticsearch 8.x, please use Curator 8.0.21 or earlier.
+
+All tests pass in Python versions 3.10.13, 3.11.8, 3.12.9, and 3.13.7.
+
+The Docker image is now based on ``python:3.13.7-alpine3.22``. The release candidate was built and tested against an Elastic Cloud instance.
+
+
+
+**Changes**
+
+  * Update to use ``es_client==9.0.0``, which supports Elasticsearch 9.x
+  * Update all references to ``elasticsearch8`` to use ``elasticsearch9``
+  * Remove all references to deprecated ``es_client.helpers`` modules.
+  * Set ``VERSION_MIN`` to ``9.0.0`` and ``VERSION_MAX`` to ``9.99.99`` in ``curator.defaults`` to
+    prevent accidental use of Curator 9.x with Elasticsearch 8.x and earlier.
+  * Allow docker_test/scripts/create.sh to accept ``-ge 8`` versions of Elasticsearch.
+  * Bump versions in docs/asciidoc files.
+  * Remove Python versions 3.8 and 3.9 from acceptable versions. ``requires-python = ">=3.10"``, due to the changes in ``click>=8.2.0``
+  * Add Python 3.13 to the supported versions.
+  * Automated linter reformatting of some files, but no code changes.
+  * Fix ``Dockerfile`` to use ``alpine3.22`` with Python 3.13.7
+  * Update ``pyproject.toml`` to reflect new dependencies and versions.
+  * Update tests to reflect changes in ``click==8.3.0``. Mostly using ``result.stdout_bytes`` instead of ``result.output``.
+
+
 8.0.21 (1 April 2025)
 ---------------------
 

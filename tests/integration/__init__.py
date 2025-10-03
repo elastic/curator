@@ -14,11 +14,11 @@ import warnings
 from datetime import timedelta, datetime, date, timezone
 from subprocess import Popen, PIPE
 from unittest import SkipTest, TestCase
-from elasticsearch8 import Elasticsearch
-from elasticsearch8.exceptions import ConnectionError as ESConnectionError
-from elasticsearch8.exceptions import ElasticsearchWarning, NotFoundError
+from elasticsearch9 import Elasticsearch
+from elasticsearch9.exceptions import ConnectionError as ESConnectionError
+from elasticsearch9.exceptions import ElasticsearchWarning, NotFoundError
 from click import testing as clicktest
-from es_client.helpers.utils import get_version
+from es_client.utils import get_version
 from curator.cli import cli
 
 from . import testvars

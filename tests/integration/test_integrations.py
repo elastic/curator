@@ -4,8 +4,8 @@
 import os
 import warnings
 import pytest
-from elasticsearch8 import Elasticsearch
-from elasticsearch8.exceptions import ElasticsearchWarning, NotFoundError
+from elasticsearch9 import Elasticsearch
+from elasticsearch9.exceptions import ElasticsearchWarning, NotFoundError
 from curator.exceptions import ConfigurationError
 from curator.helpers.getters import get_indices
 from curator import IndexList

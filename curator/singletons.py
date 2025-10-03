@@ -2,15 +2,15 @@
 
 import click
 from es_client.defaults import SHOW_EVERYTHING
-from es_client.helpers.config import (
+from es_client.config import (
     cli_opts,
     context_settings,
     generate_configdict,
     get_config,
     options_from_dict,
 )
-from es_client.helpers.logging import configure_logging
-from es_client.helpers.utils import option_wrapper
+from es_client.logging import configure_logging
+from es_client.utils import option_wrapper
 from curator.defaults.settings import CLICK_DRYRUN, default_config_file, footer
 from curator._version import __version__
 from curator.cli_singletons import (
