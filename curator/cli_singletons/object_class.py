@@ -198,7 +198,7 @@ class CLIAction:
     def do_filters(self):
         """Actually run the filters"""
         self.logger.debug('Running filters and testing for empty list object')
-        if self.allow_ilm:
+        if not self.allow_ilm:
             self.filters.append({'filtertype': 'ilm', 'exclude': True})
         try:
             self.list_object.iterate_filters({'filters': self.filters})
