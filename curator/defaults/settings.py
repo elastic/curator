@@ -12,8 +12,9 @@ CLICK_DRYRUN = {
 }
 DATA_NODE_ROLES = ['data', 'data_content', 'data_hot', 'data_warm']
 EXCLUDE_SYSTEM = (
-    '-.kibana*,-.security*,-.watch*,-.triggered_watch*,'
-    '-.ml*,-.geoip_databases*,-.logstash*,-.tasks*'
+    '-.apm-agent-configuration,-.apm-custom-link,-.async-search,-.fleet*,'
+    '-.geoip_databases*,-.inference,-.kibana*,-.logstash*,-.ml*,-.secrets-inference,'
+    '-.security*,-.slo-*,-.tasks*,-.transform-telemetry,-.watch*'
 )
 VERSION_MIN = (7, 14, 0)
 VERSION_MAX = (8, 99, 99)
