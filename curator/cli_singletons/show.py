@@ -78,13 +78,26 @@ def show_indices(
     )
     action.get_list_object()
     action.do_filters()
+    # Gather index stats for all indices in the list, after filtering
+    action.list_object.get_index_stats()
     indices = sorted(action.list_object.indices)
-    # Do some calculations to figure out the proper column sizes
     allbytes = []
     alldocs = []
     for idx in indices:
-        allbytes.append(byte_size(action.list_object.index_info[idx]['size_in_bytes']))
-        alldocs.append(str(action.list_object.index_info[idx]['docs']))
+        try:
+            allbytes.append(
+                byte_size(action.list_object.index_info[idx]['size_in_bytes'])
+            )
+        except Exception as exc:
+            allbytes.append('0B')
+            click.echo(f'Error getting size for {idx}: {exc}')
+        try:
+            alldocs.append(str(action.list_object.index_info[idx]['docs']))
+        except Exception as exc:
+            alldocs.append('0')
+            click.echo(f'Error getting doc count for {idx}: {exc}')
+    # Do some calculations to figure out the proper column sizes
+    # Set up formatting strings based on the longest values for each column
     if epoch:
         timeformat = '{6:>13}'
         column = 'creation_date'

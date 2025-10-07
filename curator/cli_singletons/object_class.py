@@ -1,6 +1,7 @@
 """Object builder"""
 
 # pylint: disable=W0718,R0902,R0912,R0913,R0914,R0917
+import typing as t
 import logging
 import sys
 from voluptuous import Schema
@@ -89,7 +90,6 @@ class CLIAction:
         self.logger = logging.getLogger('curator.cli_singletons.cli_action.' + action)
         self.filters = []
         self.action = action
-        self.list_object = None
         self.repository = kwargs['repository'] if 'repository' in kwargs else None
         if action[:5] != 'show_':  # Ignore CLASS_MAP for show_indices/show_snapshots
             try:
@@ -147,6 +147,8 @@ class CLIAction:
         self.logger.debug('Connection result: %s', builder.client.info())
         self.client = builder.client
         self.ignore = ignore_empty_list
+
+        self.list_object = self.get_list_object()
 
     def prune_excluded(self, option_dict):
         """Prune excluded options"""
@@ -210,16 +212,15 @@ class CLIAction:
                 self.logger.error('Singleton action failed due to empty %s list', otype)
                 sys.exit(1)
 
-    def get_list_object(self):
+    def get_list_object(self) -> t.Union[IndexList, SnapshotList]:
         """Get either a SnapshotList or IndexList object"""
         if self.action in snapshot_actions() or self.action == 'show_snapshots':
-            self.list_object = SnapshotList(self.client, repository=self.repository)
-        else:
-            self.list_object = IndexList(
-                self.client,
-                search_pattern=self.search_pattern,
-                include_hidden=self.include_hidden,
-            )
+            return SnapshotList(self.client, repository=self.repository)
+        return IndexList(
+            self.client,
+            search_pattern=self.search_pattern,
+            include_hidden=self.include_hidden,
+        )
 
     def get_alias_obj(self):
         """Get the Alias object"""
