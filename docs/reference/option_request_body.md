@@ -281,7 +281,7 @@ Nearly all scenarios supported by the reindex API are supported in the request_b
 * Versioning
 * Reindexing operation type (for example, create-only)
 
-Read more about these, and more, at [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/docs-reindex.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/docs-reindex.html)
+Read more about these options in the [Reindex API documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-reindex).
 
 Notable exceptions include:
 
