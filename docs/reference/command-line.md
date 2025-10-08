@@ -100,6 +100,5 @@ Both of the files `config.yml` and `actionfile.yml` should already exist in the 
 
 The `--rm` in the command means that the container (not the image) will be deleted after completing execution. You definitely want this as there is no reason to keep creating containers for each run. The eventual cleanup from this would be unpleasant.
 
- 
 
 

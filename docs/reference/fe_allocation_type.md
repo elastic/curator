@@ -21,7 +21,7 @@ This setting is used only when using the [allocated](/reference/filtertype_alloc
 
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
-Read more about these settings in [Index-level shard allocation](docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/index-level-shard-allocation).
+Read more about these settings in [Index-level shard allocation](docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/index-level-shard-allocation.md).
 
 The default value for this setting is `require`.
 

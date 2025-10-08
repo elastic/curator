@@ -27,7 +27,6 @@ eb                               5 1         0  0     632b     316b
 red    ?e                                5 1         0  0     632b     316b
 ```
 
- 
 
 You can see it looks like there are some tab characters and maybe newline characters. This makes it hard to use the HTTP API to delete the indices.
 
@@ -37,7 +36,6 @@ Dumping all the index settings out:
 curl -XGET localhost:9200/*/_settings?pretty
 ```
 
- 
 
 …​reveals the index names as the first key in the resulting JSON.  In this case, the names were very atypical:
 
@@ -48,7 +46,6 @@ curl -XGET localhost:9200/*/_settings?pretty
 ...
 ```
 
- 
 
 Curator lets you use regular expressions to select indices to perform actions on.
 
