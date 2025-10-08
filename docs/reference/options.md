@@ -20,6 +20,7 @@ Options are settings used by [actions](/reference/actions.md).
 * [ignore_unavailable](/reference/option_ignore.md)
 * [include_aliases](/reference/option_include_aliases.md)
 * [include_global_state](/reference/option_include_gs.md)
+* [include_hidden](/reference/option_include_hidden.md)
 * [indices](/reference/option_indices.md)
 * [key](/reference/option_key.md)
 * [max_age](/reference/option_max_age.md)
