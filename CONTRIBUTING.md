@@ -21,10 +21,7 @@ similar goals, or even new and different things with the
 
 Want to know how to use the command-line interface (CLI)?
 
-* [Curator CLI Documentation](http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html)
-  The Curator CLI Documentation is now a part of the document repository at
-  http://elastic.co/guide at
-  http://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html
+* [Curator CLI Documentation](https://www.elastic.co/docs/reference/elasticsearch/curator)
 
 
 ## Have a Question? Or an Idea or Feature Request?
