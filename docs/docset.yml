@@ -7,7 +7,5 @@ cross_links:
 toc:
   - toc: reference
 subs:
-  curator_version: 8.0.21
-  curator_major: 8
-  copyright_years: 2012-2025
+  current_year: "2025"
   es:   "Elasticsearch"

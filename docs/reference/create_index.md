@@ -90,7 +90,7 @@ options:
 
 ## Optional settings [_optional_settings_6]
 
-* [extra_settings](/reference/option_extra_settings.md) No default value.  You can add any acceptable index settings and mappings as nested YAML.  See the [Elasticsearch Create Index API documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/indices-create-index.md) for more information.
+* [extra_settings](/reference/option_extra_settings.md) No default value.  You can add any acceptable index settings and mappings as nested YAML.  See the [Create an index API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-create) for more information.
 * [timeout_override](/reference/option_timeout_override.md)
 * [continue_if_exception](/reference/option_continue.md)
 * [disable_action](/reference/option_disable.md)
