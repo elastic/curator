@@ -104,8 +104,26 @@ from curator.cli_singletons.utils import json_to_dict, validate_filter_json
     show_default=True,
 )
 @click.option(
+    '--include_datastreams/--no-include_datastreams',
+    help='Allow Curator to operate on data streams.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--include_hidden/--no-include_hidden',
     help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_kibana/--no-include_kibana',
+    help='Allow Curator to operate on Kibana indices.',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_system/--no-include_system',
+    help='Allow Curator to operate on system indices.',
     default=False,
     show_default=True,
 )
@@ -136,7 +154,10 @@ def shrink(
     max_wait,
     ignore_empty_list,
     allow_ilm_indices,
+    include_datastreams,
     include_hidden,
+    include_kibana,
+    include_system,
     filter_list,
 ):
     """
@@ -160,7 +181,10 @@ def shrink(
         'wait_interval': wait_interval,
         'max_wait': max_wait,
         'allow_ilm_indices': allow_ilm_indices,
+        'include_datastreams': include_datastreams,
         'include_hidden': include_hidden,
+        'include_kibana': include_kibana,
+        'include_system': include_system,
     }
     # ctx.info_name is the name of the function or name specified in
     # @click.command decorator

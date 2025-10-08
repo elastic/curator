@@ -3,8 +3,11 @@
 import logging
 import warnings
 from elasticsearch8.exceptions import ElasticsearchWarning
+from curator.debug import begin_end, debug
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
+
+logger = logging.getLogger(__name__)
 
 
 class Close:
@@ -31,7 +34,6 @@ class Close:
         #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
         #: :py:attr:`index_list`
         self.client = ilo.client
-        self.loggit = logging.getLogger('curator.actions.close')
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
@@ -39,6 +41,7 @@ class Close:
             self.index_list, 'close', **{'delete_aliases': self.delete_aliases}
         )
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.close` open indices in
@@ -46,7 +49,7 @@ class Close:
         """
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
-        self.loggit.info(
+        logger.info(
             'Closing %s selected indices: %s',
             len(self.index_list.indices),
             self.index_list.indices,
@@ -55,16 +58,16 @@ class Close:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
                 lst_as_csv = to_csv(lst)
-                self.loggit.debug('CSV list of indices to close:  %s', lst_as_csv)
+                debug.lv3('CSV list of indices to close:  %s', lst_as_csv)
                 if self.delete_aliases:
-                    self.loggit.info('Deleting aliases from indices before closing.')
-                    self.loggit.debug('Deleting aliases from:  %s', lst)
+                    debug.lv1('Deleting aliases from indices before closing.')
+                    debug.lv3('Deleting aliases from:  %s', lst)
                     try:
                         self.client.indices.delete_alias(index=lst_as_csv, name='*')
-                        self.loggit.debug('Deleted aliases from: %s', lst)
+                        debug.lv3('Deleted aliases from: %s', lst)
                     # pylint: disable=broad-except
                     except Exception as err:
-                        self.loggit.warning(
+                        logger.warning(
                             'Some indices may not have had aliases.  Exception: %s', err
                         )
                 if not self.skip_flush:

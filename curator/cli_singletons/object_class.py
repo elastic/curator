@@ -10,6 +10,7 @@ from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
 from curator import IndexList, SnapshotList
+from curator.debug import debug
 from curator.actions import (
     Alias,
     Allocation,
@@ -33,6 +34,8 @@ from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
 from curator.helpers.testers import validate_filters
 from curator.validators import options
 from curator.validators.filter_functions import validfilters
+
+logger = logging.getLogger(__name__)
 
 CLASS_MAP = {
     'alias': Alias,
@@ -87,7 +90,6 @@ class CLIAction:
         :type ignore_empty_list: bool
         :type kwargs: dict
         """
-        self.logger = logging.getLogger('curator.cli_singletons.cli_action.' + action)
         self.filters = []
         self.action = action
         self.repository = kwargs['repository'] if 'repository' in kwargs else None
@@ -95,13 +97,16 @@ class CLIAction:
             try:
                 self.action_class = CLASS_MAP[action]
             except KeyError:
-                self.logger.critical('Action must be one of %s', list(CLASS_MAP.keys()))
+                logger.critical('Action must be one of %s', list(CLASS_MAP.keys()))
             self.check_options(option_dict)
         else:
             self.options = option_dict
 
         self.search_pattern = self.options.pop('search_pattern', '*')
+        self.include_datastreams = self.options.pop('include_datastreams', True)
         self.include_hidden = self.options.pop('include_hidden', False)
+        self.include_kibana = self.options.pop('include_kibana', False)
+        self.include_system = self.options.pop('include_system', False)
 
         # Extract allow_ilm_indices so it can be handled separately.
         if 'allow_ilm_indices' in self.options:
@@ -109,7 +114,7 @@ class CLIAction:
         else:
             self.allow_ilm = False
         if action == 'alias':
-            self.logger.debug('ACTION = ALIAS')
+            debug.lv5('ACTION = ALIAS')
             self.alias = {
                 'name': option_dict['name'],
                 'extra_settings': option_dict['extra_settings'],
@@ -130,7 +135,7 @@ class CLIAction:
         elif action in ['cluster_routing', 'create_index', 'rollover']:
             self.action_kwargs = {}
             if action == 'rollover':
-                self.logger.debug('rollover option_dict = %s', option_dict)
+                debug.lv5('rollover option_dict = %s', option_dict)
         else:
             self.check_filters(filter_list)
         try:
@@ -144,7 +149,7 @@ class CLIAction:
                 f'Unable to connect to Elasticsearch as configured: {exc}'
             ) from exc
         # If we're here, we'll see the output from GET http(s)://hostname.tld:PORT
-        self.logger.debug('Connection result: %s', builder.client.info())
+        debug.lv5('Connection result: %s', builder.client.info())
         self.client = builder.client
         self.ignore = ignore_empty_list
 
@@ -160,7 +165,7 @@ class CLIAction:
     def check_options(self, option_dict):
         """Validate provided options"""
         try:
-            self.logger.debug('Validating provided options: %s', option_dict)
+            debug.lv5('Validating provided options: %s', option_dict)
             # Kludgy work-around to needing 'repository' in options for these actions
             # but only to pass the schema check.  It's removed again below.
             if self.action in ['delete_snapshots', 'restore']:
@@ -177,13 +182,13 @@ class CLIAction:
             if self.action in ['delete_snapshots', 'restore']:
                 del self.options['repository']
         except FailedValidation as exc:
-            self.logger.critical('Unable to parse options: %s', exc)
+            logger.critical('Unable to parse options: %s', exc)
             sys.exit(1)
 
     def check_filters(self, filter_dict, loc='singleton', key='filters'):
         """Validate provided filters"""
         try:
-            self.logger.debug('Validating provided filters: %s', filter_dict)
+            debug.lv5('Validating provided filters: %s', filter_dict)
             _ = SchemaCheck(
                 filter_dict,
                 Schema(validfilters(self.action, location=loc)),
@@ -192,13 +197,17 @@ class CLIAction:
             ).result()
             self.filters = validate_filters(self.action, _)
         except FailedValidation as exc:
-            self.logger.critical('Unable to parse filters: %s', exc)
+            logger.critical('Unable to parse filters: %s', exc)
             sys.exit(1)
 
     def do_filters(self):
         """Actually run the filters"""
-        self.logger.debug('Running filters and testing for empty list object')
-        if not self.allow_ilm:
+        debug.lv3('Running filters and testing for empty list object')
+        if not self.allow_ilm and not self.action in [
+            'delete_snapshots',
+            'restore',
+            'show_snapshots',
+        ]:
             self.filters.append({'filtertype': 'ilm', 'exclude': True})
         try:
             self.list_object.iterate_filters({'filters': self.filters})
@@ -206,10 +215,10 @@ class CLIAction:
         except (NoIndices, NoSnapshots) as exc:
             otype = 'index' if isinstance(exc, NoIndices) else 'snapshot'
             if self.ignore:
-                self.logger.info('Singleton action not performed: empty %s list', otype)
+                logger.info('Singleton action not performed: empty %s list', otype)
                 sys.exit(0)
             else:
-                self.logger.error('Singleton action failed due to empty %s list', otype)
+                logger.error('Singleton action failed due to empty %s list', otype)
                 sys.exit(1)
 
     def get_list_object(self) -> t.Union[IndexList, SnapshotList]:
@@ -219,7 +228,10 @@ class CLIAction:
         return IndexList(
             self.client,
             search_pattern=self.search_pattern,
+            include_datastreams=self.include_datastreams,
             include_hidden=self.include_hidden,
+            include_kibana=self.include_kibana,
+            include_system=self.include_system,
         )
 
     def get_alias_obj(self):
@@ -233,7 +245,7 @@ class CLIAction:
                     f"{'Add' if k == 'add' else 'Remov'}ing matching indices "
                     f"{'to' if k == 'add' else 'from'} alias \"{self.alias['name']}\""
                 )
-                self.logger.debug(msg)
+                debug.lv4(msg)
                 self.alias[k]['ilo'] = IndexList(
                     self.client,
                     search_pattern=self.search_pattern,
@@ -248,7 +260,7 @@ class CLIAction:
 
     def do_singleton_action(self, dry_run=False):
         """Execute the (ostensibly) completely ready to run action"""
-        self.logger.debug('Doing the singleton "%s" action here.', self.action)
+        debug.lv3('Doing the singleton "%s" action here.', self.action)
         try:
             if self.action == 'alias':
                 action_obj = self.get_alias_obj()
@@ -257,7 +269,7 @@ class CLIAction:
             else:
                 self.get_list_object()
                 self.do_filters()
-                self.logger.debug('OPTIONS = %s', self.options)
+                debug.lv5('OPTIONS = %s', self.options)
                 action_obj = self.action_class(self.list_object, **self.options)
             if dry_run:
                 action_obj.do_dry_run()
@@ -265,13 +277,13 @@ class CLIAction:
                 action_obj.do_action()
         except NoIndices:  # Speficically to address #1704
             if not self.ignore:
-                self.logger.critical('No indices in list after filtering. Exiting.')
+                logger.critical('No indices in list after filtering. Exiting.')
                 sys.exit(1)
-            self.logger.info('No indices in list after filtering. Skipping action.')
+            logger.info('No indices in list after filtering. Skipping action.')
         except Exception as exc:
-            self.logger.critical(
+            logger.critical(
                 'Failed to complete action: %s. Exception: %s', self.action, exc
             )
             sys.exit(1)
-        self.logger.info('"%s" action completed.', self.action)
+        logger.info('"%s" action completed.', self.action)
         sys.exit(0)

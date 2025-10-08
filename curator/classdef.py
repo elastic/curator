@@ -5,10 +5,12 @@ from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import password_filter
 from es_client.helpers.utils import get_yaml
 from curator import IndexList, SnapshotList
+from curator.debug import debug
 from curator.actions import CLASS_MAP
 from curator.exceptions import ConfigurationError
 from curator.helpers.testers import validate_actions
 
+logger = logging.getLogger(__name__)
 # Let me tell you the story of the nearly wasted afternoon and the research that went
 # into this seemingly simple work-around. Actually, no. It's even more wasted time
 # writing that story here. Suffice to say that I couldn't use the CLASS_MAP with class
@@ -47,10 +49,9 @@ class ActionsFile:
     """
 
     def __init__(self, action_file):
-        self.logger = logging.getLogger(__name__)
         #: The full, validated configuration from ``action_file``.
         self.fullconfig = self.get_validated(action_file)
-        self.logger.debug('Action Configuration: %s', password_filter(self.fullconfig))
+        debug.lv3('Action Configuration: %s', password_filter(self.fullconfig))
         #: A dict of all actions in the provided configuration. Each original key name
         #: is preserved and the value is now an
         #: :py:class:`~.curator.classdef.ActionDef`, rather than a dict.
@@ -68,7 +69,7 @@ class ActionsFile:
         try:
             return validate_actions(get_yaml(action_file))
         except (FailedValidation, UnboundLocalError) as err:
-            self.logger.critical('Configuration Error: %s', err)
+            logger.critical('Configuration Error: %s', err)
             raise ConfigurationError from err
 
     def parse_actions(self, all_actions):
@@ -194,8 +195,8 @@ class ActionDef:
         :py:attr:`~.curator.classdef.ActionDef.action` is ``delete_snapshots`` or
         ``restore``
         """
-
-        self.action_cls = Wrapper(CLASS_MAP[self.action])
+        debug.lv3('Getting action class for action: %s', self.action_dict['action'])
+        self.action_cls = Wrapper(CLASS_MAP[self.action])  # type: ignore[assignment]
         if self.action == 'alias':
             self.set_alias_extras()
         if self.action in ['delete_snapshots', 'restore']:
@@ -214,10 +215,21 @@ class ActionDef:
             'timeout_override': 'timeout_override',
         }
         for key in self.action_dict['options']:
+            debug.lv5('Processing option key: %s', key)
             if key in attmap:
                 setattr(self, attmap[key], self.action_dict['options'][key])
+                debug.lv3(
+                    'Set attribute %s to %s',
+                    attmap[key],
+                    self.action_dict['options'][key],
+                )
             else:
                 self.options[key] = self.action_dict['options'][key]
+                debug.lv3(
+                    'Set option %s to %s',
+                    key,
+                    self.action_dict['options'][key],
+                )
 
     def set_root_attrs(self):
         """
@@ -233,13 +245,13 @@ class ActionDef:
 
     def log_the_options(self):
         """Log options at initialization time"""
-        logger = logging.getLogger('curator.cli.ActionDef')
         msg = (
             f'For action {self.action}: disable_action={self.disabled}'
             f'continue_if_exception={self.cif}, '
             f'timeout_override={self.timeout_override}, '
-            f'ignore_empty_list={self.iel}, allow_ilm_indices={self.allow_ilm}'
+            f'ignore_empty_list={self.iel}, allow_ilm_indices={self.allow_ilm}, '
+            # f'include_hidden={self.hidn}'
         )
-        logger.debug(msg)
+        debug.lv3(msg)
         if self.allow_ilm:
             logger.warning('Permitting operation on indices with an ILM policy')

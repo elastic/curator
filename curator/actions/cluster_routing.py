@@ -3,9 +3,12 @@
 import logging
 
 # pylint: disable=import-error
+from curator.debug import debug, begin_end
 from curator.helpers.testers import verify_client_object
 from curator.helpers.utils import report_failure
 from curator.helpers.waiters import wait_for_it
+
+logger = logging.getLogger(__name__)
 
 
 class ClusterRouting:
@@ -49,7 +52,6 @@ class ClusterRouting:
         verify_client_object(client)
         #: An :py:class:`~.elasticsearch.Elasticsearch` client object
         self.client = client
-        self.loggit = logging.getLogger('curator.actions.cluster_routing')
         #: Object attribute that gets the value of param ``wait_for_completion``
         self.wfc = wait_for_completion
         #: Object attribute that gets the value of param ``wait_interval``
@@ -81,22 +83,21 @@ class ClusterRouting:
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
-        self.loggit.info('DRY-RUN MODE.  No changes will be made.')
+        logger.info('DRY-RUN MODE.  No changes will be made.')
         msg = f'DRY-RUN: Update cluster routing transient settings: {self.settings}'
-        self.loggit.info(msg)
+        logger.info(msg)
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.ClusterClient.put_settings` to the cluster with
         :py:attr:`settings`.
         """
-        self.loggit.info('Updating cluster settings: %s', self.settings)
+        logger.info('Updating cluster settings: %s', self.settings)
         try:
             self.client.cluster.put_settings(transient=self.settings)
             if self.wfc:
-                self.loggit.debug(
-                    'Waiting for shards to complete routing and/or rebalancing'
-                )
+                debug.lv3('Waiting for shards to complete routing and/or rebalancing')
                 wait_for_it(
                     self.client,
                     'cluster_routing',

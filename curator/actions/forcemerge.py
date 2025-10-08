@@ -4,9 +4,12 @@ import logging
 from time import sleep
 
 # pylint: disable=import-error
+from curator.debug import debug, begin_end
 from curator.exceptions import MissingArgument
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import report_failure, show_dry_run
+
+logger = logging.getLogger(__name__)
 
 
 class ForceMerge:
@@ -35,7 +38,6 @@ class ForceMerge:
         self.max_num_segments = max_num_segments
         #: Object attribute that gets the value of param ``delay``.
         self.delay = delay
-        self.loggit = logging.getLogger('curator.actions.forcemerge')
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
@@ -46,6 +48,7 @@ class ForceMerge:
             delay=self.delay,
         )
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.forcemerge` indices in
@@ -58,21 +61,20 @@ class ForceMerge:
             f'forceMerging {len(self.index_list.indices)} '
             f'selected indices: {self.index_list.indices}'
         )
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             for index_name in self.index_list.indices:
                 msg = (
                     f'forceMerging index {index_name} to {self.max_num_segments} '
                     f'segments per shard. Please wait...'
                 )
-                self.loggit.info(msg)
+                debug.lv1(msg)
                 self.client.indices.forcemerge(
                     index=index_name, max_num_segments=self.max_num_segments
                 )
+                logger.info('Successfully forceMerged index %s', index_name)
                 if self.delay > 0:
-                    self.loggit.info(
-                        'Pausing for %s seconds before continuing...', self.delay
-                    )
+                    debug.lv1('Pausing for %s seconds before continuing...', self.delay)
                     sleep(self.delay)
         # pylint: disable=broad-except
         except Exception as err:

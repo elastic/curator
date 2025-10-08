@@ -3,9 +3,10 @@
 import logging
 from voluptuous import Schema
 from elasticsearch8 import Elasticsearch
-from elasticsearch8.exceptions import NotFoundError
+from elasticsearch8.exceptions import NotFoundError, AuthenticationException
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
+from curator.debug import debug, begin_end
 from curator.helpers.getters import get_repository, get_write_index
 from curator.exceptions import (
     ConfigurationError,
@@ -21,6 +22,8 @@ from curator.defaults.settings import (
 from curator.validators import actions, options
 from curator.validators.filter_functions import validfilters
 from curator.helpers.utils import report_failure
+
+logger = logging.getLogger(__name__)
 
 
 def has_lifecycle_name(idx_settings):
@@ -59,6 +62,7 @@ def is_idx_partial(idx_settings):
     raise SearchableSnapshotException('Index not a mounted searchable snapshot')
 
 
+@begin_end()
 def ilm_policy_check(client, alias):
     """Test if alias is associated with an ILM policy
 
@@ -71,20 +75,19 @@ def ilm_policy_check(client, alias):
     :type alias: str
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     # alias = action_obj.options['name']
     write_index = get_write_index(client, alias)
     try:
         idx_settings = client.indices.get_settings(index=write_index)
         if 'name' in idx_settings[write_index]['settings']['index']['lifecycle']:
-            # logger.info('Alias %s is associated with ILM policy.', alias)
-            # logger.info('Skipping action %s because allow_ilm_indices is false.', idx)
+            debug.lv4('Alias %s is associated with ILM policy.', alias)
             return True
     except KeyError:
-        logger.debug('No ILM policies associated with %s', alias)
+        debug.lv3('No ILM policies associated with %s', alias)
     return False
 
 
+@begin_end()
 def repository_exists(client, repository=None):
     """
     Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get_repository`
@@ -98,24 +101,24 @@ def repository_exists(client, repository=None):
     :returns: ``True`` if ``repository`` exists, else ``False``
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     if not repository:
         raise MissingArgument('No value for "repository" provided')
     try:
         test_result = get_repository(client, repository)
         if repository in test_result:
-            logger.debug("Repository %s exists.", repository)
+            debug.lv5("Repository %s exists.", repository)
             response = True
         else:
-            logger.debug("Repository %s not found...", repository)
+            debug.lv2("Repository %s not found...", repository)
             response = False
     # pylint: disable=broad-except
     except Exception as err:
-        logger.debug('Unable to find repository "%s": Error: %s', repository, err)
+        logger.error('Unable to find repository "%s": Error: %s', repository, err)
         response = False
     return response
 
 
+@begin_end()
 def rollable_alias(client, alias):
     """
     Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_alias`
@@ -131,7 +134,6 @@ def rollable_alias(client, alias):
         points to an index that can be used by the ``_rollover`` API.
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     try:
         response = client.indices.get_alias(name=alias)
     except NotFoundError:
@@ -167,6 +169,7 @@ def rollable_alias(client, alias):
     return rollable
 
 
+@begin_end()
 def snapshot_running(client):
     """
     Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get_repository`
@@ -179,6 +182,7 @@ def snapshot_running(client):
 
     :rtype: bool
     """
+    status = ''
     try:
         status = client.snapshot.status()['snapshots']
     # pylint: disable=broad-except
@@ -190,6 +194,7 @@ def snapshot_running(client):
     return False if not status else True
 
 
+@begin_end()
 def validate_actions(data):
     """
     Validate the ``actions`` configuration dictionary, as imported from actions.yml,
@@ -286,6 +291,7 @@ def validate_actions(data):
     return {'actions': clean_config}
 
 
+@begin_end()
 def validate_filters(action, myfilters):
     """
     Validate that myfilters are appropriate for the action type, e.g. no
@@ -315,6 +321,7 @@ def validate_filters(action, myfilters):
     return myfilters
 
 
+@begin_end()
 def verify_client_object(test):
     """
     :param test: The variable or object to test
@@ -325,7 +332,6 @@ def verify_client_object(test):
         client object and raise a :py:exc:`TypeError` exception if it is not.
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     # Ignore mock type for testing
     if str(type(test)) == "<class 'unittest.mock.Mock'>":
         pass
@@ -335,6 +341,7 @@ def verify_client_object(test):
         raise TypeError(msg)
 
 
+@begin_end()
 def verify_index_list(test):
     """
     :param test: The variable or object to test
@@ -351,13 +358,13 @@ def verify_index_list(test):
     # pylint: disable=import-outside-toplevel
     from curator.indexlist import IndexList
 
-    logger = logging.getLogger(__name__)
     if not isinstance(test, IndexList):
         msg = f'Not a valid IndexList object. Type: {type(test)} was passed'
         logger.error(msg)
         raise TypeError(msg)
 
 
+@begin_end()
 def verify_repository(client, repository=None):
     """
     Do :py:meth:`~.elasticsearch.snapshot.verify_repository` call. If it fails, raise a
@@ -372,29 +379,32 @@ def verify_repository(client, repository=None):
 
     :rtype: None
     """
-    logger = logging.getLogger(__name__)
     try:
         nodes = client.snapshot.verify_repository(name=repository)['nodes']
-        logger.debug('All nodes can write to the repository')
-        logger.debug('Nodes with verified repository access: %s', nodes)
+        debug.lv5('All nodes can write to the repository')
+        debug.lv5('Nodes with verified repository access: %s', nodes)
+    except AuthenticationException as err:
+        report = 'Failed to verify repository access due to authentication failure.'
+        logger.error('%s: %s', report, err)
+        raise RepositoryException(report) from err
+    except NotFoundError as err:
+        report = f'Repository "{repository}" not found.'
+        logger.error('%s: %s', report, err)
+        raise RepositoryException(report) from err
     except Exception as err:
+        logger.error('Failed to verify repository access: %s', err)
         try:
-            if err.status_code == 404:
-                msg = (
-                    f'--- Repository "{repository}" not found. Error: '
-                    f'{err.meta.status}, {err.error}'
-                )
-            else:
-                msg = (
-                    f'--- Got a {err.meta.status} response from Elasticsearch.  '
-                    f'Error message: {err.error}'
-                )
+            msg = (
+                f'--- Got a {err.meta.status} response from Elasticsearch.  '  # type: ignore
+                f'Error message: {err.error}'  # type: ignore
+            )
         except AttributeError:
             msg = f'--- Error message: {err}'.format()
         report = f'Failed to verify all nodes have repository access: {msg}'
         raise RepositoryException(report) from err
 
 
+@begin_end()
 def verify_snapshot_list(test):
     """
     :param test: The variable or object to test
@@ -412,7 +422,6 @@ def verify_snapshot_list(test):
     # pylint: disable=import-outside-toplevel
     from curator.snapshotlist import SnapshotList
 
-    logger = logging.getLogger(__name__)
     if not isinstance(test, SnapshotList):
         msg = f'Not a valid SnapshotList object. Type: {type(test)} was passed'
         logger.error(msg)

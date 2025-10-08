@@ -11,7 +11,7 @@ from curator._version import __version__
 # ### Indices ###
 
 
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long,W0718
 @click.command(
     epilog=footer(__version__, tail='singleton-cli.html#_show_indicessnapshots')
 )
@@ -37,8 +37,26 @@ from curator._version import __version__
     show_default=True,
 )
 @click.option(
+    '--include_datastreams/--no-include_datastreams',
+    help='Allow Curator to operate on data streams.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--include_hidden/--no-include_hidden',
     help='Allow Curator to operate on hidden indices (and data_streams).',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_kibana/--no-include_kibana',
+    help='Allow Curator to operate on Kibana indices.',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_system/--no-include_system',
+    help='Allow Curator to operate on system indices.',
     default=False,
     show_default=True,
 )
@@ -57,6 +75,9 @@ def show_indices(
     epoch,
     ignore_empty_list,
     allow_ilm_indices,
+    include_datastreams,
+    include_kibana,
+    include_system,
     include_hidden,
     filter_list,
 ):
@@ -65,13 +86,17 @@ def show_indices(
     """
     # ctx.info_name is the name of the function or name specified in
     # @click.command decorator
+    click.secho(f'allow_ilm_indices: {allow_ilm_indices}', fg='yellow')
     action = CLIAction(
         'show_indices',
         ctx.obj['configdict'],
         {
             'search_pattern': search_pattern,
             'allow_ilm_indices': allow_ilm_indices,
+            'include_datastreams': include_datastreams,
             'include_hidden': include_hidden,
+            'include_kibana': include_kibana,
+            'include_system': include_system,
         },
         filter_list,
         ignore_empty_list,
@@ -79,20 +104,20 @@ def show_indices(
     action.get_list_object()
     action.do_filters()
     # Gather index stats for all indices in the list, after filtering
-    action.list_object.get_index_stats()
-    indices = sorted(action.list_object.indices)
+    action.list_object.get_index_stats()  # type: ignore
+    indices = sorted(action.list_object.indices)  # type: ignore
     allbytes = []
     alldocs = []
     for idx in indices:
         try:
             allbytes.append(
-                byte_size(action.list_object.index_info[idx]['size_in_bytes'])
+                byte_size(action.list_object.index_info[idx]['size_in_bytes'])  # type: ignore
             )
         except Exception as exc:
             allbytes.append('0B')
             click.echo(f'Error getting size for {idx}: {exc}')
         try:
-            alldocs.append(str(action.list_object.index_info[idx]['docs']))
+            alldocs.append(str(action.list_object.index_info[idx]['docs']))  # type: ignore
         except Exception as exc:
             alldocs.append('0')
             click.echo(f'Error getting doc count for {idx}: {exc}')
@@ -120,7 +145,7 @@ def show_indices(
         )
     # Loop through indices and print info, if verbose
     for idx in indices:
-        data = action.list_object.index_info[idx]
+        data = action.list_object.index_info[idx]  # type: ignore
         if verbose:
             if epoch:
                 datefield = (
@@ -185,5 +210,5 @@ def show_snapshots(ctx, repository, ignore_empty_list, filter_list):
     )
     action.get_list_object()
     action.do_filters()
-    for snapshot in sorted(action.list_object.snapshots):
+    for snapshot in sorted(action.list_object.snapshots):  # type: ignore
         click.secho(f'{snapshot}')

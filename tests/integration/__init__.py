@@ -23,6 +23,7 @@ from curator.cli import cli
 
 from . import testvars
 
+DEBUG_LEVEL = '5'
 
 client = None
 
@@ -122,6 +123,8 @@ class CuratorTestCase(TestCase):
         self.runner_args = [
             '--config',
             self.args['configfile'],
+            '--debug-level',
+            DEBUG_LEVEL,
             self.args['actionfile'],
         ]
         self.result = None
@@ -296,6 +299,8 @@ class CuratorTestCase(TestCase):
                 [
                     '--config',
                     self.args['configfile'],
+                    '--debug-level',
+                    DEBUG_LEVEL,
                     '--dry-run',
                     self.args['actionfile'],
                 ],

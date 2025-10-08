@@ -9,6 +9,8 @@ from curator.helpers.getters import get_snapshot
 from . import CuratorTestCase
 from . import testvars
 
+DEBUG_LEVEL = '3'
+
 HOST = os.environ.get('TEST_ES_SERVER', 'http://127.0.0.1:9200')
 # '      repository: {0}\n'
 # '      - filtertype: {1}\n'
@@ -32,7 +34,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
                 ilo,
                 repository=self.args['repository'],
                 name='curator-%Y%m%d%H%M%S',
-                wait_interval=0.5,
+                wait_interval=1,
             )
             snap.do_action()
             snapshot = get_snapshot(self.client, self.args['repository'], '*')
@@ -68,7 +70,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
             ),
         )
         self.invoke_runner()
-        assert 1 == self.result.exit_code
+        assert 1 == self.result.exit_code  # type: ignore[union-attr]
 
     def test_extra_options(self):
         self.write_config(self.args['configfile'], testvars.client_config.format(HOST))
@@ -77,7 +79,7 @@ class TestActionFileDeleteSnapshots(CuratorTestCase):
             testvars.bad_option_proto_test.format('delete_snapshots'),
         )
         self.invoke_runner()
-        assert 1 == self.result.exit_code
+        assert 1 == self.result.exit_code  # type: ignore[union-attr]
 
 
 class TestCLIDeleteSnapshots(CuratorTestCase):
@@ -92,7 +94,7 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
                 ilo,
                 repository=self.args['repository'],
                 name='curator-%Y%m%d%H%M%S',
-                wait_interval=0.5,
+                wait_interval=1,
             )
             snap.do_action()
             snapshot = get_snapshot(self.client, self.args['repository'], '*')
@@ -107,6 +109,12 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         # Setup the actual delete
         args = self.get_runner_args()
         args += [
+            '--blacklist',
+            'urllib3',
+            '--blacklist',
+            'elastic_transport',
+            '--debug-level',
+            DEBUG_LEVEL,
             '--config',
             self.args['configfile'],
             'delete-snapshots',
@@ -149,6 +157,12 @@ class TestCLIDeleteSnapshots(CuratorTestCase):
         )
         args = self.get_runner_args()
         args += [
+            '--blacklist',
+            'urllib3.connectionpool',
+            '--blacklist',
+            'elastic_transport.transport',
+            '--debug-level',
+            DEBUG_LEVEL,
             '--config',
             self.args['configfile'],
             'delete-snapshots',
