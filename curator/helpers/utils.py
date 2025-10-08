@@ -6,6 +6,7 @@ The kind that don't fit in testers, getters, date_ops, or converters
 import re
 import logging
 from es_client.helpers.utils import ensure_list
+from curator.debug import debug, begin_end
 from curator.exceptions import FailedExecution
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ def to_csv(indices):
     return None
 
 
+@begin_end()
 def multitarget_fix(pattern: str) -> str:
     """
     If pattern only has '-' prefixed entries (excludes)
@@ -162,6 +164,7 @@ def regex_loop(matchstr: str, indices: list) -> list:
     return retval
 
 
+@begin_end()
 def multitarget_match(pattern: str, index_list: list) -> list:
     """
     Convert Elasticsearch multi-target syntax ``pattern`` into Python regex
@@ -211,6 +214,6 @@ def multitarget_match(pattern: str, index_list: list) -> list:
     retval.sort()
     excluded.sort()
     # Log the results
-    logger.debug('Included indices: %s', retval)
-    logger.debug('Excluded indices: %s', excluded)
+    debug.lv3('Included indices: %s', retval)
+    debug.lv3('Excluded indices: %s', excluded)
     return retval

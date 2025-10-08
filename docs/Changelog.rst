@@ -3,6 +3,36 @@
 Changelog
 =========
 
+8.0.22 (? ? ?)
+--------------
+
+**Announcement**
+
+  * Added the ``tiered-debug`` module which will allow for more granular control
+    over debug logging output. You can set the debug level from 1 - 5, with 5 being
+    the most verbose. This is done via the ``--debug-level`` command-line option.
+    The default level is 1, which is now much less verbose than ``--log-level DEBUG``
+    was in the past. The ``--log-level`` option remains, naturally, and is still
+    necessary to set the logging level to ``DEBUG`` or ``INFO``. The
+    ``--debug-level`` option only controls how much debug output is generated.
+
+**Bugs Fixed**
+
+  * Reworked index inclusion/exclusion logic to be more consistent and
+    predictable. There are now dedicated ``include_datastreams``, ``include_hidden``,
+    ``include_kibana``, and ``include_system`` options in the configuration file
+    ``options`` section, as well as command-line flags for each of these options.
+    Fixes #1770.
+  
+**Changes**
+
+  * Update to ``es_client==8.19.5``.
+  * Add ``tiered-debug`` module to allow for more granular control over debug
+    logging output.
+  * Add ``--debug-level`` command-line option to set the debug level from 1 - 5.
+  * Refactor index pattern inclusion/exclusion logic to be more consistent and predictable.
+  
+
 8.0.21 (1 April 2025)
 ---------------------
 

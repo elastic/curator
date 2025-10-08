@@ -8,6 +8,7 @@ import warnings
 from time import localtime, sleep, strftime
 from datetime import datetime
 from elasticsearch8.exceptions import GeneralAvailabilityWarning
+from curator.debug import debug, begin_end
 from curator.exceptions import (
     ActionTimeout,
     ConfigurationError,
@@ -17,7 +18,10 @@ from curator.exceptions import (
 )
 from curator.helpers.utils import chunk_index_list
 
+logger = logging.getLogger(__name__)
 
+
+@begin_end()
 def health_check(client, **kwargs):
     """
     This function calls `client.cluster.`
@@ -33,8 +37,8 @@ def health_check(client, **kwargs):
 
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
-    logger.debug('KWARGS= "%s"', kwargs)
+
+    debug.lv5('KWARGS= "%s"', kwargs)
     klist = list(kwargs.keys())
     if not klist:
         raise MissingArgument('Must provide at least one keyword argument')
@@ -50,16 +54,17 @@ def health_check(client, **kwargs):
                 f'NO MATCH: Value for key "{kwargs[k]}", '
                 f'health check data: {hc_data[k]}'
             )
-            logger.debug(msg)
+            debug.lv3(msg)
             response = False
         else:
             msg = f'MATCH: Value for key "{kwargs[k]}", health check data: {hc_data[k]}'
-            logger.debug(msg)
+            debug.lv3(msg)
     if response:
         logger.info('Health Check for all provided keys passed.')
     return response
 
 
+@begin_end()
 def relocate_check(client, index):
     """
     This function calls `client.cluster.`
@@ -77,7 +82,6 @@ def relocate_check(client, index):
 
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     shard_state_data = client.cluster.state(index=index)['routing_table']['indices'][
         index
     ]['shards']
@@ -86,10 +90,11 @@ def relocate_check(client, index):
         for shards in shard_state_data.values()
     )
     if finished_state:
-        logger.info('Relocate Check for index: "%s" has passed.', index)
+        debug.lv1('Relocate Check for index: "%s" has passed.', index)
     return finished_state
 
 
+@begin_end()
 def restore_check(client, index_list):
     """
     This function calls `client.indices.`
@@ -109,7 +114,6 @@ def restore_check(client, index_list):
 
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     response = {}
 
     for chunk in chunk_index_list(index_list):
@@ -122,23 +126,24 @@ def restore_check(client, index_list):
             )
             raise CuratorException(msg) from err
         if chunk_response == {}:
-            logger.info('_recovery returned an empty response. Trying again.')
+            debug.lv3('_recovery returned an empty response. Trying again.')
             return False
         response.update(chunk_response)
-    logger.info('Provided indices: %s', index_list)
-    logger.info('Found indices: %s', list(response.keys()))
+    debug.lv2('Provided indices: %s', index_list)
+    debug.lv2('Found indices: %s', list(response.keys()))
     # pylint: disable=consider-using-dict-items
     for index in response:
         for shard in range(0, len(response[index]['shards'])):
             stage = response[index]['shards'][shard]['stage']
             if stage != 'DONE':
-                logger.info('Index "%s" is still in stage "%s"', index, stage)
+                debug.lv2('Index "%s" is still in stage "%s"', index, stage)
                 return False
 
     # If we've gotten here, all of the indices have recovered
     return True
 
 
+@begin_end()
 def snapshot_check(client, snapshot=None, repository=None):
     """
     This function calls `client.snapshot.`
@@ -159,22 +164,21 @@ def snapshot_check(client, snapshot=None, repository=None):
 
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
-    logger.debug('SNAPSHOT: %s', snapshot)
-    logger.debug('REPOSITORY: %s', repository)
+    debug.lv3('SNAPSHOT: %s', snapshot)
+    debug.lv3('REPOSITORY: %s', repository)
     try:
         result = client.snapshot.get(repository=repository, snapshot=snapshot)
-        logger.debug('RESULT: %s', result)
+        debug.lv3('RESULT: %s', result)
     except Exception as err:
         raise CuratorException(
             f'Unable to obtain information for snapshot "{snapshot}" in repository '
             f'"{repository}". Error: {err}'
         ) from err
     state = result['snapshots'][0]['state']
-    logger.debug('Snapshot state = %s', state)
+    debug.lv3('Snapshot state = %s', state)
     retval = True
     if state == 'IN_PROGRESS':
-        logger.info('Snapshot %s still in progress.', snapshot)
+        debug.lv1('Snapshot %s still in progress.', snapshot)
         retval = False
     elif state == 'SUCCESS':
         logger.info('Snapshot %s successfully completed.', snapshot)
@@ -187,6 +191,7 @@ def snapshot_check(client, snapshot=None, repository=None):
     return retval
 
 
+@begin_end()
 def task_check(client, task_id=None):
     """
     This function calls `client.tasks.`
@@ -203,7 +208,6 @@ def task_check(client, task_id=None):
 
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     try:
         warnings.filterwarnings("ignore", category=GeneralAvailabilityWarning)
         task_data = client.tasks.get(task_id=task_id)
@@ -216,36 +220,37 @@ def task_check(client, task_id=None):
     task = task_data['task']
     completed = task_data['completed']
     if task['action'] == 'indices:data/write/reindex':
-        logger.debug('It\'s a REINDEX TASK')
-        logger.debug('TASK_DATA: %s', task_data)
-        logger.debug('TASK_DATA keys: %s', list(task_data.keys()))
+        debug.lv5('It\'s a REINDEX TASK')
+        debug.lv5('TASK_DATA: %s', task_data)
+        debug.lv5('TASK_DATA keys: %s', list(task_data.keys()))
         if 'response' in task_data:
             response = task_data['response']
             if response['failures']:
                 msg = f'Failures found in reindex response: {response["failures"]}'
                 raise FailedReindex(msg)
     running_time = 0.000000001 * task['running_time_in_nanos']
-    logger.debug('Running time: %s seconds', running_time)
+    debug.lv3('Running time: %s seconds', running_time)
     descr = task['description']
 
     if completed:
         completion_time = (running_time * 1000) + task['start_time_in_millis']
         time_string = strftime('%Y-%m-%dT%H:%M:%SZ', localtime(completion_time / 1000))
-        logger.info('Task "%s" completed at %s.', descr, time_string)
+        debug.lv1('Task "%s" completed at %s.', descr, time_string)
         retval = True
     else:
         # Log the task status here.
-        logger.debug('Full Task Data: %s', task_data)
+        debug.lv3('Full Task Data: %s', task_data)
         msg = (
             f'Task "{descr}" with task_id "{task_id}" has been running for '
             f'{running_time} seconds'
         )
-        logger.info(msg)
+        debug.lv1(msg)
         retval = False
     return retval
 
 
 # pylint: disable=too-many-locals, too-many-arguments
+@begin_end()
 def wait_for_it(
     client,
     action,
@@ -280,7 +285,6 @@ def wait_for_it(
     :type kwargs: dict
     :rtype: None
     """
-    logger = logging.getLogger(__name__)
     action_map = {
         'allocation': {'function': health_check, 'args': {'relocating_shards': 0}},
         'replicas': {'function': health_check, 'args': {'status': 'green'}},
@@ -326,7 +330,7 @@ def wait_for_it(
     result = False
     while True:
         elapsed = int((datetime.now() - start_time).total_seconds())
-        logger.debug('Elapsed time: %s seconds', elapsed)
+        debug.lv3('Elapsed time: %s seconds', elapsed)
         if kwargs:
             response = action_map[action]['function'](
                 client, **action_map[action]['args'], **kwargs
@@ -335,10 +339,10 @@ def wait_for_it(
             response = action_map[action]['function'](
                 client, **action_map[action]['args']
             )
-        logger.debug('Response: %s', response)
+        debug.lv3('Response: %s', response)
         # Success
         if response:
-            logger.debug(
+            debug.lv3(
                 'Action "%s" finished executing (may or may not have been successful)',
                 action,
             )
@@ -357,10 +361,10 @@ def wait_for_it(
             f'Action "{action}" not yet complete, {elapsed} total seconds elapsed. '
             f'Waiting {wait_interval} seconds before checking again.'
         )
-        logger.debug(msg)
+        debug.lv3(msg)
         sleep(wait_interval)
 
-    logger.debug('Result: %s', result)
+    debug.lv3('Result: %s', result)
     if not result:
         raise ActionTimeout(
             (

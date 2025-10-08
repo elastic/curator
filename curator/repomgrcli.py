@@ -15,7 +15,9 @@ from es_client.helpers.config import (
 )
 from es_client.helpers.logging import configure_logging
 from es_client.helpers.utils import option_wrapper
+from curator.debug import debug
 from curator.defaults.settings import (
+    CLICK_DEBUG,
     CLICK_DRYRUN,
     VERSION_MAX,
     VERSION_MIN,
@@ -27,6 +29,8 @@ from curator._version import __version__
 
 ONOFF = {'on': '', 'off': 'no-'}
 click_opt_wrap = option_wrapper()
+
+logger = logging.getLogger(__name__)
 
 
 # pylint: disable=unused-argument
@@ -58,9 +62,8 @@ def show_repos(client):
     :type client: :py:class:`~.elasticsearch.Elasticsearch`
     :rtype: None
     """
-    logger = logging.getLogger(__name__)
     for repository in sorted(get_repository(client, '*').keys()):
-        logger.debug('REPOSITORY = %s', repository)
+        debug.lv3('REPOSITORY = %s', repository)
         click.echo(f'{repository}')
     sys.exit(0)
 
@@ -106,7 +109,9 @@ def create_repo(ctx, repo_name=None, repo_type=None, repo_settings=None, verify=
     :type verify: bool
     :rtype: None
     """
-    logger = logging.getLogger('curator.repomgrcli.create_repo')
+    if not repo_name:
+        click.echo('A repository name is required.')
+        sys.exit(1)
     client = get_client(ctx)
     request_body = {'type': repo_type, 'settings': repo_settings}
     try:
@@ -707,6 +712,7 @@ def source(
 @click_opt_wrap(*cli_opts('ssl_version'))
 @click_opt_wrap(*cli_opts('master-only', onoff=ONOFF))
 @click_opt_wrap(*cli_opts('skip_version_test', onoff=ONOFF))
+@click_opt_wrap(*cli_opts('debug-level', settings=CLICK_DEBUG))
 @click_opt_wrap(*cli_opts('dry-run', settings=CLICK_DRYRUN))
 @click_opt_wrap(*cli_opts('loglevel', settings=LOGGING_SETTINGS))
 @click_opt_wrap(*cli_opts('logfile', settings=LOGGING_SETTINGS))
@@ -736,6 +742,7 @@ def repo_mgr_cli(
     ssl_version,
     master_only,
     skip_version_test,
+    debug_level,
     dry_run,
     loglevel,
     logfile,
@@ -759,9 +766,10 @@ def repo_mgr_cli(
     ctx.obj['default_config'] = default_config_file()
     get_config(ctx)
     configure_logging(ctx)
-    logger = logging.getLogger('curator.repomgrcli')
+
+    debug.level = debug_level
     generate_configdict(ctx)
-    logger.debug('Exiting initial command function...')
+    debug.lv2('Exiting initial command function...')
 
 
 @repo_mgr_cli.command(
@@ -872,7 +880,6 @@ def _delete(ctx, name):
     """
     Delete an Elasticsearch repository
     """
-    logger = logging.getLogger('curator.repomgrcli._delete')
     client = get_client(ctx)
     try:
         logger.info('Deleting repository %s...', name)
@@ -888,5 +895,5 @@ def info(ctx):
     """Show cluster info"""
     client = get_client(ctx)
     pp = pprint.PrettyPrinter(indent=4)
-    output = dict(client.info())
+    output = client.info().body
     click.echo(f'{pp.pprint(output)}')

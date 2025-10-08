@@ -2,13 +2,16 @@
 
 import logging
 from elasticsearch8 import exceptions as es8exc
-from curator.defaults.settings import EXCLUDE_SYSTEM
+from curator.debug import debug, begin_end
+from curator.defaults.settings import EXCLUDE_ALWAYS, EXCLUDE_SYSTEM
 from curator.exceptions import (
     ConfigurationError,
     CuratorException,
     FailedExecution,
     MissingArgument,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def byte_size(num, suffix='B'):
@@ -46,6 +49,7 @@ def escape_dots(stringval):
     return stringval.replace('.', r'\.')
 
 
+@begin_end()
 def get_alias_actions(oldidx, newidx, aliases):
     """
     :param oldidx: The old index name
@@ -68,6 +72,7 @@ def get_alias_actions(oldidx, newidx, aliases):
     return actions
 
 
+@begin_end()
 def get_data_tiers(client):
     """
     Get all valid data tiers from the node roles of each node in the cluster by
@@ -101,7 +106,15 @@ def get_data_tiers(client):
     return retval
 
 
-def get_indices(client, search_pattern='*', include_hidden=False):
+@begin_end()
+def get_indices(
+    client,
+    search_pattern='*',
+    include_datastreams=False,
+    include_kibana=False,
+    include_hidden=False,
+    include_system=False,
+):
     """
     Calls :py:meth:`~.elasticsearch.client.CatClient.indices`
 
@@ -112,25 +125,44 @@ def get_indices(client, search_pattern='*', include_hidden=False):
     :param
         client: A client connection object
         search_pattern: The index search pattern to use
+        include_datastreams: Include data streams in the list
+        include_kibana: Include Kibana indices in the list
         include_hidden: Include hidden indices in the list
+        include_system: Include system indices in the list
     :type
         client: :py:class:`~.elasticsearch.Elasticsearch`
         search_pattern: str
+        include_datastreams: bool
+        include_kibana: bool
         include_hidden: bool
+        include_system: bool
 
 
     :returns: The matching list of indices from the cluster
     :rtype: list
     """
-    logger = logging.getLogger(__name__)
     indices = []
     expand = 'open,closed,hidden' if include_hidden else 'open,closed'
-    logger.debug('expand = %s', expand)
+    if include_datastreams:
+        search_pattern = f'{search_pattern},.ds-*'
+        debug.lv2('Including data streams in index list')
+    if include_system:
+        exclude = f',{EXCLUDE_ALWAYS}'
+        debug.lv2('Including system indices in index list')
+    else:
+        exclude = f',{EXCLUDE_ALWAYS},{EXCLUDE_SYSTEM}'
+        debug.lv2('Excluding system indices from index list')
+    if not include_kibana:
+        exclude = f'{exclude},-.kibana*'
+    else:
+        search_pattern = f'{search_pattern},.kibana*'
+        debug.lv1('Including Kibana indices in index list')
+    debug.lv2('expand = %s', expand)
     try:
         # Doing this in two stages because IndexList also calls for these args,
         # and the unit tests need to Mock this call the same exact way.
         resp = client.cat.indices(
-            index=search_pattern + ',' + EXCLUDE_SYSTEM,
+            index=search_pattern + exclude,
             expand_wildcards=expand,
             h='index,status',
             format='json',
@@ -141,10 +173,11 @@ def get_indices(client, search_pattern='*', include_hidden=False):
         return indices
     for entry in resp:
         indices.append(entry['index'])
-    logger.debug('All indices: %s', indices)
+    debug.lv1('All indices: %s', indices)
     return indices
 
 
+@begin_end()
 def get_repository(client, repository=''):
     """
     Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get_repository`
@@ -168,6 +201,7 @@ def get_repository(client, repository=''):
         raise CuratorException(msg) from err
 
 
+@begin_end()
 def get_snapshot(client, repository=None, snapshot=''):
     """
     Calls :py:meth:`~.elasticsearch.client.SnapshotClient.get`
@@ -199,6 +233,7 @@ def get_snapshot(client, repository=None, snapshot=''):
         raise FailedExecution(msg) from err
 
 
+@begin_end()
 def get_snapshot_data(client, repository=None):
     """
     Get all snapshots from repository and return a list.
@@ -225,6 +260,7 @@ def get_snapshot_data(client, repository=None):
         raise FailedExecution(msg) from err
 
 
+@begin_end()
 def get_tier_preference(client, target_tier='data_frozen'):
     """Do the tier preference thing in reverse order from coldest to hottest
     Based on the value of ``target_tier``, build out the list to use.
@@ -269,6 +305,7 @@ def get_tier_preference(client, target_tier='data_frozen'):
     return ','.join(preflist)
 
 
+@begin_end()
 def get_write_index(client, alias):
     """
     Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_alias`
@@ -305,6 +342,7 @@ def get_write_index(client, alias):
     return retval
 
 
+@begin_end()
 def index_size(client, idx, value='total'):
     """
     Calls :py:meth:`~.elasticsearch.client.IndicesClient.stats`
@@ -326,6 +364,7 @@ def index_size(client, idx, value='total'):
     ]['size_in_bytes']
 
 
+@begin_end()
 def meta_getter(client, idx, get=None):
     """Meta Getter
     Calls :py:meth:`~.elasticsearch.client.IndicesClient.get_settings` or
@@ -342,7 +381,6 @@ def meta_getter(client, idx, get=None):
     :returns: The settings from the get call to the named index
     :rtype: dict
     """
-    logger = logging.getLogger(__name__)
     acceptable = ['settings', 'alias']
     if not get:
         raise ConfigurationError('"get" can not be a NoneType')
@@ -356,7 +394,7 @@ def meta_getter(client, idx, get=None):
             retval = client.indices.get_alias(index=idx)[idx]['aliases']
     except es8exc.NotFoundError as missing:
         logger.error('Index %s was not found!', idx)
-        raise es8exc.NotFoundError from missing
+        raise missing
     except KeyError as err:
         logger.error('Key not found: %s', err)
         raise KeyError from err
@@ -366,6 +404,7 @@ def meta_getter(client, idx, get=None):
     return retval
 
 
+@begin_end()
 def name_to_node_id(client, name):
     """
     Calls :py:meth:`~.elasticsearch.client.NodesClient.info`
@@ -379,7 +418,6 @@ def name_to_node_id(client, name):
     :returns: The node_id of the node identified by ``name``
     :rtype: str
     """
-    logger = logging.getLogger(__name__)
     fpath = 'nodes'
     info = client.nodes.info(filter_path=fpath)
     for node in info['nodes']:
@@ -390,6 +428,7 @@ def name_to_node_id(client, name):
     return None
 
 
+@begin_end()
 def node_id_to_name(client, node_id):
     """
     Calls :py:meth:`~.elasticsearch.client.NodesClient.info`
@@ -403,7 +442,6 @@ def node_id_to_name(client, node_id):
     :returns: The name of the node identified by ``node_id``
     :rtype: str
     """
-    logger = logging.getLogger(__name__)
     fpath = f'nodes.{node_id}.name'
     info = client.nodes.info(filter_path=fpath)
     name = None
@@ -411,10 +449,11 @@ def node_id_to_name(client, node_id):
         name = info['nodes'][node_id]['name']
     else:
         logger.error('No node_id found matching: "%s"', node_id)
-    logger.debug('Name associated with node_id "%s": %s', node_id, name)
+    debug.lv3('Name associated with node_id "%s": %s', node_id, name)
     return name
 
 
+@begin_end()
 def node_roles(client, node_id):
     """
     Calls :py:meth:`~.elasticsearch.client.NodesClient.info`
@@ -432,6 +471,7 @@ def node_roles(client, node_id):
     return client.nodes.info(filter_path=fpath)['nodes'][node_id]['roles']
 
 
+@begin_end()
 def single_data_path(client, node_id):
     """
     In order for a shrink to work, it should be on a single filesystem, as shards

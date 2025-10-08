@@ -1,8 +1,12 @@
 """Open index action class"""
 
 import logging
+from curator.debug import debug, begin_end
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
+
+
+logger = logging.getLogger(__name__)
 
 
 class Open:
@@ -21,12 +25,12 @@ class Open:
         #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
         #: :py:attr:`index_list`
         self.client = ilo.client
-        self.loggit = logging.getLogger('curator.actions.open')
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'open')
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.open` indices in
@@ -37,11 +41,12 @@ class Open:
             f'Opening {len(self.index_list.indices)} selected indices: '
             f'{self.index_list.indices}'
         )
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
                 self.client.indices.open(index=to_csv(lst))
+            logger.info('Opened %s indices.', len(self.index_list.indices))
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)

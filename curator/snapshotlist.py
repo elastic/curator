@@ -3,6 +3,7 @@
 import re
 import logging
 from es_client.helpers.schemacheck import SchemaCheck
+from curator.debug import debug, begin_end
 from curator.exceptions import (
     ConfigurationError,
     FailedExecution,
@@ -23,6 +24,8 @@ from curator.helpers.utils import report_failure
 from curator.defaults import settings
 from curator.validators.filter_functions import filterstructure
 
+logger = logging.getLogger(__name__)
+
 
 class SnapshotList:
     """Snapshot list object"""
@@ -35,7 +38,6 @@ class SnapshotList:
             raise FailedExecution(
                 f'Unable to verify existence of repository {repository}'
             )
-        self.loggit = logging.getLogger('curator.snapshotlist')
         #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from
         #: param ``client``
         self.client = client
@@ -55,12 +57,13 @@ class SnapshotList:
         self.age_keyfield = None
 
     def __actionable(self, snap):
-        self.loggit.debug('Snapshot %s is actionable and remains in the list.', snap)
+        debug.lv2('Snapshot %s is actionable and remains in the list.', snap)
 
     def __not_actionable(self, snap):
-        self.loggit.debug('Snapshot %s is not actionable, removing from list.', snap)
+        debug.lv2('Snapshot %s is not actionable, removing from list.', snap)
         self.snapshots.remove(snap)
 
+    @begin_end()
     def __excludify(self, condition, exclude, snap, msg=None):
         if condition:
             if exclude:
@@ -77,8 +80,9 @@ class SnapshotList:
                 text = "Removed from actionable list"
                 self.__not_actionable(snap)
         if msg:
-            self.loggit.debug('%s: %s', text, msg)
+            debug.lv3('%s: %s', text, msg)
 
+    @begin_end()
     def __get_snapshots(self):
         """
         Pull all snapshots into `snapshots` and populate ``snapshot_info``
@@ -115,6 +119,7 @@ class SnapshotList:
         # iterations
         return self.snapshots[:]
 
+    @begin_end()
     def _get_name_based_ages(self, timestring):
         """
         Add a snapshot age to ``snapshot_info`` based on the age as indicated by
@@ -134,6 +139,7 @@ class SnapshotList:
             else:
                 self.snapshot_info[snapshot]['age_by_name'] = None
 
+    @begin_end()
     def _calculate_ages(self, source='creation_date', timestring=None):
         """
         This method initiates snapshot age calculation based on the given
@@ -159,6 +165,7 @@ class SnapshotList:
                 f'Invalid source: {source}. Must be "name", or "creation_date".'
             )
 
+    @begin_end()
     def _sort_by_age(self, snapshot_list, reverse=True):
         """
         Take a list of snapshots and sort them by date.
@@ -193,6 +200,7 @@ class SnapshotList:
         sorted_tuple = sorted(temp.items(), key=lambda k: k[1], reverse=reverse)
         return [x[0] for x in sorted_tuple]
 
+    @begin_end()
     def most_recent(self):
         """
         Return the most recent snapshot based on ``start_time_in_millis``.
@@ -207,6 +215,7 @@ class SnapshotList:
                 most_recent_time = snaptime
         return most_recent_snap
 
+    @begin_end()
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
         Filter out snapshots not matching the pattern, or in the case of
@@ -245,12 +254,13 @@ class SnapshotList:
         pattern = re.compile(regex)
         for snapshot in self.working_list():
             match = pattern.search(snapshot)
-            self.loggit.debug('Filter by regex: Snapshot: %s', snapshot)
+            debug.lv3('Filter by regex: Snapshot: %s', snapshot)
             if match:
                 self.__excludify(True, exclude, snapshot)
             else:
                 self.__excludify(False, exclude, snapshot)
 
+    @begin_end()
     def filter_by_age(
         self,
         source='creation_date',
@@ -279,10 +289,9 @@ class SnapshotList:
             snapshots from ``snapshots``. If ``exclude=False``, then only matching
             snapshots will be kept in ``snapshots``. Default is ``False``
         """
-        self.loggit.debug('Starting filter_by_age')
         # Get timestamp point of reference, por
         por = get_point_of_reference(unit, unit_count, epoch)
-        self.loggit.debug('Point of Reference: %s', por)
+        debug.lv3('Point of Reference: %s', por)
         if not direction:
             raise MissingArgument('Must provide a value for "direction"')
         if direction not in ['older', 'younger']:
@@ -290,7 +299,7 @@ class SnapshotList:
         self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][self.age_keyfield]:
-                self.loggit.debug('Removing snapshot %s for having no age', snapshot)
+                logger.debug('Removing snapshot %s for having no age', snapshot)
                 self.snapshots.remove(snapshot)
                 continue
             age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
@@ -307,6 +316,7 @@ class SnapshotList:
                 agetest = snapshot_age > por
             self.__excludify(agetest, exclude, snapshot, msg)
 
+    @begin_end()
     def filter_by_state(self, state=None, exclude=False):
         """
         Filter out snapshots not matching ``state``, or in the case of exclude,
@@ -318,11 +328,13 @@ class SnapshotList:
             snapshots from ``snapshots``. If ``exclude=False``, then only matching
             snapshots will be kept in ``snapshots``. Default is ``False``
         """
+        if not state:
+            raise MissingArgument('No value for "state" provided')
         if state.upper() not in ['SUCCESS', 'PARTIAL', 'FAILED', 'IN_PROGRESS']:
             raise ValueError(f'{state}: Invalid value for state')
         self.empty_list_check()
         for snapshot in self.working_list():
-            self.loggit.debug('Filter by state: Snapshot: %s', snapshot)
+            debug.lv3('Filter by state: Snapshot: %s', snapshot)
             if self.snapshot_info[snapshot]['state'] == state:
                 self.__excludify(True, exclude, snapshot)
             else:
@@ -330,8 +342,9 @@ class SnapshotList:
 
     def filter_none(self):
         """No filter at all"""
-        self.loggit.debug('"None" filter selected.  No filtering will be done.')
+        debug.lv2('"None" filter selected.  No filtering will be done.')
 
+    @begin_end()
     def filter_by_count(
         self,
         count=None,
@@ -370,7 +383,6 @@ class SnapshotList:
             from ``snapshots``. If ``exclude=False``, then only matching snapshots
             will be kept in ``snapshots``. Default is ``True``
         """
-        self.loggit.debug('Filtering snapshots by count')
         if not count:
             raise MissingArgument('No value for "count" provided')
         # Create a copy-by-value working list
@@ -389,6 +401,7 @@ class SnapshotList:
             self.__excludify(condition, exclude, snap, msg)
             idx += 1
 
+    @begin_end()
     def filter_period(
         self,
         period_type='relative',
@@ -436,24 +449,36 @@ class SnapshotList:
             indices from ``indices``. If ``exclude=False``, then only matching
             indices will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering snapshots by period')
         if period_type not in ['absolute', 'relative']:
             raise ValueError(
                 f'Unacceptable value: {period_type} -- "period_type" must be either '
                 f'"absolute" or "relative".'
             )
-        self.loggit.debug('period_type = %s', period_type)
+        debug.lv3('period_type = %s', period_type)
         if period_type == 'relative':
+            for arg in [range_from, range_to, unit]:
+                if not arg:
+                    raise MissingArgument(
+                        f'When using "relative" period_type, must provide '
+                        f'"range_from", "range_to", and "unit"'
+                        f'Missing value for {arg}'
+                    )
+            for arg in [range_from, range_to]:
+                try:
+                    int(arg)  # type: ignore
+                except ValueError as err:
+                    raise ConfigurationError(
+                        f'"range_from" and "range_to" must be integer values. '
+                        f'Error: {err}'
+                    ) from err
+            if unit not in ['hours', 'days', 'weeks', 'months', 'years']:
+                raise ValueError(
+                    f'Unacceptable value: {unit} -- "unit" must be one of "hours", '
+                    f'"days", "weeks", "months", or "years".'
+                )
             func = date_range
             args = [unit, range_from, range_to, epoch]
             kwgs = {'week_starts_on': week_starts_on}
-            try:
-                range_from = int(range_from)
-                range_to = int(range_to)
-            except ValueError as err:
-                raise ConfigurationError(
-                    f'"range_from" and "range_to" must be integer values. Error: {err}'
-                ) from err
         else:
             func = absolute_date_range
             args = [unit, date_from, date_to]
@@ -467,15 +492,16 @@ class SnapshotList:
                         'Must provide "date_from", "date_to", "date_from_format", '
                         'and "date_to_format" with absolute period_type'
                     )
+        start = end = 0  # for mypy
         try:
-            start, end = func(*args, **kwgs)
+            start, end = func(*args, **kwgs)  # type: ignore
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)
         self._calculate_ages(source=source, timestring=timestring)
         for snapshot in self.working_list():
             if not self.snapshot_info[snapshot][self.age_keyfield]:
-                self.loggit.debug('Removing snapshot {0} for having no age')
+                debug.lv2('Removing snapshot {0} for having no age')
                 self.snapshots.remove(snapshot)
                 continue
             age = fix_epoch(self.snapshot_info[snapshot][self.age_keyfield])
@@ -488,6 +514,7 @@ class SnapshotList:
             inrange = (age >= start) and (age <= end)
             self.__excludify(inrange, exclude, snapshot, msg)
 
+    @begin_end()
     def iterate_filters(self, config):
         """
         Iterate over the filters defined in ``config`` and execute them.
@@ -511,22 +538,22 @@ class SnapshotList:
         """
         # Make sure we actually _have_ filters to act on
         if 'filters' not in config or not config['filters']:
-            self.loggit.info('No filters in config.  Returning unaltered object.')
+            debug.lv1('No filters in config.  Returning unaltered object.')
             return
-        self.loggit.debug('All filters: %s', config['filters'])
+        debug.lv5('All filters: %s', config['filters'])
         for fltr in config['filters']:
-            self.loggit.debug('Top of the loop: %s', self.snapshots)
-            self.loggit.debug('Un-parsed filter args: %s', fltr)
+            debug.lv5('Top of the loop: %s', self.snapshots)
+            debug.lv5('Un-parsed filter args: %s', fltr)
             filter_result = SchemaCheck(
                 fltr, filterstructure(), 'filter', 'SnapshotList.iterate_filters'
             ).result()
-            self.loggit.debug('Parsed filter args: %s', filter_result)
+            debug.lv5('Parsed filter args: %s', filter_result)
             method = self.__map_method(fltr['filtertype'])
             # Remove key 'filtertype' from dictionary 'fltr'
             del fltr['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
-            self.loggit.debug('Filter args: %s', fltr)
-            self.loggit.debug('Pre-instance: %s', self.snapshots)
+            debug.lv5('Filter args: %s', fltr)
+            debug.lv5('Pre-instance: %s', self.snapshots)
             method(**fltr)
-            self.loggit.debug('Post-instance: %s', self.snapshots)
+            debug.lv5('Post-instance: %s', self.snapshots)

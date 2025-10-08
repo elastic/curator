@@ -4,9 +4,12 @@ import logging
 
 # pylint: disable=import-error, broad-except
 from elasticsearch8.exceptions import RequestError
+from curator.debug import debug, begin_end
 from curator.exceptions import ConfigurationError, FailedExecution
 from curator.helpers.date_ops import parse_date_pattern
 from curator.helpers.utils import report_failure
+
+logger = logging.getLogger(__name__)
 
 
 class CreateIndex:
@@ -56,16 +59,16 @@ class CreateIndex:
             self.mappings = extra_settings.pop('mappings')
         if 'settings' in extra_settings:
             self.settings = extra_settings.pop('settings')
-        self.loggit = logging.getLogger('curator.actions.create_index')
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
-        self.loggit.info('DRY-RUN MODE.  No changes will be made.')
+        logger.info('DRY-RUN MODE.  No changes will be made.')
         msg = (
             f'DRY-RUN: create_index "{self.name}" with arguments: {self.extra_settings}'
         )
-        self.loggit.info(msg)
+        logger.info(msg)
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.create` index identified
@@ -73,7 +76,7 @@ class CreateIndex:
         and :py:attr:`settings`
         """
         msg = f'Creating index "{self.name}" with settings: {self.extra_settings}'
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             self.client.indices.create(
                 index=self.name,
@@ -89,7 +92,7 @@ class CreateIndex:
             ]
             if err.error in match_list:
                 if self.ignore_existing:
-                    self.loggit.warning('Index %s already exists.', self.name)
+                    logger.warning('Index %s already exists.', self.name)
                 else:
                     raise FailedExecution(f'Index {self.name} already exists.') from err
             else:
@@ -98,3 +101,4 @@ class CreateIndex:
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)
+        logger.info('Created index: %s', self.name)

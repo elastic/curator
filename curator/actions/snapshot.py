@@ -427,7 +427,7 @@ class Restore(object):
             indices = self.indices
         else:
             indices = multitarget_match(
-                to_csv(self.indices),
+                to_csv(self.indices),  # type: ignore
                 self.snapshot_list.snapshot_info[self.name]['indices'],
             )
         if not self.rename_pattern and not self.rename_replacement:
@@ -437,7 +437,7 @@ class Restore(object):
         self.expected_output = []
         for index in indices:
             self.expected_output.append(
-                re.sub(self.rename_pattern, self.py_rename_replacement, index)
+                re.sub(self.rename_pattern, self.py_rename_replacement, index)  # type: ignore
             )
             msg = f'index: {index} replacement: {self.expected_output[-1]}'
             self.loggit.debug(msg)

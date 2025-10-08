@@ -1,11 +1,14 @@
 """Filtertype schema definitions"""
 
+# pylint: disable=missing-docstring, unused-argument, line-too-long
 import logging
+from curator.debug import debug, begin_end
 from curator.defaults import filter_elements, settings
 
-# pylint: disable=missing-docstring, unused-argument, line-too-long
+logger = logging.getLogger(__name__)
 
 
+@begin_end()
 def _age_elements(action, config):
     """
     Sort which filter types that have ``use_age`` are suitable for
@@ -75,7 +78,7 @@ def age(action, config):
         :py:meth:`~.curator.SnapshotList.filter_by_age`
     """
     # Required & Optional
-    logger = logging.getLogger('curator.defaults.filtertypes.age')
+
     retval = [
         filter_elements.direction(),
         filter_elements.unit(),
@@ -85,7 +88,7 @@ def age(action, config):
         filter_elements.exclude(),
     ]
     retval += _age_elements(action, config)
-    logger.debug('AGE FILTER = %s', retval)
+    debug.lv5('AGE FILTER = %s', retval)
     return retval
 
 

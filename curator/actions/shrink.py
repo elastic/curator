@@ -3,6 +3,7 @@
 import logging
 
 # pylint: disable=broad-except
+from curator.debug import begin_end, debug
 from curator.defaults.settings import DATA_NODE_ROLES
 from curator.exceptions import ActionError, ConfigurationError
 from curator.helpers.getters import (
@@ -14,6 +15,8 @@ from curator.helpers.getters import (
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure
 from curator.helpers.waiters import health_check, wait_for_it
+
+logger = logging.getLogger(__name__)
 
 
 class Shrink:
@@ -89,7 +92,6 @@ class Shrink:
             post_allocation = {}
         if extra_settings is None:
             extra_settings = {}
-        self.loggit = logging.getLogger('curator.actions.shrink')
         verify_index_list(ilo)
         if 'permit_masters' not in node_filters:
             node_filters['permit_masters'] = False
@@ -153,8 +155,9 @@ class Shrink:
             }
         )
 
+    @begin_end()
     def _merge_extra_settings(self, extra_settings):
-        self.loggit.debug('Adding extra_settings to shrink body: %s', extra_settings)
+        debug.lv3('Adding extra_settings to shrink body: %s', extra_settings)
         # Pop these here, otherwise we could overwrite our default number of
         # shards and replicas
         if 'settings' in extra_settings:
@@ -175,6 +178,7 @@ class Shrink:
                     f'to shrink body. Exception: {exc}'
                 ) from exc
 
+    @begin_end()
     def _data_node(self, node_id):
         roles = node_roles(self.client, node_id)
         name = node_id_to_name(self.client, node_id)
@@ -184,17 +188,17 @@ class Shrink:
                 is_data_node = True
                 break  # At least one data node role type qualifies
         if not is_data_node:
-            self.loggit.info('Skipping node "%s": non-data node', name)
+            debug.lv2('Skipping node "%s": non-data node', name)
             return False
         if 'master' in roles and not self.node_filters['permit_masters']:
-            self.loggit.info('Skipping node "%s": master node', name)
+            debug.lv2('Skipping node "%s": master node', name)
             return False
         if 'master' in roles and self.node_filters['permit_masters']:
             msg = (
                 f'Not skipping node "{name}" which is a master node (not recommended)'
                 f', but permit_masters is True'
             )
-            self.loggit.warning(msg)
+            logger.warning(msg)
             return True
         # Implied else: It does have a qualifying data role and is not a master node
         return True
@@ -202,13 +206,14 @@ class Shrink:
     def _exclude_node(self, name):
         if 'exclude_nodes' in self.node_filters:
             if name in self.node_filters['exclude_nodes']:
-                self.loggit.info('Excluding node "%s" due to node_filters', name)
+                debug.lv2('Excluding node "%s" due to node_filters', name)
                 return True
         return False
 
     def _shrink_target(self, name):
         return f'{self.shrink_prefix}{name}{self.shrink_suffix}'
 
+    @begin_end()
     def qualify_single_node(self):
         """Qualify a single node as a shrink target"""
         node_id = name_to_node_id(self.client, self.shrink_node)
@@ -227,6 +232,7 @@ class Shrink:
             'total'
         ]['available_in_bytes']
 
+    @begin_end()
     def most_available_node(self):
         """
         Determine which data node name has the most available free space, and meets
@@ -240,10 +246,10 @@ class Shrink:
         for node_id in nodes:
             name = nodes[node_id]['name']
             if self._exclude_node(name):
-                self.loggit.debug('Node "%s" excluded by node filters', name)
+                debug.lv2('Node "%s" excluded by node filters', name)
                 continue
             if not self._data_node(node_id):
-                self.loggit.debug('Node "%s" is not a data node', name)
+                debug.lv2('Node "%s" is not a data node', name)
                 continue
             value = nodes[node_id]['fs']['total']['available_in_bytes']
             if value > mvn_avail:
@@ -254,6 +260,7 @@ class Shrink:
         self.shrink_node_id = mvn_id
         self.shrink_node_avail = mvn_avail
 
+    @begin_end()
     def route_index(self, idx, allocation_type, key, value):
         """Apply the indicated shard routing allocation"""
         bkey = f'index.routing.allocation.{allocation_type}.{key}'
@@ -278,20 +285,23 @@ class Shrink:
         except Exception as err:
             report_failure(err)
 
+    @begin_end()
     def __log_action(self, error_msg, dry_run=False):
         if not dry_run:
             raise ActionError(error_msg)
-        else:
-            self.loggit.warning('DRY-RUN: %s', error_msg)
+        logger.warning('DRY-RUN: %s', error_msg)
 
+    @begin_end()
     def _block_writes(self, idx):
         block = {'index.blocks.write': True}
         self.client.indices.put_settings(index=idx, settings=block)
 
+    @begin_end()
     def _unblock_writes(self, idx):
         unblock = {'index.blocks.write': False}
         self.client.indices.put_settings(index=idx, settings=unblock)
 
+    @begin_end()
     def _check_space(self, idx, dry_run=False):
         # Disk watermark calculation is already baked into `available_in_bytes`
         size = index_size(self.client, idx, value='primaries')
@@ -301,7 +311,7 @@ class Shrink:
                 f'Sufficient space available for 2x the size of index "{idx}". '
                 f'Required: {padded}, available: {self.shrink_node_avail}'
             )
-            self.loggit.debug(msg)
+            debug.lv2(msg)
         else:
             error_msg = (
                 f'Insufficient space available for 2x the size of index "{idx}", '
@@ -310,6 +320,7 @@ class Shrink:
             )
             self.__log_action(error_msg, dry_run)
 
+    @begin_end()
     def _check_node(self):
         if self.shrink_node != 'DETERMINISTIC':
             if not self.shrink_node_name:
@@ -323,12 +334,14 @@ class Shrink:
         # - self.shrink_node_avail
         # # - self.shrink_node_total - only if needed in the future
 
+    @begin_end()
     def _check_target_exists(self, idx, dry_run=False):
         target = self._shrink_target(idx)
         if self.client.indices.exists(index=target):
             error_msg = f'Target index "{target}" already exists'
             self.__log_action(error_msg, dry_run)
 
+    @begin_end()
     def _check_doc_count(self, idx, dry_run=False):
         max_docs = 2147483519
         doc_count = self.client.indices.stats(index=idx)['indices'][idx]['primaries'][
@@ -341,6 +354,7 @@ class Shrink:
             )
             self.__log_action(error_msg, dry_run)
 
+    @begin_end()
     def _check_shard_count(self, idx, src_shards, dry_run=False):
         if self.number_of_shards >= src_shards:
             error_msg = (
@@ -349,6 +363,7 @@ class Shrink:
             )
             self.__log_action(error_msg, dry_run)
 
+    @begin_end()
     def _check_shard_factor(self, idx, src_shards, dry_run=False):
         # Find the list of factors of src_shards
         factors = [x for x in range(1, src_shards + 1) if src_shards % x == 0]
@@ -361,6 +376,7 @@ class Shrink:
             )
             self.__log_action(error_msg, dry_run)
 
+    @begin_end()
     def _check_all_shards(self, idx):
         shards = self.client.cluster.state(index=idx)['routing_table']['indices'][idx][
             'shards'
@@ -376,7 +392,7 @@ class Shrink:
                         }
                     )
         if len(shards) != len(found):
-            self.loggit.debug(
+            debug.lv3(
                 'Found these shards on node "%s": %s', self.shrink_node_name, found
             )
             raise ActionError(
@@ -384,40 +400,41 @@ class Shrink:
                 f'designated shrink node ({self.shrink_node_name}): {found}'
             )
 
+    @begin_end()
     def pre_shrink_check(self, idx, dry_run=False):
         """Do a shrink preflight check"""
-        self.loggit.debug('BEGIN PRE_SHRINK_CHECK')
-        self.loggit.debug('Check that target exists')
+        debug.lv4('Check that target exists')
         self._check_target_exists(idx, dry_run)
-        self.loggit.debug('Check doc count constraints')
+        debug.lv4('Check doc count constraints')
         self._check_doc_count(idx, dry_run)
-        self.loggit.debug('Check shard count')
+        debug.lv4('Check shard count')
         src_shards = int(
             self.client.indices.get(index=idx)[idx]['settings']['index'][
                 'number_of_shards'
             ]
         )
         self._check_shard_count(idx, src_shards, dry_run)
-        self.loggit.debug('Check shard factor')
+        debug.lv4('Check shard factor')
         self._check_shard_factor(idx, src_shards, dry_run)
-        self.loggit.debug('Check node availability')
+        debug.lv4('Check node availability')
         self._check_node()
-        self.loggit.debug('Check available disk space')
+        debug.lv4('Check available disk space')
         self._check_space(idx, dry_run)
-        self.loggit.debug('FINISH PRE_SHRINK_CHECK')
 
+    @begin_end()
     def do_copy_aliases(self, source_idx, target_idx):
         """Copy the aliases to the shrunk index"""
         alias_actions = []
         aliases = self.client.indices.get_alias(index=source_idx)
         for alias in aliases[source_idx]['aliases']:
-            self.loggit.debug('alias: %s', alias)
+            debug.lv5('alias: %s', alias)
             alias_actions.append({'remove': {'index': source_idx, 'alias': alias}})
             alias_actions.append({'add': {'index': target_idx, 'alias': alias}})
         if alias_actions:
-            self.loggit.info('Copy alias actions: %s', alias_actions)
+            logger.info('Copy alias actions: %s', alias_actions)
             self.client.indices.update_aliases(actions=alias_actions)
 
+    @begin_end()
     def do_dry_run(self):
         """Show what a regular run would do, but don't actually do it."""
         self.index_list.filter_closed()
@@ -429,7 +446,7 @@ class Shrink:
                 for idx in lst:  # Shrink can only be done one at a time...
                     target = self._shrink_target(idx)
                     self.pre_shrink_check(idx, dry_run=True)
-                    self.loggit.info(
+                    logger.info(
                         'DRY-RUN: Moving shards to shrink node: "%s"',
                         self.shrink_node_name,
                     )
@@ -438,7 +455,7 @@ class Shrink:
                         f'settings: {self.settings}, wait_for_active_shards='
                         f'{self.wait_for_active_shards}'
                     )
-                    self.loggit.info(msg)
+                    logger.info(msg)
                     if self.post_allocation:
                         submsg = (
                             f"index.routing.allocation."
@@ -450,18 +467,19 @@ class Shrink:
                             f'DRY-RUN: Applying post-shrink allocation rule "{submsg}" '
                             f'to index "{target}"'
                         )
-                        self.loggit.info(msg)
+                        logger.info(msg)
                     if self.copy_aliases:
                         msg = (
                             f'DRY-RUN: Copy source index aliases '
                             f'"{self.client.indices.get_alias(index=idx)}"'
                         )
-                        self.loggit.info(msg)
+                        logger.info(msg)
                     if self.delete_after:
-                        self.loggit.info('DRY-RUN: Deleting source index "%s"', idx)
+                        logger.info('DRY-RUN: Deleting source index "%s"', idx)
         except Exception as err:
             report_failure(err)
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.shrink` the indices in
@@ -474,19 +492,17 @@ class Shrink:
             f'Shrinking {len(self.index_list.indices)} selected indices: '
             f'{self.index_list.indices}'
         )
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
                 for idx in lst:  # Shrink can only be done one at a time...
                     target = self._shrink_target(idx)
-                    self.loggit.info(
-                        'Source index: %s -- Target index: %s', idx, target
-                    )
+                    debug.lv1('Source index: %s -- Target index: %s', idx, target)
                     # Pre-check ensures disk space available for each pass of the loop
                     self.pre_shrink_check(idx)
                     # Route the index to the shrink node
-                    self.loggit.info(
+                    debug.lv1(
                         'Moving shards to shrink node: "%s"', self.shrink_node_name
                     )
                     self.route_index(idx, 'require', '_name', self.shrink_node_name)
@@ -507,7 +523,7 @@ class Shrink:
                         f'{self.settings}, wait_for_active_shards='
                         f'{self.wait_for_active_shards}'
                     )
-                    self.loggit.info(msg)
+                    debug.lv1(msg)
                     try:
                         self.client.indices.shrink(
                             index=idx,
@@ -517,7 +533,7 @@ class Shrink:
                         )
                         # Wait for it to complete
                         if self.wfc:
-                            self.loggit.debug(
+                            debug.lv3(
                                 'Wait for shards to complete allocation for index: %s',
                                 target,
                             )
@@ -542,14 +558,12 @@ class Shrink:
                                 f'Deleting target index "{target}" due to failure '
                                 f'to complete shrink'
                             )
-                            self.loggit.error(msg)
+                            logger.error(msg)
                             self.client.indices.delete(index=target)
                         raise ActionError(
                             f'Unable to shrink index "{idx}" -- Error: {exc}'
                         ) from exc
-                    self.loggit.info(
-                        'Index "%s" successfully shrunk to "%s"', idx, target
-                    )
+                    logger.info('Index "%s" successfully shrunk to "%s"', idx, target)
                     # Do post-shrink steps
                     # Unblock writes on index (just in case)
                     self._unblock_writes(idx)
@@ -565,7 +579,7 @@ class Shrink:
                             f'Applying post-shrink allocation rule "{submsg}" '
                             f'to index "{target}"'
                         )
-                        self.loggit.info(msg)
+                        debug.lv1(msg)
                         self.route_index(
                             target,
                             self.post_allocation['allocation_type'],
@@ -574,19 +588,20 @@ class Shrink:
                         )
                     # Copy aliases, if flagged
                     if self.copy_aliases:
-                        self.loggit.info('Copy source index aliases "%s"', idx)
+                        debug.lv1('Copy source index aliases "%s"', idx)
                         self.do_copy_aliases(idx, target)
                     # Delete, if flagged
                     if self.delete_after:
-                        self.loggit.info('Deleting source index "%s"', idx)
+                        debug.lv1('Deleting source index "%s"', idx)
                         self.client.indices.delete(index=idx)
                     else:  # Let's unset the routing we applied here.
-                        self.loggit.info(
-                            'Unassigning routing for source index: "%s"', idx
-                        )
+                        debug.lv1('Unassigning routing for source index: "%s"', idx)
                         self.route_index(idx, 'require', '_name', '')
+                    logger.info(
+                        'Successfully ran post-shrink steps for index "%s"', target
+                    )
 
         except Exception as err:
             # Just in case it fails after attempting to meet this condition
-            self._unblock_writes(idx)
+            self._unblock_writes(idx)  # type: ignore
             report_failure(err)

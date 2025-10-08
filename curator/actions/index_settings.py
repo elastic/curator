@@ -3,9 +3,12 @@
 import logging
 
 # pylint: disable=import-error
+from curator.debug import debug, begin_end
 from curator.exceptions import ActionError, ConfigurationError, MissingArgument
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
+
+logger = logging.getLogger(__name__)
 
 
 class IndexSettings:
@@ -51,9 +54,9 @@ class IndexSettings:
         #: Object attribute that gets the value of param ``preserve_existing``.
         self.preserve_existing = preserve_existing
 
-        self.loggit = logging.getLogger('curator.actions.index_settings')
         self._body_check()
 
+    @begin_end()
     def _body_check(self):
         # The body only passes the skimpiest of requirements by having 'index'
         # as the only root-level key, and having a 'dict' as its value
@@ -85,6 +88,7 @@ class IndexSettings:
             'translog',
         ]
 
+    @begin_end()
     def _settings_check(self):
         # Detect if even one index is open.  Save all found to open_index_list.
         open_index_list = []
@@ -117,12 +121,13 @@ class IndexSettings:
                     f'"{k}" is not a setting Curator recognizes and may or may '
                     f' not work.'
                 )
-                self.loggit.warning(msg)
+                logger.warning(msg)
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'indexsettings', **self.body)
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` in :py:attr:`body`
@@ -136,7 +141,7 @@ class IndexSettings:
             f'Applying index settings to {len(self.index_list.indices)} indices: '
             f'{self.index_list.indices}'
         )
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
@@ -146,7 +151,12 @@ class IndexSettings:
                     ignore_unavailable=self.ignore_unavailable,
                     preserve_existing=self.preserve_existing,
                 )
-                self.loggit.debug('PUT SETTINGS RESPONSE: %s', response)
+                debug.lv5('PUT SETTINGS RESPONSE: %s', response)
+            logger.info(
+                'Applied index settings to %s selected indices: %s',
+                len(self.index_list.indices),
+                self.index_list.indices,
+            )
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)

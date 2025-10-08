@@ -3,10 +3,13 @@
 import logging
 
 # pylint: disable=import-error
+from curator.debug import debug, begin_end
 from curator.exceptions import MissingArgument
 from curator.helpers.testers import verify_index_list
 from curator.helpers.waiters import wait_for_it
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
+
+logger = logging.getLogger(__name__)
 
 
 class Allocation:
@@ -58,7 +61,6 @@ class Allocation:
         #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
         #: :py:attr:`index_list`
         self.client = ilo.client
-        self.loggit = logging.getLogger('curator.actions.allocation')
         bkey = f'index.routing.allocation.{allocation_type}.{key}'
         #: Populated at instance creation time. Value is built from the passed params
         #: ``allocation_type``, ``key``, and ``value``, e.g.
@@ -75,23 +77,24 @@ class Allocation:
         """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'allocation', settings=self.settings)
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` to indices in
         :py:attr:`index_list` with :py:attr:`settings`.
         """
-        self.loggit.debug(
+        debug.lv3(
             'Cannot get change shard routing allocation of closed indices.  '
             'Omitting any closed indices.'
         )
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
-        self.loggit.info(
+        logger.info(
             'Updating %s selected indices: %s',
             len(self.index_list.indices),
             self.index_list.indices,
         )
-        self.loggit.info('Updating index setting %s', self.settings)
+        debug.lv1('Updating index setting %s', self.settings)
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
@@ -99,7 +102,7 @@ class Allocation:
                     index=to_csv(lst), settings=self.settings
                 )
                 if self.wfc:
-                    self.loggit.debug(
+                    debug.lv3(
                         'Waiting for shards to complete relocation for indices: %s',
                         to_csv(lst),
                     )

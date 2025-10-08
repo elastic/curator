@@ -15,7 +15,7 @@ client_config = (
     '  loglevel: DEBUG\n'
     '  logfile:\n'
     '  logformat: default\n'
-    '  blacklist: []\n'
+    '  blacklist: ["urllib3", "elastic_transport"]\n'
 )
 
 client_conf_logfile = (

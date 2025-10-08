@@ -3,9 +3,12 @@
 import logging
 
 # pylint: disable=import-error
+from curator.debug import begin_end, debug
 from curator.helpers.getters import get_indices
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
+
+logger = logging.getLogger(__name__)
 
 
 class DeleteIndices:
@@ -33,8 +36,7 @@ class DeleteIndices:
         self.client = ilo.client
         #: String value of param ``master_timeout`` + ``s``, for seconds.
         self.master_timeout = str(master_timeout) + 's'
-        self.loggit = logging.getLogger('curator.actions.delete_indices')
-        self.loggit.debug('master_timeout value: %s', self.master_timeout)
+        debug.lv5('master_timeout value: %s', self.master_timeout)
 
     def _verify_result(self, result, count):
         """
@@ -50,17 +52,16 @@ class DeleteIndices:
         :rtype: bool
         """
         if isinstance(result, list) and result:
-            self.loggit.error(
-                'The following indices failed to delete on try #%s:', count
-            )
+            logger.error('The following indices failed to delete on try #%s:', count)
             for idx in result:
-                self.loggit.error("---%s", idx)
+                logger.error("---%s", idx)
             retval = False
         else:
-            self.loggit.debug('Successfully deleted all indices on try #%s', count)
+            debug.lv3('Successfully deleted all indices on try #%s', count)
             retval = True
         return retval
 
+    @begin_end()
     def __chunk_loop(self, chunk_list):
         """
         Loop through deletes 3 times to ensure they complete
@@ -70,9 +71,10 @@ class DeleteIndices:
         :type chunk_list: list
         """
         working_list = chunk_list
+        result = ''
         for count in range(1, 4):  # Try 3 times
             for i in working_list:
-                self.loggit.info("---deleting index %s", i)
+                debug.lv1("---deleting index %s", i)
             self.client.indices.delete(
                 index=to_csv(working_list), master_timeout=self.master_timeout
             )
@@ -80,7 +82,7 @@ class DeleteIndices:
             if self._verify_result(result, count):
                 return
             working_list = result
-        self.loggit.error(
+        logger.error(
             'Unable to delete the following indices after 3 attempts: %s', result
         )
 
@@ -88,6 +90,7 @@ class DeleteIndices:
         """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'delete_indices')
 
+    @begin_end()
     def do_action(self):
         """
         :py:meth:`~.elasticsearch.client.IndicesClient.delete` indices in
@@ -98,7 +101,7 @@ class DeleteIndices:
             f'Deleting {len(self.index_list.indices)} selected indices: '
             f'{self.index_list.indices}'
         )
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
@@ -106,3 +109,8 @@ class DeleteIndices:
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)
+        logger.info(
+            'Deleted %s indices: %s',
+            len(self.index_list.indices),
+            self.index_list.indices,
+        )

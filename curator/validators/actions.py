@@ -53,8 +53,8 @@ def structure(data, location):
     ).result()
     # Build a valid schema knowing that the action has already been validated
     retval = valid_action()
-    retval.update({Optional('description', default='No description given'): Any(str)})
-    retval.update({Optional('options', default=settings.default_options()): dict})
+    retval.update({Optional('description', default='No description given'): Any(str)})  # type: ignore
+    retval.update({Optional('options', default=settings.default_options()): dict})  # type: ignore
     action = data['action']
     if action in ['cluster_routing', 'create_index', 'rollover']:
         # The cluster_routing, create_index, and rollover actions should not
@@ -65,10 +65,12 @@ def structure(data, location):
         # an add and/or remove block.
         retval.update(
             {
-                Optional('add'): dict,
+                Optional('add'): dict,  # type: ignore
                 Optional('remove'): dict,
             }
-        )
+        )  # type: ignore
     else:
-        retval.update({Optional('filters', default=settings.default_filters()): list})
+        retval.update(
+            {Optional('filters', default=settings.default_filters()): list}  # type: ignore
+        )  # type: ignore
     return Schema(retval)

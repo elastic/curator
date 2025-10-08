@@ -4,6 +4,7 @@ import logging
 from voluptuous import Any, In, Required, Schema
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
+from curator.debug import debug
 from curator.defaults import settings, filtertypes
 from curator.exceptions import ConfigurationError
 
@@ -37,7 +38,7 @@ def filterstructure():
     # This is to first ensure that only the possible keys/filter elements are
     # there, and get a dictionary back to work with.
     retval = settings.structural_filter_elements()
-    retval.update(filtertype())
+    retval.update(filtertype())  # type: ignore
     return Schema(retval)
 
 
@@ -81,7 +82,7 @@ def validfilters(action, location=None):
                 'filter',
                 f'{location}, filter #{idx}: {pruned}',
             ).result()
-            logger.debug('Filter #%s: %s', idx, filter_dict)
+            debug.lv5('Filter #%s: %s', idx, filter_dict)
             val[idx] = filter_dict
         # If we've made it here without raising an Exception, it's valid
         return val
