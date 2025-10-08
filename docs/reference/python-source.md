@@ -10,7 +10,7 @@ You can instal Curator from a source tarball (rather than doing a `git clone`).
 
 1. Download the Curator tarball:
 ```sh subs=true
-wget https://github.com/elastic/curator/archive/v{{curator_version}}.tar.gz -O elasticsearch-curator.tar.gz
+wget https://github.com/elastic/curator/archive/v{{version.curator}}.tar.gz -O elasticsearch-curator.tar.gz
 ```
 2. Install the tarball:
 ```sh

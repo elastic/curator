@@ -52,7 +52,7 @@ Before creating a filtered alias, first ensure that the fields already exist in 
 ::::
 
 
-Learn more about adding filtering and routing to aliases in the [Elasticsearch Alias API documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/indices-aliases.md).
+[Learn more about adding filtering and routing to aliases](docs-content://manage-data/data-store/aliases.md).
 
 ## Required settings [_required_settings]
 

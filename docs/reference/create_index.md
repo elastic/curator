@@ -55,9 +55,9 @@ options:
   # ...
 ```
 
-For the `create_index` action, the [name](/reference/option_name.md) option can be in Elasticsearch [date math](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names) format.  This allows index names containing dates to use deterministic math to set a date name in the past or the future.
+For the `create_index` action, the [name](/reference/option_name.md) option can be in Elasticsearch [date math](elasticsearch:///reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names) format. This allows index names containing dates to use deterministic math to set a date name in the past or the future.
 
-For example, if today’s date were 2017-03-27, the name `<logstash-{now/d}>` will create an index named `logstash-2017.03.27`. If you wanted to create *tomorrow’s* index, you would use the name `<logstash-{now/d+1d}>`, which adds 1 day.  This pattern creates an index named `logstash-2017.03.28`.  For many more configuration options, read the Elasticsearch [date math](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names) documentation.
+For example, if today’s date were 2017-03-27, the name `<logstash-{now/d}>` will create an index named `logstash-2017.03.27`. If you wanted to create *tomorrow’s* index, you would use the name `<logstash-{now/d+1d}>`, which adds 1 day.  This pattern creates an index named `logstash-2017.03.28`.  For many more configuration options, read the Elasticsearch [date math]((elasticsearch:///reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names) documentation.
 
 
 ## Extra Settings [_extra_settings]
