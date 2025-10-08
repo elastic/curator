@@ -37,7 +37,7 @@ curl -XGET localhost:9200/*/_settings?pretty
 ```
 
 
-…​reveals the index names as the first key in the resulting JSON.  In this case, the names were very atypical:
+...reveals the index names as the first key in the resulting JSON.  In this case, the names were very atypical:
 
 ```
 }\b?\u0011ebc-2015.04.08.02\u000Bsip-request{
