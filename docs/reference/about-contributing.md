@@ -21,7 +21,7 @@ A brief overview of the steps
 * send a pull request!
 
 ::::{tip}
-To submit documentation fixes for this site, see [Site Corrections](/reference/site-corrections.md)
+To submit documentation fixes for this site, see [](/reference/site-corrections.md)
 ::::
 
 

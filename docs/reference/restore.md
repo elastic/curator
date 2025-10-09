@@ -106,7 +106,7 @@ actions:
 
 In this case, the number of replicas will be applied to the restored indices.
 
-For more information see the [official Elasticsearch Documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/snapshots-restore-snapshot.md).
+For more information, see the [{{es}} documentation](docs-content://deploy-manage/tools/snapshot-and-restore/restore-snapshot.md).
 
 
 ## Required settings [_required_settings_9]

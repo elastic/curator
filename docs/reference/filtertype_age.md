@@ -119,7 +119,7 @@ This will prevent the `%Y.%m` pattern from matching the `%Y.%m` part of the dail
 ::::
 
 
-In Curator 5.3 and older, source `field_stats` uses the [Field Stats API](http://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-field-stats.md) to calculate either the `min_value` or the `max_value` of the [`field`](/reference/fe_field.md) as the [`stats_result`](/reference/fe_stats_result.md), and then use that value for age comparisons.  In 5.4 and above, even though it is still called `field_stats`, it uses an aggregation to calculate the same values, as the `field_stats` API is no longer used in Elasticsearch 6.x and up.
+In Curator 5.3 and older, source `field_stats` uses the [Field Stats API](http://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-field-stats.html) to calculate either the `min_value` or the `max_value` of the [`field`](/reference/fe_field.md) as the [`stats_result`](/reference/fe_stats_result.md), and then use that value for age comparisons.  In 5.4 and above, even though it is still called `field_stats`, it uses an aggregation to calculate the same values, as the `field_stats` API is no longer used in Elasticsearch 6.x and up.
 
 [`field`](/reference/fe_field.md) must be of type `date` in Elasticsearch.
 

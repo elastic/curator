@@ -7,7 +7,9 @@ mapped_pages:
 
 This setting should be nested YAML.  The values beneath `extra_settings` will be used by whichever action uses the option.
 
-## [alias](/reference/alias.md) [_alias/curator/docs/reference/elasticsearch/elasticsearch-client-curator/alias.md]
+## alias
+
+See the [alias action](/reference/alias.md).
 
 ```yaml
 action: alias
@@ -27,7 +29,9 @@ remove:
 ```
 
 
-## [create_index](/reference/create_index.md) [_create_index/curator/docs/reference/elasticsearch/elasticsearch-client-curator/create_index.md]
+## create_index
+
+See the [create_index action](/reference/create_index.md).
 
 ```yaml
 action: create_index
@@ -48,9 +52,9 @@ options:
 ```
 
 
-## [restore](/reference/restore.md) [_restore/curator/docs/reference/elasticsearch/elasticsearch-client-curator/restore.md]
+## restore
 
-See the [official Elasticsearch Documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/snapshots-restore-snapshot.md).
+See the [restore action](/reference/restore.md) and the [official {{es}} documentation](docs-content://deploy-manage/tools/snapshot-and-restore/restore-snapshot.md).
 
 ```yaml
 actions:
@@ -81,7 +85,9 @@ actions:
 ```
 
 
-## [rollover](/reference/rollover.md) [_rollover/curator/docs/reference/elasticsearch/elasticsearch-client-curator/rollover.md]
+## rollover
+
+See the [rollover action](/reference/rollover.md).
 
 ```yaml
 action: rollover
@@ -102,7 +108,9 @@ options:
 ```
 
 
-## [shrink](/reference/shrink.md) [_shrink/curator/docs/reference/elasticsearch/elasticsearch-client-curator/shrink.md]
+## shrink
+
+See the [shrink action](/reference/shrink.md).
 
 ::::{note}
 [Only `settings` and `aliases` are acceptable](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-shrink) when used in [shrink](/reference/shrink.md).

@@ -12,9 +12,9 @@ This setting is used by the [Reindex](/reference/reindex.md), [Rollover](/refere
 
 This setting determines the number of shard copies that must be active before the client returns. The default value is 1, which implies only the primary shards.
 
-Set to `all` for all shard copies, otherwise set to any non-negative value less than or equal to the total number of copies for the shard (number of replicas + 1)
+Set to `all` for all shard copies, otherwise set to any non-negative value less than or equal to the total number of copies for the shard (number of replicas + 1).
 
-Read [the Elasticsearch documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/docs-index_.md#index-wait-for-active-shards) for more information.
+Read [the Elasticsearch documentation](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-create) for more information.
 
 ## Reindex [_reindex]
 
