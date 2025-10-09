@@ -14,7 +14,7 @@ The value of this setting is the name of the alias, snapshot, or index, dependin
 
 ## date math [_date_math_2]
 
-This setting may be a valid [Elasticsearch date math string](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names).
+This setting may be a valid [{{es}} date math string](elasticsearch://reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names).
 
 A date math name takes the following form:
 
@@ -59,7 +59,7 @@ The identifiers that Curator currently recognizes include:
 | `%j` | 3 digit day of the year |
 
 
-## [alias](/reference/alias.md) [_alias/curator/docs/reference/elasticsearch/elasticsearch-client-curator/alias.md_2]
+## alias
 
 ```yaml
 action: alias
@@ -77,7 +77,7 @@ remove:
 This option is required by the [alias](/reference/alias.md) action, and has no default setting in that context.
 
 
-## [create_index](/reference/create_index.md) [_create_index/curator/docs/reference/elasticsearch/elasticsearch-client-curator/create_index.md_2]
+## create_index
 
 For the [create_index](/reference/create_index.md) action, there is no default setting, but you can use strftime:
 
@@ -89,7 +89,7 @@ options:
   # ...
 ```
 
-or use Elasticsearch [date math](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names)
+or use {{es}} [date math](elasticsearch://reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names) to name your indices.
 
 ```yaml
 action: create_index
@@ -99,10 +99,10 @@ options:
   # ...
 ```
 
-to name your indices.  See more in the [create_index](/reference/create_index.md) documenation.
+See more in the [create_index](/reference/create_index.md) documentation.
 
 
-## [snapshot](/reference/snapshot.md) [_snapshot/curator/docs/reference/elasticsearch/elasticsearch-client-curator/snapshot.md_4]
+## snapshot
 
 ```yaml
 action: snapshot

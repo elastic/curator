@@ -47,7 +47,7 @@ actions:
 
 In this configuration, Elasticsearch will capture whatever appears after `index` and put it after `restored_index`.  For example, if I was restoring `index-2017.03.01`, the resulting index would be renamed to `restored_index-2017.03.01`.
 
-Read more about this setting at [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/snapshots-restore-snapshot.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/snapshots-restore-snapshot.md)
+Read more about this setting in [Restore a snapshot](docs-content://deploy-manage/tools/snapshot-and-restore/restore-snapshot.md).
 
 There is no default value.
 

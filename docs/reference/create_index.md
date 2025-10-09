@@ -55,9 +55,9 @@ options:
   # ...
 ```
 
-For the `create_index` action, the [name](/reference/option_name.md) option can be in Elasticsearch [date math](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names) format.  This allows index names containing dates to use deterministic math to set a date name in the past or the future.
+For the `create_index` action, the [name](/reference/option_name.md) option can be in Elasticsearch [date math](elasticsearch:///reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names) format. This allows index names containing dates to use deterministic math to set a date name in the past or the future.
 
-For example, if today’s date were 2017-03-27, the name `<logstash-{now/d}>` will create an index named `logstash-2017.03.27`. If you wanted to create *tomorrow’s* index, you would use the name `<logstash-{now/d+1d}>`, which adds 1 day.  This pattern creates an index named `logstash-2017.03.28`.  For many more configuration options, read the Elasticsearch [date math](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/api-conventions.md#api-date-math-index-names) documentation.
+For example, if today’s date were 2017-03-27, the name `<logstash-{now/d}>` will create an index named `logstash-2017.03.27`. If you wanted to create *tomorrow’s* index, you would use the name `<logstash-{now/d+1d}>`, which adds 1 day.  This pattern creates an index named `logstash-2017.03.28`.  For many more configuration options, read the Elasticsearch [date math]((elasticsearch:///reference/elasticsearch/rest-apis/api-conventions.md#api-date-math-index-names) documentation.
 
 
 ## Extra Settings [_extra_settings]
@@ -90,7 +90,7 @@ options:
 
 ## Optional settings [_optional_settings_6]
 
-* [extra_settings](/reference/option_extra_settings.md) No default value.  You can add any acceptable index settings and mappings as nested YAML.  See the [Elasticsearch Create Index API documentation](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/indices-create-index.md) for more information.
+* [extra_settings](/reference/option_extra_settings.md) No default value.  You can add any acceptable index settings and mappings as nested YAML.  See the [Create an index API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-indices-create) for more information.
 * [timeout_override](/reference/option_timeout_override.md)
 * [continue_if_exception](/reference/option_continue.md)
 * [disable_action](/reference/option_disable.md)

@@ -66,6 +66,7 @@ toc:
       - file: option_ignore.md
       - file: option_include_aliases.md
       - file: option_include_gs.md
+      - file: option_include_hidden.md
       - file: option_indices.md
       - file: option_key.md
       - file: option_max_age.md

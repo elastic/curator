@@ -7,7 +7,7 @@ mapped_pages:
 
 All documentation on this site allows for quick correction submission.
 
-To do this, use the "Edit" link to the right on any page.
+To do this, use the **Edit this page** link to the right on any page.
 
 * You will need to log in with your GitHub account.
 * Make your corrections or additions to the documentation.

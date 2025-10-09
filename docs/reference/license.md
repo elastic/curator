@@ -5,7 +5,7 @@ mapped_pages:
 
 # License [license]
 
-Copyright (c) 2011-2024 Elasticsearch [http://elastic.co](http://elastic.co)
+Copyright (c) 2012-{{current_year}} Elasticsearch [http://elastic.co](http://elastic.co)
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 

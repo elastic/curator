@@ -4,9 +4,9 @@ cross_links:
   - docs-content
   - elasticsearch
   - logstash-docs-md
+  - elasticsearch-py
 toc:
   - toc: reference
 subs:
-  curator_version: 8.0.21
-  curator_major: 8
+  current_year: "2025"
   es:   "Elasticsearch"

@@ -10,6 +10,3 @@ Exit codes will indicate success or failure.
 * `0` — Success
 * `1` — Failure
 * `-1` - Exception raised that does not result in a `1` exit code.
-
- 
-

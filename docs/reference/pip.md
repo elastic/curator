@@ -31,7 +31,7 @@ pip install -U elasticsearch-curator==X.Y.Z
 For example:
 
 ```sh subs=true
-pip install -U elasticsearch-curator=={{curator_version}}
+pip install -U elasticsearch-curator=={{version.curator}}
 ```
 
 ## System-wide vs. User-only installation [_system_wide_vs_user_only_installation]

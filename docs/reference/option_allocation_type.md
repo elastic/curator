@@ -24,7 +24,7 @@ filters:
 
 The value of this setting must be one of `require`, `include`, or `exclude`.
 
-Read more about these settings at [http://www.elastic.co/guide/en/elasticsearch/reference/8.15/shard-allocation-filtering.html](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/shard-allocation-filtering.md)
+Read more about these settings at [Index-level shard allocation](docs-content://deploy-manage/distributed-architecture/shard-allocation-relocation-recovery/index-level-shard-allocation.md)
 
 The default value for this setting is `require`.
 

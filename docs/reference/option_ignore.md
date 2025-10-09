@@ -75,10 +75,10 @@ filters:
 - filtertype: ...
 ```
 
-When the `ignore_unavailable` option is `False` and an index is missing, or if the request is to apply a [static](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/index-modules.md#_static_index_settings) setting and the index is opened, the index setting request will fail. The `ignore_unavailable` option allows these indices to be skipped, when set to `True`.
+When the `ignore_unavailable` option is `False` and an index is missing, or if the request is to apply a [static](docs-content:///deploy-manage/stack-settings.md#static-dynamic) setting and the index is opened, the index setting request will fail. The `ignore_unavailable` option allows these indices to be skipped, when set to `True`.
 
 ::::{note}
-[Dynamic](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/index-modules.md#dynamic-index-settings) index settings can be applied to either open or closed indices.
+[Dynamic](docs-content:///deploy-manage/stack-settings.md#static-dynamic) index settings can be applied to either open or closed indices.
 ::::
 
 
