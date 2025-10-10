@@ -218,7 +218,10 @@ def get_settings(client: Elasticsearch) -> Settings:
     try:
         doc = client.get(index=STATUS_INDEX, id=SETTINGS_ID)
         loggit.info("Settings document found")
-        return Settings(**doc["_source"])
+        # Filter out doctype as it's not accepted by Settings constructor
+        source_data = doc["_source"].copy()
+        source_data.pop('doctype', None)
+        return Settings(**source_data)
     except NotFoundError:
         loggit.info("Settings document not found")
         return None
@@ -476,7 +479,7 @@ def get_matching_repos(
         logging.debug("Mounted repos: %s", mounted_repos)
         return [Repository(**repo["_source"]) for repo in mounted_repos]
     # return a Repository object for each
-    return [Repository(**repo["_source"], docid=response["_id"]) for repo in repos]
+    return [Repository(**repo["_source"], docid=repo["_id"]) for repo in repos]
 
 
 def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
