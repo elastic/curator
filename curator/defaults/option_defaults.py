@@ -1,5 +1,7 @@
 """Action Option Schema definitions"""
 
+from datetime import datetime
+
 from voluptuous import All, Any, Boolean, Coerce, Optional, Range, Required
 
 # pylint: disable=E1120
@@ -39,10 +41,10 @@ def conditions():
                 Coerce(int), Optional('max_size'): Any(str)}}
     """
     return {
-        Optional('conditions'): {
-            Optional('max_age'): Any(str),
-            Optional('max_docs'): Coerce(int),
-            Optional('max_size'): Any(str),
+        Optional("conditions"): {
+            Optional("max_age"): Any(str),
+            Optional("max_docs"): Coerce(int),
+            Optional("max_size"): Any(str),
         }
     }
 
@@ -64,7 +66,7 @@ def count():
     """
     :returns: {Required('count'): All(Coerce(int), Range(min=0, max=10))}
     """
-    return {Required('count'): All(Coerce(int), Range(min=0, max=10))}
+    return {Required("count"): All(Coerce(int), Range(min=0, max=10))}
 
 
 def delay():
@@ -209,7 +211,7 @@ def include_global_state(action):
             Any(bool, All(Any(str), Boolean()))}
     """
     default = False
-    if action == 'snapshot':
+    if action == "snapshot":
         default = True
     return {
         Optional('include_global_state', default=default): Any(  # type: ignore
@@ -268,7 +270,7 @@ def index_settings():
     """
     :returns: {Required('index_settings'): {'index': dict}}
     """
-    return {Required('index_settings'): {'index': dict}}
+    return {Required("index_settings"): {"index": dict}}
 
 
 def indices():
@@ -282,7 +284,7 @@ def key():
     """
     :returns: {Required('key'): Any(str)}
     """
-    return {Required('key'): Any(str)}
+    return {Required("key"): Any(str)}
 
 
 def max_num_segments():
@@ -291,7 +293,7 @@ def max_num_segments():
         {Required('max_num_segments'):
             All(Coerce(int), Range(min=1, max=32768))}
     """
-    return {Required('max_num_segments'): All(Coerce(int), Range(min=1, max=32768))}
+    return {Required("max_num_segments"): All(Coerce(int), Range(min=1, max=32768))}
 
 
 # pylint: disable=unused-argument
@@ -463,7 +465,7 @@ def remote_filters():
     # validate_actions() method in utils.py
     return {
         Optional(
-            'remote_filters',
+            "remote_filters",
             default=[
                 {
                     'filtertype': 'pattern',
@@ -480,21 +482,21 @@ def rename_pattern():
     """
     :returns: {Optional('rename_pattern'): Any(str)}
     """
-    return {Optional('rename_pattern'): Any(str)}
+    return {Optional("rename_pattern"): Any(str)}
 
 
 def rename_replacement():
     """
     :returns: {Optional('rename_replacement'): Any(str)}
     """
-    return {Optional('rename_replacement'): Any(str)}
+    return {Optional("rename_replacement"): Any(str)}
 
 
 def repository():
     """
     :returns: {Required('repository'): Any(str)}
     """
-    return {Required('repository'): Any(str)}
+    return {Required("repository"): Any(str)}
 
 
 def request_body():
@@ -503,34 +505,34 @@ def request_body():
         See code for more details.
     """
     return {
-        Required('request_body'): {
-            Optional('conflicts'): Any('proceed', 'abort'),
-            Optional('max_docs'): Coerce(int),
-            Required('source'): {
-                Required('index'): Any(Any(str), list),
-                Optional('query'): dict,
-                Optional('remote'): {
-                    Optional('host'): Any(str),
-                    Optional('username'): Any(str),
-                    Optional('password'): Any(str),
-                    Optional('socket_timeout'): Any(str),
-                    Optional('connect_timeout'): Any(str),
-                    Optional('headers'): Any(str),
+        Required("request_body"): {
+            Optional("conflicts"): Any("proceed", "abort"),
+            Optional("max_docs"): Coerce(int),
+            Required("source"): {
+                Required("index"): Any(Any(str), list),
+                Optional("query"): dict,
+                Optional("remote"): {
+                    Optional("host"): Any(str),
+                    Optional("username"): Any(str),
+                    Optional("password"): Any(str),
+                    Optional("socket_timeout"): Any(str),
+                    Optional("connect_timeout"): Any(str),
+                    Optional("headers"): Any(str),
                 },
                 Optional('size'): Coerce(int),
                 Optional('_source'): Any(bool, Boolean()),  # type: ignore
             },
-            Required('dest'): {
-                Required('index'): Any(str),
-                Optional('version_type'): Any(
-                    'internal', 'external', 'external_gt', 'external_gte'
+            Required("dest"): {
+                Required("index"): Any(str),
+                Optional("version_type"): Any(
+                    "internal", "external", "external_gt", "external_gte"
                 ),
-                Optional('op_type'): Any(str),
-                Optional('pipeline'): Any(str),
+                Optional("op_type"): Any(str),
+                Optional("pipeline"): Any(str),
             },
-            Optional('script'): {
-                Optional('source'): Any(str),
-                Optional('lang'): Any('painless', 'expression', 'mustache', 'java'),
+            Optional("script"): {
+                Optional("source"): Any(str),
+                Optional("lang"): Any("painless", "expression", "mustache", "java"),
             },
         }
     }
@@ -568,14 +570,14 @@ def routing_type():
     """
     :returns: {Required('routing_type'): Any('allocation', 'rebalance')}
     """
-    return {Required('routing_type'): Any('allocation', 'rebalance')}
+    return {Required("routing_type"): Any("allocation", "rebalance")}
 
 
 def cluster_routing_setting():
     """
     :returns: {Required('setting'): Any('enable')}
     """
-    return {Required('setting'): Any('enable')}
+    return {Required("setting"): Any("enable")}
 
 
 def cluster_routing_value():
@@ -585,7 +587,7 @@ def cluster_routing_value():
             Any('all', 'primaries', 'none', 'new_primaries', 'replicas')}
     """
     return {
-        Required('value'): Any('all', 'primaries', 'none', 'new_primaries', 'replicas')
+        Required("value"): Any("all", "primaries", "none", "new_primaries", "replicas")
     }
 
 
@@ -600,7 +602,7 @@ def shrink_node():
     """
     :returns: {Required('shrink_node'): Any(str)}
     """
-    return {Required('shrink_node'): Any(str)}
+    return {Required("shrink_node"): Any(str)}
 
 
 def shrink_prefix():
@@ -664,11 +666,11 @@ def timeout_override(action):
 
         ``delete_snapshots`` = ``300``
     """
-    if action in ['forcemerge', 'restore', 'snapshot']:
+    if action in ["forcemerge", "restore", "snapshot"]:
         defval = 21600
-    elif action == 'close':
+    elif action == "close":
         defval = 180
-    elif action == 'delete_snapshots':
+    elif action == "delete_snapshots":
         defval = 300
     else:
         defval = None
@@ -691,7 +693,7 @@ def wait_for_active_shards(action):
             ``shrink`` actions.
     """
     defval = 0
-    if action in ['reindex', 'shrink']:
+    if action in ["reindex", "shrink"]:
         defval = 1
     return {
         Optional('wait_for_active_shards', default=defval): Any(  # type: ignore
@@ -710,7 +712,7 @@ def wait_for_completion(action):
     """
     # if action in ['cold2frozen', 'reindex', 'restore', 'snapshot']:
     defval = True
-    if action in ['allocation', 'cluster_routing', 'replicas']:
+    if action in ["allocation", "cluster_routing", "replicas"]:
         defval = False
     return {
         Optional('wait_for_completion', default=defval): Any(  # type: ignore
@@ -746,7 +748,7 @@ def wait_interval(action):
     maxval = 30
     # if action in ['allocation', 'cluster_routing', 'replicas']:
     defval = 3
-    if action in ['restore', 'snapshot', 'reindex', 'shrink']:
+    if action in ["restore", "snapshot", "reindex", "shrink"]:
         defval = 9
     return {
         Optional('wait_interval', default=defval): Any(  # type: ignore
@@ -766,3 +768,21 @@ def warn_if_no_indices():
             bool, All(Any(str), Boolean())  # type: ignore
         )
     }
+
+
+def create_sample_ilm_policy():
+    """
+    Setting to allow creating a sample ILM policy
+    """
+    return {
+        Optional("create_sample_ilm_policy", default=False): Any(
+            bool, All(Any(str), Boolean())
+        )
+    }
+
+
+def ilm_policy_name():
+    """
+    Setting to allow setting a custom ILM policy name
+    """
+    return {Optional("ilm_policy_name", default="deepfreeze-sample-policy"): Any(str)}
