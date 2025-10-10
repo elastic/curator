@@ -1,4 +1,4 @@
-"""Utility functions for deepfreeae"""
+"""Utility functions for deepfreeze"""
 
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
