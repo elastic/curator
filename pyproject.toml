@@ -29,8 +29,8 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "boto3"
-    "es_client==8.19.5"
+    "boto3",
+    "es_client==8.19.5",
     "rich"
 ]
 
