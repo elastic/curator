@@ -3,6 +3,186 @@
 Changelog
 =========
 
+8.0.22 (? ? ?)
+--------------
+
+**Announcement**
+
+  * Added the ``tiered-debug`` module which will allow for more granular control
+    over debug logging output. You can set the debug level from 1 - 5, with 5 being
+    the most verbose. This is done via the ``--debug-level`` command-line option.
+    The default level is 1, which is now much less verbose than ``--log-level DEBUG``
+    was in the past. The ``--log-level`` option remains, naturally, and is still
+    necessary to set the logging level to ``DEBUG`` or ``INFO``. The
+    ``--debug-level`` option only controls how much debug output is generated.
+
+**Bugs Fixed**
+
+  * Reworked index inclusion/exclusion logic to be more consistent and
+    predictable. There are now dedicated ``include_datastreams``, ``include_hidden``,
+    ``include_kibana``, and ``include_system`` options in the configuration file
+    ``options`` section, as well as command-line flags for each of these options.
+    Fixes #1770.
+  
+**Changes**
+
+  * Update to ``es_client==8.19.5``.
+  * Add ``tiered-debug`` module to allow for more granular control over debug
+    logging output.
+  * Add ``--debug-level`` command-line option to set the debug level from 1 - 5.
+  * Refactor index pattern inclusion/exclusion logic to be more consistent and predictable.
+  
+
+8.0.21 (1 April 2025)
+---------------------
+
+**Bugfix Release**
+
+As was reported in #1704, the ``--ignore_empty_list`` option was not being respected.
+Code changes were made to each singleton that uses the ``--ignore_empty_list`` option
+to ensure that the option is respected.
+
+**Changes**
+
+  * Fix ``--ignore_empty_list`` option to be respected in all singletons.
+  * Add debug message to IndexList class when an empty list condition is encountered.
+  * Dependency version bump: ``es_client`` to ``8.17.5``
+
+
+8.0.20 (21 March 2025)
+----------------------
+
+**Patch Release**
+
+There are no code changes in this release.
+
+A package maintainer at Debian raised an issue with the now
+outdated ``cx_Freeze`` dependency in ``setup.py``. As ``cx_Freeze`` is now only
+used in the Docker build, ``setup.py`` has been removed to avoid the unneeded
+dependency. Docker and package builds were tested to ensure that the changes work
+as expected before this release.
+
+**Changes**
+
+  * Move ``cx_Freeze`` configuration from ``setup.py`` to ``pyproject.toml``.
+    The configuration will be read during the Docker image build but not otherwise
+    result in ``cx_Freeze`` being a dependency.
+  * Change how ``cx_Freeze`` is invoked in ``Dockerfile``, removing the need for
+    ``setup.py``.
+  * Remove ``setup.py`` as it is no longer needed for package building.
+  * Use ``es_client==8.17.4`` which fixes a logging issue.
+  * Fix copyright dates in ``docs/index.rst``
+  * Update asciidoc files to reflect the new version numbers.
+
+
+8.0.19 (5 March 2025)
+---------------------
+
+**Announcement**
+
+The ability to include hidden indices is now available in Curator. This is now
+an option you can include in the ``options`` section of your configuration file.
+
+.. code-block:: yaml
+
+    options:
+      include_hidden: True
+
+This will allow Curator to include hidden indices in its actions. This will not
+suddenly reveal system indices, but it will allow you to include indices that
+are hidden, such as indices backing certain data_streams.
+
+This is also an option flag for the CLI Singletons, e.g. ``--include-hidden``,
+with the default value being the equivalent of ``--no-include_hidden``.
+
+There's an odd caveat to this, however, and it is probaby a bug in Elasticsearch.
+If you have an index that starts with a dot, e.g. ``.my_index``, and you set your
+multi-target search pattern to also start with a dot, e.g. ``.my_*``, and you
+set the index settings for ``.my_index`` to be ``hidden: true``, the index will
+not be excluded from the search results when the ``expand_wildcards`` parameter
+is set to include hidden indices, e.g. ``open,closed,hidden``.
+
+This is a bug in Elasticsearch, and not in Curator. I've reported it to the
+Elasticsearch team at https://github.com/elastic/elasticsearch/issues/124167,
+but I'm not sure when it will be addressed. In the meantime, if you need to
+guarantee hidden indices stay excluded, use ``search_pattern`` and filters
+to exclude anything that needs to stay excluded.
+
+All tests pass on versions 7.17.25 and 8.17.2 of Elasticsearch.
+
+
+**Changes**
+
+  * Updated ``tests/integration/test_integrations.py::TestFilters`` to have a
+    ``filter_closed`` test to ensure functionality is working as expected. This
+    test was added because of #1733, which is technically about Curator v7.0.1,
+    but since the release of Curator 8.0.18, which supports the version of
+    Elasticsearch being used in that issue, a confirmation integration test was
+    added here.
+  * PEP8 formatting changes to ``tests/integration/testvars.py`` as well as adding
+    the ``filter_closed`` YAML sample.
+  * Updated ``docs/conf.py`` to reflect the modules being used.
+  * Add support to include hidden indices. This is done by adding ``hidden`` to
+    the ``expand_wildcards`` keyword arg, which will make it ``open,closed,hidden``.
+  
+
+8.0.18 (27 February 2025)
+-------------------------
+
+**Announcement**
+
+Release 8.0.18 allows Curator v8 to work with Curator v7.14.x and later. All tests
+pass for v7.14.0, v7.14.2, v7.17.7, v7.17.25, v7.17.27. Due to JVM issues with
+M-series processors (OpenJDK 16 < FAIL < OpenJDK 19 ), I'm unable to test v7.15.x -
+v7.17.6 on my MacBook Pro, but I have no reason to believe they won't as there
+are no API changes between the 7.14 and 7.17 series that would affect Curator
+in any way.
+
+Hopefully this is helpful for those who are using Elasticsearch 7 still, and would
+like the improvements in Curator v8. Do note that while the action files used in 
+Curator v7 will work with Curator v8, the client configuration files will not. There
+are a few differences in syntax that are in the documentation.
+See https://www.elastic.co/guide/en/elasticsearch/client/curator/current/configfile.html 
+for more information.
+
+**Changes**
+
+  * Huge number of comment and code line break changes to be more PEP8 compliant.
+    * This includes updates to Integration tests as well
+  * Update to use ``es_client==8.17.2``, which enables Curator v8 to work with
+    Elasticsearch v7.14.x and later.
+  * Add ``VERSION_MAX`` and ``VERSION_MIN`` to ``curator.defaults`` to allow for
+    version compatibility checks. ``VERSION_MIN`` is set to 7.14.0.
+  * Exclude system indices by default. The list of patterns to exclude is in
+    ``curator.defaults``, and is presently
+    
+    .. code-block:: python
+    
+        EXCLUDE_SYSTEM = (
+            '-.kibana*,-.security*,-.watch*,-.triggered_watch*,'
+            '-.ml*,-.geoip_databases*,-.logstash*,-.tasks*'
+        )
+        
+  * Restored and fixed datemath integration tests for patterns that include
+    colons. This was a problem in the past due to Elasticsearch evaluating colon
+    characters as potential indicators of remote indices. This was fixed in version
+    8.7.0 of Elasticsearch.
+
+**Bugfix**
+
+  * All of the testing for this release revealed a shortcoming in the snapshot
+    restore action class. It was relying on the user to provide the exact index
+    names to restore. The restore API call to Elasticsearch allows for multi-target
+    syntax to select and de-select indices by comma-separated patterns. While not
+    expressly allowed, it was possible to use. The problem was that indices could
+    not be properly matched and verified if patterns rather than exact names were
+    used. Three functions were added to ``helpers.utils`` to make this work
+    properly: ``multitarget_match``, ``multitarget_fix``, and ``regex_loop``. The
+    ``Restore`` class now calls ``multitarget_match`` in the
+    ``_get_expected_output`` method to get the names from the snapshot list object.
+    This now works with patterns, and the tests have been updated to ensure this.
+
+
 8.0.17 (25 October 2024)
 ------------------------
 

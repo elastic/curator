@@ -7,8 +7,11 @@ import string
 import time
 from datetime import timedelta, datetime, timezone
 from elasticsearch8.exceptions import NotFoundError
+from curator.debug import debug, begin_end
 from curator.exceptions import ConfigurationError
 from curator.defaults.settings import date_regex
+
+logger = logging.getLogger(__name__)
 
 
 class TimestringSearch:
@@ -49,6 +52,7 @@ class TimestringSearch:
         return None
 
 
+@begin_end()
 def absolute_date_range(
     unit, date_from, date_to, date_from_format=None, date_to_format=None
 ):
@@ -77,7 +81,7 @@ def absolute_date_range(
     :returns: The epoch start time and end time of a date range
     :rtype: tuple
     """
-    logger = logging.getLogger(__name__)
+
     acceptable_units = [
         'seconds',
         'minutes',
@@ -93,7 +97,7 @@ def absolute_date_range(
         raise ConfigurationError('Must provide "date_from_format" and "date_to_format"')
     try:
         start_epoch = datetime_to_epoch(get_datetime(date_from, date_from_format))
-        logger.debug('Start ISO8601 = %s', epoch2iso(start_epoch))
+        debug.lv5('Start ISO8601 = %s', epoch2iso(start_epoch))
     except Exception as err:
         raise ConfigurationError(
             f'Unable to parse "date_from" {date_from} and "date_from_format" '
@@ -133,10 +137,11 @@ def absolute_date_range(
             get_point_of_reference(unit, -1, epoch=datetime_to_epoch(end_date)) - 1
         )
 
-    logger.debug('End ISO8601 = %s', epoch2iso(end_epoch))
+    debug.lv5('End ISO8601 = %s', epoch2iso(end_epoch))
     return (start_epoch, end_epoch)
 
 
+@begin_end()
 def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     """
     This function calculates a date range with a distinct epoch time stamp of both the
@@ -162,7 +167,6 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
     :returns: The epoch start time and end time of a date range
     :rtype: tuple
     """
-    logger = logging.getLogger(__name__)
     start_date = None
     start_delta = None
     acceptable_units = ['hours', 'days', 'weeks', 'months', 'years']
@@ -176,7 +180,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         epoch = time.time()
     epoch = fix_epoch(epoch)
     raw_point_of_ref = datetime.fromtimestamp(epoch, timezone.utc)
-    logger.debug('Raw point of Reference = %s', raw_point_of_ref)
+    debug.lv5('Raw point of Reference = %s', raw_point_of_ref)
     # Reverse the polarity, because -1 as last week makes sense when read by
     # humans, but datetime timedelta math makes -1 in the future.
     origin = range_from * -1
@@ -234,17 +238,17 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         point_of_ref = datetime(raw_point_of_ref.year, 1, 1, 0, 0, 0)
         start_date = datetime(raw_point_of_ref.year - origin, 1, 1, 0, 0, 0)
     if unit not in ['months', 'years']:
-        start_date = point_of_ref - start_delta
+        start_date = point_of_ref - start_delta  # type: ignore[operator]
     # By this point, we know our start date and can convert it to epoch time
     start_epoch = datetime_to_epoch(start_date)
-    logger.debug('Start ISO8601 = %s', epoch2iso(start_epoch))
+    debug.lv5('Start ISO8601 = %s', epoch2iso(start_epoch))
     # This is the number of units we need to consider.
     count = (range_to - range_from) + 1
     # We have to iterate to one more month, and then subtract a second to get
     # the last day of the correct month
     if unit == 'months':
-        month = start_date.month
-        year = start_date.year
+        month = start_date.month  # type: ignore[attr-defined]
+        year = start_date.year  # type: ignore[attr-defined]
         for _ in range(0, count):
             if month == 12:
                 year += 1
@@ -262,7 +266,7 @@ def date_range(unit, range_from, range_to, epoch=None, week_starts_on='sunday'):
         # This lets us use an existing method to simply add unit * count seconds
         # to get hours, days, or weeks, as they don't change
         end_epoch = get_point_of_reference(unit, count * -1, epoch=start_epoch) - 1
-    logger.debug('End ISO8601 = %s', epoch2iso(end_epoch))
+    debug.lv5('End ISO8601 = %s', epoch2iso(end_epoch))
     return (start_epoch, end_epoch)
 
 
@@ -362,6 +366,7 @@ def fix_epoch(epoch):
     return epoch
 
 
+@begin_end()
 def get_date_regex(timestring):
     """
     :param timestring: An ``strftime`` pattern
@@ -371,11 +376,10 @@ def get_date_regex(timestring):
         ``timestring``.
     :rtype: str
     """
-    logger = logging.getLogger(__name__)
     prev, regex = ('', '')
-    logger.debug('Provided timestring = "%s"', timestring)
+    debug.lv3('Provided timestring = "%s"', timestring)
     for idx, char in enumerate(timestring):
-        logger.debug('Current character: %s Array position: %s', char, idx)
+        debug.lv5('Current character: %s Array position: %s', char, idx)
         if char == '%':
             pass
         elif char in date_regex() and prev == '%':
@@ -385,10 +389,11 @@ def get_date_regex(timestring):
         else:
             regex += char
         prev = char
-    logger.debug('regex = %s', regex)
+    debug.lv5('regex = %s', regex)
     return regex
 
 
+@begin_end()
 def get_datemath(client, datemath, random_element=None):
     """
     :param client: A client connection object
@@ -404,7 +409,6 @@ def get_datemath(client, datemath, random_element=None):
     :returns: the parsed index name from ``datemath``
     :rtype: str
     """
-    logger = logging.getLogger(__name__)
     if random_element is None:
         random_prefix = 'curator_get_datemath_function_' + ''.join(
             random.choice(string.ascii_lowercase) for _ in range(32)
@@ -423,14 +427,14 @@ def get_datemath(client, datemath, random_element=None):
         # This is the magic.  Elasticsearch still gave us the formatted
         # index name in the error results.
         faux_index = err.body['error']['index']
-    logger.debug('Response index name for extraction: %s', faux_index)
+    debug.lv5('Response index name for extraction: %s', faux_index)
     # Now we strip the random index prefix back out again
     # pylint: disable=consider-using-f-string
     pattern = r'^{0}-(.*)$'.format(random_prefix)
     regex = re.compile(pattern)
     try:
         # And return only the now-parsed date string
-        return regex.match(faux_index).group(1)
+        return regex.match(faux_index).group(1)  # type: ignore[union-attr]
     except AttributeError as exc:
         raise ConfigurationError(
             f'The rendered index "{faux_index}" does not contain a valid date pattern '
@@ -438,6 +442,7 @@ def get_datemath(client, datemath, random_element=None):
         ) from exc
 
 
+@begin_end()
 def get_datetime(index_timestamp, timestring):
     """
     :param index_timestamp: The index timestamp
@@ -474,6 +479,7 @@ def get_datetime(index_timestamp, timestring):
     return mydate
 
 
+@begin_end()
 def get_point_of_reference(unit, count, epoch=None):
     """
     :param unit: One of ``seconds``, ``minutes``, ``hours``, ``days``, ``weeks``,
@@ -514,6 +520,7 @@ def get_point_of_reference(unit, count, epoch=None):
     return epoch - multiplier * count
 
 
+@begin_end()
 def get_unit_count_from_name(index_name, pattern):
     """
     :param index_name: An index name
@@ -538,6 +545,7 @@ def get_unit_count_from_name(index_name, pattern):
         return None
 
 
+@begin_end()
 def handle_iso_week_number(mydate, timestring, index_timestamp):
     """
     :param mydate: A Python datetime
@@ -572,6 +580,7 @@ def handle_iso_week_number(mydate, timestring, index_timestamp):
     return mydate
 
 
+@begin_end()
 def isdatemath(data):
     """
     :param data: An expression to validate as being datemath or not
@@ -580,12 +589,11 @@ def isdatemath(data):
     :returns: ``True`` if ``data`` is a valid datemath expression, else ``False``
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     initial_check = r'^(.).*(.)$'
     regex = re.compile(initial_check)
-    opener = regex.match(data).group(1)
-    closer = regex.match(data).group(2)
-    logger.debug('opener =  %s, closer = %s', opener, closer)
+    opener = regex.match(data).group(1)  # type: ignore[union-attr]
+    closer = regex.match(data).group(2)  # type: ignore[union-attr]
+    debug.lv5('opener =  %s, closer = %s', opener, closer)
     if (opener == '<' and closer != '>') or (opener != '<' and closer == '>'):
         raise ConfigurationError('Incomplete datemath encapsulation in "< >"')
     if opener != '<' and closer != '>':
@@ -593,6 +601,7 @@ def isdatemath(data):
     return True
 
 
+@begin_end()
 def parse_date_pattern(name):
     """
     Scan and parse ``name`` for :py:func:`~.time.strftime` strings, replacing them with
@@ -620,13 +629,12 @@ def parse_date_pattern(name):
     :returns: The parsed date pattern
     :rtype: str
     """
-    logger = logging.getLogger(__name__)
     prev, rendered = ('', '')
-    logger.debug('Provided index name: %s', name)
+    debug.lv3('Provided index name: %s', name)
     for idx, char in enumerate(name):
-        logger.debug('Current character in provided name: %s, position: %s', char, idx)
+        debug.lv5('Current character in provided name: %s, position: %s', char, idx)
         if char == '<':
-            logger.info('"%s" is probably using Elasticsearch date math.', name)
+            debug.lv5('"%s" is probably using Elasticsearch date math.', name)
             rendered = name
             break
         if char == '%':
@@ -635,12 +643,13 @@ def parse_date_pattern(name):
             rendered += str(datetime.now(timezone.utc).strftime(f'%{char}'))
         else:
             rendered += char
-        logger.debug('Partially rendered name: %s', rendered)
+        debug.lv5('Partially rendered name: %s', rendered)
         prev = char
-    logger.debug('Fully rendered name: %s', rendered)
+    debug.lv3('Fully rendered name: %s', rendered)
     return rendered
 
 
+@begin_end()
 def parse_datemath(client, value):
     """
     Validate that ``value`` looks like proper datemath. If it passes this test, then
@@ -657,11 +666,10 @@ def parse_datemath(client, value):
     :returns: A datemath indexname, fully rendered by Elasticsearch
     :rtype: str
     """
-    logger = logging.getLogger(__name__)
     if not isdatemath(value):
         return value
     # if we didn't return here, we can continue, no 'else' needed.
-    logger.debug('Properly encapsulated, proceeding to next evaluation...')
+    debug.lv3('Properly encapsulated, proceeding to next evaluation...')
     # Our pattern has 4 capture groups.
     # 1. Everything after the initial '<' up to the first '{', which we call ``prefix``
     # 2. Everything between the outermost '{' and '}', which we call ``datemath``
@@ -671,10 +679,10 @@ def parse_datemath(client, value):
     pattern = r'^<([^\{\}]*)?(\{.*(\{.*\})?\})([^\{\}]*)?>$'
     regex = re.compile(pattern)
     try:
-        prefix = regex.match(value).group(1) or ''
-        datemath = regex.match(value).group(2)
+        prefix = regex.match(value).group(1) or ''  # type: ignore[union-attr]
+        datemath = regex.match(value).group(2)  # type: ignore[union-attr]
         # formatter = regex.match(value).group(3) or '' (not captured, but counted)
-        suffix = regex.match(value).group(4) or ''
+        suffix = regex.match(value).group(4) or ''  # type: ignore[union-attr]
     except AttributeError as exc:
         raise ConfigurationError(
             f'Value "{value}" does not contain a valid datemath pattern.'

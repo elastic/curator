@@ -1,10 +1,9 @@
 """Delete Index and Delete Snapshot Singletons"""
 
+# pylint: disable=R0913,R0917
 import click
 from curator.cli_singletons.object_class import CLIAction
 from curator.cli_singletons.utils import validate_filter_json
-
-# pylint: disable=R0913
 
 
 # Indices
@@ -12,7 +11,7 @@ from curator.cli_singletons.utils import validate_filter_json
 @click.option(
     '--search_pattern',
     type=str,
-    default='_all',
+    default='*',
     help='Elasticsearch Index Search Pattern',
 )
 @click.option(
@@ -27,6 +26,30 @@ from curator.cli_singletons.utils import validate_filter_json
     show_default=True,
 )
 @click.option(
+    '--include_datastreams/--no-include_datastreams',
+    help='Allow Curator to operate on data streams.',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_hidden/--no-include_hidden',
+    help='Allow Curator to operate on hidden indices.',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_kibana/--no-include_kibana',
+    help='Allow Curator to operate on Kibana indices.',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--include_system/--no-include_system',
+    help='Allow Curator to operate on system indices.',
+    default=False,
+    show_default=True,
+)
+@click.option(
     '--filter_list',
     callback=validate_filter_json,
     help='JSON array of filters selecting indices to act on.',
@@ -34,7 +57,15 @@ from curator.cli_singletons.utils import validate_filter_json
 )
 @click.pass_context
 def delete_indices(
-    ctx, search_pattern, ignore_empty_list, allow_ilm_indices, filter_list
+    ctx,
+    search_pattern,
+    ignore_empty_list,
+    allow_ilm_indices,
+    include_datastreams,
+    include_hidden,
+    include_kibana,
+    include_system,
+    filter_list,
 ):
     """
     Delete Indices
@@ -44,7 +75,14 @@ def delete_indices(
     action = CLIAction(
         'delete_indices',
         ctx.obj['configdict'],
-        {'search_pattern': search_pattern, 'allow_ilm_indices': allow_ilm_indices},
+        {
+            'search_pattern': search_pattern,
+            'allow_ilm_indices': allow_ilm_indices,
+            'include_datastreams': include_datastreams,
+            'include_hidden': include_hidden,
+            'include_kibana': include_kibana,
+            'include_system': include_system,
+        },
         filter_list,
         ignore_empty_list,
     )
@@ -67,6 +105,30 @@ def delete_indices(
     default=False,
     show_default=True,
 )
+# @click.option(
+#     '--include_datastreams/--no-include_datastreams',
+#     help='Allow Curator to operate on data streams.',
+#     default=False,
+#     show_default=True,
+# )
+# @click.option(
+#     '--include_hidden/--no-include_hidden',
+#     help='Allow Curator to operate on hidden indices.',
+#     default=False,
+#     show_default=True,
+# )
+# @click.option(
+#     '--include_kibana/--no-include_kibana',
+#     help='Allow Curator to operate on Kibana indices.',
+#     default=False,
+#     show_default=True,
+# )
+# @click.option(
+#     '--include_system/--no-include_system',
+#     help='Allow Curator to operate on system indices.',
+#     default=False,
+#     show_default=True,
+# )
 @click.option(
     '--filter_list',
     callback=validate_filter_json,
@@ -81,6 +143,10 @@ def delete_snapshots(
     retry_interval,
     ignore_empty_list,
     allow_ilm_indices,
+    # include_datastreams,
+    # include_hidden,
+    # include_kibana,
+    # include_system,
     filter_list,
 ):
     """
@@ -90,6 +156,10 @@ def delete_snapshots(
         'retry_count': retry_count,
         'retry_interval': retry_interval,
         'allow_ilm_indices': allow_ilm_indices,
+        # 'include_datastreams': include_datastreams,
+        # 'include_hidden': include_hidden,
+        # 'include_kibana': include_kibana,
+        # 'include_system': include_system,
     }
     # ctx.info_name is the name of the function or name specified in @click.command
     # decorator

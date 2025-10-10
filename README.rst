@@ -21,6 +21,12 @@ released, Curator 8.x will work with Elasticsearch 8.x.
 
 Watch this space for updates when that is coming.
 
+Additional support for Elasticsearch 7.14.0 - 7.17.x
+****************************************************
+
+Starting with Curator 8.0.18, Curator 8 can execute against Elasticsearch versions
+7.14.0 - 7.17.x in addition to all versions of Elasticsearch 8.x.
+
 New Client Configuration
 ------------------------
 

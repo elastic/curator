@@ -11,11 +11,15 @@ from es_client.exceptions import ConfigurationError
 from curator.exceptions import CuratorException, FailedExecution, NoIndices
 
 # Separate from es_client
+from curator.debug import debug, begin_end
+from curator.defaults.settings import VERSION_MAX
 from curator.exceptions import ConfigurationError as CuratorConfigError
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import report_failure
 from curator.helpers.waiters import wait_for_it
 from curator import IndexList
+
+logger = logging.getLogger(__name__)
 
 
 class Reindex:
@@ -87,13 +91,12 @@ class Reindex:
         """
         if remote_filters is None:
             remote_filters = {}
-        self.loggit = logging.getLogger('curator.actions.reindex')
         verify_index_list(ilo)
         if not isinstance(request_body, dict):
             raise CuratorConfigError('"request_body" is not of type dictionary')
         #: Object attribute that gets the value of param ``request_body``.
         self.body = request_body
-        self.loggit.debug('REQUEST_BODY = %s', request_body)
+        debug.lv5('REQUEST_BODY = %s', request_body)
         #: The :py:class:`~.curator.indexlist.IndexList` object passed from
         #: param ``ilo``
         self.index_list = ilo
@@ -151,7 +154,7 @@ class Reindex:
         elif self.remote:
             rclient_args = DotMap()
             rother_args = DotMap()
-            self.loggit.debug('Remote reindex request detected')
+            debug.lv1('Remote reindex request detected')
             if 'host' not in self.body['source']['remote']:
                 raise CuratorConfigError('Missing remote "host"')
             try:
@@ -183,7 +186,7 @@ class Reindex:
 
             # The rest only applies if using filters for remote indices
             if self.body['source']['index'] == 'REINDEX_SELECTION':
-                self.loggit.debug('Filtering indices from remote')
+                debug.lv2('Filtering indices from remote')
                 msg = (
                     f'Remote client args: '
                     f'hosts={rclient_args.hosts} '
@@ -195,7 +198,7 @@ class Reindex:
                     f'request_timeout={rclient_args.request_timeout} '
                     f'skip_version_test=True'
                 )
-                self.loggit.debug(msg)
+                debug.lv5(msg)
                 remote_config = {
                     'elasticsearch': {
                         'client': rclient_args.toDict(),
@@ -203,18 +206,22 @@ class Reindex:
                     }
                 }
                 try:  # let's try to build a remote connection with these!
-                    builder = Builder(configdict=remote_config)
+                    builder = Builder(
+                        configdict=remote_config,
+                        version_max=VERSION_MAX,
+                        version_min=(1, 4, 2),
+                    )
                     builder.version_min = (1, 0, 0)
                     builder.connect()
                     rclient = builder.client
                 except Exception as err:
-                    self.loggit.error(
+                    logger.error(
                         'Unable to establish connection to remote Elasticsearch'
                         ' with provided credentials/certificates/settings.'
                     )
                     report_failure(err)
                 try:
-                    rio = IndexList(rclient)
+                    rio = IndexList(rclient)  # type: ignore
                     rio.iterate_filters({'filters': remote_filters})
                     try:
                         rio.empty_list_check()
@@ -225,10 +232,10 @@ class Reindex:
                         ) from exc
                     self.body['source']['index'] = rio.indices
                 except Exception as err:
-                    self.loggit.error('Unable to get/filter list of remote indices.')
+                    logger.error('Unable to get/filter list of remote indices.')
                     report_failure(err)
 
-        self.loggit.debug('Reindexing indices: %s', self.body['source']['index'])
+        logger.debug('Reindexing indices: %s', self.body['source']['index'])
 
     def _get_request_body(self, source, dest):
         body = deepcopy(self.body)
@@ -236,6 +243,7 @@ class Reindex:
         body['dest']['index'] = dest
         return body
 
+    @begin_end()
     def _get_reindex_args(self, source, dest):
         # Always set wait_for_completion to False. Let 'wait_for_it' do its
         # thing if wait_for_completion is set to True. Report the task_id
@@ -265,6 +273,7 @@ class Reindex:
         reindex_args['source']['index'] = source
         return reindex_args
 
+    @begin_end()
     def get_processed_items(self, task_id):
         """
         This function calls :py:func:`~.elasticsearch.client.TasksClient.get` with
@@ -285,15 +294,16 @@ class Reindex:
         total_processed_items = -1
         task = task_data['task']
         if task['action'] == 'indices:data/write/reindex':
-            self.loggit.debug("It's a REINDEX TASK'")
-            self.loggit.debug('TASK_DATA: %s', task_data)
-            self.loggit.debug('TASK_DATA keys: %s', list(task_data.keys()))
+            debug.lv5("It's a REINDEX TASK'")
+            debug.lv5('TASK_DATA: %s', task_data)
+            debug.lv5('TASK_DATA keys: %s', list(task_data.keys()))
             if 'response' in task_data:
                 response = task_data['response']
                 total_processed_items = response['total']
-                self.loggit.debug('total_processed_items = %s', total_processed_items)
+                debug.lv5('total_processed_items = %s', total_processed_items)
         return total_processed_items
 
+    @begin_end()
     def _post_run_quick_check(self, index_name, task_id):
         # Check whether any documents were processed
         # if no documents processed, the target index "dest" won't exist
@@ -303,21 +313,21 @@ class Reindex:
                 f'No items were processed. Will not check if target index '
                 f'"{index_name}" exists'
             )
-            self.loggit.info(msg)
+            debug.lv1(msg)
         else:
             # Verify the destination index is there after the fact
             index_exists = self.client.indices.exists(index=index_name)
             alias_instead = self.client.indices.exists_alias(name=index_name)
             if not index_exists and not alias_instead:
                 # pylint: disable=logging-fstring-interpolation
-                self.loggit.error(
+                logger.error(
                     f'The index described as "{index_name}" was not found after the '
                     f'reindex operation. Check Elasticsearch logs for more '
                     f'information.'
                 )
                 if self.remote:
                     # pylint: disable=logging-fstring-interpolation
-                    self.loggit.error(
+                    logger.error(
                         f'Did you forget to add "reindex.remote.whitelist: '
                         f'{self.remote_host}:{self.remote_port}" to the '
                         f'elasticsearch.yml file on the "dest" node?'
@@ -327,11 +337,12 @@ class Reindex:
                     f'was not found.'
                 )
 
+    @begin_end()
     def sources(self):
         """Generator for Reindexing ``sources`` & ``dests``"""
         dest = self.body['dest']['index']
         source_list = ensure_list(self.body['source']['index'])
-        self.loggit.debug('source_list: %s', source_list)
+        debug.lv3('source_list: %s', source_list)
         if not source_list or source_list == ['REINDEX_SELECTED']:  # Empty list
             raise NoIndices
         if not self.migration:
@@ -344,6 +355,7 @@ class Reindex:
                     dest = self.mpfx + source + self.msfx
                 yield source, dest
 
+    @begin_end()
     def show_run_args(self, source, dest):
         """Show what will run"""
         return (
@@ -358,10 +370,11 @@ class Reindex:
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
-        self.loggit.info('DRY-RUN MODE.  No changes will be made.')
+        logger.info('DRY-RUN MODE.  No changes will be made.')
         for source, dest in self.sources():
-            self.loggit.info('DRY-RUN: REINDEX: %s', self.show_run_args(source, dest))
+            logger.info('DRY-RUN: REINDEX: %s', self.show_run_args(source, dest))
 
+    @begin_end()
     def do_action(self):
         """
         Execute :py:meth:`~.elasticsearch.Elasticsearch.reindex` operation with the
@@ -372,11 +385,11 @@ class Reindex:
         try:
             # Loop over all sources (default will only be one)
             for source, dest in self.sources():
-                self.loggit.info('Commencing reindex operation')
-                self.loggit.debug('REINDEX: %s', self.show_run_args(source, dest))
+                debug.lv1('Commencing reindex operation')
+                debug.lv5('REINDEX: %s', self.show_run_args(source, dest))
                 response = self.client.reindex(**self._get_reindex_args(source, dest))
 
-                self.loggit.debug('TASK ID = %s', response['task'])
+                debug.lv5('TASK ID = %s', response['task'])
                 if self.wfc:
                     wait_for_it(
                         self.client,
@@ -393,7 +406,8 @@ class Reindex:
                         f"task_id \"{response['task']}\" for successful completion "
                         f"manually."
                     )
-                    self.loggit.warning(msg)
+                    logger.warning(msg)
+            logger.info('Reindex operation complete.')
         except NoIndices as exc:
             raise NoIndices(
                 'Source index must be list of actual indices. It must not be an empty '

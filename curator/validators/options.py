@@ -5,7 +5,7 @@ from voluptuous import Schema
 from curator.defaults import option_defaults
 
 
-## Methods for building the schema
+# Methods for building the schema
 def action_specific(action):
     """
     :param action: The name of an action
@@ -14,8 +14,8 @@ def action_specific(action):
     :returns: A :py:class:`list` containing one or more
         :py:class:`~.voluptuous.schema_builder.Optional` or
         :py:class:`~.voluptuous.schema_builder.Required` options from
-        :py:mod:`~.curator.defaults.option_defaults`, defining acceptable values for each for the
-        given ``action``
+        :py:mod:`~.curator.defaults.option_defaults`, defining acceptable values
+        for each for the given ``action``
     :rtype: list
     """
     options = {
@@ -187,13 +187,15 @@ def action_specific(action):
 
 def get_schema(action):
     """
-    Return a :py:class:`~.voluptuous.schema_builder.Schema` of acceptable options and their default
-    values as returned by :py:func:`action_specific`, passing along the value of ``action``.
+    Return a :py:class:`~.voluptuous.schema_builder.Schema` of acceptable options
+    and their default values as returned by :py:func:`action_specific`, passing
+    along the value of ``action``.
 
     :param action: The name of an action
     :type action: str
 
-    :returns: A valid :py:class:`~.voluptuous.schema_builder.Schema` of the options for ``action``
+    :returns: A valid :py:class:`~.voluptuous.schema_builder.Schema` of the options
+        for ``action``
     """
     options = {}
     defaults = [
@@ -201,6 +203,10 @@ def get_schema(action):
         option_defaults.continue_if_exception(),
         option_defaults.disable_action(),
         option_defaults.ignore_empty_list(),
+        option_defaults.include_datastreams(),
+        option_defaults.include_hidden(),
+        option_defaults.include_kibana(),
+        option_defaults.include_system(),
         option_defaults.timeout_override(action),
     ]
     for each in defaults:

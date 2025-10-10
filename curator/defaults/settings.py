@@ -2,15 +2,33 @@
 
 from os import path
 from voluptuous import Any, Boolean, Coerce, Optional
+from click import IntRange
 from curator.exceptions import CuratorException
 
 # pylint: disable=E1120
 
 CURATOR_DOCS = 'https://www.elastic.co/guide/en/elasticsearch/client/curator'
+CLICK_DEBUG = {
+    'debug-level': {
+        'help': 'Set the logging level for debugging.',
+        'type': IntRange(1, 5, clamp=True),
+        'default': 1,
+        'show_default': True,
+    },
+}
 CLICK_DRYRUN = {
     'dry-run': {'help': 'Do not perform any changes.', 'is_flag': True},
 }
 DATA_NODE_ROLES = ['data', 'data_content', 'data_hot', 'data_warm']
+EXCLUDE_ALWAYS = '-.secret*'
+EXCLUDE_SYSTEM = (
+    '-.apm-agent-configuration,-.apm-custom-link,-.async-search,-.fleet*,'
+    '-.geoip_databases*,-.inference,-.logstash*,-.ml*,-.security*,-.slo-*,'
+    '-.tasks*,-.transform-telemetry,-.watch*'
+)
+
+VERSION_MIN = (7, 14, 0)
+VERSION_MAX = (8, 99, 99)
 
 # Click specifics
 
@@ -183,13 +201,14 @@ def default_options():
     :returns: The default values for these options:
         {'allow_ilm_indices': False, 'continue_if_exception': False,
         'disable_action': False, 'ignore_empty_list': False,
-        'timeout_override': None}
+        'include_hidden': False, 'timeout_override': None}
     """
     return {
         'allow_ilm_indices': False,
         'continue_if_exception': False,
         'disable_action': False,
         'ignore_empty_list': False,
+        'include_hidden': False,
         'timeout_override': None,
     }
 
@@ -242,7 +261,7 @@ def structural_filter_elements():
         Optional('unit'): Any(str),
         Optional('unit_count'): Coerce(int),
         Optional('unit_count_pattern'): Any(str),
-        Optional('use_age'): Boolean(),
+        Optional('use_age'): Boolean(),  # type: ignore
         Optional('value'): Any(int, float, bool, str),
         Optional('week_starts_on'): Any(None, str),
     }

@@ -11,7 +11,13 @@ from es_client.helpers.config import (
 )
 from es_client.helpers.logging import configure_logging
 from es_client.helpers.utils import option_wrapper
-from curator.defaults.settings import CLICK_DRYRUN, default_config_file, footer
+from curator.debug import debug
+from curator.defaults.settings import (
+    CLICK_DEBUG,
+    CLICK_DRYRUN,
+    default_config_file,
+    footer,
+)
 from curator._version import __version__
 from curator.cli_singletons import (
     alias,
@@ -39,6 +45,7 @@ click_opt_wrap = option_wrapper()
     epilog=footer(__version__, tail='singleton-cli.html'),
 )
 @options_from_dict(SHOW_EVERYTHING)
+@click_opt_wrap(*cli_opts('debug-level', settings=CLICK_DEBUG))
 @click_opt_wrap(*cli_opts('dry-run', settings=CLICK_DRYRUN))
 @click.version_option(__version__, '-v', '--version', prog_name='curator_cli')
 @click.pass_context
@@ -69,6 +76,7 @@ def curator_cli(
     logfile,
     logformat,
     blacklist,
+    debug_level,
     dry_run,
 ):
     """
@@ -86,6 +94,7 @@ def curator_cli(
     ctx.obj['default_config'] = default_config_file()
     get_config(ctx)
     configure_logging(ctx)
+    debug.level = debug_level
     generate_configdict(ctx)
 
 

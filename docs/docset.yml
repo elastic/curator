@@ -1,0 +1,12 @@
+project: 'Curator index management'
+cross_links:
+  - beats
+  - docs-content
+  - elasticsearch
+  - logstash-docs-md
+toc:
+  - toc: reference
+subs:
+  curator_version: 8.0.21
+  curator_major: 8
+  es:   "Elasticsearch"

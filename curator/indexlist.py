@@ -1,11 +1,13 @@
 """Index List Class"""
 
+# pylint: disable=R0904,R0913,R0917
 import re
 import itertools
 import logging
 from elasticsearch8.exceptions import NotFoundError, TransportError
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import ensure_list
+from curator.debug import debug, begin_end
 from curator.defaults import settings
 from curator.exceptions import (
     ActionError,
@@ -27,13 +29,22 @@ from curator.helpers.testers import verify_client_object
 from curator.helpers.utils import chunk_index_list, report_failure, to_csv
 from curator.validators.filter_functions import filterstructure
 
+logger = logging.getLogger(__name__)
+
 
 class IndexList:
     """IndexList class"""
 
-    def __init__(self, client, search_pattern='_all'):
+    def __init__(
+        self,
+        client,
+        search_pattern='*',
+        include_datastreams=False,
+        include_hidden=False,
+        include_kibana=False,
+        include_system=False,
+    ):
         verify_client_object(client)
-        self.loggit = logging.getLogger('curator.indexlist')
         #: An :py:class:`~.elasticsearch.Elasticsearch` client object passed from
         #: param ``client``
         self.client = client
@@ -48,14 +59,20 @@ class IndexList:
         #: All indices in the cluster at instance creation time.
         #: **Type:** :py:class:`list`
         self.all_indices = []
-        self.__get_indices(search_pattern)
+        self.__get_indices(
+            search_pattern,
+            include_datastreams,
+            include_hidden,
+            include_kibana,
+            include_system,
+        )
         self.age_keyfield = None
 
     def __actionable(self, idx):
-        self.loggit.debug('Index %s is actionable and remains in the list.', idx)
+        debug.lv3('Index %s is actionable and remains in the list.', idx)
 
     def __not_actionable(self, idx):
-        self.loggit.debug('Index %s is not actionable, removing from list.', idx)
+        debug.lv3('Index %s is not actionable, removing from list.', idx)
         self.indices.remove(idx)
 
     def __excludify(self, condition, exclude, index, msg=None):
@@ -74,15 +91,29 @@ class IndexList:
                 text = "Removed from actionable list"
                 self.__not_actionable(index)
         if msg:
-            self.loggit.debug('%s: %s', text, msg)
+            debug.lv3('%s: %s', text, msg)
 
-    def __get_indices(self, pattern):
+    def __get_indices(
+        self,
+        pattern,
+        include_datastreams,
+        include_hidden,
+        include_kibana,
+        include_system,
+    ):
         """
         Pull all indices into ``all_indices``, then populate ``indices`` and
         ``index_info``
         """
-        self.loggit.debug('Getting indices matching search_pattern: "%s"', pattern)
-        self.all_indices = get_indices(self.client, search_pattern=pattern)
+        debug.lv2('Getting indices matching search_pattern: "%s"', pattern)
+        self.all_indices = get_indices(
+            self.client,
+            search_pattern=pattern,
+            include_datastreams=include_datastreams,
+            include_hidden=include_hidden,
+            include_kibana=include_kibana,
+            include_system=include_system,
+        )
         self.indices = self.all_indices[:]
         # if self.indices:
         #     for index in self.indices:
@@ -93,7 +124,7 @@ class IndexList:
         Ensure that ``index`` is a key in ``index_info``. If not, create a
         sub-dictionary structure under that key.
         """
-        self.loggit.debug('Building preliminary index metadata for %s', index)
+        debug.lv3('Building preliminary index metadata for %s', index)
         if index not in self.index_info:
             self.index_info[index] = self.__zero_values()
 
@@ -123,8 +154,8 @@ class IndexList:
         Remove missing index found in ``err`` from self.indices and return that name
         """
         missing = err.info['error']['index']
-        self.loggit.warning('Index was initiallly present, but now is not: %s', missing)
-        self.loggit.debug('Removing %s from active IndexList', missing)
+        logger.warning('Index was initiallly present, but now is not: %s', missing)
+        debug.lv3('Removing %s from active IndexList', missing)
         self.indices.remove(missing)
         return missing
 
@@ -153,6 +184,7 @@ class IndexList:
             'indices'
         ]
 
+    @begin_end()
     def _bulk_queries(self, data, exec_func):
         slice_number = 10
         query_result = {}
@@ -161,7 +193,7 @@ class IndexList:
             if round(len(data) / slice_number) > 0
             else 1
         )
-        self.loggit.debug("Bulk Queries - number requests created: %s", loop_number)
+        debug.lv4("Bulk Queries - number requests created: %s", loop_number)
         for num in range(0, loop_number):
             if num == (loop_number - 1):
                 data_sliced = data[num * slice_number :]
@@ -170,6 +202,7 @@ class IndexList:
             query_result.update(exec_func(data_sliced))
         return query_result
 
+    @begin_end()
     def mitigate_alias(self, index):
         """
         Mitigate when an alias is detected instead of an index name
@@ -181,8 +214,7 @@ class IndexList:
         :returns: No return value:
         :rtype: None
         """
-        self.loggit.debug('BEGIN mitigate_alias')
-        self.loggit.debug(
+        debug.lv3(
             'Correcting an instance where an alias name points to index "%s"', index
         )
         data = self.client.indices.get(index=index)
@@ -190,46 +222,40 @@ class IndexList:
         if aliases:
             for alias in aliases:
                 if alias in self.indices:
-                    self.loggit.warning(
-                        'Removing alias "%s" from IndexList.indices', alias
-                    )
+                    logger.warning('Removing alias "%s" from IndexList.indices', alias)
                     self.indices.remove(alias)
                 if alias in list(self.index_info):
-                    self.loggit.warning(
+                    logger.warning(
                         'Removing alias "%s" from IndexList.index_info', alias
                     )
                     del self.index_info[alias]
-        self.loggit.debug('Adding "%s" to IndexList.indices', index)
+        debug.lv3('Adding "%s" to IndexList.indices', index)
         self.indices.append(index)
-        self.loggit.debug(
-            'Adding preliminary metadata for "%s" to IndexList.index_info', index
-        )
+        debug.lv3('Adding preliminary metadata for "%s" to IndexList.index_info', index)
         self.__build_index_info(index)
-        self.loggit.debug('END mitigate_alias')
 
+    @begin_end()
     def alias_index_check(self, data):
         """
         Check each index in data to see if it's an alias.
         """
-        # self.loggit.debug('BEGIN alias_index_check')
+        # logger.debug('BEGIN alias_index_check')
         working_list = data[:]
         for entry in working_list:
             if self.client.indices.exists_alias(name=entry):
                 index = list(self.client.indices.get_alias(name=entry).keys())[0]
-                self.loggit.warning(
-                    '"%s" is actually an alias for index "%s"', entry, index
-                )
+                logger.warning('"%s" is actually an alias for index "%s"', entry, index)
                 self.mitigate_alias(index)
                 # The mitigate_alias step ensures that the class ivars are handled
                 # properly. The following ensure that we pass back a modified list
                 data.remove(entry)
                 data.append(index)
-        # self.loggit.debug('END alias_index_check')
+        # logger.debug('END alias_index_check')
         return data
 
+    @begin_end()
     def indices_exist(self, data, exec_func):
         """Check if indices exist. If one doesn't, remove it. Loop until all exist"""
-        self.loggit.debug('BEGIN indices_exist')
         checking = True
         working_list = {}
         verified_data = self.alias_index_check(data)
@@ -245,18 +271,18 @@ class IndexList:
                         'Huge Payload 413 Err - Trying to get information via '
                         'multiple requests'
                     )
-                    self.loggit.debug(msg)
+                    debug.lv5(msg)
                     working_list.update(self._bulk_queries(verified_data, exec_func))
             checking = False
-        # self.loggit.debug('END indices_exist')
+        # logger.debug('END indices_exist')
         return working_list
 
+    @begin_end()
     def data_getter(self, data, exec_func):
         """
         Function that prevents unnecessary code repetition for different data
         getter methods
         """
-        self.loggit.debug('BEGIN data_getter')
         checking = True
         while checking:
             working_list = self.indices_exist(data, exec_func)
@@ -265,7 +291,7 @@ class IndexList:
                     try:
                         sii = self.index_info[index]
                     except KeyError:
-                        self.loggit.warning(
+                        logger.warning(
                             'Index %s was not present at IndexList initialization, '
                             ' and may be behind an alias',
                             index,
@@ -280,13 +306,14 @@ class IndexList:
                             continue
                     yield sii, working_list[index], index
             checking = False
-        # self.loggit.debug('END data_getter')
+        # logger.debug('END data_getter')
 
+    @begin_end()
     def population_check(self, index, key):
         """Verify that key is in self.index_info[index], and that it is populated"""
         retval = True
-        # self.loggit.debug('BEGIN population_check')
-        # self.loggit.debug('population_check: %s, %s', index, key)
+        # logger.debug('BEGIN population_check')
+        # logger.debug('population_check: %s, %s', index, key)
         if index not in self.index_info:
             # This is just in case the index was somehow not populated
             self.__build_index_info(index)
@@ -294,12 +321,13 @@ class IndexList:
             self.index_info[index][key] = self.__zero_values()[key]
         if self.index_info[index][key] == self.__zero_values()[key]:
             retval = False
-        # self.loggit.debug('END population_check')
+        # logger.debug('END population_check')
         return retval
 
+    @begin_end()
     def needs_data(self, indices, fields):
         """Check for data population in self.index_info"""
-        self.loggit.debug('Indices: %s, Fields: %s', indices, fields)
+        debug.lv3('Indices: %s, Fields: %s', indices, fields)
         needful = []
         working_list = self.indices_exist(indices, self._get_indices_settings)
         for idx in working_list:
@@ -312,11 +340,12 @@ class IndexList:
                 # All values are the default/zero
                 needful.append(idx)
         if fields == ['state']:
-            self.loggit.debug('Always check open/close for all passed indices')
+            debug.lv3('Always check open/close for all passed indices')
             needful = list(working_list.keys())
-        self.loggit.debug('These indices need data in index_info: %s', needful)
+        debug.lv3('These indices need data in index_info: %s', needful)
         return needful
 
+    @begin_end()
     def get_index_settings(self):
         """
         For each index in self.indices, populate ``index_info`` with:
@@ -325,7 +354,6 @@ class IndexList:
             number_of_shards
             routing information (if present)
         """
-        self.loggit.debug('Getting index settings -- BEGIN')
         self.empty_list_check()
         fields = ['age', 'number_of_replicas', 'number_of_shards', 'routing']
         for lst in chunk_index_list(self.indices):
@@ -347,8 +375,8 @@ class IndexList:
                 sii['number_of_shards'] = wli['settings']['index']['number_of_shards']
                 if 'routing' in wli['settings']['index']:
                     sii['routing'] = wli['settings']['index']['routing']
-        self.loggit.debug('Getting index settings -- END')
 
+    @begin_end()
     def get_index_state(self):
         """
         For each index in self.indices, populate ``index_info`` with:
@@ -357,7 +385,6 @@ class IndexList:
 
         from the cat API
         """
-        self.loggit.debug('Getting index state -- BEGIN')
         self.empty_list_check()
         fields = ['state']
         for lst in chunk_index_list(self.indices):
@@ -372,21 +399,20 @@ class IndexList:
                 try:
                     self.index_info[entry['index']]['state'] = entry['status']
                 except KeyError:
-                    self.loggit.warning(
+                    logger.warning(
                         'Index %s was not present at IndexList initialization, '
                         'and may be behind an alias',
                         entry['index'],
                     )
                     self.mitigate_alias(entry['index'])
                     self.index_info[entry['index']]['state'] = entry['status']
-        # self.loggit.debug('Getting index state -- END')
 
+    @begin_end()
     def get_index_stats(self):
         """
         Populate ``index_info`` with index ``size_in_bytes``,
         ``primary_size_in_bytes`` and doc count information for each index.
         """
-        self.loggit.debug('Getting index stats -- BEGIN')
         self.empty_list_check()
         fields = ['size_in_bytes', 'docs', 'primary_size_in_bytes']
         # This ensures that the index state is populated
@@ -419,20 +445,19 @@ class IndexList:
                             f'Index: {index}  Size: {byte_size(size)}  Docs: {docs} '
                             f'PrimarySize: {byte_size(primary_size)}'
                         )
-                        self.loggit.debug(msg)
+                        debug.lv3(msg)
                         sii['size_in_bytes'] = size
                         sii['docs'] = docs
                         sii['primary_size_in_bytes'] = primary_size
                     except KeyError:
                         msg = f'Index stats missing for "{index}" -- might be closed'
-                        self.loggit.warning(msg)
-        # self.loggit.debug('Getting index stats -- END')
+                        logger.warning(msg)
 
+    @begin_end()
     def get_segment_counts(self):
         """
         Populate ``index_info`` with segment information for each index.
         """
-        self.loggit.debug('Getting index segment counts')
         self.empty_list_check()
         for lst in chunk_index_list(self.indices):
             for sii, wli, _ in self.data_getter(lst, self._get_indices_segments):
@@ -443,11 +468,13 @@ class IndexList:
                         segmentcount += shards[shardnum][shard]['num_search_segments']
                 sii['segments'] = segmentcount
 
+    @begin_end()
     def empty_list_check(self):
         """Raise :py:exc:`~.curator.exceptions.NoIndices` if ``indices`` is empty"""
-        self.loggit.debug('Checking for empty list')
         if not self.indices:
-            raise NoIndices('index_list object is empty.')
+            msg = 'IndexList object is empty. No indices to act on.'
+            debug.lv1(msg)
+            raise NoIndices(msg)
 
     def working_list(self):
         """
@@ -456,9 +483,10 @@ class IndexList:
         """
         # Copy by value, rather than reference to prevent list stomping during
         # iterations
-        self.loggit.debug('Generating working list of indices')
+        debug.lv5('Generating working list of indices')
         return self.indices[:]
 
+    @begin_end()
     def _get_name_based_ages(self, timestring):
         """
         Add indices to ``index_info`` based on the age as indicated by the index
@@ -467,7 +495,6 @@ class IndexList:
         :param timestring: An :py:func:`time.strftime` pattern
         """
         # Check for empty list before proceeding here to prevent non-iterable condition
-        self.loggit.debug('Getting ages of indices by "name"')
         self.empty_list_check()
         tstr = TimestringSearch(timestring)
         for index in self.working_list():
@@ -479,9 +506,10 @@ class IndexList:
                     f'Timestring {timestring} was not found in index {index}. '
                     f'Removing from actionable list'
                 )
-                self.loggit.debug(msg)
+                debug.lv2(msg)
                 self.indices.remove(index)
 
+    @begin_end()
     def _get_field_stats_dates(self, field='@timestamp'):
         """
         Add indices to ``index_info`` based on the values the queries return, as
@@ -490,13 +518,13 @@ class IndexList:
         :param field: The field with the date value.  The field must be mapped in
             elasticsearch as a date datatype. Default: ``@timestamp``
         """
-        self.loggit.debug('Cannot query closed indices. Omitting any closed indices.')
+        debug.lv3('Cannot query closed indices. Omitting any closed indices.')
         self.filter_closed()
-        self.loggit.debug(
+        debug.lv3(
             'Cannot use field_stats with empty indices. Omitting any empty indices.'
         )
         self.filter_empty()
-        self.loggit.debug(
+        debug.lv3(
             'Getting index date by querying indices for min & max value of %s field',
             field,
         )
@@ -509,20 +537,21 @@ class IndexList:
                     'max': {'max': {'field': field}},
                 }
                 response = self.client.search(index=index, size=0, aggs=aggs)
-                self.loggit.debug('RESPONSE: %s', response)
+                debug.lv5('RESPONSE: %s', response)
                 if response:
                     try:
                         res = response['aggregations']
-                        self.loggit.debug('res: %s', res)
+                        logger.debug('res: %s', res)
                         data = self.index_info[index]['age']
                         data['min_value'] = fix_epoch(res['min']['value'])
                         data['max_value'] = fix_epoch(res['max']['value'])
-                        self.loggit.debug('data: %s', data)
+                        debug.lv5('data: %s', data)
                     except KeyError as exc:
                         raise ActionError(
                             f'Field "{field}" not found in index "{index}"'
                         ) from exc
 
+    @begin_end()
     def _calculate_ages(
         self, source=None, timestring=None, field=None, stats_result=None
     ):
@@ -567,6 +596,7 @@ class IndexList:
                 f'"field_stats".'
             )
 
+    @begin_end()
     def _sort_by_age(self, index_list, reverse=True):
         """
         Take a list of indices and sort them by date.
@@ -603,6 +633,7 @@ class IndexList:
         sorted_tuple = sorted(temp_tuple, key=lambda k: k[1], reverse=reverse)
         return [x[0] for x in sorted_tuple]
 
+    @begin_end()
     def filter_by_regex(self, kind=None, value=None, exclude=False):
         """
         Match indices by regular expression (pattern).
@@ -617,7 +648,6 @@ class IndexList:
             indices from ``indices``. If ``exclude=False``, then only matching
             indices will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering indices by regex')
         if kind not in ['regex', 'prefix', 'suffix', 'timestring']:
             raise ValueError(f'{kind}: Invalid value for kind')
         # Stop here if None or empty value, but zero is okay
@@ -634,13 +664,14 @@ class IndexList:
         self.empty_list_check()
         pattern = re.compile(regex)
         for index in self.working_list():
-            self.loggit.debug('Filter by regex: Index: %s', index)
+            debug.lv3('Filter by regex: Index: %s', index)
             match = pattern.search(index)
             if match:
                 self.__excludify(True, exclude, index)
             else:
                 self.__excludify(False, exclude, index)
 
+    @begin_end()
     def filter_by_age(
         self,
         source='name',
@@ -680,7 +711,6 @@ class IndexList:
             indices from ``indices``. If ``exclude`` is `False`, then only matching
             indices will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering indices by age')
         # Get timestamp point of reference, por
         por = get_point_of_reference(unit, unit_count, epoch)
         if not direction:
@@ -692,17 +722,17 @@ class IndexList:
         self._calculate_ages(
             source=source, timestring=timestring, field=field, stats_result=stats_result
         )
+        unit_count_matcher = None
         if unit_count_pattern:
             try:
-                unit_count_matcher = re.compile(unit_count_pattern)
+                unit_count_matcher = re.compile(unit_count_pattern)  # type: ignore
             # pylint: disable=broad-except
             except Exception as exc:
                 # We got an illegal regex, so won't be able to match anything
-                self.loggit.error(
+                logger.error(
                     'Regular expression failure. Will not match unit count. Error: %s',
                     exc,
                 )
-                unit_count_matcher = None
         for index in self.working_list():
             try:
                 remove_this_index = False
@@ -713,7 +743,7 @@ class IndexList:
                 #         f'0, meaning there is no associated date. Removing from '
                 #         f'the actionable list.'
                 #     )
-                #     self.loggit.debug(msg)
+                #     logger.debug(msg)
                 #     self.indices.remove(index)
                 #     continue
                 msg = (
@@ -727,12 +757,12 @@ class IndexList:
                         f'unit_count_pattern is set, trying to match pattern to '
                         f'index "{index}"'
                     )
-                    self.loggit.debug(msg)
+                    debug.lv3(msg)
                     unit_count_from_index = get_unit_count_from_name(
                         index, unit_count_matcher
                     )
                     if unit_count_from_index:
-                        self.loggit.debug(
+                        debug.lv3(
                             'Pattern matched, applying unit_count of  "%s"',
                             unit_count_from_index,
                         )
@@ -744,7 +774,7 @@ class IndexList:
                             f'based on unit_count of {unit_count_from_index} from '
                             f'index name'
                         )
-                        self.loggit.debug(msg)
+                        debug.lv3(msg)
                     elif unit_count == -1:
                         # Unable to match pattern and unit_count is -1, meaning no
                         # fallback, so this index is removed from the list
@@ -752,7 +782,7 @@ class IndexList:
                             f'Unable to match pattern and no fallback value set. '
                             f'Removing index "{index}" from actionable list'
                         )
-                        self.loggit.debug(msg)
+                        debug.lv3(msg)
                         remove_this_index = True
                         adjustedpor = por
                         # necessary to avoid exception if the first index is excluded
@@ -760,7 +790,7 @@ class IndexList:
                         # Unable to match the pattern and unit_count is set, so
                         # fall back to using unit_count for determining whether
                         # to keep this index in the list
-                        self.loggit.debug(
+                        debug.lv3(
                             'Unable to match pattern using fallback value of "%s"',
                             unit_count,
                         )
@@ -777,9 +807,10 @@ class IndexList:
                     f'Index "{index}" does not meet provided criteria. '
                     f'Removing from list.'
                 )
-                self.loggit.debug(msg)
+                debug.lv3(msg)
                 self.indices.remove(index)
 
+    @begin_end()
     def filter_by_space(
         self,
         disk_space=None,
@@ -834,7 +865,6 @@ class IndexList:
             indices from ``indices``. If ``exclude=False``, then only matching
             indices will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering indices by disk space')
         # Ensure that disk_space is a float
         if not disk_space:
             raise MissingArgument('No value for "disk_space" provided')
@@ -852,7 +882,7 @@ class IndexList:
             'Cannot get disk usage info from closed indices. Omitting any '
             'closed indices.'
         )
-        self.loggit.debug(msg)
+        debug.lv3(msg)
         self.filter_closed()
         if use_age:
             self._calculate_ages(
@@ -862,7 +892,7 @@ class IndexList:
                 stats_result=stats_result,
             )
             # Using default value of reverse=True in self._sort_by_age()
-            self.loggit.debug('SORTING BY AGE')
+            debug.lv5('SORTING BY AGE')
             sorted_indices = self._sort_by_age(self.working_list())
         else:
             # Default to sorting by index name
@@ -878,6 +908,7 @@ class IndexList:
             elif threshold_behavior == 'less_than':
                 self.__excludify((disk_usage < disk_limit), exclude, index, msg)
 
+    @begin_end()
     def filter_kibana(self, exclude=True):
         """
         Match any index named ``.kibana*`` in ``indices``. Older releases addressed
@@ -887,7 +918,6 @@ class IndexList:
             indices from ``indices``. If ``exclude=False``, then only matching
             indices will be kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering kibana indices')
         self.empty_list_check()
         for index in self.working_list():
             pattern = re.compile(r'^\.kibana.*$')
@@ -896,6 +926,7 @@ class IndexList:
             else:
                 self.__excludify(False, exclude, index)
 
+    @begin_end()
     def filter_forceMerged(self, max_num_segments=None, exclude=True):
         """
         Match any index which has ``max_num_segments`` per shard or fewer in the
@@ -906,10 +937,9 @@ class IndexList:
             indices from ``indices``. If ``exclude=False``, then only matching
             indices will be kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering forceMerged indices')
         if not max_num_segments:
             raise MissingArgument('Missing value for "max_num_segments"')
-        self.loggit.debug(
+        debug.lv3(
             'Cannot get segment count of closed indices. Omitting any closed indices.'
         )
         # This filter requires the index state (open/close), and index settings.
@@ -929,6 +959,7 @@ class IndexList:
             expected_count = (shards + (shards * replicas)) * max_num_segments
             self.__excludify((segments <= expected_count), exclude, index, msg)
 
+    @begin_end()
     def filter_closed(self, exclude=True):
         """
         Filter out closed indices from ``indices``
@@ -937,17 +968,15 @@ class IndexList:
             indices from ``indices``. If ``exclude=False``, then only matching
             indices will be kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering closed indices')
         # This filter requires index state (open/close)
         self.get_index_state()
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['state'] == 'close'
-            self.loggit.debug(
-                'Index %s state: %s', index, self.index_info[index]['state']
-            )
+            debug.lv3('Index %s state: %s', index, self.index_info[index]['state'])
             self.__excludify(condition, exclude, index)
 
+    @begin_end()
     def filter_empty(self, exclude=True):
         """
         Filter indices with a document count of zero. Indices that are closed
@@ -958,7 +987,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering empty indices')
         # This index requires index state (open/close) and index stats
         self.get_index_state()
         self.get_index_stats()
@@ -966,11 +994,10 @@ class IndexList:
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['docs'] == 0
-            self.loggit.debug(
-                'Index %s doc count: %s', index, self.index_info[index]['docs']
-            )
+            debug.lv3('Index %s doc count: %s', index, self.index_info[index]['docs'])
             self.__excludify(condition, exclude, index)
 
+    @begin_end()
     def filter_opened(self, exclude=True):
         """
         Filter out opened indices from ``indices``
@@ -979,17 +1006,15 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering open indices')
         # This filter requires index state (open/close)
         self.get_index_state()
         self.empty_list_check()
         for index in self.working_list():
             condition = self.index_info[index]['state'] == 'open'
-            self.loggit.debug(
-                'Index %s state: %s', index, self.index_info[index]['state']
-            )
+            debug.lv3('Index %s state: %s', index, self.index_info[index]['state'])
             self.__excludify(condition, exclude, index)
 
+    @begin_end()
     def filter_allocated(
         self, key=None, value=None, allocation_type='require', exclude=True
     ):
@@ -1004,7 +1029,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is `T`rue`
         """
-        self.loggit.debug('Filtering indices with shard routing allocation rules')
         if not key:
             raise MissingArgument('No value for "key" provided')
         if not value:
@@ -1037,8 +1061,9 @@ class IndexList:
 
     def filter_none(self):
         """The legendary NULL filter"""
-        self.loggit.debug('"None" filter selected.  No filtering will be done.')
+        debug.lv1('"None" filter selected.  No filtering will be done.')
 
+    @begin_end()
     def filter_by_alias(self, aliases=None, exclude=False):
         """
         Match indices which are associated with the alias or list of aliases
@@ -1051,7 +1076,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering indices matching aliases: "%s"', aliases)
         if not aliases:
             raise MissingArgument('No value for "aliases" provided')
         aliases = ensure_list(aliases)
@@ -1064,7 +1088,7 @@ class IndexList:
                         index=to_csv(lst), name=to_csv(aliases)
                     ).keys()
                 )
-                self.loggit.debug('has_alias: %s', has_alias)
+                debug.lv3('has_alias: %s', has_alias)
             except NotFoundError:
                 # if we see the NotFoundError, we need to set working_list to {}
                 has_alias = []
@@ -1078,6 +1102,7 @@ class IndexList:
                 msg = f'{index} {isness} associated with aliases: {aliases}'
                 self.__excludify(condition, exclude, index, msg)
 
+    @begin_end()
     def filter_by_count(
         self,
         count=None,
@@ -1133,7 +1158,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering indices by count')
         if not count:
             raise MissingArgument('No value for "count" provided')
         # This filter requires index state (open/close) and index settings
@@ -1188,7 +1212,7 @@ class IndexList:
         for group in groups:
             if use_age:
                 if source != 'name':
-                    self.loggit.warning(
+                    logger.warning(
                         'Cannot get age information from closed indices unless '
                         'source="name".  Omitting any closed indices.'
                     )
@@ -1211,6 +1235,7 @@ class IndexList:
                 self.__excludify(condition, exclude, index, msg)
                 idx += 1
 
+    @begin_end()
     def filter_by_shards(
         self, number_of_shards=None, shard_filter_behavior='greater_than', exclude=False
     ):
@@ -1230,7 +1255,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug("Filtering indices by number of shards")
         if not number_of_shards:
             raise MissingArgument('No value for "number_of_shards" provided')
         if shard_filter_behavior not in [
@@ -1254,7 +1278,7 @@ class IndexList:
         self.get_index_settings()
         self.empty_list_check()
         for index in self.working_list():
-            self.loggit.debug('Filter by number of shards: Index: %s', index)
+            debug.lv3('Filter by number of shards: Index: %s', index)
             if shard_filter_behavior == 'greater_than':
                 condition = (
                     int(self.index_info[index]['number_of_shards']) > number_of_shards
@@ -1277,6 +1301,7 @@ class IndexList:
                 )
             self.__excludify(condition, exclude, index)
 
+    @begin_end()
     def filter_period(
         self,
         period_type='relative',
@@ -1336,7 +1361,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering indices by period')
         if period_type not in ['absolute', 'relative']:
             raise ValueError(
                 f'Unacceptable value: {period_type} -- "period_type" must be either '
@@ -1365,8 +1389,9 @@ class IndexList:
                     )
         # This filter requires index settings
         self.get_index_settings()
+        start = end = 0  # for mypy
         try:
-            start, end = func(*args, **kwgs)
+            start, end = func(*args, **kwgs)  # type: ignore
         # pylint: disable=broad-except
         except Exception as exc:
             report_failure(exc)
@@ -1397,12 +1422,13 @@ class IndexList:
                     inrange = (age >= start) and (age <= end)
                 self.__excludify(inrange, exclude, index, msg)
             except KeyError:
-                self.loggit.debug(
+                debug.lv3(
                     'Index "%s" does not meet provided criteria. Removing from list.',
                     index,
                 )
                 self.indices.remove(index)
 
+    @begin_end()
     def filter_ilm(self, exclude=True):
         """
         Match indices that have the setting ``index.lifecycle.name``
@@ -1411,10 +1437,9 @@ class IndexList:
             ``indices``. If ``exclude=False``, then only matching indices will be
             kept in ``indices``. Default is ``True``
         """
-        self.loggit.debug('Filtering indices with index.lifecycle.name')
         index_lists = chunk_index_list(self.indices)
         if index_lists == [['']]:
-            self.loggit.debug('Empty working list. No ILM indices to filter.')
+            debug.lv3('Empty working list. No ILM indices to filter.')
             return
         for lst in index_lists:
             working_list = self._get_indices_settings(lst)
@@ -1429,6 +1454,7 @@ class IndexList:
                         msg = f'index.lifecycle.name is not set for index {index}'
                     self.__excludify(has_ilm, exclude, index, msg)
 
+    @begin_end()
     def iterate_filters(self, filter_dict):
         """
         Iterate over the filters defined in ``config`` and execute them.
@@ -1449,34 +1475,34 @@ class IndexList:
                 }
 
         """
-        self.loggit.debug('Iterating over a list of filters')
         # Make sure we actually _have_ filters to act on
         if 'filters' not in filter_dict or len(filter_dict['filters']) < 1:
-            self.loggit.info('No filters in config.  Returning unaltered object.')
+            logger.info('No filters in config.  Returning unaltered object.')
             return
-        self.loggit.debug('All filters: %s', filter_dict['filters'])
+        debug.lv3('All filters: %s', filter_dict['filters'])
         for fil in filter_dict['filters']:
-            self.loggit.debug('Top of the loop: %s', self.indices)
-            self.loggit.debug('Un-parsed filter args: %s', fil)
+            debug.lv5('Top of the loop: %s', self.indices)
+            debug.lv5('Un-parsed filter args: %s', fil)
             # Make sure we got at least this much in the configuration
             chk = SchemaCheck(
                 fil, filterstructure(), 'filter', 'IndexList.iterate_filters'
             ).result()
             msg = f'Parsed filter args: {chk}'
-            self.loggit.debug(msg)
+            debug.lv5(msg)
             method = self.__map_method(fil['filtertype'])
             del fil['filtertype']
             # If it's a filtertype with arguments, update the defaults with the
             # provided settings.
             if fil:
-                self.loggit.debug('Filter args: %s', fil)
-                self.loggit.debug('Pre-instance: %s', self.indices)
+                debug.lv5('Filter args: %s', fil)
+                debug.lv3('Pre-instance: %s', self.indices)
                 method(**fil)
-                self.loggit.debug('Post-instance: %s', self.indices)
+                debug.lv3('Post-instance: %s', self.indices)
             else:
                 # Otherwise, it's a settingless filter.
                 method()
 
+    @begin_end()
     def filter_by_size(
         self,
         size_threshold=None,
@@ -1501,7 +1527,6 @@ class IndexList:
             from ``indices``. If ``exclude=False``, then only matching indices
             will be kept in ``indices``. Default is ``False``
         """
-        self.loggit.debug('Filtering indices by index size')
         # Ensure that disk_space is a float
         if not size_threshold:
             raise MissingArgument('No value for "size_threshold" provided')
@@ -1516,7 +1541,7 @@ class IndexList:
             'Cannot get disk usage info from closed indices. '
             'Omitting any closed indices.'
         )
-        self.loggit.debug(msg)
+        debug.lv3(msg)
         # This filter requires index state (open/close) and index stats
         self.get_index_state()
         self.get_index_stats()

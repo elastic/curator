@@ -17,7 +17,10 @@ from es_client.helpers.utils import option_wrapper, prune_nones
 from curator.exceptions import ClientException
 from curator.classdef import ActionsFile
 from curator.defaults.settings import (
+    CLICK_DEBUG,
     CLICK_DRYRUN,
+    VERSION_MAX,
+    VERSION_MIN,
     default_config_file,
     footer,
     snapshot_actions,
@@ -25,6 +28,9 @@ from curator.defaults.settings import (
 from curator.exceptions import NoIndices, NoSnapshots
 from curator.helpers.testers import ilm_policy_check
 from curator._version import __version__
+from curator.debug import debug
+
+logger = logging.getLogger(__name__)
 
 ONOFF = {'on': '', 'off': 'no-'}
 click_opt_wrap = option_wrapper()
@@ -47,7 +53,6 @@ def ilm_action_skip(client, action_def):
         use :py:class:`~.curator.IndexList`
     :rtype: bool
     """
-    logger = logging.getLogger(__name__)
     if not action_def.allow_ilm and action_def.action not in snapshot_actions():
         if action_def.action == 'rollover':
             if ilm_policy_check(client, action_def.options['name']):
@@ -72,7 +77,6 @@ def exception_handler(action_def, err):
     :type action_def: :py:class:`~.curator.classdef.ActionDef`
     :type err: :py:exc:`Exception`
     """
-    logger = logging.getLogger(__name__)
     if isinstance(err, (NoIndices, NoSnapshots)):
         if action_def.iel:
             logger.info(
@@ -113,12 +117,10 @@ def process_action(client, action_def, dry_run=False):
     :type action_def: :py:class:`~.curator.classdef.ActionDef`
     :rtype: None
     """
-    logger = logging.getLogger(__name__)
-    logger.debug('Configuration dictionary: %s', action_def.action_dict)
+    debug.lv5('Configuration dictionary: %s', action_def.action_dict)
     mykwargs = {}
-    search_pattern = '_all'
 
-    logger.debug('INITIAL Action kwargs: %s', mykwargs)
+    debug.lv5('INITIAL Action kwargs: %s', mykwargs)
     # Add some settings to mykwargs...
     if action_def.action == 'delete_indices':
         mykwargs['master_timeout'] = 30
@@ -127,28 +129,35 @@ def process_action(client, action_def, dry_run=False):
     mykwargs.update(prune_nones(action_def.options))
 
     # Pop out the search_pattern option, if present.
-    if 'search_pattern' in mykwargs:
-        search_pattern = mykwargs.pop('search_pattern')
+    ptrn = mykwargs.pop('search_pattern', '*')
+    hidn = mykwargs.pop('include_hidden', False)
+    kbna = mykwargs.pop('include_kibana', False)
+    sysm = mykwargs.pop('include_system', False)
+    dstr = mykwargs.pop('include_datastreams', False)
 
-    logger.debug('Action kwargs: %s', mykwargs)
-    logger.debug('Post search_pattern Action kwargs: %s', mykwargs)
+    debug.lv5('Action kwargs: %s', mykwargs)
+    debug.lv5('Post search_pattern & include_hidden Action kwargs: %s', mykwargs)
 
     # Set up the action
-    logger.debug('Running "%s"', action_def.action.upper())
+    debug.lv5('Running "%s"', action_def.action.upper())
     if action_def.action == 'alias':
         # Special behavior for this action, as it has 2 index lists
         action_def.instantiate('action_cls', **mykwargs)
-        action_def.instantiate('alias_adds', client)
-        action_def.instantiate('alias_removes', client)
+        action_def.instantiate(
+            'alias_adds', client, search_pattern=ptrn, include_hidden=hidn
+        )
+        action_def.instantiate(
+            'alias_removes', client, search_pattern=ptrn, include_hidden=hidn
+        )
         if 'remove' in action_def.action_dict:
-            logger.debug('Removing indices from alias "%s"', action_def.options['name'])
+            debug.lv1('Removing indices from alias "%s"', action_def.options['name'])
             action_def.alias_removes.iterate_filters(action_def.action_dict['remove'])
             action_def.action_cls.remove(
                 action_def.alias_removes,
                 warn_if_no_indices=action_def.options['warn_if_no_indices'],
             )
         if 'add' in action_def.action_dict:
-            logger.debug('Adding indices to alias "%s"', action_def.options['name'])
+            debug.lv1('Adding indices to alias "%s"', action_def.options['name'])
             action_def.alias_adds.iterate_filters(action_def.action_dict['add'])
             action_def.action_cls.add(
                 action_def.alias_adds,
@@ -163,15 +172,23 @@ def process_action(client, action_def, dry_run=False):
                 'list_obj', client, repository=action_def.options['repository']
             )
         else:
-            action_def.instantiate('list_obj', client, search_pattern=search_pattern)
+            action_def.instantiate(
+                'list_obj',
+                client,
+                search_pattern=ptrn,
+                include_hidden=hidn,
+                include_kibana=kbna,
+                include_system=sysm,
+                include_datastreams=dstr,
+            )
         action_def.list_obj.iterate_filters({'filters': action_def.filters})
-        logger.debug('Pre Instantiation Action kwargs: %s', mykwargs)
+        debug.lv5(f'Pre Instantiation Action kwargs: {mykwargs}')
         action_def.instantiate('action_cls', action_def.list_obj, **mykwargs)
     # Do the action
     if dry_run:
         action_def.action_cls.do_dry_run()
     else:
-        logger.debug('Doing the action here.')
+        debug.lv3('Doing the action here.')
         action_def.action_cls.do_action()
 
 
@@ -183,11 +200,11 @@ def run(ctx: click.Context) -> None:
 
     Called by :py:func:`cli` to execute what was collected at the command-line
     """
-    logger = logging.getLogger(__name__)
-    logger.debug('action_file: %s', ctx.params['action_file'])
+
+    debug.lv5('action_file: %s', ctx.params['action_file'])
     all_actions = ActionsFile(ctx.params['action_file'])
-    for idx in sorted(list(all_actions.actions.keys())):
-        action_def = all_actions.actions[idx]
+    for idx in sorted(list(all_actions.actions.keys())):  # type: ignore
+        action_def = all_actions.actions[idx]  # type: ignore
         # Skip to next action if 'disabled'
         if action_def.disabled:
             logger.info(
@@ -197,7 +214,7 @@ def run(ctx: click.Context) -> None:
                 action_def.action,
             )
             continue
-        logger.info('Preparing Action ID: %s, "%s"', idx, action_def.action)
+        debug.lv1('Preparing Action ID: %s, "%s"', idx, action_def.action)
 
         # Override the timeout, if specified, otherwise use the default.
         if action_def.timeout_override:
@@ -206,10 +223,14 @@ def run(ctx: click.Context) -> None:
             ] = action_def.timeout_override
 
         # Create a client object for each action...
-        logger.info('Creating client object and testing connection')
+        debug.lv5('Creating client object and testing connection')
 
         try:
-            client = get_client(configdict=ctx.obj['configdict'])
+            client = get_client(
+                configdict=ctx.obj['configdict'],
+                version_max=VERSION_MAX,
+                version_min=VERSION_MIN,
+            )
         except ClientException as exc:
             # No matter where logging is set to go, make sure we dump these messages to
             # the CLI
@@ -217,10 +238,10 @@ def run(ctx: click.Context) -> None:
             click.echo(f'Exception: {exc}')
             sys.exit(1)
         except Exception as other:
-            logger.debug('Fatal exception encountered: %s', other)
+            debug.lv1('Fatal exception encountered: %s', other)
 
         # Filter ILM indices unless expressly permitted
-        if ilm_action_skip(client, action_def):
+        if ilm_action_skip(client, action_def):  # type: ignore
             continue
         #
         # Process the action
@@ -230,7 +251,7 @@ def run(ctx: click.Context) -> None:
         )
         try:
             logger.info(msg)
-            process_action(client, action_def, dry_run=ctx.params['dry_run'])
+            process_action(client, action_def, dry_run=ctx.params['dry_run'])  # type: ignore
         except Exception as err:
             exception_handler(action_def, err)
         logger.info('Action ID: %s, "%s" completed.', idx, action_def.action)
@@ -242,6 +263,7 @@ def run(ctx: click.Context) -> None:
     epilog=footer(__version__, tail='command-line.html'),
 )
 @options_from_dict(OPTION_DEFAULTS)
+@click_opt_wrap(*cli_opts('debug-level', settings=CLICK_DEBUG))
 @click_opt_wrap(*cli_opts('dry-run', settings=CLICK_DRYRUN))
 @click.argument('action_file', type=click.Path(exists=True), nargs=1)
 @click.version_option(__version__, '-v', '--version', prog_name="curator")
@@ -273,6 +295,7 @@ def cli(
     logfile,
     logformat,
     blacklist,
+    debug_level,
     dry_run,
     action_file,
 ):
@@ -295,5 +318,6 @@ def cli(
     ctx.obj['default_config'] = default_config_file()
     get_config(ctx)
     configure_logging(ctx)
+    debug.level = debug_level
     generate_configdict(ctx)
     run(ctx)

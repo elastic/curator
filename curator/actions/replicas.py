@@ -1,13 +1,21 @@
 """Index replica count action class"""
+
 import logging
+from curator.debug import begin_end, debug
 from curator.exceptions import MissingArgument
 from curator.helpers.testers import verify_index_list
 from curator.helpers.utils import chunk_index_list, report_failure, show_dry_run, to_csv
 from curator.helpers.waiters import wait_for_it
 
+logger = logging.getLogger(__name__)
+
+
 class Replicas:
     """Replica Action Class"""
-    def __init__(self, ilo, count=None, wait_for_completion=False, wait_interval=9, max_wait=-1):
+
+    def __init__(
+        self, ilo, count=None, wait_for_completion=False, wait_interval=9, max_wait=-1
+    ):
         """
         :param ilo: An IndexList Object
         :param count: The count of replicas per shard
@@ -28,7 +36,8 @@ class Replicas:
         elif not count:
             raise MissingArgument('Missing value for "count"')
 
-        #: The :py:class:`~.curator.indexlist.IndexList` object passed from param ``ilo``
+        #: The :py:class:`~.curator.indexlist.IndexList` object passed from
+        #: param ``ilo``
         self.index_list = ilo
         #: The :py:class:`~.elasticsearch.Elasticsearch` client object derived from
         #: :py:attr:`index_list`
@@ -41,27 +50,29 @@ class Replicas:
         self.wait_interval = wait_interval
         #: Object attribute that gets the value of param ``max_wait``.
         self.max_wait = max_wait
-        self.loggit = logging.getLogger('curator.actions.replicas')
 
     def do_dry_run(self):
         """Log what the output would be, but take no action."""
         show_dry_run(self.index_list, 'replicas', count=self.count)
 
+    @begin_end()
     def do_action(self):
         """
         Update ``number_of_replicas`` with :py:attr:`count` and
         :py:meth:`~.elasticsearch.client.IndicesClient.put_settings` to indices in
         :py:attr:`index_list`
         """
-        self.loggit.debug(
-            'Cannot get update replica count of closed indices. Omitting any closed indices.')
+        debug.lv3(
+            'Cannot get update replica count of closed indices. Omitting any '
+            'closed indices.'
+        )
         self.index_list.filter_closed()
         self.index_list.empty_list_check()
         msg = (
-            f'Setting the replica count to {self.count} for {len(self.index_list.indices)} '
-            f'indices: {self.index_list.indices}'
+            f'Setting the replica count to {self.count} for '
+            f'{len(self.index_list.indices)} indices: {self.index_list.indices}'
         )
-        self.loggit.info(msg)
+        debug.lv1(msg)
         try:
             index_lists = chunk_index_list(self.index_list.indices)
             for lst in index_lists:
@@ -70,12 +81,19 @@ class Replicas:
                 )
                 if self.wfc and self.count > 0:
                     msg = (
-                        f'Waiting for shards to complete replication for indices: {to_csv(lst)}')
-                    self.loggit.debug(msg)
-                    wait_for_it(
-                        self.client, 'replicas',
-                        wait_interval=self.wait_interval, max_wait=self.max_wait
+                        f'Waiting for shards to complete replication for indices: '
+                        f'{to_csv(lst)}'
                     )
+                    debug.lv3(msg)
+                    wait_for_it(
+                        self.client,
+                        'replicas',
+                        wait_interval=self.wait_interval,
+                        max_wait=self.max_wait,
+                    )
+            logger.info(
+                'Replica count updated for %s indices', len(self.index_list.indices)
+            )
         # pylint: disable=broad-except
         except Exception as err:
             report_failure(err)
