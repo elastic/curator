@@ -17,8 +17,13 @@ $ LC_ALL=en_US.utf8 curator_cli [ARGS]
 
 Be sure to substitute your unicode variant for en_US.utf8
 """
+import warnings
 import sys
 import click
+
+# Suppress urllib3 InsecureRequestWarning when verify_certs is disabled
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+
 from curator.singletons import curator_cli
 
 if __name__ == '__main__':

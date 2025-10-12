@@ -1,7 +1,11 @@
 """CLI module for curator_cli"""
 
+import warnings
 import click
 from es_client.defaults import SHOW_EVERYTHING
+
+# Suppress urllib3 InsecureRequestWarning when verify_certs is disabled
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 from es_client.helpers.config import (
     cli_opts,
     context_settings,

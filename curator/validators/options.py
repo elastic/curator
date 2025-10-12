@@ -76,16 +76,18 @@ def action_specific(action):
             option_defaults.year(),
             option_defaults.month(),
         ],
-        'thaw': [
-            option_defaults.start(),
-            option_defaults.end(),
-            option_defaults.retain(),
-            option_defaults.storage_class(),
-            option_defaults.enable_multiple_buckets(),
+        'status': [
         ],
-        'refreeze': [
-            option_defaults.thaw_set(),
-        ],
+        # 'thaw': [
+        #     option_defaults.start(),
+        #     option_defaults.end(),
+        #     option_defaults.retain(),
+        #     option_defaults.storage_class(),
+        #     option_defaults.enable_multiple_buckets(),
+        # ],
+        # 'refreeze': [
+        #     option_defaults.thaw_set(),
+        # ],
         'delete_indices': [
             option_defaults.search_pattern(),
         ],
