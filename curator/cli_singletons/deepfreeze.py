@@ -247,14 +247,24 @@ def rotate(
 
 
 @deepfreeze.command()
+@click.option(
+    "-l",
+    "--limit",
+    type=int,
+    default=None,
+    help="Limit display to the last N repositories (default: show all)",
+)
 @click.pass_context
 def status(
     ctx,
+    limit,
 ):
     """
     Show the status of deepfreeze
     """
-    manual_options = {}
+    manual_options = {
+        "limit": limit,
+    }
     action = CLIAction(
         ctx.info_name,
         ctx.obj["configdict"],
