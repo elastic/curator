@@ -25,6 +25,7 @@ from .utilities import (
     push_to_glacier,
     save_settings,
     unmount_repo,
+    update_repository_date_range,
 )
 
 CLASS_MAP = {

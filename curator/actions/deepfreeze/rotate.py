@@ -22,6 +22,7 @@ from curator.actions.deepfreeze.utilities import (
     push_to_glacier,
     save_settings,
     unmount_repo,
+    update_repository_date_range,
 )
 from curator.exceptions import RepositoryException
 from curator.s3client import s3_client_factory
@@ -117,49 +118,23 @@ class Rotate:
             self.client, self.settings.repo_name_prefix, mounted=True
         )
         self.loggit.debug("Found %s matching repos", len(repos))
-        # Now loop through the repos, updating the date range for each
+
+        # Update date range for each mounted repository
         for repo in repos:
             self.loggit.debug("Updating date range for %s", repo.name)
-            indices = get_all_indices_in_repo(self.client, repo.name)
-            self.loggit.debug("Checking %s indices for existence", len(indices))
-            filtered = []
-            for index in indices:
-                index = f"partial-{index}"
-                if self.client.indices.exists(index=index):
-                    filtered.append(index)
-            self.loggit.debug("Found %s indices still mounted", len(filtered))
-            if filtered:
-                earliest, latest = get_timestamp_range(self.client, filtered)
-                self.loggit.debug(
-                    "BDW: For repo %s: Earliest: %s, Latest: %s",
-                    repo.name,
-                    earliest,
-                    latest,
-                )
-                changed = False
-                if not repo.start or earliest < decode_date(repo.start):
-                    repo.start = earliest
-                    changed = True
-                if not repo.end or latest > decode_date(repo.end):
-                    repo.end = latest
-                    changed = True
-                if not dry_run and changed:
-                    query = {"query": {"term": {"name.keyword": repo.name}}}
-                    response = self.client.search(index=STATUS_INDEX, body=query)
-                    if response["hits"]["total"]["value"] > 0:
-                        self.loggit.debug("UDRR: Updating Repo %s", repo.name)
-                        self.client.update(
-                            index=STATUS_INDEX,
-                            id=response["hits"]["hits"][0]["_id"],
-                            body={"doc": repo.to_dict()},
-                        )
-                    else:
-                        self.loggit.debug("UDRR: Creating Repo %s", repo.name)
-                        self.client.index(index=STATUS_INDEX, body=repo.to_dict())
-                elif not changed:
-                    self.loggit.debug("No change to date range for %s", repo.name)
+
+            if dry_run:
+                self.loggit.info("DRY-RUN: Would update date range for %s", repo.name)
+                continue
+
+            # Use the shared utility function to update dates
+            # It handles multiple index naming patterns and persists automatically
+            updated = update_repository_date_range(self.client, repo)
+
+            if updated:
+                self.loggit.debug("Successfully updated date range for %s", repo.name)
             else:
-                self.loggit.debug("No update; no indices found for %s", repo.name)
+                self.loggit.debug("No date range update for %s", repo.name)
 
     def update_ilm_policies(self, dry_run=False) -> None:
         """
