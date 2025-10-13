@@ -8,6 +8,7 @@ from elasticsearch import Elasticsearch
 
 from curator.actions.deepfreeze.utilities import (
     check_restore_status,
+    get_all_indices_in_repo,
     get_matching_repos,
     get_settings,
 )
@@ -17,17 +18,19 @@ from curator.s3client import s3_client_factory
 class Cleanup:
     """
     The Cleanup action checks thawed repositories and unmounts them if their S3 objects
-    have reverted to Glacier storage.
+    have reverted to Glacier storage. It also deletes indices whose snapshots are only
+    in the repositories being cleaned up.
 
     When objects are restored from Glacier, they're temporarily available in Standard tier
     for a specified duration. After that duration expires, they revert to Glacier storage.
-    This action detects when thawed repositories have expired and unmounts them.
+    This action detects when thawed repositories have expired, unmounts them, and removes
+    any indices that were only backed up to those repositories.
 
     :param client: A client connection object
     :type client: Elasticsearch
 
     :methods:
-        do_action: Perform the cleanup operation.
+        do_action: Perform the cleanup operation (unmount repos and delete indices).
         do_dry_run: Perform a dry-run of the cleanup operation.
         do_singleton_action: Entry point for singleton CLI execution.
     """
@@ -42,9 +45,108 @@ class Cleanup:
 
         self.loggit.info("Deepfreeze Cleanup initialized")
 
+    def _get_indices_to_delete(self, repos_to_cleanup: list) -> list[str]:
+        """
+        Find indices that should be deleted because they only have snapshots
+        in repositories being cleaned up.
+
+        :param repos_to_cleanup: List of Repository objects being cleaned up
+        :type repos_to_cleanup: list[Repository]
+
+        :return: List of index names to delete
+        :rtype: list[str]
+        """
+        self.loggit.debug("Finding indices to delete from repositories being cleaned up")
+
+        # Get all repository names being cleaned up
+        cleanup_repo_names = {repo.name for repo in repos_to_cleanup}
+        self.loggit.debug("Repositories being cleaned up: %s", cleanup_repo_names)
+
+        # Collect all indices from snapshots in repositories being cleaned up
+        indices_in_cleanup_repos = set()
+        for repo in repos_to_cleanup:
+            try:
+                indices = get_all_indices_in_repo(self.client, repo.name)
+                indices_in_cleanup_repos.update(indices)
+                self.loggit.debug(
+                    "Repository %s contains %d indices in its snapshots",
+                    repo.name,
+                    len(indices)
+                )
+            except Exception as e:
+                self.loggit.warning(
+                    "Could not get indices from repository %s: %s", repo.name, e
+                )
+                continue
+
+        if not indices_in_cleanup_repos:
+            self.loggit.debug("No indices found in repositories being cleaned up")
+            return []
+
+        self.loggit.debug(
+            "Found %d total indices in repositories being cleaned up",
+            len(indices_in_cleanup_repos)
+        )
+
+        # Get all repositories in the cluster
+        try:
+            all_repos = self.client.snapshot.get_repository()
+            all_repo_names = set(all_repos.keys())
+        except Exception as e:
+            self.loggit.error("Failed to get repository list: %s", e)
+            return []
+
+        # Repositories NOT being cleaned up
+        other_repos = all_repo_names - cleanup_repo_names
+        self.loggit.debug("Other repositories in cluster: %s", other_repos)
+
+        # Check which indices exist only in repositories being cleaned up
+        indices_to_delete = []
+        for index in indices_in_cleanup_repos:
+            # Check if this index exists in Elasticsearch
+            if not self.client.indices.exists(index=index):
+                self.loggit.debug(
+                    "Index %s does not exist in cluster, skipping", index
+                )
+                continue
+
+            # Check if this index has snapshots in other repositories
+            has_snapshots_elsewhere = False
+            for repo_name in other_repos:
+                try:
+                    indices_in_repo = get_all_indices_in_repo(self.client, repo_name)
+                    if index in indices_in_repo:
+                        self.loggit.debug(
+                            "Index %s has snapshots in repository %s, will not delete",
+                            index,
+                            repo_name
+                        )
+                        has_snapshots_elsewhere = True
+                        break
+                except Exception as e:
+                    self.loggit.warning(
+                        "Could not check repository %s for index %s: %s",
+                        repo_name,
+                        index,
+                        e
+                    )
+                    continue
+
+            # Only delete if index has no snapshots in other repositories
+            if not has_snapshots_elsewhere:
+                indices_to_delete.append(index)
+                self.loggit.debug(
+                    "Index %s will be deleted (only exists in repositories being cleaned up)",
+                    index
+                )
+
+        self.loggit.info("Found %d indices to delete", len(indices_to_delete))
+        return indices_to_delete
+
     def do_action(self) -> None:
         """
         Check thawed repositories and unmount them if their S3 objects have reverted to Glacier.
+        Also delete indices whose snapshots are only in the repositories being cleaned up.
 
         :return: None
         :rtype: None
@@ -61,6 +163,9 @@ class Cleanup:
 
         self.loggit.info("Found %d thawed repositories to check", len(thawed_repos))
 
+        # Track repositories that will be cleaned up
+        repos_to_cleanup = []
+
         for repo in thawed_repos:
             self.loggit.debug("Checking thaw status for repository %s", repo.name)
 
@@ -76,6 +181,9 @@ class Cleanup:
                         status["not_restored"],
                         status["total"]
                     )
+
+                    # Add to cleanup list
+                    repos_to_cleanup.append(repo)
 
                     # Mark as not thawed and unmounted
                     repo.is_thawed = False
@@ -105,9 +213,32 @@ class Cleanup:
                     "Error checking thaw status for repository %s: %s", repo.name, e
                 )
 
+        # Delete indices whose snapshots are only in repositories being cleaned up
+        if repos_to_cleanup:
+            self.loggit.info("Checking for indices to delete from cleaned up repositories")
+            try:
+                indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
+
+                if indices_to_delete:
+                    self.loggit.info(
+                        "Deleting %d indices whose snapshots are only in cleaned up repositories",
+                        len(indices_to_delete)
+                    )
+                    for index in indices_to_delete:
+                        try:
+                            self.client.indices.delete(index=index)
+                            self.loggit.info("Deleted index %s", index)
+                        except Exception as e:
+                            self.loggit.error("Failed to delete index %s: %s", index, e)
+                else:
+                    self.loggit.info("No indices need to be deleted")
+            except Exception as e:
+                self.loggit.error("Error deleting indices: %s", e)
+
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the cleanup operation.
+        Shows which repositories would be unmounted and which indices would be deleted.
 
         :return: None
         :rtype: None
@@ -124,6 +255,9 @@ class Cleanup:
 
         self.loggit.info("DRY-RUN: Found %d thawed repositories to check", len(thawed_repos))
 
+        # Track repositories that would be cleaned up
+        repos_to_cleanup = []
+
         for repo in thawed_repos:
             self.loggit.debug("DRY-RUN: Checking thaw status for repository %s", repo.name)
 
@@ -139,6 +273,7 @@ class Cleanup:
                         status["not_restored"],
                         status["total"]
                     )
+                    repos_to_cleanup.append(repo)
                 else:
                     self.loggit.debug(
                         "DRY-RUN: Repository %s still has active restoration (%d/%d objects)",
@@ -150,6 +285,26 @@ class Cleanup:
                 self.loggit.error(
                     "DRY-RUN: Error checking thaw status for repository %s: %s", repo.name, e
                 )
+
+        # Show which indices would be deleted
+        if repos_to_cleanup:
+            self.loggit.info(
+                "DRY-RUN: Checking for indices that would be deleted from cleaned up repositories"
+            )
+            try:
+                indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
+
+                if indices_to_delete:
+                    self.loggit.info(
+                        "DRY-RUN: Would delete %d indices whose snapshots are only in cleaned up repositories:",
+                        len(indices_to_delete)
+                    )
+                    for index in indices_to_delete:
+                        self.loggit.info("DRY-RUN:   - %s", index)
+                else:
+                    self.loggit.info("DRY-RUN: No indices would be deleted")
+            except Exception as e:
+                self.loggit.error("DRY-RUN: Error finding indices to delete: %s", e)
 
     def do_singleton_action(self) -> None:
         """
