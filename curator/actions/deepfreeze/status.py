@@ -3,6 +3,7 @@
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
 import logging
+from datetime import datetime
 
 from elasticsearch import Elasticsearch
 from rich import print
@@ -193,7 +194,18 @@ class Status:
                 except Exception as e:
                     self.loggit.warning("Repository %s not mounted: %s", repo.name, e)
                     repo.unmount()
-            table.add_row(repo.name, status, str(count), repo.start, repo.end)
+            # Format dates for display
+            start_str = (
+                repo.start.isoformat() if isinstance(repo.start, datetime)
+                else repo.start if repo.start
+                else "N/A"
+            )
+            end_str = (
+                repo.end.isoformat() if isinstance(repo.end, datetime)
+                else repo.end if repo.end
+                else "N/A"
+            )
+            table.add_row(repo.name, status, str(count), start_str, end_str)
         self.console.print(table)
 
     def do_singleton_action(self) -> None:
