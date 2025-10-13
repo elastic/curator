@@ -19,7 +19,8 @@ from curator.actions.deepfreeze.utilities import (
     get_matching_repos,
     unmount_repo,
     decode_date,
-    create_ilm_policy
+    create_ilm_policy,
+    update_repository_date_range,
 )
 from curator.actions.deepfreeze.helpers import Repository, Settings
 from curator.actions.deepfreeze.constants import STATUS_INDEX, SETTINGS_ID
@@ -646,3 +647,158 @@ class TestCreateIlmPolicy(TestCase):
         with patch('curator.actions.deepfreeze.utilities.logging'):
             with pytest.raises(ActionError):
                 create_ilm_policy(mock_client, 'test-policy', policy_body)
+
+class TestUpdateRepositoryDateRange(TestCase):
+    """Test update_repository_date_range function"""
+
+    def test_update_date_range_success(self):
+        """Test successful date range update"""
+        mock_client = Mock()
+        # Mock get_all_indices_in_repo
+        mock_client.snapshot.get.return_value = {
+            'snapshots': [{'indices': ['index1', 'index2']}]
+        }
+        # Mock index existence checks - simulating partial- prefix
+        mock_client.indices.exists.side_effect = [False, True, False, True]
+        # Mock status index search for update
+        mock_client.search.return_value = {
+            'hits': {'total': {'value': 1}, 'hits': [{'_id': 'repo-doc-id'}]}
+        }
+
+        repo = Repository(name='test-repo')
+
+        # Mock the get_timestamp_range function directly
+        earliest = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+        latest = datetime(2024, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+
+        with patch('curator.actions.deepfreeze.utilities.get_timestamp_range', return_value=(earliest, latest)):
+            with patch('curator.actions.deepfreeze.utilities.logging'):
+                result = update_repository_date_range(mock_client, repo)
+
+        assert result is True
+        assert repo.start is not None
+        assert repo.end is not None
+        mock_client.update.assert_called_once()
+
+    def test_update_date_range_no_mounted_indices(self):
+        """Test update with no mounted indices"""
+        mock_client = Mock()
+        mock_client.snapshot.get.return_value = {
+            'snapshots': [{'indices': ['index1']}]
+        }
+        # All index existence checks return False
+        mock_client.indices.exists.return_value = False
+
+        repo = Repository(name='test-repo')
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = update_repository_date_range(mock_client, repo)
+
+        assert result is False
+        mock_client.update.assert_not_called()
+
+    def test_update_date_range_handles_original_names(self):
+        """Test update with indices mounted using original names"""
+        mock_client = Mock()
+        mock_client.snapshot.get.return_value = {
+            'snapshots': [{'indices': ['index1']}]
+        }
+        # Original name exists
+        mock_client.indices.exists.side_effect = [True]
+        # Mock status index search for update
+        mock_client.search.return_value = {
+            'hits': {'total': {'value': 1}, 'hits': [{'_id': 'repo-doc-id'}]}
+        }
+
+        repo = Repository(name='test-repo')
+
+        # Mock the get_timestamp_range function directly
+        earliest = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+        latest = datetime(2024, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+
+        with patch('curator.actions.deepfreeze.utilities.get_timestamp_range', return_value=(earliest, latest)):
+            with patch('curator.actions.deepfreeze.utilities.logging'):
+                result = update_repository_date_range(mock_client, repo)
+
+        assert result is True
+
+    def test_update_date_range_handles_restored_prefix(self):
+        """Test update with indices using restored- prefix"""
+        mock_client = Mock()
+        mock_client.snapshot.get.return_value = {
+            'snapshots': [{'indices': ['index1']}]
+        }
+        # Original and partial- don't exist, restored- does
+        mock_client.indices.exists.side_effect = [False, False, True]
+        # Mock status index search for update
+        mock_client.search.return_value = {
+            'hits': {'total': {'value': 1}, 'hits': [{'_id': 'repo-doc-id'}]}
+        }
+
+        repo = Repository(name='test-repo')
+
+        # Mock the get_timestamp_range function directly
+        earliest = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+        latest = datetime(2024, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+
+        with patch('curator.actions.deepfreeze.utilities.get_timestamp_range', return_value=(earliest, latest)):
+            with patch('curator.actions.deepfreeze.utilities.logging'):
+                result = update_repository_date_range(mock_client, repo)
+
+        assert result is True
+
+    def test_update_date_range_no_timestamp_data(self):
+        """Test update when timestamp query returns None"""
+        mock_client = Mock()
+        mock_client.snapshot.get.return_value = {
+            'snapshots': [{'indices': ['index1']}]
+        }
+        mock_client.indices.exists.return_value = True
+
+        repo = Repository(name='test-repo')
+
+        with patch('curator.actions.deepfreeze.utilities.get_timestamp_range', return_value=(None, None)):
+            with patch('curator.actions.deepfreeze.utilities.logging'):
+                result = update_repository_date_range(mock_client, repo)
+
+        assert result is False
+        mock_client.update.assert_not_called()
+
+    def test_update_date_range_exception_handling(self):
+        """Test update handles exceptions gracefully"""
+        mock_client = Mock()
+        mock_client.snapshot.get.side_effect = Exception("Repository error")
+
+        repo = Repository(name='test-repo')
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = update_repository_date_range(mock_client, repo)
+
+        assert result is False
+
+    def test_update_date_range_creates_new_document(self):
+        """Test update creates document if it doesn't exist"""
+        mock_client = Mock()
+        mock_client.snapshot.get.return_value = {
+            'snapshots': [{'indices': ['index1']}]
+        }
+        mock_client.indices.exists.return_value = True
+        mock_client.search.side_effect = [
+            # First search for timestamp data
+            {
+                'aggregations': {
+                    'earliest': {'value_as_string': '2024-01-01T00:00:00.000Z'},
+                    'latest': {'value_as_string': '2024-12-31T23:59:59.000Z'}
+                }
+            },
+            # Second search for existing document - returns nothing
+            {'hits': {'total': {'value': 0}, 'hits': []}}
+        ]
+
+        repo = Repository(name='test-repo')
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = update_repository_date_range(mock_client, repo)
+
+        assert result is True
+        mock_client.index.assert_called_once()

@@ -500,29 +500,43 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
     :raises Exception: If the repository cannot be deleted
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    # ? Why am I doing it this way? Is there a reason or could this be done using get_repository and the resulting repo object?
+    # Get repository info from Elasticsearch
     repo_info = client.snapshot.get_repository(name=repo)[repo]
     bucket = repo_info["settings"]["bucket"]
     base_path = repo_info["settings"]["base_path"]
-    indices = get_all_indices_in_repo(client, repo)
+
+    # Get repository object from status index
     repo_obj = get_repository(client, repo)
     repo_obj.bucket = bucket if not repo_obj.bucket else repo_obj.bucket
     repo_obj.base_path = base_path if not repo_obj.base_path else repo_obj.base_path
-    if indices:
-        earliest, latest = get_timestamp_range(client, indices)
-        loggit.debug("Confirming Earliest: %s, Latest: %s", earliest, latest)
-        repo_obj.start = decode_date(earliest)
-        repo_obj.end = decode_date(latest)
+
+    # Try to update date ranges using the shared utility function
+    # This will fall back gracefully if indices aren't available
+    updated = update_repository_date_range(client, repo_obj)
+    if updated:
+        loggit.info("Successfully updated date range for %s before unmounting", repo)
+    else:
+        loggit.debug(
+            "Could not update date range for %s (keeping existing dates: %s to %s)",
+            repo,
+            repo_obj.start.isoformat() if repo_obj.start else "None",
+            repo_obj.end.isoformat() if repo_obj.end else "None"
+        )
+
+    # Mark repository as unmounted
     repo_obj.unmount()
     msg = f"Recording repository details as {repo_obj}"
     loggit.debug(msg)
+
+    # Remove the repository from Elasticsearch
     loggit.debug("Removing repo %s", repo)
     try:
         client.snapshot.delete_repository(name=repo)
     except Exception as e:
         loggit.warning("Repository %s could not be unmounted due to %s", repo, e)
         loggit.warning("Another attempt will be made when rotate runs next")
-    # Don't update the records until the repo has been succesfully removed.
+
+    # Update the status index with final repository state
     loggit.debug("Updating repo: %s", repo_obj)
     client.update(index=STATUS_INDEX, doc=repo_obj.to_dict(), id=repo_obj.docid)
     loggit.debug("Repo %s removed", repo)
@@ -579,3 +593,108 @@ def create_ilm_policy(
     except Exception as e:
         loggit.error(e)
         raise ActionError(e)
+
+
+def update_repository_date_range(client: Elasticsearch, repo: Repository) -> bool:
+    """
+    Update the date range for a repository by querying mounted indices.
+
+    Tries multiple index naming patterns (original, partial-, restored-) to find
+    mounted indices, queries their timestamp ranges, and updates the Repository
+    object and persists it to the status index.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo: The repository to update
+    :type repo: Repository
+
+    :returns: True if dates were updated, False otherwise
+    :rtype: bool
+
+    :raises Exception: If the repository does not exist
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Updating date range for repository %s", repo.name)
+
+    try:
+        # Get all indices from snapshots in this repository
+        snapshot_indices = get_all_indices_in_repo(client, repo.name)
+        loggit.debug("Found %d indices in snapshots", len(snapshot_indices))
+
+        # Find which indices are actually mounted (try multiple naming patterns)
+        mounted_indices = []
+        for idx in snapshot_indices:
+            # Try original name
+            if client.indices.exists(index=idx):
+                mounted_indices.append(idx)
+                loggit.debug("Found mounted index: %s", idx)
+            # Try with partial- prefix (searchable snapshots)
+            elif client.indices.exists(index=f"partial-{idx}"):
+                mounted_indices.append(f"partial-{idx}")
+                loggit.debug("Found mounted searchable snapshot: partial-%s", idx)
+            # Try with restored- prefix (fully restored indices)
+            elif client.indices.exists(index=f"restored-{idx}"):
+                mounted_indices.append(f"restored-{idx}")
+                loggit.debug("Found restored index: restored-%s", idx)
+
+        if not mounted_indices:
+            loggit.debug("No mounted indices found for repository %s", repo.name)
+            return False
+
+        loggit.debug("Found %d mounted indices", len(mounted_indices))
+
+        # Query timestamp ranges
+        earliest, latest = get_timestamp_range(client, mounted_indices)
+
+        if not earliest or not latest:
+            loggit.warning("Could not determine timestamp range for repository %s", repo.name)
+            return False
+
+        loggit.debug("Timestamp range: %s to %s", earliest, latest)
+
+        # Update repository dates if needed
+        changed = False
+        earliest_dt = decode_date(earliest)
+        latest_dt = decode_date(latest)
+
+        if not repo.start or earliest_dt < decode_date(repo.start):
+            repo.start = earliest_dt
+            changed = True
+            loggit.debug("Updated start date to %s", earliest_dt)
+
+        if not repo.end or latest_dt > decode_date(repo.end):
+            repo.end = latest_dt
+            changed = True
+            loggit.debug("Updated end date to %s", latest_dt)
+
+        if changed:
+            # Persist to status index
+            query = {"query": {"term": {"name.keyword": repo.name}}}
+            response = client.search(index=STATUS_INDEX, body=query)
+
+            if response["hits"]["total"]["value"] > 0:
+                doc_id = response["hits"]["hits"][0]["_id"]
+                client.update(
+                    index=STATUS_INDEX,
+                    id=doc_id,
+                    body={"doc": repo.to_dict()}
+                )
+                loggit.info(
+                    "Updated date range for %s: %s to %s",
+                    repo.name,
+                    repo.start.isoformat() if repo.start else None,
+                    repo.end.isoformat() if repo.end else None
+                )
+            else:
+                # Create new document if it doesn't exist
+                client.index(index=STATUS_INDEX, body=repo.to_dict())
+                loggit.info("Created status document for %s with date range", repo.name)
+
+            return True
+        else:
+            loggit.debug("No date range changes for repository %s", repo.name)
+            return False
+
+    except Exception as e:
+        loggit.error("Error updating date range for repository %s: %s", repo.name, e)
+        return False
