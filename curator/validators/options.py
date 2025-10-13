@@ -91,6 +91,7 @@ def action_specific(action):
             option_defaults.list_requests(),
         ],
         'refreeze': [
+            option_defaults.repo_id(),
         ],
         'delete_indices': [
             option_defaults.search_pattern(),

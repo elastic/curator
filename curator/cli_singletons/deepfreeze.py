@@ -295,14 +295,27 @@ def cleanup(
 
 
 @deepfreeze.command()
+@click.option(
+    "-r",
+    "--repo-id",
+    type=str,
+    default=None,
+    help="Repository name to refreeze (if not provided, all thawed repos will be refrozen with confirmation)",
+)
 @click.pass_context
 def refreeze(
     ctx,
+    repo_id,
 ):
     """
-    Force thawed repositories back to Glacier ahead of schedule
+    Force thawed repositories back to Glacier ahead of schedule.
+
+    If --repo-id is specified, only that repository will be refrozen.
+    If no --repo-id is provided, all thawed repositories will be listed and confirmation will be required.
     """
-    manual_options = {}
+    manual_options = {
+        "repo_id": repo_id,
+    }
     action = CLIAction(
         ctx.info_name,
         ctx.obj["configdict"],
