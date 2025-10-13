@@ -9,6 +9,7 @@ from .exceptions import (
 )
 from .cleanup import Cleanup
 from .helpers import Deepfreeze, Repository, Settings
+from .refreeze import Refreeze
 from .rotate import Rotate
 from .setup import Setup
 from .status import Status
@@ -40,6 +41,7 @@ from .utilities import (
 CLASS_MAP = {
     "cleanup": Cleanup,
     "deepfreeze": Deepfreeze,
+    "refreeze": Refreeze,
     "repository": Repository,
     "settings": Settings,
     "setup": Setup,

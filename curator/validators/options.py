@@ -90,9 +90,8 @@ def action_specific(action):
             option_defaults.check_status(),
             option_defaults.list_requests(),
         ],
-        # 'refreeze': [
-        #     option_defaults.thaw_set(),
-        # ],
+        'refreeze': [
+        ],
         'delete_indices': [
             option_defaults.search_pattern(),
         ],
