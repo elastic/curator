@@ -295,6 +295,25 @@ def cleanup(
 
 
 @deepfreeze.command()
+@click.pass_context
+def refreeze(
+    ctx,
+):
+    """
+    Force thawed repositories back to Glacier ahead of schedule
+    """
+    manual_options = {}
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj["configdict"],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
+
+
+@deepfreeze.command()
 @click.option(
     "-s",
     "--start-date",
