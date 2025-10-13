@@ -44,7 +44,7 @@ class TestDeepfreezeThaw(TestCase):
 
         assert thaw.client == self.client
         assert thaw.sync is False
-        assert thaw.restore_days == 7
+        assert thaw.duration == 7
         assert thaw.retrieval_tier == "Standard"
         assert thaw.start_date.year == 2025
         assert thaw.start_date.month == 1
@@ -64,12 +64,12 @@ class TestDeepfreezeThaw(TestCase):
             start_date=self.start_date,
             end_date=self.end_date,
             sync=True,
-            restore_days=14,
+            duration=14,
             retrieval_tier="Expedited",
         )
 
         assert thaw.sync is True
-        assert thaw.restore_days == 14
+        assert thaw.duration == 14
         assert thaw.retrieval_tier == "Expedited"
 
     @patch("curator.actions.deepfreeze.thaw.s3_client_factory")
@@ -436,3 +436,201 @@ class TestDeepfreezeThaw(TestCase):
             thaw.do_singleton_action()
 
             mock_do_action.assert_called_once()
+
+    @patch("curator.actions.deepfreeze.thaw.s3_client_factory")
+    @patch("curator.actions.deepfreeze.thaw.get_settings")
+    @patch("curator.actions.deepfreeze.thaw.get_repositories_by_names")
+    @patch("curator.actions.deepfreeze.thaw.get_thaw_request")
+    def test_check_status_mode_initialization(
+        self, mock_get_request, mock_get_repos, mock_get_settings, mock_s3_factory
+    ):
+        """Test initialization in check_status mode"""
+        mock_get_settings.return_value = self.mock_settings
+        mock_s3_factory.return_value = Mock()
+
+        thaw = Thaw(
+            self.client,
+            check_status="test-request-id",
+        )
+
+        assert thaw.mode == "check_status"
+        assert thaw.check_status == "test-request-id"
+
+    def test_list_mode_initialization(self):
+        """Test initialization in list mode"""
+        thaw = Thaw(
+            self.client,
+            list_requests=True,
+        )
+
+        assert thaw.mode == "list"
+        assert thaw.list_requests is True
+
+    def test_create_mode_missing_dates_error(self):
+        """Test error when creating thaw without dates"""
+        with self.assertRaises(ValueError) as context:
+            Thaw(self.client)
+
+        assert "start_date and end_date are required" in str(context.exception)
+
+    @patch("curator.actions.deepfreeze.thaw.update_thaw_request")
+    @patch("curator.actions.deepfreeze.thaw.mount_repo")
+    @patch("curator.actions.deepfreeze.thaw.check_restore_status")
+    @patch("curator.actions.deepfreeze.thaw.get_repositories_by_names")
+    @patch("curator.actions.deepfreeze.thaw.get_thaw_request")
+    @patch("curator.actions.deepfreeze.thaw.s3_client_factory")
+    @patch("curator.actions.deepfreeze.thaw.get_settings")
+    def test_do_check_status_restoration_complete(
+        self,
+        mock_get_settings,
+        mock_s3_factory,
+        mock_get_request,
+        mock_get_repos,
+        mock_check_status,
+        mock_mount_repo,
+        mock_update_request,
+    ):
+        """Test check_status when restoration is complete"""
+        mock_get_settings.return_value = self.mock_settings
+        mock_s3 = Mock()
+        mock_s3_factory.return_value = mock_s3
+
+        # Mock thaw request
+        mock_get_request.return_value = {
+            "request_id": "test-id",
+            "repos": ["deepfreeze-000001"],
+            "status": "in_progress",
+            "created_at": "2025-01-15T10:00:00Z",
+        }
+
+        # Mock repository
+        mock_repo = Repository(
+            name="deepfreeze-000001",
+            bucket="deepfreeze",
+            base_path="snapshots-000001",
+            is_mounted=False,
+            is_thawed=False,
+        )
+        mock_get_repos.return_value = [mock_repo]
+
+        # Mock complete restoration status
+        mock_check_status.return_value = {
+            "total": 10,
+            "restored": 10,
+            "in_progress": 0,
+            "not_restored": 0,
+            "complete": True,
+        }
+
+        thaw = Thaw(self.client, check_status="test-id")
+        thaw.do_check_status()
+
+        # Should mount the repository
+        mock_mount_repo.assert_called_once_with(self.client, mock_repo)
+        # Should update request status to completed
+        mock_update_request.assert_called_once_with(
+            self.client, "test-id", status="completed"
+        )
+
+    @patch("curator.actions.deepfreeze.thaw.check_restore_status")
+    @patch("curator.actions.deepfreeze.thaw.get_repositories_by_names")
+    @patch("curator.actions.deepfreeze.thaw.get_thaw_request")
+    @patch("curator.actions.deepfreeze.thaw.s3_client_factory")
+    @patch("curator.actions.deepfreeze.thaw.get_settings")
+    def test_do_check_status_restoration_in_progress(
+        self,
+        mock_get_settings,
+        mock_s3_factory,
+        mock_get_request,
+        mock_get_repos,
+        mock_check_status,
+    ):
+        """Test check_status when restoration is still in progress"""
+        mock_get_settings.return_value = self.mock_settings
+        mock_s3 = Mock()
+        mock_s3_factory.return_value = mock_s3
+
+        mock_get_request.return_value = {
+            "request_id": "test-id",
+            "repos": ["deepfreeze-000001"],
+            "status": "in_progress",
+            "created_at": "2025-01-15T10:00:00Z",
+        }
+
+        mock_repo = Repository(
+            name="deepfreeze-000001",
+            bucket="deepfreeze",
+            base_path="snapshots-000001",
+            is_mounted=False,
+            is_thawed=False,
+        )
+        mock_get_repos.return_value = [mock_repo]
+
+        # Mock in-progress restoration status
+        mock_check_status.return_value = {
+            "total": 10,
+            "restored": 5,
+            "in_progress": 5,
+            "not_restored": 0,
+            "complete": False,
+        }
+
+        thaw = Thaw(self.client, check_status="test-id")
+        thaw.do_check_status()
+
+        # Should check status but not mount
+        mock_check_status.assert_called_once()
+
+    @patch("curator.actions.deepfreeze.thaw.list_thaw_requests")
+    def test_do_list_requests_empty(self, mock_list_requests):
+        """Test listing thaw requests when none exist"""
+        mock_list_requests.return_value = []
+
+        thaw = Thaw(self.client, list_requests=True)
+        thaw.do_list_requests()
+
+        mock_list_requests.assert_called_once_with(self.client)
+
+    @patch("curator.actions.deepfreeze.thaw.list_thaw_requests")
+    def test_do_list_requests_with_data(self, mock_list_requests):
+        """Test listing thaw requests with data"""
+        mock_list_requests.return_value = [
+            {
+                "id": "request-1",
+                "request_id": "request-1",
+                "repos": ["deepfreeze-000001", "deepfreeze-000002"],
+                "status": "in_progress",
+                "created_at": "2025-01-15T10:00:00Z",
+            },
+            {
+                "id": "request-2",
+                "request_id": "request-2",
+                "repos": ["deepfreeze-000003"],
+                "status": "completed",
+                "created_at": "2025-01-14T14:00:00Z",
+            },
+        ]
+
+        thaw = Thaw(self.client, list_requests=True)
+        thaw.do_list_requests()
+
+        mock_list_requests.assert_called_once_with(self.client)
+
+    @patch("curator.actions.deepfreeze.thaw.s3_client_factory")
+    @patch("curator.actions.deepfreeze.thaw.get_settings")
+    def test_mode_routing_in_do_action(self, mock_get_settings, mock_s3_factory):
+        """Test that do_action routes to correct handler based on mode"""
+        mock_get_settings.return_value = self.mock_settings
+        mock_s3_factory.return_value = Mock()
+
+        # Test list mode
+        thaw_list = Thaw(self.client, list_requests=True)
+        with patch.object(thaw_list, "do_list_requests") as mock_list:
+            thaw_list.do_action()
+            mock_list.assert_called_once()
+
+        # Test check_status mode
+        thaw_check = Thaw(self.client, check_status="test-id")
+        with patch.object(thaw_check, "do_check_status") as mock_check:
+            thaw_check.do_action()
+            mock_check.assert_called_once()
