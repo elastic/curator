@@ -77,6 +77,7 @@ def action_specific(action):
             option_defaults.month(),
         ],
         'status': [
+            option_defaults.limit(),
         ],
         'thaw': [
             option_defaults.start_date(),

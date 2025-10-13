@@ -21,6 +21,8 @@ class Status:
 
     :param client: A client connection object
     :type client: Elasticsearch
+    :param limit: Number of most recent repositories to show (None = show all)
+    :type limit: int
 
     :methods:
         do_action: Perform high-level status steps in sequence.
@@ -33,11 +35,12 @@ class Status:
         do_config: Get the status of the configuration.
     """
 
-    def __init__(self, client: Elasticsearch) -> None:
+    def __init__(self, client: Elasticsearch, limit: int = None) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Status")
         self.settings = get_settings(client)
         self.client = client
+        self.limit = limit
         self.console = Console()
         self.console.clear()
 
@@ -158,20 +161,32 @@ class Status:
         :rtype: None
         """
         self.loggit.debug("Showing repositories")
-        # Set up the table
-        table = Table(title="Repositories")
+
+        # Get and sort all repositories
+        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
+        self.loggit.debug("Getting repositories")
+        unmounted_repos = get_all_repos(self.client)
+        unmounted_repos.sort()
+        total_repos = len(unmounted_repos)
+        self.loggit.debug("Got %s repositories", total_repos)
+
+        # Apply limit if specified
+        if self.limit is not None and self.limit > 0:
+            unmounted_repos = unmounted_repos[-self.limit:]
+            self.loggit.debug("Limiting display to last %s repositories", self.limit)
+
+        # Set up the table with appropriate title
+        if self.limit is not None and self.limit > 0:
+            table_title = f"Repositories (showing last {len(unmounted_repos)} of {total_repos})"
+        else:
+            table_title = "Repositories"
+
+        table = Table(title=table_title)
         table.add_column("Repository", style="cyan")
         table.add_column("Status", style="magenta")
         table.add_column("Snapshots", style="magenta")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
-
-        # List unmounted repositories first
-        active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
-        self.loggit.debug("Getting repositories")
-        unmounted_repos = get_all_repos(self.client)
-        unmounted_repos.sort()
-        self.loggit.debug("Got %s repositories", len(unmounted_repos))
         for repo in unmounted_repos:
             status = "U"
             if repo.is_mounted:

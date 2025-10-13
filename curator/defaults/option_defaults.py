@@ -935,3 +935,10 @@ def list_requests():
     Flag to list all thaw requests
     """
     return {Optional("list_requests", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
+def limit():
+    """
+    Number of most recent repositories to display in status
+    """
+    return {Optional("limit", default=None): Any(None, All(Coerce(int), Range(min=1, max=10000)))}
