@@ -7,6 +7,7 @@ from .exceptions import (
     MissingIndexError,
     MissingSettingsError,
 )
+from .cleanup import Cleanup
 from .helpers import Deepfreeze, Repository, Settings
 from .rotate import Rotate
 from .setup import Setup
@@ -37,6 +38,7 @@ from .utilities import (
 )
 
 CLASS_MAP = {
+    "cleanup": Cleanup,
     "deepfreeze": Deepfreeze,
     "repository": Repository,
     "settings": Settings,

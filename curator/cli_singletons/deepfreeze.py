@@ -276,6 +276,25 @@ def status(
 
 
 @deepfreeze.command()
+@click.pass_context
+def cleanup(
+    ctx,
+):
+    """
+    Clean up expired thawed repositories
+    """
+    manual_options = {}
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj["configdict"],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])
+
+
+@deepfreeze.command()
 @click.option(
     "-s",
     "--start-date",
@@ -349,36 +368,45 @@ def thaw(
 
     \b
     Examples:
+
       # Create new thaw request (async)
+
       curator_cli deepfreeze thaw -s 2025-01-01T00:00:00Z -e 2025-01-15T23:59:59Z --async
 
       # Create new thaw request (sync - waits for completion)
+
       curator_cli deepfreeze thaw -s 2025-01-01T00:00:00Z -e 2025-01-15T23:59:59Z --sync
 
       # Check status and mount if ready
+
       curator_cli deepfreeze thaw --check-status <thaw-id>
 
       # List all thaw requests
+
       curator_cli deepfreeze thaw --list
     """
     # Validate mutual exclusivity
-    modes_active = sum([
-        bool(start_date or end_date),
-        bool(check_status),
-        bool(list_requests)
-    ])
+    modes_active = sum(
+        [bool(start_date or end_date), bool(check_status), bool(list_requests)]
+    )
 
     if modes_active == 0:
-        click.echo("Error: Must specify one of: --start-date/--end-date, --check-status, or --list")
+        click.echo(
+            "Error: Must specify one of: --start-date/--end-date, --check-status, or --list"
+        )
         ctx.exit(1)
 
     if modes_active > 1:
-        click.echo("Error: Cannot use --start-date/--end-date with --check-status or --list")
+        click.echo(
+            "Error: Cannot use --start-date/--end-date with --check-status or --list"
+        )
         ctx.exit(1)
 
     # Validate that create mode has both start and end dates
     if (start_date or end_date) and not (start_date and end_date):
-        click.echo("Error: Both --start-date and --end-date are required for creating a new thaw request")
+        click.echo(
+            "Error: Both --start-date and --end-date are required for creating a new thaw request"
+        )
         ctx.exit(1)
 
     manual_options = {

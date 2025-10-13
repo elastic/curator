@@ -76,6 +76,8 @@ def action_specific(action):
             option_defaults.year(),
             option_defaults.month(),
         ],
+        'cleanup': [
+        ],
         'status': [
             option_defaults.limit(),
         ],
