@@ -882,3 +882,42 @@ def keep():
     Number of repositories to keep mounted
     """
     return {Optional("keep", default=6): All(Coerce(int), Range(min=1, max=100))}
+
+
+def start_date():
+    """
+    Start date for thaw operation (ISO 8601 format)
+    """
+    return {Required("start_date"): Any(str)}
+
+
+def end_date():
+    """
+    End date for thaw operation (ISO 8601 format)
+    """
+    return {Required("end_date"): Any(str)}
+
+
+def sync():
+    """
+    Sync mode for thaw - wait for restore and mount (True) or return immediately (False)
+    """
+    return {Optional("sync", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
+def restore_days():
+    """
+    Number of days to keep objects restored from Glacier
+    """
+    return {Optional("restore_days", default=7): All(Coerce(int), Range(min=1, max=30))}
+
+
+def retrieval_tier():
+    """
+    AWS Glacier retrieval tier for thaw operation
+    """
+    return {
+        Optional("retrieval_tier", default="Standard"): Any(
+            "Standard", "Expedited", "Bulk"
+        )
+    }

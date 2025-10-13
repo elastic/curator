@@ -11,10 +11,13 @@ from .helpers import Deepfreeze, Repository, Settings
 from .rotate import Rotate
 from .setup import Setup
 from .status import Status
+from .thaw import Thaw
 from .utilities import (
+    check_restore_status,
     create_repo,
     decode_date,
     ensure_settings_index,
+    find_repos_by_date_range,
     get_all_indices_in_repo,
     get_all_repos,
     get_matching_repo_names,
@@ -22,8 +25,10 @@ from .utilities import (
     get_next_suffix,
     get_settings,
     get_timestamp_range,
+    mount_repo,
     push_to_glacier,
     save_settings,
+    save_thaw_request,
     unmount_repo,
     update_repository_date_range,
 )
@@ -35,4 +40,5 @@ CLASS_MAP = {
     "setup": Setup,
     "rotate": Rotate,
     "status": Status,
+    "thaw": Thaw,
 }
