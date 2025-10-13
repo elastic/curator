@@ -942,3 +942,10 @@ def limit():
     Number of most recent repositories to display in status
     """
     return {Optional("limit", default=None): Any(None, All(Coerce(int), Range(min=1, max=10000)))}
+
+
+def repo_id():
+    """
+    Repository name/ID to refreeze (if not provided, all thawed repos will be refrozen)
+    """
+    return {Optional("repo_id", default=None): Any(None, str)}
