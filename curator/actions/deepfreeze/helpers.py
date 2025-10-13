@@ -66,6 +66,13 @@ class Repository:
     doctype: str = "repository"
     docid: str = None
 
+    def __post_init__(self):
+        """Convert string dates from Elasticsearch to datetime objects"""
+        if isinstance(self.start, str):
+            self.start = datetime.fromisoformat(self.start)
+        if isinstance(self.end, str):
+            self.end = datetime.fromisoformat(self.end)
+
     @classmethod
     def from_elasticsearch(
         cls, client: Elasticsearch, name: str, index: str = STATUS_INDEX
@@ -122,8 +129,9 @@ class Repository:
         logging.debug("Converting Repository to dict")
         logging.debug(f"Repository start: {self.start}")
         logging.debug(f"Repository end: {self.end}")
-        start_str = self.start if self.start else None
-        end_str = self.end if self.end else None
+        # Convert datetime objects to ISO strings for proper storage
+        start_str = self.start.isoformat() if isinstance(self.start, datetime) else self.start
+        end_str = self.end.isoformat() if isinstance(self.end, datetime) else self.end
         return {
             "name": self.name,
             "bucket": self.bucket,
