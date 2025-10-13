@@ -6,7 +6,7 @@ from curator.actions.close import Close
 from curator.actions.cluster_routing import ClusterRouting
 from curator.actions.cold2frozen import Cold2Frozen
 from curator.actions.create_index import CreateIndex
-from curator.actions.deepfreeze import Deepfreeze, Rotate, Setup, Status, Thaw
+from curator.actions.deepfreeze import Cleanup, Deepfreeze, Rotate, Setup, Status, Thaw
 from curator.actions.delete_indices import DeleteIndices
 from curator.actions.forcemerge import ForceMerge
 from curator.actions.index_settings import IndexSettings
@@ -20,6 +20,7 @@ from curator.actions.snapshot import DeleteSnapshots, Restore, Snapshot
 CLASS_MAP = {
     "alias": Alias,
     "allocation": Allocation,
+    "cleanup": Cleanup,
     "close": Close,
     "cluster_routing": ClusterRouting,
     "cold2frozen": Cold2Frozen,
