@@ -7,6 +7,7 @@ import sys
 
 from elasticsearch import Elasticsearch
 
+from curator.actions.deepfreeze.cleanup import Cleanup
 from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.helpers import Repository
 from curator.actions.deepfreeze.utilities import (
@@ -279,6 +280,9 @@ class Rotate:
         self.update_ilm_policies(dry_run=True)
         self.unmount_oldest_repos(dry_run=True)
         self.update_repo_date_range(dry_run=True)
+        # Clean up any thawed repositories that have expired
+        cleanup = Cleanup(self.client)
+        cleanup.do_dry_run()
 
     def do_action(self) -> None:
         """
@@ -308,3 +312,6 @@ class Rotate:
         self.update_repo_date_range()
         self.update_ilm_policies()
         self.unmount_oldest_repos()
+        # Clean up any thawed repositories that have expired
+        cleanup = Cleanup(self.client)
+        cleanup.do_action()
