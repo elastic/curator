@@ -698,3 +698,344 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
     except Exception as e:
         loggit.error("Error updating date range for repository %s: %s", repo.name, e)
         return False
+
+
+def find_repos_by_date_range(
+    client: Elasticsearch, start: datetime, end: datetime
+) -> list[Repository]:
+    """
+    Find repositories that contain data overlapping with the given date range.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param start: The start of the date range
+    :type start: datetime
+    :param end: The end of the date range
+    :type end: datetime
+
+    :returns: A list of repositories with overlapping date ranges
+    :rtype: list[Repository]
+
+    :raises Exception: If the status index does not exist
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug(
+        "Finding repositories with data between %s and %s",
+        start.isoformat(),
+        end.isoformat(),
+    )
+
+    # Query for repositories where the date range overlaps with the requested range
+    # Overlap occurs if: repo.start <= end AND repo.end >= start
+    query = {
+        "query": {
+            "bool": {
+                "must": [
+                    {"term": {"doctype": "repository"}},
+                    {"range": {"start": {"lte": end.isoformat()}}},
+                    {"range": {"end": {"gte": start.isoformat()}}},
+                ]
+            }
+        }
+    }
+
+    try:
+        response = client.search(index=STATUS_INDEX, body=query, size=10000)
+        repos = response["hits"]["hits"]
+        loggit.debug("Found %d repositories matching date range", len(repos))
+        return [Repository(**repo["_source"], docid=repo["_id"]) for repo in repos]
+    except NotFoundError:
+        loggit.warning("Status index not found")
+        return []
+
+
+def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
+    """
+    Check the restoration status of objects in an S3 bucket.
+
+    :param s3: The S3 client object
+    :type s3: S3Client
+    :param bucket: The bucket name
+    :type bucket: str
+    :param base_path: The base path in the bucket
+    :type base_path: str
+
+    :returns: A dictionary with restoration status information
+    :rtype: dict
+
+    :raises Exception: If the bucket or objects cannot be accessed
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Checking restore status for s3://%s/%s", bucket, base_path)
+
+    # Normalize base_path
+    normalized_path = base_path.strip("/")
+    if normalized_path:
+        normalized_path += "/"
+
+    objects = s3.list_objects(bucket, normalized_path)
+
+    total_count = len(objects)
+    restored_count = 0
+    in_progress_count = 0
+    not_restored_count = 0
+
+    for obj in objects:
+        # Check if object is being restored
+        restore_status = obj.get("RestoreStatus")
+        storage_class = obj.get("StorageClass", "STANDARD")
+
+        if storage_class in [
+            "STANDARD",
+            "STANDARD_IA",
+            "ONEZONE_IA",
+            "INTELLIGENT_TIERING",
+        ]:
+            # Object is already in an instant-access tier
+            restored_count += 1
+        elif restore_status:
+            # Object has restoration in progress or completed
+            if restore_status.get("IsRestoreInProgress"):
+                in_progress_count += 1
+            else:
+                restored_count += 1
+        else:
+            # Object is in Glacier and not being restored
+            not_restored_count += 1
+
+    status = {
+        "total": total_count,
+        "restored": restored_count,
+        "in_progress": in_progress_count,
+        "not_restored": not_restored_count,
+        "complete": (restored_count == total_count) if total_count > 0 else False,
+    }
+
+    loggit.debug("Restore status: %s", status)
+    return status
+
+
+def mount_repo(client: Elasticsearch, repo: Repository) -> None:
+    """
+    Mount a repository by creating it in Elasticsearch and updating its status.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo: The repository to mount
+    :type repo: Repository
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the repository cannot be created
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info("Mounting repository %s", repo.name)
+
+    # Get settings to retrieve canned_acl and storage_class
+    settings = get_settings(client)
+
+    # Create the repository in Elasticsearch
+    try:
+        client.snapshot.create_repository(
+            name=repo.name,
+            body={
+                "type": "s3",
+                "settings": {
+                    "bucket": repo.bucket,
+                    "base_path": repo.base_path,
+                    "canned_acl": settings.canned_acl,
+                    "storage_class": settings.storage_class,
+                },
+            },
+        )
+        loggit.info("Repository %s created successfully", repo.name)
+
+        # Update repository status to mounted and thawed
+        repo.is_mounted = True
+        repo.is_thawed = True
+        repo.persist(client)
+        loggit.info("Repository %s status updated", repo.name)
+
+    except Exception as e:
+        loggit.error("Failed to mount repository %s: %s", repo.name, e)
+        raise ActionError(f"Failed to mount repository {repo.name}: {e}")
+
+
+def save_thaw_request(
+    client: Elasticsearch, request_id: str, repos: list[Repository], status: str
+) -> None:
+    """
+    Save a thaw request to the status index for later querying.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param request_id: A unique identifier for this thaw request
+    :type request_id: str
+    :param repos: The list of repositories being thawed
+    :type repos: list[Repository]
+    :param status: The current status of the thaw request
+    :type status: str
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the request cannot be saved
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Saving thaw request %s", request_id)
+
+    request_doc = {
+        "doctype": "thaw_request",
+        "request_id": request_id,
+        "repos": [repo.name for repo in repos],
+        "status": status,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        client.index(index=STATUS_INDEX, id=request_id, body=request_doc)
+        loggit.info("Thaw request %s saved successfully", request_id)
+    except Exception as e:
+        loggit.error("Failed to save thaw request %s: %s", request_id, e)
+        raise ActionError(f"Failed to save thaw request {request_id}: {e}")
+
+
+def get_thaw_request(client: Elasticsearch, request_id: str) -> dict:
+    """
+    Retrieve a thaw request from the status index by ID.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param request_id: The thaw request ID
+    :type request_id: str
+
+    :returns: The thaw request document
+    :rtype: dict
+
+    :raises Exception: If the request is not found
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Retrieving thaw request %s", request_id)
+
+    try:
+        response = client.get(index=STATUS_INDEX, id=request_id)
+        return response["_source"]
+    except NotFoundError:
+        loggit.error("Thaw request %s not found", request_id)
+        raise ActionError(f"Thaw request {request_id} not found")
+    except Exception as e:
+        loggit.error("Failed to retrieve thaw request %s: %s", request_id, e)
+        raise ActionError(f"Failed to retrieve thaw request {request_id}: {e}")
+
+
+def list_thaw_requests(client: Elasticsearch) -> list[dict]:
+    """
+    List all thaw requests from the status index.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+
+    :returns: List of thaw request documents
+    :rtype: list[dict]
+
+    :raises Exception: If the query fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Listing all thaw requests")
+
+    query = {"query": {"term": {"doctype": "thaw_request"}}}
+
+    try:
+        response = client.search(index=STATUS_INDEX, body=query, size=10000)
+        requests = response["hits"]["hits"]
+        loggit.debug("Found %d thaw requests", len(requests))
+        return [{"id": req["_id"], **req["_source"]} for req in requests]
+    except NotFoundError:
+        loggit.warning("Status index not found")
+        return []
+    except Exception as e:
+        loggit.error("Failed to list thaw requests: %s", e)
+        raise ActionError(f"Failed to list thaw requests: {e}")
+
+
+def update_thaw_request(
+    client: Elasticsearch, request_id: str, status: str = None, **fields
+) -> None:
+    """
+    Update a thaw request in the status index.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param request_id: The thaw request ID
+    :type request_id: str
+    :param status: New status value (optional)
+    :type: str
+    :param fields: Additional fields to update
+    :type fields: dict
+
+    :return: None
+    :rtype: None
+
+    :raises Exception: If the update fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Updating thaw request %s", request_id)
+
+    update_doc = {}
+    if status:
+        update_doc["status"] = status
+    update_doc.update(fields)
+
+    try:
+        client.update(index=STATUS_INDEX, id=request_id, doc=update_doc)
+        loggit.info("Thaw request %s updated successfully", request_id)
+    except Exception as e:
+        loggit.error("Failed to update thaw request %s: %s", request_id, e)
+        raise ActionError(f"Failed to update thaw request {request_id}: {e}")
+
+
+def get_repositories_by_names(
+    client: Elasticsearch, repo_names: list[str]
+) -> list[Repository]:
+    """
+    Get Repository objects by a list of repository names.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo_names: List of repository names
+    :type repo_names: list[str]
+
+    :returns: List of Repository objects
+    :rtype: list[Repository]
+
+    :raises Exception: If the query fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Getting repositories by names: %s", repo_names)
+
+    if not repo_names:
+        return []
+
+    query = {
+        "query": {
+            "bool": {
+                "must": [
+                    {"term": {"doctype": "repository"}},
+                    {"terms": {"name.keyword": repo_names}},
+                ]
+            }
+        }
+    }
+
+    try:
+        response = client.search(index=STATUS_INDEX, body=query, size=10000)
+        repos = response["hits"]["hits"]
+        loggit.debug("Found %d repositories", len(repos))
+        return [Repository(**repo["_source"], docid=repo["_id"]) for repo in repos]
+    except NotFoundError:
+        loggit.warning("Status index not found")
+        return []
+    except Exception as e:
+        loggit.error("Failed to get repositories: %s", e)
+        raise ActionError(f"Failed to get repositories: {e}")

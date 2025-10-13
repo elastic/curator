@@ -22,6 +22,7 @@ from curator.actions.deepfreeze.utilities import (
     list_thaw_requests,
     mount_repo,
     save_thaw_request,
+    update_repository_date_range,
     update_thaw_request,
 )
 from curator.s3client import s3_client_factory
@@ -58,6 +59,7 @@ class Thaw:
         _parse_date: Parse and validate date inputs.
         _thaw_repository: Thaw a single repository.
         _wait_for_restore: Wait for restoration to complete.
+        _update_repo_dates: Update repository date ranges after mounting.
     """
 
     def __init__(
@@ -226,6 +228,36 @@ class Thaw:
         )
         return False
 
+    def _update_repo_dates(self, repo) -> None:
+        """
+        Update repository date ranges after mounting.
+
+        :param repo: The repository to update
+        :type repo: Repository
+
+        :return: None
+        :rtype: None
+        """
+        self.loggit.debug("Updating date range for repository %s", repo.name)
+
+        try:
+            updated = update_repository_date_range(self.client, repo)
+            if updated:
+                self.loggit.info(
+                    "Updated date range for %s: %s to %s",
+                    repo.name,
+                    repo.start.isoformat() if repo.start else "None",
+                    repo.end.isoformat() if repo.end else "None"
+                )
+            else:
+                self.loggit.debug(
+                    "No date range update needed for %s", repo.name
+                )
+        except Exception as e:
+            self.loggit.warning(
+                "Failed to update date range for %s: %s", repo.name, e
+            )
+
     def do_check_status(self) -> None:
         """
         Check the status of a thaw request and mount repositories if restoration is complete.
@@ -262,6 +294,7 @@ class Thaw:
             if status["complete"]:
                 self.loggit.info("Restoration complete for %s, mounting...", repo.name)
                 mount_repo(self.client, repo)
+                self._update_repo_dates(repo)
                 mounted_count += 1
             else:
                 self.loggit.info(
@@ -466,6 +499,8 @@ class Thaw:
                 if self._wait_for_restore(repo):
                     # Mount the repository
                     mount_repo(self.client, repo)
+                    # Update date ranges
+                    self._update_repo_dates(repo)
                 else:
                     self.loggit.warning(
                         "Skipping mount for %s due to restoration timeout", repo.name
