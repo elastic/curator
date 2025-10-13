@@ -888,14 +888,14 @@ def start_date():
     """
     Start date for thaw operation (ISO 8601 format)
     """
-    return {Required("start_date"): Any(str)}
+    return {Optional("start_date", default=None): Any(None, str)}
 
 
 def end_date():
     """
     End date for thaw operation (ISO 8601 format)
     """
-    return {Required("end_date"): Any(str)}
+    return {Optional("end_date", default=None): Any(None, str)}
 
 
 def sync():
@@ -905,11 +905,11 @@ def sync():
     return {Optional("sync", default=False): Any(bool, All(Any(str), Boolean()))}
 
 
-def restore_days():
+def duration():
     """
     Number of days to keep objects restored from Glacier
     """
-    return {Optional("restore_days", default=7): All(Coerce(int), Range(min=1, max=30))}
+    return {Optional("duration", default=7): All(Coerce(int), Range(min=1, max=30))}
 
 
 def retrieval_tier():
@@ -921,3 +921,17 @@ def retrieval_tier():
             "Standard", "Expedited", "Bulk"
         )
     }
+
+
+def check_status():
+    """
+    Thaw request ID to check status
+    """
+    return {Optional("check_status", default=None): Any(None, str)}
+
+
+def list_requests():
+    """
+    Flag to list all thaw requests
+    """
+    return {Optional("list_requests", default=False): Any(bool, All(Any(str), Boolean()))}

@@ -270,14 +270,14 @@ def status(
     "-s",
     "--start-date",
     type=str,
-    required=True,
+    default=None,
     help="Start of date range in ISO 8601 format (e.g., 2025-01-15T00:00:00Z)",
 )
 @click.option(
     "-e",
     "--end-date",
     type=str,
-    required=True,
+    default=None,
     help="End of date range in ISO 8601 format (e.g., 2025-01-31T23:59:59Z)",
 )
 @click.option(
@@ -289,7 +289,7 @@ def status(
 )
 @click.option(
     "-d",
-    "--restore-days",
+    "--duration",
     type=int,
     default=7,
     show_default=True,
@@ -303,29 +303,82 @@ def status(
     show_default=True,
     help="AWS Glacier retrieval tier",
 )
+@click.option(
+    "--check-status",
+    type=str,
+    default=None,
+    help="Check status of a thaw request by ID and mount if restoration is complete",
+)
+@click.option(
+    "--list",
+    "list_requests",
+    is_flag=True,
+    default=False,
+    help="List all active thaw requests",
+)
 @click.pass_context
 def thaw(
     ctx,
     start_date,
     end_date,
     sync,
-    restore_days,
+    duration,
     retrieval_tier,
+    check_status,
+    list_requests,
 ):
     """
-    Thaw repositories from Glacier storage for a specified date range.
+    Thaw repositories from Glacier storage for a specified date range,
+    or check status of existing thaw requests.
 
-    This will restore objects from Glacier tiers back to instant-access tiers.
-    In sync mode, the command waits for restoration to complete and mounts the repositories.
-    In async mode, the command returns a request ID immediately that can be used to check
-    status later.
+    \b
+    Three modes of operation:
+    1. Create new thaw: Requires --start-date and --end-date
+    2. Check status: Use --check-status <thaw-id>
+    3. List requests: Use --list
+
+    \b
+    Examples:
+      # Create new thaw request (async)
+      curator_cli deepfreeze thaw -s 2025-01-01T00:00:00Z -e 2025-01-15T23:59:59Z --async
+
+      # Create new thaw request (sync - waits for completion)
+      curator_cli deepfreeze thaw -s 2025-01-01T00:00:00Z -e 2025-01-15T23:59:59Z --sync
+
+      # Check status and mount if ready
+      curator_cli deepfreeze thaw --check-status <thaw-id>
+
+      # List all thaw requests
+      curator_cli deepfreeze thaw --list
     """
+    # Validate mutual exclusivity
+    modes_active = sum([
+        bool(start_date or end_date),
+        bool(check_status),
+        bool(list_requests)
+    ])
+
+    if modes_active == 0:
+        click.echo("Error: Must specify one of: --start-date/--end-date, --check-status, or --list")
+        ctx.exit(1)
+
+    if modes_active > 1:
+        click.echo("Error: Cannot use --start-date/--end-date with --check-status or --list")
+        ctx.exit(1)
+
+    # Validate that create mode has both start and end dates
+    if (start_date or end_date) and not (start_date and end_date):
+        click.echo("Error: Both --start-date and --end-date are required for creating a new thaw request")
+        ctx.exit(1)
+
     manual_options = {
         "start_date": start_date,
         "end_date": end_date,
         "sync": sync,
-        "restore_days": restore_days,
+        "duration": duration,
         "retrieval_tier": retrieval_tier,
+        "check_status": check_status,
+        "list_requests": list_requests,
     }
     action = CLIAction(
         ctx.info_name,

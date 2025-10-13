@@ -82,8 +82,10 @@ def action_specific(action):
             option_defaults.start_date(),
             option_defaults.end_date(),
             option_defaults.sync(),
-            option_defaults.restore_days(),
+            option_defaults.duration(),
             option_defaults.retrieval_tier(),
+            option_defaults.check_status(),
+            option_defaults.list_requests(),
         ],
         # 'refreeze': [
         #     option_defaults.thaw_set(),
