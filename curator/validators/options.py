@@ -78,13 +78,13 @@ def action_specific(action):
         ],
         'status': [
         ],
-        # 'thaw': [
-        #     option_defaults.start(),
-        #     option_defaults.end(),
-        #     option_defaults.retain(),
-        #     option_defaults.storage_class(),
-        #     option_defaults.enable_multiple_buckets(),
-        # ],
+        'thaw': [
+            option_defaults.start_date(),
+            option_defaults.end_date(),
+            option_defaults.sync(),
+            option_defaults.restore_days(),
+            option_defaults.retrieval_tier(),
+        ],
         # 'refreeze': [
         #     option_defaults.thaw_set(),
         # ],

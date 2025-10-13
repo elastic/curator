@@ -263,3 +263,75 @@ def status(
         True,
     )
     action.do_singleton_action(dry_run=ctx.obj["dry_run"])
+
+
+@deepfreeze.command()
+@click.option(
+    "-s",
+    "--start-date",
+    type=str,
+    required=True,
+    help="Start of date range in ISO 8601 format (e.g., 2025-01-15T00:00:00Z)",
+)
+@click.option(
+    "-e",
+    "--end-date",
+    type=str,
+    required=True,
+    help="End of date range in ISO 8601 format (e.g., 2025-01-31T23:59:59Z)",
+)
+@click.option(
+    "--sync/--async",
+    "sync",
+    default=False,
+    show_default=True,
+    help="Wait for restore and mount (sync) or return immediately (async)",
+)
+@click.option(
+    "-d",
+    "--restore-days",
+    type=int,
+    default=7,
+    show_default=True,
+    help="Number of days to keep objects restored from Glacier",
+)
+@click.option(
+    "-t",
+    "--retrieval-tier",
+    type=click.Choice(["Standard", "Expedited", "Bulk"]),
+    default="Standard",
+    show_default=True,
+    help="AWS Glacier retrieval tier",
+)
+@click.pass_context
+def thaw(
+    ctx,
+    start_date,
+    end_date,
+    sync,
+    restore_days,
+    retrieval_tier,
+):
+    """
+    Thaw repositories from Glacier storage for a specified date range.
+
+    This will restore objects from Glacier tiers back to instant-access tiers.
+    In sync mode, the command waits for restoration to complete and mounts the repositories.
+    In async mode, the command returns a request ID immediately that can be used to check
+    status later.
+    """
+    manual_options = {
+        "start_date": start_date,
+        "end_date": end_date,
+        "sync": sync,
+        "restore_days": restore_days,
+        "retrieval_tier": retrieval_tier,
+    }
+    action = CLIAction(
+        ctx.info_name,
+        ctx.obj["configdict"],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])

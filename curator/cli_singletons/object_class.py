@@ -33,6 +33,7 @@ from curator.actions import (
     Shrink,
     Snapshot,
     Status,
+    Thaw,
 )
 from curator.defaults.settings import VERSION_MAX, VERSION_MIN, snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -62,6 +63,7 @@ CLASS_MAP = {
     "rotate": Rotate,
     "setup": Setup,
     "status": Status,
+    "thaw": Thaw,
 }
 
 EXCLUDED_OPTIONS = [
@@ -140,7 +142,7 @@ class CLIAction:
                     if self.allow_ilm:
                         self.alias[k]["filters"].append({"filtertype": "ilm"})
         # No filters for these actions
-        elif action in ["cluster_routing", "create_index", "rollover", "setup", "rotate", "status"]:
+        elif action in ["cluster_routing", "create_index", "rollover", "setup", "rotate", "status", "thaw"]:
             self.action_kwargs = {}
             if action == 'rollover':
                 debug.lv5('rollover option_dict = %s', option_dict)
@@ -273,7 +275,7 @@ class CLIAction:
                 action_obj = self.get_alias_obj()
             elif self.action in ["cluster_routing", "create_index", "rollover"]:
                 action_obj = self.action_class(self.client, **self.options)
-            elif self.action in ["setup", "rotate", "status"]:
+            elif self.action in ["setup", "rotate", "status", "thaw"]:
                 logger.debug(
                     f"Declaring Deepfreeze action object with options: {self.options}"
                 )
