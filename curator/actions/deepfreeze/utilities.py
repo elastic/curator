@@ -1039,3 +1039,319 @@ def get_repositories_by_names(
     except Exception as e:
         loggit.error("Failed to get repositories: %s", e)
         raise ActionError(f"Failed to get repositories: {e}")
+
+
+def get_index_templates(client: Elasticsearch) -> dict:
+    """
+    Get all legacy index templates.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+
+    :returns: Dictionary of legacy index templates
+    :rtype: dict
+
+    :raises Exception: If the query fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Getting legacy index templates")
+    try:
+        return client.indices.get_template()
+    except Exception as e:
+        loggit.error("Failed to get legacy index templates: %s", e)
+        raise ActionError(f"Failed to get legacy index templates: {e}")
+
+
+def get_composable_templates(client: Elasticsearch) -> dict:
+    """
+    Get all composable index templates.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+
+    :returns: Dictionary of composable index templates
+    :rtype: dict
+
+    :raises Exception: If the query fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Getting composable index templates")
+    try:
+        return client.indices.get_index_template()
+    except Exception as e:
+        loggit.error("Failed to get composable index templates: %s", e)
+        raise ActionError(f"Failed to get composable index templates: {e}")
+
+
+def update_template_ilm_policy(
+    client: Elasticsearch,
+    template_name: str,
+    old_policy_name: str,
+    new_policy_name: str,
+    is_composable: bool = True,
+) -> bool:
+    """
+    Update an index template to use a new ILM policy.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param template_name: The name of the template to update
+    :type template_name: str
+    :param old_policy_name: The old policy name to replace
+    :type old_policy_name: str
+    :param new_policy_name: The new policy name
+    :type new_policy_name: str
+    :param is_composable: Whether this is a composable template
+    :type is_composable: bool
+
+    :returns: True if template was updated, False otherwise
+    :rtype: bool
+
+    :raises Exception: If the update fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug(
+        "Updating template %s from policy %s to %s",
+        template_name,
+        old_policy_name,
+        new_policy_name,
+    )
+
+    try:
+        if is_composable:
+            # Get composable template
+            templates = client.indices.get_index_template(name=template_name)
+            if not templates or "index_templates" not in templates:
+                loggit.warning("Template %s not found", template_name)
+                return False
+
+            template = templates["index_templates"][0]["index_template"]
+
+            # Check if template uses the old policy
+            ilm_policy = template.get("template", {}).get("settings", {}).get("index", {}).get("lifecycle", {}).get("name")
+
+            if ilm_policy == old_policy_name:
+                # Update the policy name
+                if "template" not in template:
+                    template["template"] = {}
+                if "settings" not in template["template"]:
+                    template["template"]["settings"] = {}
+                if "index" not in template["template"]["settings"]:
+                    template["template"]["settings"]["index"] = {}
+                if "lifecycle" not in template["template"]["settings"]["index"]:
+                    template["template"]["settings"]["index"]["lifecycle"] = {}
+
+                template["template"]["settings"]["index"]["lifecycle"]["name"] = new_policy_name
+
+                # Put the updated template
+                client.indices.put_index_template(name=template_name, body=template)
+                loggit.info("Updated composable template %s to use policy %s", template_name, new_policy_name)
+                return True
+        else:
+            # Get legacy template
+            templates = client.indices.get_template(name=template_name)
+            if not templates or template_name not in templates:
+                loggit.warning("Template %s not found", template_name)
+                return False
+
+            template = templates[template_name]
+
+            # Check if template uses the old policy
+            ilm_policy = template.get("settings", {}).get("index", {}).get("lifecycle", {}).get("name")
+
+            if ilm_policy == old_policy_name:
+                # Update the policy name
+                if "settings" not in template:
+                    template["settings"] = {}
+                if "index" not in template["settings"]:
+                    template["settings"]["index"] = {}
+                if "lifecycle" not in template["settings"]["index"]:
+                    template["settings"]["index"]["lifecycle"] = {}
+
+                template["settings"]["index"]["lifecycle"]["name"] = new_policy_name
+
+                # Put the updated template
+                client.indices.put_template(name=template_name, body=template)
+                loggit.info("Updated legacy template %s to use policy %s", template_name, new_policy_name)
+                return True
+
+        return False
+    except Exception as e:
+        loggit.error("Failed to update template %s: %s", template_name, e)
+        raise ActionError(f"Failed to update template {template_name}: {e}")
+
+
+def create_versioned_ilm_policy(
+    client: Elasticsearch,
+    base_policy_name: str,
+    base_policy_body: dict,
+    new_repo_name: str,
+    suffix: str,
+) -> str:
+    """
+    Create a versioned ILM policy with updated repository reference.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param base_policy_name: The base policy name
+    :type base_policy_name: str
+    :param base_policy_body: The base policy body
+    :type base_policy_body: dict
+    :param new_repo_name: The new repository name
+    :type new_repo_name: str
+    :param suffix: The suffix to append to the policy name
+    :type suffix: str
+
+    :returns: The new versioned policy name
+    :rtype: str
+
+    :raises Exception: If policy creation fails
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+
+    # Create versioned policy name
+    new_policy_name = f"{base_policy_name}-{suffix}"
+
+    loggit.debug(
+        "Creating versioned policy %s referencing repository %s",
+        new_policy_name,
+        new_repo_name,
+    )
+
+    # Deep copy the policy body to avoid modifying the original
+    import copy
+    new_policy_body = copy.deepcopy(base_policy_body)
+
+    # Update all searchable_snapshot repository references
+    if "phases" in new_policy_body:
+        for phase_name, phase_config in new_policy_body["phases"].items():
+            if "actions" in phase_config and "searchable_snapshot" in phase_config["actions"]:
+                phase_config["actions"]["searchable_snapshot"]["snapshot_repository"] = new_repo_name
+                loggit.debug(
+                    "Updated %s phase to reference repository %s",
+                    phase_name,
+                    new_repo_name,
+                )
+
+    # Create the new policy
+    try:
+        client.ilm.put_lifecycle(name=new_policy_name, policy=new_policy_body)
+        loggit.info("Created versioned ILM policy %s", new_policy_name)
+        return new_policy_name
+    except Exception as e:
+        loggit.error("Failed to create policy %s: %s", new_policy_name, e)
+        raise ActionError(f"Failed to create policy {new_policy_name}: {e}")
+
+
+def get_policies_for_repo(client: Elasticsearch, repo_name: str) -> dict:
+    """
+    Find all ILM policies that reference a specific repository.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo_name: The repository name
+    :type repo_name: str
+
+    :returns: Dictionary of policy names to policy bodies
+    :rtype: dict
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Finding policies that reference repository %s", repo_name)
+
+    policies = client.ilm.get_lifecycle()
+    matching_policies = {}
+
+    for policy_name, policy_data in policies.items():
+        policy_body = policy_data.get("policy", {})
+        phases = policy_body.get("phases", {})
+
+        for phase_name, phase_config in phases.items():
+            actions = phase_config.get("actions", {})
+            if "searchable_snapshot" in actions:
+                snapshot_repo = actions["searchable_snapshot"].get("snapshot_repository")
+                if snapshot_repo == repo_name:
+                    matching_policies[policy_name] = policy_data
+                    loggit.debug("Found policy %s referencing %s", policy_name, repo_name)
+                    break
+
+    loggit.info("Found %d policies referencing repository %s", len(matching_policies), repo_name)
+    return matching_policies
+
+
+def get_policies_by_suffix(client: Elasticsearch, suffix: str) -> dict:
+    """
+    Find all ILM policies that end with a specific suffix.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param suffix: The suffix to search for (e.g., "000003")
+    :type suffix: str
+
+    :returns: Dictionary of policy names to policy bodies
+    :rtype: dict
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Finding policies ending with suffix -%s", suffix)
+
+    policies = client.ilm.get_lifecycle()
+    matching_policies = {}
+
+    suffix_pattern = f"-{suffix}"
+
+    for policy_name, policy_data in policies.items():
+        if policy_name.endswith(suffix_pattern):
+            matching_policies[policy_name] = policy_data
+            loggit.debug("Found policy %s with suffix %s", policy_name, suffix)
+
+    loggit.info("Found %d policies with suffix -%s", len(matching_policies), suffix)
+    return matching_policies
+
+
+def is_policy_safe_to_delete(client: Elasticsearch, policy_name: str) -> bool:
+    """
+    Check if an ILM policy is safe to delete (not in use by any indices/datastreams/templates).
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param policy_name: The policy name
+    :type policy_name: str
+
+    :returns: True if safe to delete, False otherwise
+    :rtype: bool
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Checking if policy %s is safe to delete", policy_name)
+
+    try:
+        policies = client.ilm.get_lifecycle(name=policy_name)
+        if policy_name not in policies:
+            loggit.warning("Policy %s not found", policy_name)
+            return False
+
+        policy_data = policies[policy_name]
+        in_use_by = policy_data.get("in_use_by", {})
+
+        indices_count = len(in_use_by.get("indices", []))
+        datastreams_count = len(in_use_by.get("data_streams", []))
+        templates_count = len(in_use_by.get("composable_templates", []))
+
+        total_usage = indices_count + datastreams_count + templates_count
+
+        if total_usage > 0:
+            loggit.info(
+                "Policy %s is in use by %d indices, %d data streams, %d templates",
+                policy_name,
+                indices_count,
+                datastreams_count,
+                templates_count,
+            )
+            return False
+
+        loggit.debug("Policy %s is safe to delete (not in use)", policy_name)
+        return True
+    except NotFoundError:
+        loggit.warning("Policy %s not found", policy_name)
+        return False
+    except Exception as e:
+        loggit.error("Error checking policy %s: %s", policy_name, e)
+        return False

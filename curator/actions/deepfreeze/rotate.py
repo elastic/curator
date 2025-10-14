@@ -12,18 +12,25 @@ from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.helpers import Repository
 from curator.actions.deepfreeze.utilities import (
     create_repo,
+    create_versioned_ilm_policy,
     decode_date,
     ensure_settings_index,
     get_all_indices_in_repo,
+    get_composable_templates,
+    get_index_templates,
     get_matching_repo_names,
     get_matching_repos,
     get_next_suffix,
+    get_policies_by_suffix,
+    get_policies_for_repo,
     get_settings,
     get_timestamp_range,
+    is_policy_safe_to_delete,
     push_to_glacier,
     save_settings,
     unmount_repo,
     update_repository_date_range,
+    update_template_ilm_policy,
 )
 from curator.exceptions import RepositoryException
 from curator.s3client import s3_client_factory
@@ -139,59 +146,227 @@ class Rotate:
 
     def update_ilm_policies(self, dry_run=False) -> None:
         """
-        Loop through all existing IML policies looking for ones which reference
-        the latest_repo and update them to use the new repo instead.
+        Create versioned ILM policies for the new repository and update index templates.
 
-        :param dry_run: If True, do not actually update the policies
+        Instead of modifying existing policies, this creates NEW versioned policies
+        (e.g., my-policy-000005) that reference the new repository. Index templates
+        are then updated to use the new versioned policies, ensuring new indices use
+        the new repository while existing indices keep their old policies.
+
+        :param dry_run: If True, do not actually create policies or update templates
         :type dry_run: bool
 
         :return: None
         :rtype: None
 
-        :raises Exception: If the policy cannot be updated
-        :raises Exception: If the policy does not exist
+        :raises Exception: If policies or templates cannot be updated
         """
-        self.loggit.debug("Updating ILM policies")
+        self.loggit.debug("Creating versioned ILM policies for new repository")
+
         if self.latest_repo == self.new_repo_name:
             self.loggit.info("Already on the latest repo")
             sys.exit(0)
-        self.loggit.info(
-            "Switching from %s to %s", self.latest_repo, self.new_repo_name
-        )
-        policies = self.client.ilm.get_lifecycle()
-        updated_policies = {}
-        for policy in policies:
-            # Go through these looking for any occurrences of self.latest_repo
-            # and change those to use self.new_repo_name instead.
-            # TODO: Ensure that delete_searchable_snapshot is set to false or
-            # TODO: the snapshot will be deleted when the policy transitions to the
-            # TODO: next phase. In this case, raise an error and skip this policy.
-            # ? Maybe we don't correct this but flag it as an error?
-            p = policies[policy]["policy"]["phases"]
-            updated = False
-            for phase in p:
-                if "searchable_snapshot" in p[phase]["actions"] and (
-                    p[phase]["actions"]["searchable_snapshot"]["snapshot_repository"]
-                    == self.latest_repo
-                ):
-                    p[phase]["actions"]["searchable_snapshot"][
-                        "snapshot_repository"
-                    ] = self.new_repo_name
-                    updated = True
-            if updated:
-                updated_policies[policy] = policies[policy]["policy"]
 
-        # Now, submit the updated policies to _ilm/policy/<policyname>
-        if not updated_policies:
-            self.loggit.warning("No policies to update")
-        else:
-            self.loggit.info("Updating %d policies:", len(updated_policies.keys()))
-        for pol, body in updated_policies.items():
-            self.loggit.info("\t%s", pol)
-            self.loggit.debug("Policy body: %s", body)
+        self.loggit.info(
+            "Creating versioned policies for transition from %s to %s",
+            self.latest_repo,
+            self.new_repo_name,
+        )
+
+        # Find all policies that reference the latest repository
+        policies_to_version = get_policies_for_repo(self.client, self.latest_repo)
+
+        if not policies_to_version:
+            self.loggit.warning("No policies reference repository %s", self.latest_repo)
+            return
+
+        self.loggit.info(
+            "Found %d policies to create versioned copies for", len(policies_to_version)
+        )
+
+        # Track policy name mappings (old -> new) for template updates
+        policy_mappings = {}
+
+        # Create versioned copies of each policy
+        for policy_name, policy_data in policies_to_version.items():
+            policy_body = policy_data.get("policy", {})
+
+            # Check for delete_searchable_snapshot setting and warn if True
+            for phase_name, phase_config in policy_body.get("phases", {}).items():
+                delete_action = phase_config.get("actions", {}).get("delete", {})
+                if delete_action.get("delete_searchable_snapshot", False):
+                    self.loggit.warning(
+                        "Policy %s has delete_searchable_snapshot=true in %s phase. "
+                        "Snapshots may be deleted when indices transition!",
+                        policy_name,
+                        phase_name,
+                    )
+
             if not dry_run:
-                self.client.ilm.put_lifecycle(name=pol, policy=body)
-            self.loggit.debug("Finished ILM Policy updates")
+                try:
+                    new_policy_name = create_versioned_ilm_policy(
+                        self.client,
+                        policy_name,
+                        policy_body,
+                        self.new_repo_name,
+                        self.suffix,
+                    )
+                    policy_mappings[policy_name] = new_policy_name
+                    self.loggit.info(
+                        "Created versioned policy: %s -> %s", policy_name, new_policy_name
+                    )
+                except Exception as e:
+                    self.loggit.error(
+                        "Failed to create versioned policy for %s: %s", policy_name, e
+                    )
+                    raise
+            else:
+                new_policy_name = f"{policy_name}-{self.suffix}"
+                policy_mappings[policy_name] = new_policy_name
+                self.loggit.info(
+                    "DRY-RUN: Would create policy %s -> %s",
+                    policy_name,
+                    new_policy_name,
+                )
+
+        # Update index templates to use the new versioned policies
+        self.loggit.info("Updating index templates to use new versioned policies")
+        templates_updated = 0
+
+        # Update composable templates
+        try:
+            composable_templates = get_composable_templates(self.client)
+            for template_name in composable_templates.get("index_templates", []):
+                template_name = template_name["name"]
+                for old_policy, new_policy in policy_mappings.items():
+                    if not dry_run:
+                        try:
+                            if update_template_ilm_policy(
+                                self.client, template_name, old_policy, new_policy, is_composable=True
+                            ):
+                                templates_updated += 1
+                                self.loggit.info(
+                                    "Updated composable template %s: %s -> %s",
+                                    template_name,
+                                    old_policy,
+                                    new_policy,
+                                )
+                        except Exception as e:
+                            self.loggit.debug(
+                                "Could not update template %s: %s", template_name, e
+                            )
+                    else:
+                        self.loggit.info(
+                            "DRY-RUN: Would update composable template %s if it uses policy %s",
+                            template_name,
+                            old_policy,
+                        )
+        except Exception as e:
+            self.loggit.warning("Could not get composable templates: %s", e)
+
+        # Update legacy templates
+        try:
+            legacy_templates = get_index_templates(self.client)
+            for template_name in legacy_templates.keys():
+                for old_policy, new_policy in policy_mappings.items():
+                    if not dry_run:
+                        try:
+                            if update_template_ilm_policy(
+                                self.client, template_name, old_policy, new_policy, is_composable=False
+                            ):
+                                templates_updated += 1
+                                self.loggit.info(
+                                    "Updated legacy template %s: %s -> %s",
+                                    template_name,
+                                    old_policy,
+                                    new_policy,
+                                )
+                        except Exception as e:
+                            self.loggit.debug(
+                                "Could not update template %s: %s", template_name, e
+                            )
+                    else:
+                        self.loggit.info(
+                            "DRY-RUN: Would update legacy template %s if it uses policy %s",
+                            template_name,
+                            old_policy,
+                        )
+        except Exception as e:
+            self.loggit.warning("Could not get legacy templates: %s", e)
+
+        if templates_updated > 0:
+            self.loggit.info("Updated %d index templates", templates_updated)
+        else:
+            self.loggit.warning("No index templates were updated")
+
+        self.loggit.info("Finished ILM policy versioning and template updates")
+
+    def cleanup_policies_for_repo(self, repo_name: str, dry_run=False) -> None:
+        """
+        Clean up ILM policies associated with an unmounted repository.
+
+        Finds all policies with the same suffix as the repository and deletes them
+        if they are not in use by any indices, data streams, or templates.
+
+        :param repo_name: The repository name (e.g., "deepfreeze-000003")
+        :type repo_name: str
+        :param dry_run: If True, do not actually delete policies
+        :type dry_run: bool
+
+        :return: None
+        :rtype: None
+        """
+        self.loggit.debug("Cleaning up policies for repository %s", repo_name)
+
+        # Extract suffix from repository name
+        # Repository format: {prefix}-{suffix}
+        try:
+            suffix = repo_name.split("-")[-1]
+            self.loggit.debug("Extracted suffix %s from repository %s", suffix, repo_name)
+        except Exception as e:
+            self.loggit.error("Could not extract suffix from repository %s: %s", repo_name, e)
+            return
+
+        # Find all policies with this suffix
+        policies_with_suffix = get_policies_by_suffix(self.client, suffix)
+
+        if not policies_with_suffix:
+            self.loggit.info("No policies found with suffix -%s", suffix)
+            return
+
+        self.loggit.info(
+            "Found %d policies with suffix -%s to evaluate for deletion",
+            len(policies_with_suffix),
+            suffix,
+        )
+
+        deleted_count = 0
+        skipped_count = 0
+
+        for policy_name in policies_with_suffix.keys():
+            # Check if the policy is safe to delete
+            if is_policy_safe_to_delete(self.client, policy_name):
+                if not dry_run:
+                    try:
+                        self.client.ilm.delete_lifecycle(name=policy_name)
+                        deleted_count += 1
+                        self.loggit.info("Deleted policy %s (no longer in use)", policy_name)
+                    except Exception as e:
+                        self.loggit.error("Failed to delete policy %s: %s", policy_name, e)
+                        skipped_count += 1
+                else:
+                    self.loggit.info("DRY-RUN: Would delete policy %s", policy_name)
+                    deleted_count += 1
+            else:
+                skipped_count += 1
+                self.loggit.info(
+                    "Skipping policy %s (still in use by indices/datastreams/templates)",
+                    policy_name,
+                )
+
+        self.loggit.info(
+            "Policy cleanup complete: %d deleted, %d skipped", deleted_count, skipped_count
+        )
 
     def is_thawed(self, repo: str) -> bool:
         """
@@ -245,11 +420,21 @@ class Rotate:
                     self.loggit.info(
                         "Updated status to unmounted for repo %s", repository.name
                     )
+
+                    # Clean up ILM policies associated with this repository
+                    self.loggit.info(
+                        "Cleaning up ILM policies associated with repository %s", repo
+                    )
+                    self.cleanup_policies_for_repo(repo, dry_run=False)
+
                 except Exception as e:
                     self.loggit.error(
                         "Failed to update doc unmounting repo %s: %s", repo, str(e)
                     )
                     raise
+            else:
+                self.loggit.info("DRY-RUN: Would clean up policies for repo %s", repo)
+                self.cleanup_policies_for_repo(repo, dry_run=True)
 
     def do_dry_run(self) -> None:
         """
