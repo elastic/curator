@@ -143,4 +143,194 @@ class TestDeepfreezeRotate(TestCase):
                         rotate = Rotate(self.client)
                         assert rotate is not None
 
+    def test_update_ilm_policies_creates_versioned_policies(self):
+        """Test that update_ilm_policies creates versioned policies instead of modifying existing ones"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_get_policies:
+                            with patch('curator.actions.deepfreeze.rotate.create_versioned_ilm_policy') as mock_create:
+                                with patch('curator.actions.deepfreeze.rotate.get_composable_templates') as mock_get_composable:
+                                    with patch('curator.actions.deepfreeze.rotate.get_index_templates') as mock_get_templates:
+                                        with patch('curator.actions.deepfreeze.rotate.update_template_ilm_policy') as mock_update_template:
+                                            self.client.indices.exists.return_value = True
+
+                                            # Mock policy that references the old repo
+                                            mock_get_policies.return_value = {
+                                                "my-policy": {
+                                                    "policy": {
+                                                        "phases": {
+                                                            "cold": {
+                                                                "actions": {
+                                                                    "searchable_snapshot": {
+                                                                        "snapshot_repository": "deepfreeze-000001"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            mock_create.return_value = "my-policy-000002"
+                                            mock_get_composable.return_value = {"index_templates": []}
+                                            mock_get_templates.return_value = {}
+
+                                            rotate = Rotate(self.client)
+                                            rotate.update_ilm_policies(dry_run=False)
+
+                                            # Verify versioned policy was created
+                                            mock_create.assert_called_once()
+                                            call_args = mock_create.call_args
+                                            assert call_args[0][1] == "my-policy"  # base policy name
+                                            assert call_args[0][3] == "deepfreeze-000002"  # new repo name
+                                            assert call_args[0][4] == "000002"  # suffix
+
+    def test_update_ilm_policies_updates_templates(self):
+        """Test that update_ilm_policies updates index templates to use new versioned policies"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_get_policies:
+                            with patch('curator.actions.deepfreeze.rotate.create_versioned_ilm_policy') as mock_create:
+                                with patch('curator.actions.deepfreeze.rotate.get_composable_templates') as mock_get_composable:
+                                    with patch('curator.actions.deepfreeze.rotate.get_index_templates') as mock_get_templates:
+                                        with patch('curator.actions.deepfreeze.rotate.update_template_ilm_policy') as mock_update_template:
+                                            self.client.indices.exists.return_value = True
+
+                                            mock_get_policies.return_value = {
+                                                "my-policy": {"policy": {"phases": {}}}
+                                            }
+                                            mock_create.return_value = "my-policy-000002"
+
+                                            # Mock templates
+                                            mock_get_composable.return_value = {
+                                                "index_templates": [{"name": "logs-template"}]
+                                            }
+                                            mock_get_templates.return_value = {"metrics-template": {}}
+                                            mock_update_template.return_value = True
+
+                                            rotate = Rotate(self.client)
+                                            rotate.update_ilm_policies(dry_run=False)
+
+                                            # Verify templates were updated (both composable and legacy)
+                                            assert mock_update_template.call_count >= 2
+
+    def test_update_ilm_policies_dry_run(self):
+        """Test that update_ilm_policies dry-run mode doesn't create policies"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_get_policies:
+                            with patch('curator.actions.deepfreeze.rotate.create_versioned_ilm_policy') as mock_create:
+                                with patch('curator.actions.deepfreeze.rotate.get_composable_templates') as mock_get_composable:
+                                    with patch('curator.actions.deepfreeze.rotate.get_index_templates') as mock_get_templates:
+                                        self.client.indices.exists.return_value = True
+
+                                        mock_get_policies.return_value = {
+                                            "my-policy": {"policy": {"phases": {}}}
+                                        }
+                                        mock_get_composable.return_value = {"index_templates": []}
+                                        mock_get_templates.return_value = {}
+
+                                        rotate = Rotate(self.client)
+                                        rotate.update_ilm_policies(dry_run=True)
+
+                                        # Verify no policies were created in dry-run
+                                        mock_create.assert_not_called()
+
+    def test_cleanup_policies_for_repo(self):
+        """Test cleanup_policies_for_repo deletes policies with matching suffix"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
+                            with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
+                                self.client.indices.exists.return_value = True
+
+                                # Mock policies with suffix 000001
+                                mock_get_by_suffix.return_value = {
+                                    "my-policy-000001": {"policy": {}},
+                                    "other-policy-000001": {"policy": {}}
+                                }
+                                mock_is_safe.return_value = True
+
+                                rotate = Rotate(self.client)
+                                rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=False)
+
+                                # Verify policies were deleted
+                                assert self.client.ilm.delete_lifecycle.call_count == 2
+                                self.client.ilm.delete_lifecycle.assert_any_call(name="my-policy-000001")
+                                self.client.ilm.delete_lifecycle.assert_any_call(name="other-policy-000001")
+
+    def test_cleanup_policies_for_repo_skips_in_use(self):
+        """Test cleanup_policies_for_repo skips policies still in use"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
+                            with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
+                                self.client.indices.exists.return_value = True
+
+                                mock_get_by_suffix.return_value = {
+                                    "my-policy-000001": {"policy": {}}
+                                }
+                                # Policy is still in use
+                                mock_is_safe.return_value = False
+
+                                rotate = Rotate(self.client)
+                                rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=False)
+
+                                # Verify policy was NOT deleted
+                                self.client.ilm.delete_lifecycle.assert_not_called()
+
+    def test_cleanup_policies_for_repo_dry_run(self):
+        """Test cleanup_policies_for_repo dry-run mode doesn't delete policies"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
+                            with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
+                                self.client.indices.exists.return_value = True
+
+                                mock_get_by_suffix.return_value = {
+                                    "my-policy-000001": {"policy": {}}
+                                }
+                                mock_is_safe.return_value = True
+
+                                rotate = Rotate(self.client)
+                                rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=True)
+
+                                # Verify no policies were deleted in dry-run
+                                self.client.ilm.delete_lifecycle.assert_not_called()
+
+    def test_unmount_oldest_repos_calls_cleanup(self):
+        """Test that unmount_oldest_repos calls cleanup_policies_for_repo"""
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000002", "deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000003"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.unmount_repo') as mock_unmount:
+                            with patch('curator.actions.deepfreeze.rotate.push_to_glacier'):
+                                with patch('curator.actions.deepfreeze.rotate.Repository') as mock_repo_class:
+                                    self.client.indices.exists.return_value = True
+
+                                    mock_repo = Mock()
+                                    mock_repo.name = "deepfreeze-000001"
+                                    mock_repo_class.from_elasticsearch.return_value = mock_repo
+
+                                    rotate = Rotate(self.client, keep="1")
+
+                                    with patch.object(rotate, 'cleanup_policies_for_repo') as mock_cleanup:
+                                        rotate.unmount_oldest_repos(dry_run=False)
+
+                                        # Verify cleanup was called for the unmounted repo
+                                        mock_cleanup.assert_called_once_with("deepfreeze-000001", dry_run=False)
+
 
