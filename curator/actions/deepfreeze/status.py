@@ -107,24 +107,33 @@ class Status:
         """
         table = Table(title="ILM Policies")
         table.add_column("Policy", style="cyan")
+        table.add_column("Repository", style="magenta")
         table.add_column("Indices", style="magenta")
         table.add_column("Datastreams", style="magenta")
+
+        current_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
         policies = self.client.ilm.get_lifecycle()
+
         for policy in policies:
-            # print(f"  {policy}")
             for phase in policies[policy]["policy"]["phases"]:
                 if (
                     "searchable_snapshot"
                     in policies[policy]["policy"]["phases"][phase]["actions"]
-                    and policies[policy]["policy"]["phases"][phase]["actions"][
+                ):
+                    repo_name = policies[policy]["policy"]["phases"][phase]["actions"][
                         "searchable_snapshot"
                     ]["snapshot_repository"]
-                    == f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
-                ):
-                    num_indices = len(policies[policy]["in_use_by"]["indices"])
-                    num_datastreams = len(policies[policy]["in_use_by"]["data_streams"])
-                    table.add_row(policy, str(num_indices), str(num_datastreams))
-                    break
+
+                    # Check if repository starts with our prefix
+                    if repo_name.startswith(self.settings.repo_name_prefix):
+                        # Mark current repo with asterisk
+                        repo_display = repo_name if repo_name != current_repo else f"{repo_name}*"
+
+                        num_indices = len(policies[policy]["in_use_by"]["indices"])
+                        num_datastreams = len(policies[policy]["in_use_by"]["data_streams"])
+                        table.add_row(policy, repo_display, str(num_indices), str(num_datastreams))
+                        break
+
         self.console.print(table)
 
     def do_buckets(self):
@@ -134,23 +143,60 @@ class Status:
         :return: None
         :rtype: None
         """
-        table = Table(title="Buckets")
+        self.loggit.debug("Showing buckets")
+
+        # Get all repositories with our prefix
+        all_repos = get_all_repos(self.client)
+        matching_repos = [
+            repo for repo in all_repos
+            if repo.name.startswith(self.settings.repo_name_prefix)
+        ]
+
+        # Extract unique bucket/base_path combinations
+        bucket_info = {}
+        for repo in matching_repos:
+            if repo.bucket and repo.base_path is not None:
+                key = (repo.bucket, repo.base_path)
+                if key not in bucket_info:
+                    bucket_info[key] = repo.name
+
+        # Sort by bucket/base_path
+        sorted_buckets = sorted(bucket_info.keys())
+        total_buckets = len(sorted_buckets)
+
+        # Apply limit if specified
+        if self.limit is not None and self.limit > 0:
+            sorted_buckets = sorted_buckets[-self.limit:]
+            self.loggit.debug("Limiting display to last %s buckets", self.limit)
+
+        # Determine current bucket/base_path
+        if self.settings.rotate_by == "bucket":
+            current_bucket = f"{self.settings.bucket_name_prefix}-{self.settings.last_suffix}"
+            current_base_path = self.settings.base_path_prefix
+        else:
+            current_bucket = self.settings.bucket_name_prefix
+            current_base_path = f"{self.settings.base_path_prefix}-{self.settings.last_suffix}"
+
+        # Set up the table with appropriate title
+        if self.limit is not None and self.limit > 0 and total_buckets > self.limit:
+            table_title = f"Buckets (showing last {len(sorted_buckets)} of {total_buckets})"
+        else:
+            table_title = "Buckets"
+
+        table = Table(title=table_title)
         table.add_column("Provider", style="cyan")
         table.add_column("Bucket", style="magenta")
         table.add_column("Base_path", style="magenta")
 
-        if self.settings.rotate_by == "bucket":
-            table.add_row(
-                self.settings.provider,
-                f"{self.settings.bucket_name_prefix}-{self.settings.last_suffix}",
-                self.settings.base_path_prefix,
-            )
-        else:
-            table.add_row(
-                self.settings.provider,
-                f"{self.settings.bucket_name_prefix}",
-                f"{self.settings.base_path_prefix}-{self.settings.last_suffix}",
-            )
+        for bucket, base_path in sorted_buckets:
+            # Mark current bucket/base_path with asterisk
+            if bucket == current_bucket and base_path == current_base_path:
+                bucket_display = f"{bucket}*"
+            else:
+                bucket_display = bucket
+
+            table.add_row(self.settings.provider, bucket_display, base_path)
+
         self.console.print(table)
 
     def do_repositories(self):

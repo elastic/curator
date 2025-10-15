@@ -106,12 +106,13 @@ class S3Client(metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def delete_bucket(self, bucket_name: str) -> None:
+    def delete_bucket(self, bucket_name: str, force: bool = False) -> None:
         """
         Delete a bucket with the given name.
 
         Args:
             bucket_name (str): The name of the bucket to delete.
+            force (bool): If True, empty the bucket before deleting it.
 
         Returns:
             None
@@ -308,18 +309,40 @@ class AwsS3Client(S3Client):
 
         return objects
 
-    def delete_bucket(self, bucket_name: str) -> None:
+    def delete_bucket(self, bucket_name: str, force: bool = False) -> None:
         """
         Delete a bucket with the given name.
 
         Args:
             bucket_name (str): The name of the bucket to delete.
+            force (bool): If True, empty the bucket before deleting it.
 
         Returns:
             None
         """
         self.loggit.info(f"Deleting bucket: {bucket_name}")
         try:
+            # If force=True, empty the bucket first
+            if force:
+                self.loggit.info(f"Emptying bucket {bucket_name} before deletion")
+                try:
+                    # List and delete all objects
+                    paginator = self.client.get_paginator('list_objects_v2')
+                    pages = paginator.paginate(Bucket=bucket_name)
+
+                    for page in pages:
+                        if 'Contents' in page:
+                            objects = [{'Key': obj['Key']} for obj in page['Contents']]
+                            if objects:
+                                self.client.delete_objects(
+                                    Bucket=bucket_name,
+                                    Delete={'Objects': objects}
+                                )
+                                self.loggit.debug(f"Deleted {len(objects)} objects from {bucket_name}")
+                except ClientError as e:
+                    if e.response['Error']['Code'] != 'NoSuchBucket':
+                        self.loggit.warning(f"Error emptying bucket {bucket_name}: {e}")
+
             self.client.delete_bucket(Bucket=bucket_name)
         except ClientError as e:
             self.loggit.error(e)
