@@ -13,9 +13,7 @@ from curator.actions.deepfreeze.helpers import Repository
 from curator.actions.deepfreeze.utilities import (
     create_repo,
     create_versioned_ilm_policy,
-    decode_date,
     ensure_settings_index,
-    get_all_indices_in_repo,
     get_composable_templates,
     get_index_templates,
     get_matching_repo_names,
@@ -24,7 +22,6 @@ from curator.actions.deepfreeze.utilities import (
     get_policies_by_suffix,
     get_policies_for_repo,
     get_settings,
-    get_timestamp_range,
     is_policy_safe_to_delete,
     push_to_glacier,
     save_settings,
@@ -62,13 +59,13 @@ class Rotate:
         self,
         client: Elasticsearch,
         keep: str = "6",
-        year: int = None,
-        month: int = None,
+        year: int = None,  # type: ignore
+        month: int = None,  # type: ignore
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Rotate")
 
-        self.settings = get_settings(client)
+        self.settings = get_settings(client)  # type: ignore
         self.loggit.debug("Settings: %s", str(self.settings))
 
         self.client = client
@@ -93,7 +90,7 @@ class Rotate:
 
         self.loggit.debug("Getting repo list")
         self.repo_list = get_matching_repo_names(
-            self.client, self.settings.repo_name_prefix
+            self.client, self.settings.repo_name_prefix  # type: ignore
         )
         self.repo_list.sort(reverse=True)
         self.loggit.debug("Repo list: %s", self.repo_list)
@@ -123,7 +120,7 @@ class Rotate:
         self.loggit.debug("Updating repo date ranges")
         # Get the repo objects (not names) which match our prefix
         repos = get_matching_repos(
-            self.client, self.settings.repo_name_prefix, mounted=True
+            self.client, self.settings.repo_name_prefix, mounted=True  # type: ignore
         )
         self.loggit.debug("Found %s matching repos", len(repos))
 
@@ -137,7 +134,7 @@ class Rotate:
 
             # Use the shared utility function to update dates
             # It handles multiple index naming patterns and persists automatically
-            updated = update_repository_date_range(self.client, repo)
+            updated = update_repository_date_range(self.client, repo)  # type: ignore
 
             if updated:
                 self.loggit.debug("Successfully updated date range for %s", repo.name)
@@ -175,7 +172,7 @@ class Rotate:
 
         # Find all policies that reference the latest repository
         self.loggit.debug("Searching for policies that reference %s", self.latest_repo)
-        policies_to_version = get_policies_for_repo(self.client, self.latest_repo)
+        policies_to_version = get_policies_for_repo(self.client, self.latest_repo)  # type: ignore
 
         if not policies_to_version:
             self.loggit.warning(
@@ -183,14 +180,14 @@ class Rotate:
                 "use searchable snapshots with this repository yet. You may need to manually "
                 "update your ILM policies to reference the new repository, or they may not "
                 "have been configured to use deepfreeze repositories.",
-                self.latest_repo
+                self.latest_repo,
             )
             return
 
         self.loggit.info(
             "Found %d policies to create versioned copies for: %s",
             len(policies_to_version),
-            ", ".join(policies_to_version.keys())
+            ", ".join(policies_to_version.keys()),
         )
 
         # Track policy name mappings (old -> new) for template updates
@@ -208,14 +205,15 @@ class Rotate:
                 parts = policy_name.rsplit("-", 1)
                 # Check if last part looks like a suffix (all digits or date format)
                 potential_suffix = parts[1]
-                if potential_suffix.isdigit() or ("." in potential_suffix and all(
-                    p.isdigit() for p in potential_suffix.split(".")
-                )):
+                if potential_suffix.isdigit() or (
+                    "." in potential_suffix
+                    and all(p.isdigit() for p in potential_suffix.split("."))
+                ):
                     base_policy_name = parts[0]
                     self.loggit.debug(
                         "Stripped suffix from %s, using base name: %s",
                         policy_name,
-                        base_policy_name
+                        base_policy_name,
                     )
 
             # Check for delete_searchable_snapshot setting and warn if True
@@ -232,7 +230,7 @@ class Rotate:
             if not dry_run:
                 try:
                     new_policy_name = create_versioned_ilm_policy(
-                        self.client,
+                        self.client,  # type: ignore
                         base_policy_name,  # Use base name, not full name
                         policy_body,
                         self.new_repo_name,
@@ -240,7 +238,9 @@ class Rotate:
                     )
                     policy_mappings[policy_name] = new_policy_name
                     self.loggit.info(
-                        "Created versioned policy: %s -> %s", policy_name, new_policy_name
+                        "Created versioned policy: %s -> %s",
+                        policy_name,
+                        new_policy_name,
                     )
                 except Exception as e:
                     self.loggit.error(
@@ -262,14 +262,14 @@ class Rotate:
 
         # Update composable templates
         try:
-            composable_templates = get_composable_templates(self.client)
+            composable_templates = get_composable_templates(self.client)  # type: ignore
             for template_name in composable_templates.get("index_templates", []):
                 template_name = template_name["name"]
                 for old_policy, new_policy in policy_mappings.items():
                     if not dry_run:
                         try:
                             if update_template_ilm_policy(
-                                self.client, template_name, old_policy, new_policy, is_composable=True
+                                self.client, template_name, old_policy, new_policy, is_composable=True  # type: ignore
                             ):
                                 templates_updated += 1
                                 self.loggit.info(
@@ -293,13 +293,13 @@ class Rotate:
 
         # Update legacy templates
         try:
-            legacy_templates = get_index_templates(self.client)
+            legacy_templates = get_index_templates(self.client)  # type: ignore
             for template_name in legacy_templates.keys():
                 for old_policy, new_policy in policy_mappings.items():
                     if not dry_run:
                         try:
                             if update_template_ilm_policy(
-                                self.client, template_name, old_policy, new_policy, is_composable=False
+                                self.client, template_name, old_policy, new_policy, is_composable=False  # type: ignore
                             ):
                                 templates_updated += 1
                                 self.loggit.info(
@@ -349,13 +349,17 @@ class Rotate:
         # Repository format: {prefix}-{suffix}
         try:
             suffix = repo_name.split("-")[-1]
-            self.loggit.debug("Extracted suffix %s from repository %s", suffix, repo_name)
+            self.loggit.debug(
+                "Extracted suffix %s from repository %s", suffix, repo_name
+            )
         except Exception as e:
-            self.loggit.error("Could not extract suffix from repository %s: %s", repo_name, e)
+            self.loggit.error(
+                "Could not extract suffix from repository %s: %s", repo_name, e
+            )
             return
 
         # Find all policies with this suffix
-        policies_with_suffix = get_policies_by_suffix(self.client, suffix)
+        policies_with_suffix = get_policies_by_suffix(self.client, suffix)  # type: ignore
 
         if not policies_with_suffix:
             self.loggit.info("No policies found with suffix -%s", suffix)
@@ -372,14 +376,18 @@ class Rotate:
 
         for policy_name in policies_with_suffix.keys():
             # Check if the policy is safe to delete
-            if is_policy_safe_to_delete(self.client, policy_name):
+            if is_policy_safe_to_delete(self.client, policy_name):  # type: ignore
                 if not dry_run:
                     try:
                         self.client.ilm.delete_lifecycle(name=policy_name)
                         deleted_count += 1
-                        self.loggit.info("Deleted policy %s (no longer in use)", policy_name)
+                        self.loggit.info(
+                            "Deleted policy %s (no longer in use)", policy_name
+                        )
                     except Exception as e:
-                        self.loggit.error("Failed to delete policy %s: %s", policy_name, e)
+                        self.loggit.error(
+                            "Failed to delete policy %s: %s", policy_name, e
+                        )
                         skipped_count += 1
                 else:
                     self.loggit.info("DRY-RUN: Would delete policy %s", policy_name)
@@ -392,7 +400,9 @@ class Rotate:
                 )
 
         self.loggit.info(
-            "Policy cleanup complete: %d deleted, %d skipped", deleted_count, skipped_count
+            "Policy cleanup complete: %d deleted, %d skipped",
+            deleted_count,
+            skipped_count,
         )
 
     def is_thawed(self, repo: str) -> bool:
@@ -433,7 +443,7 @@ class Rotate:
             if not dry_run:
                 # ? Do I want to check for existence of snapshots still mounted from
                 # ? the repo here or in unmount_repo?
-                unmounted_repo = unmount_repo(self.client, repo)
+                unmounted_repo = unmount_repo(self.client, repo)  # type: ignore
                 push_to_glacier(self.s3, unmounted_repo)
                 try:
                     self.loggit.debug("Fetching repo %s doc", repo)
@@ -441,11 +451,11 @@ class Rotate:
                         self.client, repo, STATUS_INDEX
                     )
                     self.loggit.debug("Looking for %s, found %s", repo, repository)
-                    repository.unmount()
+                    repository.unmount()  # type: ignore
                     self.loggit.debug("preparing to persist %s", repo)
-                    repository.persist(self.client)
+                    repository.persist(self.client)  # type: ignore
                     self.loggit.info(
-                        "Updated status to unmounted for repo %s", repository.name
+                        "Updated status to unmounted for repo %s", repository.name  # type: ignore
                     )
 
                     # Clean up ILM policies associated with this repository
@@ -481,7 +491,7 @@ class Rotate:
         self.loggit.info(msg)
         self.loggit.info("DRY-RUN: Creating bucket %s", self.new_bucket_name)
         create_repo(
-            self.client,
+            self.client,  # type: ignore
             self.new_repo_name,
             self.new_bucket_name,
             self.base_path,
@@ -506,14 +516,14 @@ class Rotate:
         :raises Exception: If the repository cannot be created
         :raises Exception: If the repository already exists
         """
-        ensure_settings_index(self.client)
+        ensure_settings_index(self.client)  # type: ignore
         self.loggit.debug("Saving settings")
-        save_settings(self.client, self.settings)
+        save_settings(self.client, self.settings)  # type: ignore
         # Create the new bucket and repo, but only if rotate_by is bucket
         if self.settings.rotate_by == "bucket":
             self.s3.create_bucket(self.new_bucket_name)
         create_repo(
-            self.client,
+            self.client,  # type: ignore
             self.new_repo_name,
             self.new_bucket_name,
             self.base_path,
