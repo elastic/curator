@@ -174,14 +174,23 @@ class Rotate:
         )
 
         # Find all policies that reference the latest repository
+        self.loggit.debug("Searching for policies that reference %s", self.latest_repo)
         policies_to_version = get_policies_for_repo(self.client, self.latest_repo)
 
         if not policies_to_version:
-            self.loggit.warning("No policies reference repository %s", self.latest_repo)
+            self.loggit.warning(
+                "No policies reference repository %s - this is expected if no ILM policies "
+                "use searchable snapshots with this repository yet. You may need to manually "
+                "update your ILM policies to reference the new repository, or they may not "
+                "have been configured to use deepfreeze repositories.",
+                self.latest_repo
+            )
             return
 
         self.loggit.info(
-            "Found %d policies to create versioned copies for", len(policies_to_version)
+            "Found %d policies to create versioned copies for: %s",
+            len(policies_to_version),
+            ", ".join(policies_to_version.keys())
         )
 
         # Track policy name mappings (old -> new) for template updates
@@ -190,6 +199,24 @@ class Rotate:
         # Create versioned copies of each policy
         for policy_name, policy_data in policies_to_version.items():
             policy_body = policy_data.get("policy", {})
+
+            # Strip old suffix from policy name if it exists
+            # This handles subsequent rotations where policy might be "my-policy-000002"
+            # We want base name "my-policy" to create "my-policy-000003"
+            base_policy_name = policy_name
+            if "-" in policy_name:
+                parts = policy_name.rsplit("-", 1)
+                # Check if last part looks like a suffix (all digits or date format)
+                potential_suffix = parts[1]
+                if potential_suffix.isdigit() or ("." in potential_suffix and all(
+                    p.isdigit() for p in potential_suffix.split(".")
+                )):
+                    base_policy_name = parts[0]
+                    self.loggit.debug(
+                        "Stripped suffix from %s, using base name: %s",
+                        policy_name,
+                        base_policy_name
+                    )
 
             # Check for delete_searchable_snapshot setting and warn if True
             for phase_name, phase_config in policy_body.get("phases", {}).items():
@@ -206,7 +233,7 @@ class Rotate:
                 try:
                     new_policy_name = create_versioned_ilm_policy(
                         self.client,
-                        policy_name,
+                        base_policy_name,  # Use base name, not full name
                         policy_body,
                         self.new_repo_name,
                         self.suffix,
@@ -221,7 +248,7 @@ class Rotate:
                     )
                     raise
             else:
-                new_policy_name = f"{policy_name}-{self.suffix}"
+                new_policy_name = f"{base_policy_name}-{self.suffix}"
                 policy_mappings[policy_name] = new_policy_name
                 self.loggit.info(
                     "DRY-RUN: Would create policy %s -> %s",
