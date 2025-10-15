@@ -404,9 +404,9 @@ def get_all_repos(client: Elasticsearch) -> list[Repository]:
     # logging.debug("Looking for unmounted repos")
     # # Perform search in ES for all repos in the status index
     # ! This will now include mounted and unmounted repos both!
-    query = {"query": {"match": {"doctype": "repository"}}}
+    query = {"query": {"match": {"doctype": "repository"}}, "size": 10000}
     logging.debug("Searching for repos")
-    response = client.search(index=STATUS_INDEX, body=query, size=10000)
+    response = client.search(index=STATUS_INDEX, body=query)
     logging.debug("Response: %s", response)
     repos = response["hits"]["hits"]
     logging.debug("Repos retrieved: %s", repos)
@@ -464,8 +464,8 @@ def get_matching_repos(
 
     :raises Exception: If the repository does not exist
     """
-    query = {"query": {"match": {"doctype": "repository"}}}
-    response = client.search(index=STATUS_INDEX, body=query, size=10000)
+    query = {"query": {"match": {"doctype": "repository"}}, "size": 10000}
+    response = client.search(index=STATUS_INDEX, body=query)
     logging.debug("Response: %s", response)
     repos = response["hits"]["hits"]
     logging.debug("Repos retrieved: %s", repos)
@@ -736,11 +736,12 @@ def find_repos_by_date_range(
                     {"range": {"end": {"gte": start.isoformat()}}},
                 ]
             }
-        }
+        },
+        "size": 10000
     }
 
     try:
-        response = client.search(index=STATUS_INDEX, body=query, size=10000)
+        response = client.search(index=STATUS_INDEX, body=query)
         repos = response["hits"]["hits"]
         loggit.debug("Found %d repositories matching date range", len(repos))
         return [Repository(**repo["_source"], docid=repo["_id"]) for repo in repos]
@@ -944,10 +945,10 @@ def list_thaw_requests(client: Elasticsearch) -> list[dict]:
     loggit = logging.getLogger("curator.actions.deepfreeze")
     loggit.debug("Listing all thaw requests")
 
-    query = {"query": {"term": {"doctype": "thaw_request"}}}
+    query = {"query": {"term": {"doctype": "thaw_request"}}, "size": 10000}
 
     try:
-        response = client.search(index=STATUS_INDEX, body=query, size=10000)
+        response = client.search(index=STATUS_INDEX, body=query)
         requests = response["hits"]["hits"]
         loggit.debug("Found %d thaw requests", len(requests))
         return [{"id": req["_id"], **req["_source"]} for req in requests]
@@ -1025,11 +1026,12 @@ def get_repositories_by_names(
                     {"terms": {"name.keyword": repo_names}},
                 ]
             }
-        }
+        },
+        "size": 10000
     }
 
     try:
-        response = client.search(index=STATUS_INDEX, body=query, size=10000)
+        response = client.search(index=STATUS_INDEX, body=query)
         repos = response["hits"]["hits"]
         loggit.debug("Found %d repositories", len(repos))
         return [Repository(**repo["_source"], docid=repo["_id"]) for repo in repos]

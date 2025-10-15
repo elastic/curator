@@ -9,6 +9,7 @@ from elasticsearch8 import Elasticsearch
 from rich.console import Console
 from rich.panel import Panel
 from rich import print as rprint
+from rich.markup import escape
 
 from curator.s3client import s3_client_factory
 
@@ -236,7 +237,7 @@ class Setup:
             except Exception as e:
                 self.console.print(Panel(
                     f"[bold]Failed to create settings index or save configuration[/bold]\n\n"
-                    f"Error: {str(e)}\n\n"
+                    f"Error: {escape(str(e))}\n\n"
                     f"[bold]Possible Solutions:[/bold]\n"
                     f"  • Check Elasticsearch connection and permissions\n"
                     f"  • Verify the cluster is healthy and has capacity\n"
@@ -254,7 +255,7 @@ class Setup:
             except Exception as e:
                 self.console.print(Panel(
                     f"[bold]Failed to create S3 bucket [cyan]{self.new_bucket_name}[/cyan][/bold]\n\n"
-                    f"Error: {str(e)}\n\n"
+                    f"Error: {escape(str(e))}\n\n"
                     f"[bold]Possible Solutions:[/bold]\n"
                     f"  • Check AWS credentials and permissions\n"
                     f"  • Verify IAM policy allows s3:CreateBucket\n"
@@ -281,7 +282,7 @@ class Setup:
             except Exception as e:
                 self.console.print(Panel(
                     f"[bold]Failed to create repository [cyan]{self.new_repo_name}[/cyan][/bold]\n\n"
-                    f"Error: {str(e)}\n\n"
+                    f"Error: {escape(str(e))}\n\n"
                     f"[bold]Possible Solutions:[/bold]\n"
                     f"  • Verify Elasticsearch has S3 plugin installed\n"
                     f"  • Check AWS credentials are configured in Elasticsearch keystore\n"
@@ -333,7 +334,7 @@ class Setup:
                     # ILM policy creation is optional, so just warn but don't fail
                     self.console.print(Panel(
                         f"[bold yellow]Warning: Failed to create sample ILM policy[/bold yellow]\n\n"
-                        f"Error: {str(e)}\n\n"
+                        f"Error: {escape(str(e))}\n\n"
                         f"Setup will continue, but you'll need to create the ILM policy manually.\n"
                         f"This is not a critical error.",
                         title="[bold yellow]ILM Policy Warning[/bold yellow]",
@@ -347,7 +348,7 @@ class Setup:
                 f"[bold green]Setup completed successfully![/bold green]\n\n"
                 f"Repository: [cyan]{self.new_repo_name}[/cyan]\n"
                 f"S3 Bucket: [cyan]{self.new_bucket_name}[/cyan]\n"
-                f"Base Path: [cyan]{self.base_path}[/cyan]\n\n"
+                f"Base Path: [cyan]{escape(self.base_path)}[/cyan]\n\n"
                 f"[bold]Next Steps:[/bold]\n"
                 f"  1. Update your ILM policies to use repository [cyan]{self.new_repo_name}[/cyan]\n"
                 f"  2. Ensure all ILM policies have [yellow]delete_searchable_snapshot: false[/yellow]\n"
@@ -366,7 +367,7 @@ class Setup:
             # Catch any unexpected errors
             self.console.print(Panel(
                 f"[bold]An unexpected error occurred during setup[/bold]\n\n"
-                f"Error: {str(e)}\n\n"
+                f"Error: {escape(str(e))}\n\n"
                 f"[bold]What to do:[/bold]\n"
                 f"  • Check the logs for detailed error information\n"
                 f"  • Verify all prerequisites are met (AWS credentials, ES connection, etc.)\n"
