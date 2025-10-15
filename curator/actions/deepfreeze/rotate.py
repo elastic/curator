@@ -107,6 +107,25 @@ class Rotate:
         if not self.client.indices.exists(index=STATUS_INDEX):
             self.client.indices.create(index=STATUS_INDEX)
             self.loggit.warning("Created index %s", STATUS_INDEX)
+
+        # Validate that ILM policies exist for the current repository
+        # This must be checked during initialization to fail fast
+        self.loggit.debug("Checking for ILM policies that reference %s", self.latest_repo)
+        policies_for_repo = get_policies_for_repo(self.client, self.latest_repo)  # type: ignore
+        if not policies_for_repo:
+            raise RepositoryException(
+                f"No ILM policies found that reference repository {self.latest_repo}. "
+                f"Rotation requires existing ILM policies to create versioned copies. "
+                f"Please create ILM policies that use searchable_snapshot actions "
+                f"with snapshot_repository: {self.latest_repo}, or run setup with "
+                f"--create-sample-ilm-policy to create a default policy."
+            )
+        self.loggit.info(
+            "Found %d ILM policies referencing %s",
+            len(policies_for_repo),
+            self.latest_repo
+        )
+
         self.loggit.info("Deepfreeze initialized")
 
     def update_repo_date_range(self, dry_run=False):
@@ -171,18 +190,9 @@ class Rotate:
         )
 
         # Find all policies that reference the latest repository
+        # Note: We already validated policies exist during __init__, so this should always succeed
         self.loggit.debug("Searching for policies that reference %s", self.latest_repo)
         policies_to_version = get_policies_for_repo(self.client, self.latest_repo)  # type: ignore
-
-        if not policies_to_version:
-            self.loggit.warning(
-                "No policies reference repository %s - this is expected if no ILM policies "
-                "use searchable snapshots with this repository yet. You may need to manually "
-                "update your ILM policies to reference the new repository, or they may not "
-                "have been configured to use deepfreeze repositories.",
-                self.latest_repo,
-            )
-            return
 
         self.loggit.info(
             "Found %d policies to create versioned copies for: %s",
