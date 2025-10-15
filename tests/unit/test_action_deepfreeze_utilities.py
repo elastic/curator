@@ -21,6 +21,13 @@ from curator.actions.deepfreeze.utilities import (
     decode_date,
     create_ilm_policy,
     update_repository_date_range,
+    get_index_templates,
+    get_composable_templates,
+    update_template_ilm_policy,
+    create_versioned_ilm_policy,
+    get_policies_for_repo,
+    get_policies_by_suffix,
+    is_policy_safe_to_delete,
 )
 from curator.actions.deepfreeze.helpers import Repository, Settings
 from curator.actions.deepfreeze.constants import STATUS_INDEX, SETTINGS_ID
@@ -802,3 +809,428 @@ class TestUpdateRepositoryDateRange(TestCase):
 
         assert result is True
         mock_client.index.assert_called_once()
+
+
+class TestGetIndexTemplates(TestCase):
+    """Test get_index_templates function"""
+
+    def test_get_index_templates_success(self):
+        """Test successful retrieval of legacy templates"""
+        mock_client = Mock()
+        mock_client.indices.get_template.return_value = {
+            'template1': {'settings': {}},
+            'template2': {'settings': {}}
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_index_templates(mock_client)
+
+        assert len(result) == 2
+        assert 'template1' in result
+        assert 'template2' in result
+
+    def test_get_index_templates_error(self):
+        """Test get_index_templates error handling"""
+        mock_client = Mock()
+        mock_client.indices.get_template.side_effect = Exception("API error")
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            with pytest.raises(ActionError):
+                get_index_templates(mock_client)
+
+
+class TestGetComposableTemplates(TestCase):
+    """Test get_composable_templates function"""
+
+    def test_get_composable_templates_success(self):
+        """Test successful retrieval of composable templates"""
+        mock_client = Mock()
+        mock_client.indices.get_index_template.return_value = {
+            'index_templates': [
+                {'name': 'template1'},
+                {'name': 'template2'}
+            ]
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_composable_templates(mock_client)
+
+        assert 'index_templates' in result
+        assert len(result['index_templates']) == 2
+
+    def test_get_composable_templates_error(self):
+        """Test get_composable_templates error handling"""
+        mock_client = Mock()
+        mock_client.indices.get_index_template.side_effect = Exception("API error")
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            with pytest.raises(ActionError):
+                get_composable_templates(mock_client)
+
+
+class TestUpdateTemplateIlmPolicy(TestCase):
+    """Test update_template_ilm_policy function"""
+
+    def test_update_composable_template_success(self):
+        """Test successful update of composable template"""
+        mock_client = Mock()
+        mock_client.indices.get_index_template.return_value = {
+            'index_templates': [{
+                'name': 'test-template',
+                'index_template': {
+                    'template': {
+                        'settings': {
+                            'index': {
+                                'lifecycle': {'name': 'old-policy'}
+                            }
+                        }
+                    }
+                }
+            }]
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = update_template_ilm_policy(
+                mock_client, 'test-template', 'old-policy', 'new-policy', is_composable=True
+            )
+
+        assert result is True
+        mock_client.indices.put_index_template.assert_called_once()
+
+    def test_update_legacy_template_success(self):
+        """Test successful update of legacy template"""
+        mock_client = Mock()
+        mock_client.indices.get_template.return_value = {
+            'test-template': {
+                'settings': {
+                    'index': {
+                        'lifecycle': {'name': 'old-policy'}
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = update_template_ilm_policy(
+                mock_client, 'test-template', 'old-policy', 'new-policy', is_composable=False
+            )
+
+        assert result is True
+        mock_client.indices.put_template.assert_called_once()
+
+    def test_update_template_no_match(self):
+        """Test template update when policy doesn't match"""
+        mock_client = Mock()
+        mock_client.indices.get_index_template.return_value = {
+            'index_templates': [{
+                'name': 'test-template',
+                'index_template': {
+                    'template': {
+                        'settings': {
+                            'index': {
+                                'lifecycle': {'name': 'different-policy'}
+                            }
+                        }
+                    }
+                }
+            }]
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = update_template_ilm_policy(
+                mock_client, 'test-template', 'old-policy', 'new-policy', is_composable=True
+            )
+
+        assert result is False
+        mock_client.indices.put_index_template.assert_not_called()
+
+
+class TestCreateVersionedIlmPolicy(TestCase):
+    """Test create_versioned_ilm_policy function"""
+
+    def test_create_versioned_policy_success(self):
+        """Test successful creation of versioned policy"""
+        mock_client = Mock()
+        policy_body = {
+            'phases': {
+                'cold': {
+                    'actions': {
+                        'searchable_snapshot': {
+                            'snapshot_repository': 'old-repo'
+                        }
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = create_versioned_ilm_policy(
+                mock_client, 'my-policy', policy_body, 'new-repo', '000005'
+            )
+
+        assert result == 'my-policy-000005'
+        mock_client.ilm.put_lifecycle.assert_called_once()
+        call_args = mock_client.ilm.put_lifecycle.call_args
+        assert call_args[1]['name'] == 'my-policy-000005'
+        # Verify repo was updated in policy
+        policy_arg = call_args[1]['policy']
+        assert policy_arg['phases']['cold']['actions']['searchable_snapshot']['snapshot_repository'] == 'new-repo'
+
+    def test_create_versioned_policy_multiple_phases(self):
+        """Test versioned policy with multiple phases"""
+        mock_client = Mock()
+        policy_body = {
+            'phases': {
+                'cold': {
+                    'actions': {
+                        'searchable_snapshot': {
+                            'snapshot_repository': 'old-repo'
+                        }
+                    }
+                },
+                'frozen': {
+                    'actions': {
+                        'searchable_snapshot': {
+                            'snapshot_repository': 'old-repo'
+                        }
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = create_versioned_ilm_policy(
+                mock_client, 'my-policy', policy_body, 'new-repo', '000005'
+            )
+
+        # Verify all phases were updated
+        call_args = mock_client.ilm.put_lifecycle.call_args
+        policy_arg = call_args[1]['policy']
+        assert policy_arg['phases']['cold']['actions']['searchable_snapshot']['snapshot_repository'] == 'new-repo'
+        assert policy_arg['phases']['frozen']['actions']['searchable_snapshot']['snapshot_repository'] == 'new-repo'
+
+    def test_create_versioned_policy_error(self):
+        """Test versioned policy creation error"""
+        mock_client = Mock()
+        mock_client.ilm.put_lifecycle.side_effect = Exception("Policy creation failed")
+        policy_body = {'phases': {}}
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            with pytest.raises(ActionError):
+                create_versioned_ilm_policy(
+                    mock_client, 'my-policy', policy_body, 'new-repo', '000005'
+                )
+
+
+class TestGetPoliciesForRepo(TestCase):
+    """Test get_policies_for_repo function"""
+
+    def test_get_policies_for_repo_success(self):
+        """Test successful retrieval of policies for repository"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'policy1': {
+                'policy': {
+                    'phases': {
+                        'cold': {
+                            'actions': {
+                                'searchable_snapshot': {
+                                    'snapshot_repository': 'target-repo'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            'policy2': {
+                'policy': {
+                    'phases': {
+                        'frozen': {
+                            'actions': {
+                                'searchable_snapshot': {
+                                    'snapshot_repository': 'other-repo'
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            'policy3': {
+                'policy': {
+                    'phases': {
+                        'cold': {
+                            'actions': {
+                                'searchable_snapshot': {
+                                    'snapshot_repository': 'target-repo'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_policies_for_repo(mock_client, 'target-repo')
+
+        assert len(result) == 2
+        assert 'policy1' in result
+        assert 'policy3' in result
+        assert 'policy2' not in result
+
+    def test_get_policies_for_repo_no_matches(self):
+        """Test get_policies_for_repo with no matches"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'policy1': {
+                'policy': {
+                    'phases': {
+                        'cold': {
+                            'actions': {}
+                        }
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_policies_for_repo(mock_client, 'target-repo')
+
+        assert len(result) == 0
+
+
+class TestGetPoliciesBySuffix(TestCase):
+    """Test get_policies_by_suffix function"""
+
+    def test_get_policies_by_suffix_success(self):
+        """Test successful retrieval of policies by suffix"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'my-policy-000003': {'policy': {}},
+            'other-policy-000003': {'policy': {}},
+            'different-policy-000004': {'policy': {}},
+            'my-policy': {'policy': {}}
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_policies_by_suffix(mock_client, '000003')
+
+        assert len(result) == 2
+        assert 'my-policy-000003' in result
+        assert 'other-policy-000003' in result
+        assert 'different-policy-000004' not in result
+        assert 'my-policy' not in result
+
+    def test_get_policies_by_suffix_no_matches(self):
+        """Test get_policies_by_suffix with no matches"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'policy1': {'policy': {}},
+            'policy2': {'policy': {}}
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_policies_by_suffix(mock_client, '000003')
+
+        assert len(result) == 0
+
+
+class TestIsPolicySafeToDelete(TestCase):
+    """Test is_policy_safe_to_delete function"""
+
+    def test_policy_safe_to_delete(self):
+        """Test policy that is safe to delete"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'test-policy': {
+                'policy': {},
+                'in_use_by': {
+                    'indices': [],
+                    'data_streams': [],
+                    'composable_templates': []
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is True
+
+    def test_policy_in_use_by_indices(self):
+        """Test policy that is in use by indices"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'test-policy': {
+                'policy': {},
+                'in_use_by': {
+                    'indices': ['index1', 'index2'],
+                    'data_streams': [],
+                    'composable_templates': []
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is False
+
+    def test_policy_in_use_by_data_streams(self):
+        """Test policy that is in use by data streams"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'test-policy': {
+                'policy': {},
+                'in_use_by': {
+                    'indices': [],
+                    'data_streams': ['logs-stream'],
+                    'composable_templates': []
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is False
+
+    def test_policy_in_use_by_templates(self):
+        """Test policy that is in use by templates"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {
+            'test-policy': {
+                'policy': {},
+                'in_use_by': {
+                    'indices': [],
+                    'data_streams': [],
+                    'composable_templates': ['template1']
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is False
+
+    def test_policy_not_found(self):
+        """Test policy that doesn't exist"""
+        mock_client = Mock()
+        mock_client.ilm.get_lifecycle.return_value = {}
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is False
+
+    def test_policy_not_found_exception(self):
+        """Test policy check with NotFoundError"""
+        mock_client = Mock()
+        from elasticsearch8 import NotFoundError
+        mock_client.ilm.get_lifecycle.side_effect = NotFoundError(404, 'not_found', {})
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is False
