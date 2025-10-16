@@ -10,7 +10,8 @@ from rich import print
 from rich.console import Console
 from rich.table import Table
 
-from curator.actions.deepfreeze.utilities import get_all_repos, get_settings
+from curator.actions.deepfreeze.utilities import get_all_repos, get_settings, check_restore_status, list_thaw_requests
+from curator.s3client import s3_client_factory
 
 
 class Status:
@@ -43,6 +44,8 @@ class Status:
         self.limit = limit
         self.console = Console()
         self.console.clear()
+        # Initialize S3 client for checking restore status
+        self.s3 = s3_client_factory(self.settings.provider)
 
     def get_cluster_name(self) -> str:
         """
@@ -211,19 +214,85 @@ class Status:
         # Get and sort all repositories
         active_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
         self.loggit.debug("Getting repositories")
-        unmounted_repos = get_all_repos(self.client)
-        unmounted_repos.sort()
-        total_repos = len(unmounted_repos)
+        all_repos = get_all_repos(self.client)
+        all_repos.sort()
+        total_repos = len(all_repos)
         self.loggit.debug("Got %s repositories", total_repos)
 
-        # Apply limit if specified
+        # Get active thaw requests to track which repos are being thawed
+        active_thaw_requests = []
+        repos_being_thawed = set()
+        try:
+            all_thaw_requests = list_thaw_requests(self.client)
+            active_thaw_requests = [req for req in all_thaw_requests if req.get("status") == "in_progress"]
+            for req in active_thaw_requests:
+                repos_being_thawed.update(req.get("repos", []))
+            self.loggit.debug("Found %d active thaw requests covering %d repos",
+                            len(active_thaw_requests), len(repos_being_thawed))
+        except Exception as e:
+            self.loggit.warning("Could not retrieve thaw requests: %s", e)
+
+        # Separate thawed/being-thawed repos (they should always be shown)
+        # Include repos marked as thawed OR repos with active S3 restore OR repos in active thaw requests
+        thawed_repos = []
+        non_thawed_repos = []
+
+        for repo in all_repos:
+            is_being_thawed = False
+
+            # Check if repo is in an active thaw request first
+            if repo.name in repos_being_thawed:
+                is_being_thawed = True
+                self.loggit.info("Repo %s is in active thaw request - adding to thawed list", repo.name)
+                thawed_repos.append(repo)
+            elif repo.is_thawed:
+                # Already marked as thawed
+                self.loggit.debug("Repo %s marked as thawed in status index", repo.name)
+                thawed_repos.append(repo)
+            elif not repo.is_mounted and repo.bucket and repo.base_path:
+                # Check if restoration is in progress
+                try:
+                    self.loggit.debug("Checking restore status for %s during filtering (bucket=%s, path=%s)",
+                                    repo.name, repo.bucket, repo.base_path)
+                    restore_status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                    self.loggit.info("Filter check - Restore status for %s: %s", repo.name, restore_status)
+                    if restore_status["in_progress"] > 0 or (restore_status["restored"] > 0 and not restore_status["complete"]):
+                        is_being_thawed = True
+                        self.loggit.info("Repo %s has restore in progress - adding to thawed list", repo.name)
+                    elif restore_status["complete"] and restore_status["total"] > 0:
+                        # Restoration complete but not yet mounted
+                        is_being_thawed = True
+                        self.loggit.info("Repo %s has completed restore - adding to thawed list", repo.name)
+                except Exception as e:
+                    self.loggit.warning("Could not check restore status for %s during filtering: %s", repo.name, e)
+
+                if is_being_thawed:
+                    thawed_repos.append(repo)
+                else:
+                    non_thawed_repos.append(repo)
+            else:
+                self.loggit.debug("Repo %s skipped S3 check (is_mounted=%s, bucket=%s, base_path=%s)",
+                                repo.name, repo.is_mounted, repo.bucket, repo.base_path)
+                non_thawed_repos.append(repo)
+
+        self.loggit.debug("Found %s thawed/being-thawed repositories", len(thawed_repos))
+
+        # Apply limit only to non-thawed repos
         if self.limit is not None and self.limit > 0:
-            unmounted_repos = unmounted_repos[-self.limit:]
-            self.loggit.debug("Limiting display to last %s repositories", self.limit)
+            # Calculate how many non-thawed repos to show
+            slots_for_non_thawed = max(0, self.limit - len(thawed_repos))
+            non_thawed_repos = non_thawed_repos[-slots_for_non_thawed:]
+            self.loggit.debug("Limiting display to last %s non-thawed repositories", slots_for_non_thawed)
+
+        # Combine: thawed repos first, then non-thawed
+        repos_to_display = thawed_repos + non_thawed_repos
+        repos_to_display.sort()  # Re-sort combined list
 
         # Set up the table with appropriate title
         if self.limit is not None and self.limit > 0:
-            table_title = f"Repositories (showing last {len(unmounted_repos)} of {total_repos})"
+            table_title = f"Repositories (showing {len(repos_to_display)} of {total_repos})"
+            if len(thawed_repos) > 0:
+                table_title += f" [includes {len(thawed_repos)} thawed]"
         else:
             table_title = "Repositories"
 
@@ -233,16 +302,49 @@ class Status:
         table.add_column("Snapshots", style="magenta")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
-        for repo in unmounted_repos:
+
+        for repo in repos_to_display:
             status = "U"
             if repo.is_mounted:
                 status = "M"
                 if repo.name == active_repo:
                     status = "M*"
-            if repo.is_thawed:
-                status = "T"
-            if repo.name == active_repo:
+
+            # Check if repository is thawed or being thawed
+            # Priority: active thaw request > is_thawed flag > S3 restore status
+            if repo.name in repos_being_thawed:
+                # Repository is in an active thaw request
+                status = "t"
+                self.loggit.info("Setting status='t' for %s (in active thaw request)", repo.name)
+            elif repo.is_thawed:
+                # Marked as thawed in the status index
+                if repo.is_mounted:
+                    status = "T"  # Fully thawed and mounted
+                else:
+                    status = "t"  # Marked thawed but not mounted (shouldn't normally happen)
+            elif not repo.is_mounted and repo.bucket and repo.base_path:
+                # For unmounted repos, check S3 to see if restore is in progress
+                try:
+                    self.loggit.debug("Checking S3 restore status for %s (bucket=%s, base_path=%s)",
+                                    repo.name, repo.bucket, repo.base_path)
+                    restore_status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                    self.loggit.info("Restore status for %s: %s", repo.name, restore_status)
+                    if restore_status["in_progress"] > 0 or (restore_status["restored"] > 0 and not restore_status["complete"]):
+                        status = "t"  # Being thawed (restore in progress)
+                        self.loggit.info("Setting status='t' for %s (restore in progress)", repo.name)
+                    elif restore_status["complete"] and restore_status["total"] > 0:
+                        # Restoration complete but not yet mounted
+                        status = "t"
+                        self.loggit.info("Setting status='t' for %s (restore complete, not mounted)", repo.name)
+                except Exception as e:
+                    self.loggit.warning("Could not check restore status for %s: %s", repo.name, e)
+
+            # Active repo gets marked with asterisk (but preserve t/T status)
+            if repo.name == active_repo and repo.is_mounted and status not in ["t", "T"]:
                 status = "M*"
+            elif repo.name == active_repo and status == "T":
+                status = "T*"
+
             count = "--"
             self.loggit.debug(f"Checking mount status for {repo.name}")
             if repo.is_mounted:

@@ -165,39 +165,50 @@ class TestDeepfreezeStatus(TestCase):
 
                     # Should add columns
                     mock_table.add_column.assert_any_call("Policy", style="cyan")
+                    mock_table.add_column.assert_any_call("Repository", style="magenta")
                     mock_table.add_column.assert_any_call("Indices", style="magenta")
                     mock_table.add_column.assert_any_call("Datastreams", style="magenta")
 
                     # Should add rows for matching policies (policy1 and policy2)
-                    mock_table.add_row.assert_any_call("policy1", "2", "1")
-                    mock_table.add_row.assert_any_call("policy2", "1", "0")
+                    mock_table.add_row.assert_any_call("policy1", "deepfreeze-000003*", "2", "1")
+                    mock_table.add_row.assert_any_call("policy2", "deepfreeze-000003*", "1", "0")
 
     def test_do_buckets_path_rotation(self):
         """Test buckets display for path rotation"""
+        mock_repos = [
+            Repository(
+                name="deepfreeze-000003",
+                bucket="deepfreeze",
+                base_path="snapshots-000003"
+            )
+        ]
+
         with patch('curator.actions.deepfreeze.status.get_settings', return_value=self.mock_settings):
-            with patch('curator.actions.deepfreeze.status.Table') as mock_table_class:
-                with patch('curator.actions.deepfreeze.status.Console'):
-                    mock_table = Mock()
-                    mock_table_class.return_value = mock_table
+            with patch('curator.actions.deepfreeze.status.get_all_repos', return_value=mock_repos):
+                with patch('curator.actions.deepfreeze.status.Table') as mock_table_class:
+                    with patch('curator.actions.deepfreeze.status.Console'):
+                        mock_table = Mock()
+                        mock_table_class.return_value = mock_table
 
-                    status = Status(self.client)
+                        status = Status(self.client)
 
-                    status.do_buckets()
+                        status.do_buckets()
 
-                    # Should create table with title "Buckets"
-                    mock_table_class.assert_called_with(title="Buckets")
+                        # Should create table with title "Buckets"
+                        mock_table_class.assert_called_with(title="Buckets")
 
-                    # Should add columns
-                    mock_table.add_column.assert_any_call("Provider", style="cyan")
-                    mock_table.add_column.assert_any_call("Bucket", style="magenta")
-                    mock_table.add_column.assert_any_call("Base_path", style="magenta")
+                        # Should add columns
+                        mock_table.add_column.assert_any_call("Provider", style="cyan")
+                        mock_table.add_column.assert_any_call("Bucket", style="magenta")
+                        mock_table.add_column.assert_any_call("Base_path", style="magenta")
 
-                    # For path rotation, should show single bucket with suffixed path
-                    mock_table.add_row.assert_called_with(
-                        "aws",
-                        "deepfreeze",
-                        "snapshots-000003"
-                    )
+                        # For path rotation, should show single bucket with suffixed path
+                        # Bucket gets marked with asterisk since it matches current bucket/base_path
+                        mock_table.add_row.assert_called_with(
+                            "aws",
+                            "deepfreeze*",
+                            "snapshots-000003"
+                        )
 
     def test_do_buckets_bucket_rotation(self):
         """Test buckets display for bucket rotation"""
@@ -211,22 +222,31 @@ class TestDeepfreezeStatus(TestCase):
             provider="aws"
         )
 
+        mock_repos = [
+            Repository(
+                name="deepfreeze-000003",
+                bucket="deepfreeze-000003",
+                base_path="snapshots"
+            )
+        ]
+
         with patch('curator.actions.deepfreeze.status.get_settings', return_value=bucket_rotation_settings):
-            with patch('curator.actions.deepfreeze.status.Table') as mock_table_class:
-                with patch('curator.actions.deepfreeze.status.Console'):
-                    mock_table = Mock()
-                    mock_table_class.return_value = mock_table
+            with patch('curator.actions.deepfreeze.status.get_all_repos', return_value=mock_repos):
+                with patch('curator.actions.deepfreeze.status.Table') as mock_table_class:
+                    with patch('curator.actions.deepfreeze.status.Console'):
+                        mock_table = Mock()
+                        mock_table_class.return_value = mock_table
 
-                    status = Status(self.client)
+                        status = Status(self.client)
 
-                    status.do_buckets()
+                        status.do_buckets()
 
-                    # For bucket rotation, should show suffixed bucket with static path
-                    mock_table.add_row.assert_called_with(
-                        "aws",
-                        "deepfreeze-000003",
-                        "snapshots"
-                    )
+                        # For bucket rotation, should show suffixed bucket with static path
+                        mock_table.add_row.assert_called_with(
+                            "aws",
+                            "deepfreeze-000003*",
+                            "snapshots"
+                        )
 
 
     def test_do_action(self):
@@ -297,7 +317,7 @@ class TestDeepfreezeStatus(TestCase):
 
                         # Should show snapshot count
                         mock_table.add_row.assert_called_with(
-                            "deepfreeze-000001", "M", "3", None, None
+                            "deepfreeze-000001", "M", "3", "N/A", "N/A"
                         )
 
     def test_repository_unmount_on_error(self):

@@ -592,6 +592,12 @@ class Thaw:
 
         # Handle sync vs async modes
         if self.sync:
+            # Save thaw request for status tracking (will be marked completed when done)
+            save_thaw_request(
+                self.client, self.request_id, thawed_repos, "in_progress"
+            )
+            self.loggit.debug("Saved sync thaw request %s for status tracking", self.request_id)
+
             # Phase 3: Wait for restoration
             self.console.print(Panel(
                 f"[bold cyan]Phase 3: Waiting for Glacier Restoration[/bold cyan]\n\n"
@@ -675,6 +681,10 @@ class Thaw:
                 border_style="green",
                 expand=False
             ))
+
+            # Mark thaw request as completed
+            update_thaw_request(self.client, self.request_id, status="completed")
+            self.loggit.debug("Marked thaw request %s as completed", self.request_id)
 
             self.loggit.info("Thaw operation completed")
 
