@@ -14,5 +14,5 @@ Curator and ILM *can* coexist. However, to prevent Curator from accidentally int
 
 Curator can be configured to work with ILM-enabled indices by setting the [`allow_ilm_indices`](/reference/option_allow_ilm.md) option to `true` for any action.
 
-Learn more about Index Lifecycle Management [here](http://www.elastic.co/guide/en/elasticsearch/reference/8.15/index-lifecycle-management.md).
+[Learn more about Index Lifecycle Management](docs-content://manage-data/lifecycle/index-lifecycle-management.md).
 

@@ -10,7 +10,7 @@ This setting is used in the [count](/reference/filtertype_count.md) and [space](
 ::::
 
 
-This setting affects the sort order of the indices.  `True` means reverse-alphabetical.  This means that if all index names share the same pattern with a date—​e.g. index-2016.03.01—​older indices will be selected first.
+This setting affects the sort order of the indices.  `True` means reverse-alphabetical.  This means that if all index names share the same pattern with a date—e.g. index-2016.03.01—older indices will be selected first.
 
 The default value of this setting is `True`.
 

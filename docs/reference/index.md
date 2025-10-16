@@ -12,10 +12,10 @@ This section provides reference information for Elasticsearch Curator.
 
 ## Versions [versions]
 
-Elasticsearch Curator has been around for many different versions of Elasticsearch. Earlier releases of Curator supported multiple versions of Elasticsearch, but this is no longer the case.
+Elasticsearch Curator has been around for many different versions of {{es}}. Earlier releases of Curator supported multiple versions of {{es}}, but this is no longer the case.
 
-Curator is now major version locked with Elasticsearch, which means that if Curator’s major version is 8, it should support any Elasticsearch 8.x release.
+Curator is now major version locked with {{es}}, which means that if Curator’s major version is {{version.curator | M}}, it should support any {{es}} {{version.curator | M}} release.
 
 ### Current release [current_release]
 
-The current version of Curator {{curator_major}} is {{curator_version}}.
+The current version of Curator {{version.curator | M}} is {{version.curator}}.

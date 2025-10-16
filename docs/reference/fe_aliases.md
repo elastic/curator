@@ -5,8 +5,7 @@ mapped_pages:
 
 # aliases [fe_aliases]
 
-::::{admonition} Matching Indices and Aliases
-:class: important
+::::{admonition} Matching indices and aliases
 
 [Indices must be in all aliases to match](https://www.elastic.co/guide/en/elasticsearch/reference/5.5/breaking-changes-5.5.html#breaking_55_rest_changes).
 

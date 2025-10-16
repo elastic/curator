@@ -18,8 +18,7 @@ Empty values and commented lines will result in the default value, if any, being
 
 This [filtertype](/reference/filtertype.md) will iterate over the actionable list and match indices based on whether they are associated with the given [aliases](/reference/fe_aliases.md), which can be a single value, or an array.  They will remain in, or be removed from the actionable list based on the value of [exclude](/reference/fe_exclude.md).
 
-::::{admonition} Matching Indices and Aliases
-:class: important
+::::{admonition} Matching indices and aliases
 
 [Indices must be in all aliases to match](https://www.elastic.co/guide/en/elasticsearch/reference/5.5/breaking-changes-5.5.html#breaking_55_rest_changes).
 
