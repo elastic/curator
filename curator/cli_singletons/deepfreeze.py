@@ -254,16 +254,64 @@ def rotate(
     default=None,
     help="Limit display to the last N repositories (default: show all)",
 )
+@click.option(
+    "-r",
+    "--repos",
+    is_flag=True,
+    default=False,
+    help="Show repositories section only",
+)
+@click.option(
+    "-b",
+    "--buckets",
+    is_flag=True,
+    default=False,
+    help="Show buckets section only",
+)
+@click.option(
+    "-i",
+    "--ilm",
+    is_flag=True,
+    default=False,
+    help="Show ILM policies section only",
+)
+@click.option(
+    "-c",
+    "--config",
+    is_flag=True,
+    default=False,
+    help="Show configuration section only",
+)
+@click.option(
+    "-p",
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Output plain text without formatting (suitable for scripting)",
+)
 @click.pass_context
 def status(
     ctx,
     limit,
+    repos,
+    buckets,
+    ilm,
+    config,
+    porcelain,
 ):
     """
     Show the status of deepfreeze
+
+    By default, all sections are displayed. Use section flags (-r, -b, -i, -c) to show specific sections only.
+    Multiple section flags can be combined.
     """
     manual_options = {
         "limit": limit,
+        "show_repos": repos,
+        "show_buckets": buckets,
+        "show_ilm": ilm,
+        "show_config": config,
+        "porcelain": porcelain,
     }
     action = CLIAction(
         ctx.info_name,

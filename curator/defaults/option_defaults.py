@@ -944,6 +944,41 @@ def limit():
     return {Optional("limit", default=None): Any(None, All(Coerce(int), Range(min=1, max=10000)))}
 
 
+def show_repos():
+    """
+    Show repositories section in status output
+    """
+    return {Optional("show_repos", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
+def show_buckets():
+    """
+    Show buckets section in status output
+    """
+    return {Optional("show_buckets", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
+def show_ilm():
+    """
+    Show ILM policies section in status output
+    """
+    return {Optional("show_ilm", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
+def show_config():
+    """
+    Show configuration section in status output
+    """
+    return {Optional("show_config", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
+def porcelain():
+    """
+    Output plain text without formatting (suitable for scripting)
+    """
+    return {Optional("porcelain", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
 def repo_id():
     """
     Repository name/ID to refreeze (if not provided, all thawed repos will be refrozen)

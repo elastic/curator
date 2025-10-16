@@ -80,6 +80,11 @@ def action_specific(action):
         ],
         'status': [
             option_defaults.limit(),
+            option_defaults.show_repos(),
+            option_defaults.show_buckets(),
+            option_defaults.show_ilm(),
+            option_defaults.show_config(),
+            option_defaults.porcelain(),
         ],
         'thaw': [
             option_defaults.start_date(),

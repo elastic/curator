@@ -24,6 +24,16 @@ class Status:
     :type client: Elasticsearch
     :param limit: Number of most recent repositories to show (None = show all)
     :type limit: int
+    :param show_repos: Show repositories section
+    :type show_repos: bool
+    :param show_buckets: Show buckets section
+    :type show_buckets: bool
+    :param show_ilm: Show ILM policies section
+    :type show_ilm: bool
+    :param show_config: Show configuration section
+    :type show_config: bool
+    :param porcelain: Output plain text without rich formatting
+    :type porcelain: bool
 
     :methods:
         do_action: Perform high-level status steps in sequence.
@@ -36,14 +46,33 @@ class Status:
         do_config: Get the status of the configuration.
     """
 
-    def __init__(self, client: Elasticsearch, limit: int = None) -> None:
+    def __init__(
+        self,
+        client: Elasticsearch,
+        limit: int = None,
+        show_repos: bool = False,
+        show_buckets: bool = False,
+        show_ilm: bool = False,
+        show_config: bool = False,
+        porcelain: bool = False,
+    ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Status")
         self.settings = get_settings(client)
         self.client = client
         self.limit = limit
+
+        # If no specific sections are requested, show all
+        self.show_all = not (show_repos or show_buckets or show_ilm or show_config)
+        self.show_repos = show_repos or self.show_all
+        self.show_buckets = show_buckets or self.show_all
+        self.show_ilm = show_ilm or self.show_all
+        self.show_config = show_config or self.show_all
+        self.porcelain = porcelain
+
         self.console = Console()
-        self.console.clear()
+        if not porcelain:
+            self.console.clear()
         # Initialize S3 client for checking restore status
         self.s3 = s3_client_factory(self.settings.provider)
 
@@ -70,12 +99,17 @@ class Status:
         :rtype: None
         """
         self.loggit.info("Getting status")
-        print()
+        if not self.porcelain:
+            print()
 
-        self.do_repositories()
-        self.do_buckets()
-        self.do_ilm_policies()
-        self.do_config()
+        if self.show_repos:
+            self.do_repositories()
+        if self.show_buckets:
+            self.do_buckets()
+        if self.show_ilm:
+            self.do_ilm_policies()
+        if self.show_config:
+            self.do_config()
 
     def do_config(self):
         """
@@ -84,22 +118,32 @@ class Status:
         :return: None
         :rtype: None
         """
-        table = Table(title="Configuration")
-        table.add_column("Setting", style="cyan")
-        table.add_column("Value", style="magenta")
+        config_items = [
+            ("Repo Prefix", self.settings.repo_name_prefix),
+            ("Bucket Prefix", self.settings.bucket_name_prefix),
+            ("Base Path Prefix", self.settings.base_path_prefix),
+            ("Canned ACL", self.settings.canned_acl),
+            ("Storage Class", self.settings.storage_class),
+            ("Provider", self.settings.provider),
+            ("Rotate By", self.settings.rotate_by),
+            ("Style", self.settings.style),
+            ("Last Suffix", self.settings.last_suffix),
+            ("Cluster Name", self.get_cluster_name()),
+        ]
 
-        table.add_row("Repo Prefix", self.settings.repo_name_prefix)
-        table.add_row("Bucket Prefix", self.settings.bucket_name_prefix)
-        table.add_row("Base Path Prefix", self.settings.base_path_prefix)
-        table.add_row("Canned ACL", self.settings.canned_acl)
-        table.add_row("Storage Class", self.settings.storage_class)
-        table.add_row("Provider", self.settings.provider)
-        table.add_row("Rotate By", self.settings.rotate_by)
-        table.add_row("Style", self.settings.style)
-        table.add_row("Last Suffix", self.settings.last_suffix)
-        table.add_row("Cluster Name", self.get_cluster_name())
+        if self.porcelain:
+            # Output tab-separated key-value pairs for scripting
+            for setting, value in config_items:
+                print(f"{setting}\t{value}")
+        else:
+            table = Table(title="Configuration")
+            table.add_column("Setting", style="cyan")
+            table.add_column("Value", style="magenta")
 
-        self.console.print(table)
+            for setting, value in config_items:
+                table.add_row(setting, value)
+
+            self.console.print(table)
 
     def do_ilm_policies(self):
         """
@@ -134,10 +178,16 @@ class Status:
 
                         num_indices = len(policies[policy]["in_use_by"]["indices"])
                         num_datastreams = len(policies[policy]["in_use_by"]["data_streams"])
-                        table.add_row(policy, repo_display, str(num_indices), str(num_datastreams))
+
+                        if self.porcelain:
+                            # Output tab-separated values for scripting
+                            print(f"{policy}\t{repo_display}\t{num_indices}\t{num_datastreams}")
+                        else:
+                            table.add_row(policy, repo_display, str(num_indices), str(num_datastreams))
                         break
 
-        self.console.print(table)
+        if not self.porcelain:
+            self.console.print(table)
 
     def do_buckets(self):
         """
@@ -198,9 +248,14 @@ class Status:
             else:
                 bucket_display = bucket
 
-            table.add_row(self.settings.provider, bucket_display, base_path)
+            if self.porcelain:
+                # Output tab-separated values for scripting
+                print(f"{self.settings.provider}\t{bucket_display}\t{base_path}")
+            else:
+                table.add_row(self.settings.provider, bucket_display, base_path)
 
-        self.console.print(table)
+        if not self.porcelain:
+            self.console.print(table)
 
     def do_repositories(self):
         """
@@ -368,8 +423,14 @@ class Status:
                 else repo.end if repo.end
                 else "N/A"
             )
-            table.add_row(repo.name, status, str(count), start_str, end_str)
-        self.console.print(table)
+            if self.porcelain:
+                # Output tab-separated values for scripting
+                print(f"{repo.name}\t{status}\t{count}\t{start_str}\t{end_str}")
+            else:
+                table.add_row(repo.name, status, str(count), start_str, end_str)
+
+        if not self.porcelain:
+            self.console.print(table)
 
     def do_singleton_action(self) -> None:
         """
