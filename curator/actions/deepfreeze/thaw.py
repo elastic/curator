@@ -381,8 +381,8 @@ class Thaw:
         # Create table
         table = Table(title="Thaw Requests")
         table.add_column("Request ID", style="cyan")
-        table.add_column("Status", style="magenta")
-        table.add_column("Repositories", style="magenta")
+        table.add_column("St", style="magenta")  # Abbreviated Status
+        table.add_column("Repos", style="magenta")  # Abbreviated Repositories
         table.add_column("Created At", style="magenta")
 
         # Add rows
@@ -393,14 +393,24 @@ class Thaw:
             if "T" in created_at:
                 created_at = created_at.replace("T", " ").split(".")[0]
 
+            # Abbreviate status for display
+            status = req.get("status", "unknown")
+            status_abbrev = {
+                "in_progress": "IP",
+                "completed": "C",
+                "failed": "F",
+                "unknown": "U",
+            }.get(status, status[:2].upper())
+
             table.add_row(
-                req["id"][:36],  # Truncate to UUID length
-                req.get("status", "unknown"),
+                req["id"],  # Show full Request ID
+                status_abbrev,
                 repo_count,
                 created_at,
             )
 
         self.console.print(table)
+        rprint("[dim]Status: IP=In Progress, C=Completed, F=Failed, U=Unknown[/dim]")
 
     def _display_thaw_status(self, request: dict, repos: list) -> None:
         """
