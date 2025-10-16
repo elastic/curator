@@ -389,8 +389,16 @@ class TestDeepfreezeThaw(TestCase):
             base_path="snapshots-000001",
         )
 
-        # First call returns in-progress, second call returns complete
+        # Three calls: initial, in-progress, then complete
+        # (the initial call is made to get total objects count)
         mock_check_status.side_effect = [
+            {
+                "total": 2,
+                "restored": 0,
+                "in_progress": 2,
+                "not_restored": 0,
+                "complete": False,
+            },
             {
                 "total": 2,
                 "restored": 1,
@@ -413,10 +421,11 @@ class TestDeepfreezeThaw(TestCase):
             end_date=self.end_date,
         )
 
-        result = thaw._wait_for_restore(mock_repo, poll_interval=1)
+        result = thaw._wait_for_restore(mock_repo, poll_interval=1, show_progress=False)
 
         assert result is True
-        assert mock_check_status.call_count == 2
+        assert mock_check_status.call_count == 3
+        # Should sleep once between the second and third check
         mock_sleep.assert_called_once_with(1)
 
     @patch("curator.actions.deepfreeze.thaw.s3_client_factory")

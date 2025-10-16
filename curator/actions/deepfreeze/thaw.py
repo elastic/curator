@@ -10,6 +10,8 @@ from datetime import datetime
 from elasticsearch import Elasticsearch
 from rich import print as rprint
 from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.table import Table
 
 from curator.actions.deepfreeze.utilities import (
@@ -182,7 +184,7 @@ class Thaw:
             self.loggit.error("Failed to thaw repository %s: %s", repo.name, e)
             return False
 
-    def _wait_for_restore(self, repo, poll_interval: int = 30) -> bool:
+    def _wait_for_restore(self, repo, poll_interval: int = 30, show_progress: bool = False) -> bool:
         """
         Wait for restoration to complete by polling S3.
 
@@ -190,6 +192,8 @@ class Thaw:
         :type repo: Repository
         :param poll_interval: Seconds between status checks
         :type poll_interval: int
+        :param show_progress: Whether to show rich progress bar (for sync mode)
+        :type show_progress: bool
 
         :returns: True if restoration completed, False if timeout or error
         :rtype: bool
@@ -199,34 +203,78 @@ class Thaw:
         max_attempts = 1200  # 10 hours with 30-second polls
         attempt = 0
 
-        while attempt < max_attempts:
-            status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+        # Initial status check to get total objects
+        initial_status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+        total_objects = initial_status["total"]
 
-            self.loggit.debug(
-                "Restore status for %s: %d/%d objects restored, %d in progress",
-                repo.name,
-                status["restored"],
-                status["total"],
-                status["in_progress"],
-            )
-
-            if status["complete"]:
-                self.loggit.info("Restoration complete for repository %s", repo.name)
-                return True
-
-            attempt += 1
-            if attempt < max_attempts:
-                self.loggit.debug(
-                    "Waiting %d seconds before next status check...", poll_interval
+        if show_progress and total_objects > 0:
+            # Use rich progress bar for sync mode
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[bold blue]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                TextColumn("({task.completed}/{task.total} objects)"),
+                TimeElapsedColumn(),
+                console=self.console,
+            ) as progress:
+                task = progress.add_task(
+                    f"Restoring {repo.name}",
+                    total=total_objects,
+                    completed=initial_status["restored"]
                 )
-                time.sleep(poll_interval)
 
-        self.loggit.warning(
-            "Restoration timed out for repository %s after %d checks",
-            repo.name,
-            max_attempts,
-        )
-        return False
+                while attempt < max_attempts:
+                    status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+
+                    # Update progress bar
+                    progress.update(task, completed=status["restored"])
+
+                    if status["complete"]:
+                        progress.update(task, completed=total_objects)
+                        self.loggit.info("Restoration complete for repository %s", repo.name)
+                        return True
+
+                    attempt += 1
+                    if attempt < max_attempts:
+                        time.sleep(poll_interval)
+
+                self.loggit.warning(
+                    "Restoration timed out for repository %s after %d checks",
+                    repo.name,
+                    max_attempts,
+                )
+                return False
+        else:
+            # Non-progress mode (async or no objects)
+            while attempt < max_attempts:
+                status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+
+                self.loggit.debug(
+                    "Restore status for %s: %d/%d objects restored, %d in progress",
+                    repo.name,
+                    status["restored"],
+                    status["total"],
+                    status["in_progress"],
+                )
+
+                if status["complete"]:
+                    self.loggit.info("Restoration complete for repository %s", repo.name)
+                    return True
+
+                attempt += 1
+                if attempt < max_attempts:
+                    self.loggit.debug(
+                        "Waiting %d seconds before next status check...", poll_interval
+                    )
+                    time.sleep(poll_interval)
+
+            self.loggit.warning(
+                "Restoration timed out for repository %s after %d checks",
+                repo.name,
+                max_attempts,
+            )
+            return False
 
     def _update_repo_dates(self, repo) -> None:
         """
@@ -469,42 +517,164 @@ class Thaw:
             self.end_date.isoformat(),
         )
 
-        # Find matching repositories
+        # Phase 1: Find matching repositories
+        if self.sync:
+            self.console.print(Panel(
+                f"[bold cyan]Phase 1: Finding Repositories[/bold cyan]\n\n"
+                f"Date Range: [yellow]{self.start_date.isoformat()}[/yellow] to "
+                f"[yellow]{self.end_date.isoformat()}[/yellow]",
+                border_style="cyan",
+                expand=False
+            ))
+
         repos = find_repos_by_date_range(self.client, self.start_date, self.end_date)
 
         if not repos:
             self.loggit.warning("No repositories found for date range")
+            if self.sync:
+                self.console.print(Panel(
+                    "[yellow]No repositories found matching the specified date range.[/yellow]",
+                    title="[bold yellow]No Repositories Found[/bold yellow]",
+                    border_style="yellow",
+                    expand=False
+                ))
             return
 
         self.loggit.info("Found %d repositories to thaw", len(repos))
 
-        # Thaw each repository
+        if self.sync:
+            # Display found repositories
+            table = Table(title=f"Found {len(repos)} Repositories")
+            table.add_column("Repository", style="cyan")
+            table.add_column("Bucket", style="magenta")
+            table.add_column("Base Path", style="magenta")
+            for repo in repos:
+                table.add_row(repo.name, repo.bucket or "--", repo.base_path or "--")
+            self.console.print(table)
+            self.console.print()
+
+        # Phase 2: Initiate thaw for each repository
+        if self.sync:
+            self.console.print(Panel(
+                f"[bold cyan]Phase 2: Initiating Glacier Restore[/bold cyan]\n\n"
+                f"Retrieval Tier: [yellow]{self.retrieval_tier}[/yellow]\n"
+                f"Duration: [yellow]{self.duration} days[/yellow]",
+                border_style="cyan",
+                expand=False
+            ))
+
         thawed_repos = []
         for repo in repos:
+            if self.sync:
+                self.console.print(f"  [cyan]→[/cyan] Initiating restore for [bold]{repo.name}[/bold]...")
             if self._thaw_repository(repo):
                 thawed_repos.append(repo)
+                if self.sync:
+                    self.console.print(f"    [green]✓[/green] Restore initiated successfully")
+            else:
+                if self.sync:
+                    self.console.print(f"    [red]✗[/red] Failed to initiate restore")
 
         if not thawed_repos:
             self.loggit.error("Failed to thaw any repositories")
+            if self.sync:
+                self.console.print(Panel(
+                    "[red]Failed to initiate restore for any repositories.[/red]",
+                    title="[bold red]Thaw Failed[/bold red]",
+                    border_style="red",
+                    expand=False
+                ))
             return
 
         self.loggit.info("Successfully initiated thaw for %d repositories", len(thawed_repos))
+        if self.sync:
+            self.console.print()
 
         # Handle sync vs async modes
         if self.sync:
-            self.loggit.info("Sync mode: Waiting for restoration to complete...")
+            # Phase 3: Wait for restoration
+            self.console.print(Panel(
+                f"[bold cyan]Phase 3: Waiting for Glacier Restoration[/bold cyan]\n\n"
+                f"This may take several hours depending on the retrieval tier.\n"
+                f"Progress will be updated as objects are restored.",
+                border_style="cyan",
+                expand=False
+            ))
+
+            successfully_restored = []
+            failed_restores = []
 
             # Wait for each repository to be restored
             for repo in thawed_repos:
-                if self._wait_for_restore(repo):
-                    # Mount the repository
-                    mount_repo(self.client, repo)
-                    # Update date ranges
-                    self._update_repo_dates(repo)
+                if self._wait_for_restore(repo, show_progress=True):
+                    successfully_restored.append(repo)
                 else:
+                    failed_restores.append(repo)
                     self.loggit.warning(
                         "Skipping mount for %s due to restoration timeout", repo.name
                     )
+
+            if not successfully_restored:
+                self.console.print(Panel(
+                    "[red]No repositories were successfully restored.[/red]",
+                    title="[bold red]Restoration Failed[/bold red]",
+                    border_style="red",
+                    expand=False
+                ))
+                return
+
+            self.console.print()
+
+            # Phase 4: Mount repositories
+            self.console.print(Panel(
+                f"[bold cyan]Phase 4: Mounting Repositories[/bold cyan]\n\n"
+                f"Mounting {len(successfully_restored)} restored "
+                f"repositor{'y' if len(successfully_restored) == 1 else 'ies'}.",
+                border_style="cyan",
+                expand=False
+            ))
+
+            mounted_count = 0
+            for repo in successfully_restored:
+                self.console.print(f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]...")
+                try:
+                    mount_repo(self.client, repo)
+                    self.console.print(f"    [green]✓[/green] Mounted successfully")
+                    mounted_count += 1
+                except Exception as e:
+                    self.console.print(f"    [red]✗[/red] Failed to mount: {e}")
+                    self.loggit.error("Failed to mount %s: %s", repo.name, e)
+
+            self.console.print()
+
+            # Phase 5: Update date ranges
+            self.console.print(Panel(
+                "[bold cyan]Phase 5: Updating Repository Metadata[/bold cyan]",
+                border_style="cyan",
+                expand=False
+            ))
+
+            for repo in successfully_restored:
+                self._update_repo_dates(repo)
+
+            # Final summary
+            self.console.print()
+            summary_lines = [
+                f"[bold green]Thaw Operation Completed Successfully![/bold green]\n",
+                f"Repositories Processed: [cyan]{len(repos)}[/cyan]",
+                f"Restore Initiated: [cyan]{len(thawed_repos)}[/cyan]",
+                f"Successfully Restored: [cyan]{len(successfully_restored)}[/cyan]",
+                f"Successfully Mounted: [cyan]{mounted_count}[/cyan]",
+            ]
+            if failed_restores:
+                summary_lines.append(f"Failed Restores: [yellow]{len(failed_restores)}[/yellow]")
+
+            self.console.print(Panel(
+                "\n".join(summary_lines),
+                title="[bold green]Summary[/bold green]",
+                border_style="green",
+                expand=False
+            ))
 
             self.loggit.info("Thaw operation completed")
 
