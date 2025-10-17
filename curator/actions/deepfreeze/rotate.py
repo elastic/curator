@@ -417,16 +417,33 @@ class Rotate:
 
     def is_thawed(self, repo: str) -> bool:
         """
-        Check if a repository is thawed
+        Check if a repository is thawed by querying the STATUS_INDEX.
 
         :param repo: The name of the repository
         :returns: True if the repository is thawed, False otherwise
-
-        :raises Exception: If the repository does not exist
         """
-        # TODO: This might work, but we might also need to check our Repostories.
         self.loggit.debug("Checking if %s is thawed", repo)
-        return repo.startswith("thawed-")
+        try:
+            repository = Repository.from_elasticsearch(self.client, repo, STATUS_INDEX)
+            if repository is None:
+                self.loggit.warning(
+                    "Repository %s not found in STATUS_INDEX, assuming not thawed", repo
+                )
+                return False
+
+            is_thawed = repository.is_thawed
+            self.loggit.debug(
+                "Repository %s thawed status: %s (mounted: %s)",
+                repo,
+                is_thawed,
+                repository.is_mounted,
+            )
+            return is_thawed
+        except Exception as e:
+            self.loggit.error("Error checking thawed status for %s: %s", repo, e)
+            # If we can't determine the status, err on the side of caution and assume it's thawed
+            # This prevents accidentally unmounting a thawed repo if there's a database issue
+            return True
 
     def unmount_oldest_repos(self, dry_run=False) -> None:
         """
