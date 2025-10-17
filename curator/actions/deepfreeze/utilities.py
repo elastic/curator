@@ -754,6 +754,10 @@ def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
     """
     Check the restoration status of objects in an S3 bucket.
 
+    Uses head_object to check the Restore metadata field, which is the only way
+    to determine if a Glacier object has been restored (storage class remains GLACIER
+    even after restoration).
+
     :param s3: The S3 client object
     :type s3: S3Client
     :param bucket: The bucket name
@@ -782,26 +786,42 @@ def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
     not_restored_count = 0
 
     for obj in objects:
-        # Check if object is being restored
-        restore_status = obj.get("RestoreStatus")
+        key = obj["Key"]
         storage_class = obj.get("StorageClass", "STANDARD")
 
+        # For objects in instant-access tiers, no need to check restore status
         if storage_class in [
             "STANDARD",
             "STANDARD_IA",
             "ONEZONE_IA",
             "INTELLIGENT_TIERING",
         ]:
-            # Object is already in an instant-access tier
             restored_count += 1
-        elif restore_status:
-            # Object has restoration in progress or completed
-            if restore_status.get("IsRestoreInProgress"):
-                in_progress_count += 1
+            continue
+
+        # For Glacier objects, must use head_object to check Restore metadata
+        try:
+            metadata = s3.head_object(bucket, key)
+            restore_header = metadata.get("Restore")
+
+            if restore_header:
+                # Restore header exists - parse it to check status
+                # Format: 'ongoing-request="true"' or 'ongoing-request="false", expiry-date="..."'
+                if 'ongoing-request="true"' in restore_header:
+                    in_progress_count += 1
+                    loggit.debug("Object %s: restoration in progress", key)
+                else:
+                    # ongoing-request="false" means restoration is complete
+                    restored_count += 1
+                    loggit.debug("Object %s: restored (expiry in header)", key)
             else:
-                restored_count += 1
-        else:
-            # Object is in Glacier and not being restored
+                # No Restore header means object is in Glacier and not being restored
+                not_restored_count += 1
+                loggit.debug("Object %s: in %s, not restored", key, storage_class)
+
+        except Exception as e:
+            loggit.warning("Failed to check restore status for %s: %s", key, e)
+            # Count as not restored if we can't determine status
             not_restored_count += 1
 
     status = {

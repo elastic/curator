@@ -145,6 +145,20 @@ class S3Client(metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
+    def head_object(self, bucket_name: str, key: str) -> dict:
+        """
+        Retrieve metadata for an object without downloading it.
+
+        Args:
+            bucket_name (str): The name of the bucket.
+            key (str): The object key.
+
+        Returns:
+            dict: Object metadata including Restore status if applicable.
+        """
+        return
+
+    @abc.abstractmethod
     def copy_object(
         Bucket: str,
         Key: str,
@@ -387,6 +401,25 @@ class AwsS3Client(S3Client):
         except ClientError as e:
             self.loggit.error(e)
             raise ActionError(e)
+
+    def head_object(self, bucket_name: str, key: str) -> dict:
+        """
+        Retrieve metadata for an object without downloading it.
+
+        Args:
+            bucket_name (str): The name of the bucket.
+            key (str): The object key.
+
+        Returns:
+            dict: Object metadata including Restore status if applicable.
+        """
+        self.loggit.debug(f"Getting metadata for s3://{bucket_name}/{key}")
+        try:
+            response = self.client.head_object(Bucket=bucket_name, Key=key)
+            return response
+        except ClientError as e:
+            self.loggit.error(f"Error getting metadata for {key}: {e}")
+            raise ActionError(f"Error getting metadata for {key}: {e}")
 
     def copy_object(
         self,
