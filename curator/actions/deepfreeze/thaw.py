@@ -310,6 +310,7 @@ class Thaw:
     def do_check_status(self) -> None:
         """
         Check the status of a thaw request and mount repositories if restoration is complete.
+        Also mounts indices in the date range if all repositories are ready.
 
         :return: None
         :rtype: None
@@ -332,6 +333,7 @@ class Thaw:
         # Check restoration status and mount if ready
         all_complete = True
         mounted_count = 0
+        newly_mounted_repos = []
 
         for repo in repos:
             if repo.is_mounted:
@@ -345,6 +347,7 @@ class Thaw:
                 mount_repo(self.client, repo)
                 self._update_repo_dates(repo)
                 mounted_count += 1
+                newly_mounted_repos.append(repo)
             else:
                 self.loggit.info(
                     "Restoration in progress for %s: %d/%d objects restored",
@@ -353,6 +356,41 @@ class Thaw:
                     status["total"],
                 )
                 all_complete = False
+
+        # Mount indices if all repositories are complete and we have date range info
+        if all_complete and mounted_count > 0:
+            # Parse date range from the thaw request
+            start_date_str = request.get("start_date")
+            end_date_str = request.get("end_date")
+
+            if start_date_str and end_date_str:
+                try:
+                    start_date = decode_date(start_date_str)
+                    end_date = decode_date(end_date_str)
+
+                    self.loggit.info(
+                        "Mounting indices for date range %s to %s",
+                        start_date.isoformat(),
+                        end_date.isoformat(),
+                    )
+
+                    mount_result = find_and_mount_indices_in_date_range(
+                        self.client, newly_mounted_repos, start_date, end_date
+                    )
+
+                    self.loggit.info(
+                        "Mounted %d indices (%d failed, %d added to data streams)",
+                        mount_result["mounted"],
+                        mount_result["failed"],
+                        mount_result["datastream_successful"],
+                    )
+
+                except Exception as e:
+                    self.loggit.warning("Failed to mount indices: %s", e)
+            else:
+                self.loggit.debug(
+                    "No date range information in thaw request, skipping index mounting"
+                )
 
         # Update thaw request status if all repositories are ready
         if all_complete:
@@ -384,6 +422,8 @@ class Thaw:
         table.add_column("Request ID", style="cyan")
         table.add_column("St", style="magenta")  # Abbreviated Status
         table.add_column("Repos", style="magenta")  # Abbreviated Repositories
+        table.add_column("Start Date", style="green")
+        table.add_column("End Date", style="green")
         table.add_column("Created At", style="magenta")
 
         # Add rows
@@ -393,6 +433,20 @@ class Thaw:
             # Format datetime if it's ISO format
             if "T" in created_at:
                 created_at = created_at.replace("T", " ").split(".")[0]
+
+            # Format date range
+            start_date = req.get("start_date", "")
+            end_date = req.get("end_date", "")
+
+            # Format dates to show full datetime (same format as created_at)
+            if start_date and "T" in start_date:
+                start_date = start_date.replace("T", " ").split(".")[0]
+            if end_date and "T" in end_date:
+                end_date = end_date.replace("T", " ").split(".")[0]
+
+            # Use "--" for missing dates
+            start_date = start_date if start_date else "--"
+            end_date = end_date if end_date else "--"
 
             # Abbreviate status for display
             status = req.get("status", "unknown")
@@ -407,6 +461,8 @@ class Thaw:
                 req["id"],  # Show full Request ID
                 status_abbrev,
                 repo_count,
+                start_date,
+                end_date,
                 created_at,
             )
 
@@ -605,7 +661,12 @@ class Thaw:
         if self.sync:
             # Save thaw request for status tracking (will be marked completed when done)
             save_thaw_request(
-                self.client, self.request_id, thawed_repos, "in_progress"
+                self.client,
+                self.request_id,
+                thawed_repos,
+                "in_progress",
+                self.start_date,
+                self.end_date,
             )
             self.loggit.debug("Saved sync thaw request %s for status tracking", self.request_id)
 
@@ -738,7 +799,12 @@ class Thaw:
 
             # Save thaw request for later querying
             save_thaw_request(
-                self.client, self.request_id, thawed_repos, "in_progress"
+                self.client,
+                self.request_id,
+                thawed_repos,
+                "in_progress",
+                self.start_date,
+                self.end_date,
             )
 
             self.loggit.info(

@@ -884,7 +884,12 @@ def mount_repo(client: Elasticsearch, repo: Repository) -> None:
 
 
 def save_thaw_request(
-    client: Elasticsearch, request_id: str, repos: list[Repository], status: str
+    client: Elasticsearch,
+    request_id: str,
+    repos: list[Repository],
+    status: str,
+    start_date: datetime = None,
+    end_date: datetime = None,
 ) -> None:
     """
     Save a thaw request to the status index for later querying.
@@ -897,6 +902,10 @@ def save_thaw_request(
     :type repos: list[Repository]
     :param status: The current status of the thaw request
     :type status: str
+    :param start_date: Start of the date range for this thaw request
+    :type start_date: datetime
+    :param end_date: End of the date range for this thaw request
+    :type end_date: datetime
 
     :return: None
     :rtype: None
@@ -913,6 +922,12 @@ def save_thaw_request(
         "status": status,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+
+    # Add date range if provided
+    if start_date:
+        request_doc["start_date"] = start_date.isoformat()
+    if end_date:
+        request_doc["end_date"] = end_date.isoformat()
 
     try:
         client.index(index=STATUS_INDEX, id=request_id, body=request_doc)
