@@ -266,9 +266,9 @@ class Cleanup:
         """
         self.loggit.debug("Checking for expired thawed repositories")
 
-        # Get all thawed repositories
+        # Get all thawed repositories (regardless of mount status)
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        thawed_repos = [repo for repo in all_repos if repo.is_thawed and repo.is_mounted]
+        thawed_repos = [repo for repo in all_repos if repo.is_thawed]
 
         if not thawed_repos:
             self.loggit.info("No thawed repositories found")
@@ -286,10 +286,21 @@ class Cleanup:
                 # Check restoration status
                 status = check_restore_status(self.s3, repo.bucket, repo.base_path)
 
-                # If not all objects are restored, unmount the repository
-                if not status["complete"]:
+                # Distinguish between in-progress restoration and expired thaw
+                # - in_progress > 0: Objects are being restored (active thaw)
+                # - not_restored > 0 and in_progress == 0: Objects have reverted to Glacier (expired thaw)
+                if status["in_progress"] > 0:
+                    # Restoration is still in progress, this is an active thaw
+                    self.loggit.debug(
+                        "Repository %s has active restoration (%d/%d objects in progress)",
+                        repo.name,
+                        status["in_progress"],
+                        status["total"]
+                    )
+                elif status["not_restored"] > 0:
+                    # Objects have reverted to Glacier, thaw has expired
                     self.loggit.info(
-                        "Repository %s has expired thaw: %d/%d objects in Glacier, unmounting",
+                        "Repository %s has expired thaw: %d/%d objects in Glacier, cleaning up",
                         repo.name,
                         status["not_restored"],
                         status["total"]
@@ -298,25 +309,29 @@ class Cleanup:
                     # Add to cleanup list
                     repos_to_cleanup.append(repo)
 
-                    # Mark as not thawed and unmounted
+                    # Mark as not thawed
                     repo.is_thawed = False
-                    repo.is_mounted = False
 
-                    # Remove from Elasticsearch
-                    try:
-                        self.client.snapshot.delete_repository(name=repo.name)
-                        self.loggit.info("Repository %s unmounted successfully", repo.name)
-                    except Exception as e:
-                        self.loggit.warning(
-                            "Failed to unmount repository %s: %s", repo.name, e
-                        )
+                    # Unmount if still mounted
+                    if repo.is_mounted:
+                        try:
+                            self.client.snapshot.delete_repository(name=repo.name)
+                            self.loggit.info("Repository %s unmounted successfully", repo.name)
+                            repo.is_mounted = False
+                        except Exception as e:
+                            self.loggit.warning(
+                                "Failed to unmount repository %s: %s", repo.name, e
+                            )
+                    else:
+                        self.loggit.debug("Repository %s was not mounted, only updating status", repo.name)
 
                     # Persist updated status to status index
                     repo.persist(self.client)
                     self.loggit.info("Repository %s status updated", repo.name)
                 else:
+                    # All objects are restored and available
                     self.loggit.debug(
-                        "Repository %s still has active restoration (%d/%d objects)",
+                        "Repository %s has all objects restored (%d/%d)",
                         repo.name,
                         status["restored"],
                         status["total"]
@@ -367,9 +382,9 @@ class Cleanup:
         """
         self.loggit.info("DRY-RUN MODE. No changes will be made.")
 
-        # Get all thawed repositories
+        # Get all thawed repositories (regardless of mount status)
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        thawed_repos = [repo for repo in all_repos if repo.is_thawed and repo.is_mounted]
+        thawed_repos = [repo for repo in all_repos if repo.is_thawed]
 
         if not thawed_repos:
             self.loggit.info("DRY-RUN: No thawed repositories found")
@@ -387,18 +402,30 @@ class Cleanup:
                 # Check restoration status
                 status = check_restore_status(self.s3, repo.bucket, repo.base_path)
 
-                # If not all objects are restored, report what would be done
-                if not status["complete"]:
+                # Distinguish between in-progress restoration and expired thaw
+                if status["in_progress"] > 0:
+                    # Restoration is still in progress
+                    self.loggit.debug(
+                        "DRY-RUN: Repository %s has active restoration (%d/%d objects in progress)",
+                        repo.name,
+                        status["in_progress"],
+                        status["total"]
+                    )
+                elif status["not_restored"] > 0:
+                    # Objects have reverted to Glacier, thaw has expired
+                    action = "unmount and mark as not thawed" if repo.is_mounted else "mark as not thawed"
                     self.loggit.info(
-                        "DRY-RUN: Would unmount repository %s (expired thaw: %d/%d objects in Glacier)",
+                        "DRY-RUN: Would %s repository %s (expired thaw: %d/%d objects in Glacier)",
+                        action,
                         repo.name,
                         status["not_restored"],
                         status["total"]
                     )
                     repos_to_cleanup.append(repo)
                 else:
+                    # All objects are restored
                     self.loggit.debug(
-                        "DRY-RUN: Repository %s still has active restoration (%d/%d objects)",
+                        "DRY-RUN: Repository %s has all objects restored (%d/%d)",
                         repo.name,
                         status["restored"],
                         status["total"]
