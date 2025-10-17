@@ -699,6 +699,7 @@ class Thaw:
             self.loggit.info("Thaw operation completed")
 
         else:
+            # Async mode - initiate restore and return immediately
             self.loggit.info("Async mode: Saving thaw request...")
 
             # Save thaw request for later querying
@@ -711,6 +712,22 @@ class Thaw:
                 "Use this ID to check status and mount when ready.",
                 self.request_id,
             )
+
+            # Display the thaw ID prominently for the user
+            self.console.print()
+            self.console.print(Panel(
+                f"[bold green]Thaw Request Initiated[/bold green]\n\n"
+                f"Request ID: [cyan]{self.request_id}[/cyan]\n\n"
+                f"Glacier restore has been initiated for [cyan]{len(thawed_repos)}[/cyan] "
+                f"repositor{'y' if len(thawed_repos) == 1 else 'ies'}.\n"
+                f"Retrieval Tier: [yellow]{self.retrieval_tier}[/yellow]\n"
+                f"Duration: [yellow]{self.duration} days[/yellow]\n\n"
+                f"[dim]Check status with:[/dim]\n"
+                f"[yellow]curator_cli deepfreeze thaw --check-status {self.request_id}[/yellow]",
+                border_style="green",
+                expand=False
+            ))
+            self.console.print()
 
     def do_singleton_action(self) -> None:
         """
