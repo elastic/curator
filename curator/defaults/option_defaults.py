@@ -951,6 +951,13 @@ def show_repos():
     return {Optional("show_repos", default=False): Any(bool, All(Any(str), Boolean()))}
 
 
+def show_thawed():
+    """
+    Show thawed repositories section in status output
+    """
+    return {Optional("show_thawed", default=False): Any(bool, All(Any(str), Boolean()))}
+
+
 def show_buckets():
     """
     Show buckets section in status output

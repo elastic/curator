@@ -262,6 +262,13 @@ def rotate(
     help="Show repositories section only",
 )
 @click.option(
+    "-t",
+    "--thawed",
+    is_flag=True,
+    default=False,
+    help="Show thawed repositories section only",
+)
+@click.option(
     "-b",
     "--buckets",
     is_flag=True,
@@ -294,6 +301,7 @@ def status(
     ctx,
     limit,
     repos,
+    thawed,
     buckets,
     ilm,
     config,
@@ -302,12 +310,13 @@ def status(
     """
     Show the status of deepfreeze
 
-    By default, all sections are displayed. Use section flags (-r, -b, -i, -c) to show specific sections only.
+    By default, all sections are displayed. Use section flags (-r, -t, -b, -i, -c) to show specific sections only.
     Multiple section flags can be combined.
     """
     manual_options = {
         "limit": limit,
         "show_repos": repos,
+        "show_thawed": thawed,
         "show_buckets": buckets,
         "show_ilm": ilm,
         "show_config": config,

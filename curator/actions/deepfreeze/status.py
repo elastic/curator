@@ -26,6 +26,8 @@ class Status:
     :type limit: int
     :param show_repos: Show repositories section
     :type show_repos: bool
+    :param show_thawed: Show thawed repositories section
+    :type show_thawed: bool
     :param show_buckets: Show buckets section
     :type show_buckets: bool
     :param show_ilm: Show ILM policies section
@@ -51,6 +53,7 @@ class Status:
         client: Elasticsearch,
         limit: int = None,
         show_repos: bool = False,
+        show_thawed: bool = False,
         show_buckets: bool = False,
         show_ilm: bool = False,
         show_config: bool = False,
@@ -63,8 +66,9 @@ class Status:
         self.limit = limit
 
         # If no specific sections are requested, show all
-        self.show_all = not (show_repos or show_buckets or show_ilm or show_config)
+        self.show_all = not (show_repos or show_thawed or show_buckets or show_ilm or show_config)
         self.show_repos = show_repos or self.show_all
+        self.show_thawed = show_thawed or self.show_all
         self.show_buckets = show_buckets or self.show_all
         self.show_ilm = show_ilm or self.show_all
         self.show_config = show_config or self.show_all
@@ -102,6 +106,8 @@ class Status:
         if not self.porcelain:
             print()
 
+        if self.show_thawed:
+            self.do_thawed_repositories()
         if self.show_repos:
             self.do_repositories()
         if self.show_buckets:
@@ -257,6 +263,102 @@ class Status:
         if not self.porcelain:
             self.console.print(table)
 
+    def do_thawed_repositories(self):
+        """
+        Print thawed and thawing repositories in a separate section
+
+        :return: None
+        :rtype: None
+        """
+        self.loggit.debug("Showing thawed repositories")
+
+        # Get all repositories
+        all_repos = get_all_repos(self.client)
+        all_repos.sort()
+
+        # Get active thaw requests to track which repos are being thawed
+        active_thaw_requests = []
+        repos_being_thawed = set()
+        try:
+            all_thaw_requests = list_thaw_requests(self.client)
+            active_thaw_requests = [req for req in all_thaw_requests if req.get("status") == "in_progress"]
+            for req in active_thaw_requests:
+                repos_being_thawed.update(req.get("repos", []))
+        except Exception as e:
+            self.loggit.warning("Could not retrieve thaw requests: %s", e)
+
+        # Filter to only thawed/thawing repos
+        thawed_repos = []
+        for repo in all_repos:
+            if repo.name in repos_being_thawed or repo.is_thawed:
+                thawed_repos.append(repo)
+
+        # If no thawed repos, don't show the section
+        if not thawed_repos:
+            return
+
+        # Create the table
+        table = Table(title="Thawed Repositories")
+        table.add_column("Repository", style="cyan")
+        table.add_column("Status", style="magenta")
+        table.add_column("Snapshots", style="magenta")
+        table.add_column("Start", style="magenta")
+        table.add_column("End", style="magenta")
+
+        for repo in thawed_repos:
+            status = "U"
+            if repo.is_mounted:
+                status = "M"
+
+            # Check thaw status
+            if repo.name in repos_being_thawed:
+                # Repository is in an active thaw request - check S3 for actual status
+                try:
+                    restore_status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                    if restore_status["complete"] and restore_status["total"] > 0:
+                        status = "T" if repo.is_mounted else "t"
+                    else:
+                        status = "t"
+                except Exception as e:
+                    self.loggit.warning("Could not check restore status for %s: %s", repo.name, e)
+                    status = "t"
+            elif repo.is_thawed:
+                if repo.is_mounted:
+                    status = "T"
+                else:
+                    status = "t"
+
+            # Get snapshot count
+            count = "--"
+            if repo.is_mounted:
+                try:
+                    snapshots = self.client.snapshot.get(
+                        repository=repo.name, snapshot="_all"
+                    )
+                    count = len(snapshots.get("snapshots", []))
+                except Exception as e:
+                    self.loggit.warning("Repository %s not mounted: %s", repo.name, e)
+
+            # Format dates for display
+            start_str = (
+                repo.start.isoformat() if isinstance(repo.start, datetime)
+                else repo.start if repo.start
+                else "N/A"
+            )
+            end_str = (
+                repo.end.isoformat() if isinstance(repo.end, datetime)
+                else repo.end if repo.end
+                else "N/A"
+            )
+
+            if self.porcelain:
+                print(f"{repo.name}\t{status}\t{count}\t{start_str}\t{end_str}")
+            else:
+                table.add_row(repo.name, status, str(count), start_str, end_str)
+
+        if not self.porcelain:
+            self.console.print(table)
+
     def do_repositories(self):
         """
         Print the repositories in use by deepfreeze
@@ -287,45 +389,16 @@ class Status:
         except Exception as e:
             self.loggit.warning("Could not retrieve thaw requests: %s", e)
 
-        # Separate thawed/being-thawed repos (they should always be shown)
-        # Only include repos that are:
-        # 1. Explicitly in an active thaw request
-        # 2. Marked as thawed in the status index
-        # Skip expensive S3 checks for frozen repos - they haven't changed
-        thawed_repos = []
-        non_thawed_repos = []
-
-        for repo in all_repos:
-            # Check if repo is in an active thaw request or marked as thawed
-            if repo.name in repos_being_thawed:
-                self.loggit.debug("Repo %s is in active thaw request - adding to thawed list", repo.name)
-                thawed_repos.append(repo)
-            elif repo.is_thawed:
-                # Already marked as thawed
-                self.loggit.debug("Repo %s marked as thawed in status index", repo.name)
-                thawed_repos.append(repo)
-            else:
-                # All other repos are assumed frozen - no need for expensive S3 checks
-                non_thawed_repos.append(repo)
-
-        self.loggit.debug("Found %s thawed/being-thawed repositories", len(thawed_repos))
-
-        # Apply limit only to non-thawed repos
+        # Apply limit to all repos equally
         if self.limit is not None and self.limit > 0:
-            # Calculate how many non-thawed repos to show
-            slots_for_non_thawed = max(0, self.limit - len(thawed_repos))
-            non_thawed_repos = non_thawed_repos[-slots_for_non_thawed:]
-            self.loggit.debug("Limiting display to last %s non-thawed repositories", slots_for_non_thawed)
-
-        # Combine: thawed repos first, then non-thawed
-        repos_to_display = thawed_repos + non_thawed_repos
-        repos_to_display.sort()  # Re-sort combined list
+            repos_to_display = all_repos[-self.limit:]
+            self.loggit.debug("Limiting display to last %s repositories", self.limit)
+        else:
+            repos_to_display = all_repos
 
         # Set up the table with appropriate title
         if self.limit is not None and self.limit > 0:
-            table_title = f"Repositories (showing {len(repos_to_display)} of {total_repos})"
-            if len(thawed_repos) > 0:
-                table_title += f" [includes {len(thawed_repos)} thawed]"
+            table_title = f"Repositories (showing last {len(repos_to_display)} of {total_repos})"
         else:
             table_title = "Repositories"
 
