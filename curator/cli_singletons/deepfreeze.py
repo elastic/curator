@@ -423,9 +423,12 @@ def refreeze(
 )
 @click.option(
     "--check-status",
+    "check_status",
     type=str,
+    is_flag=False,
+    flag_value="",  # Empty string when used without a value
     default=None,
-    help="Check status of a thaw request by ID and mount if restoration is complete",
+    help="Check status of thaw request(s). Provide ID for specific request, or no value to check all",
 )
 @click.option(
     "--list",
@@ -450,10 +453,11 @@ def thaw(
     or check status of existing thaw requests.
 
     \b
-    Three modes of operation:
+    Four modes of operation:
     1. Create new thaw: Requires --start-date and --end-date
-    2. Check status: Use --check-status <thaw-id>
-    3. List requests: Use --list
+    2. Check specific request: Use --check-status <thaw-id> (mounts if ready)
+    3. Check all requests: Use --check-status (without value, shows status grouped by ID)
+    4. List requests: Use --list (shows summary table)
 
     \b
     Examples:
@@ -466,17 +470,22 @@ def thaw(
 
       curator_cli deepfreeze thaw -s 2025-01-01T00:00:00Z -e 2025-01-15T23:59:59Z --sync
 
-      # Check status and mount if ready
+      # Check status of a specific request and mount if ready
 
       curator_cli deepfreeze thaw --check-status <thaw-id>
 
-      # List all thaw requests
+      # Check status of ALL thaw requests (grouped by ID with restore progress)
+
+      curator_cli deepfreeze thaw --check-status
+
+      # List all thaw requests (summary table with date ranges)
 
       curator_cli deepfreeze thaw --list
     """
     # Validate mutual exclusivity
+    # Note: check_status can be None (not provided), "" (flag without value), or a string ID
     modes_active = sum(
-        [bool(start_date or end_date), bool(check_status), bool(list_requests)]
+        [bool(start_date or end_date), check_status is not None, bool(list_requests)]
     )
 
     if modes_active == 0:

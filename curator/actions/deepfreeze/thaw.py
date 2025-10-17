@@ -90,8 +90,12 @@ class Thaw:
         # Determine operation mode
         if list_requests:
             self.mode = "list"
-        elif check_status:
-            self.mode = "check_status"
+        elif check_status is not None:
+            # check_status can be "" (check all) or a specific request ID
+            if check_status == "":
+                self.mode = "check_all_status"
+            else:
+                self.mode = "check_status"
         else:
             self.mode = "create"
             # Parse and validate dates for create mode
@@ -106,7 +110,7 @@ class Thaw:
                 raise ValueError("start_date must be before or equal to end_date")
 
         # Get settings and initialize S3 client (not needed for list mode)
-        if self.mode != "list":
+        if self.mode not in ["list"]:
             self.settings = get_settings(client)
             self.s3 = s3_client_factory(self.settings.provider)
 
@@ -402,6 +406,98 @@ class Thaw:
                 mounted_count,
             )
 
+    def do_check_all_status(self) -> None:
+        """
+        Check the status of all thaw requests and display grouped by request ID.
+
+        :return: None
+        :rtype: None
+        """
+        self.loggit.info("Checking status of all thaw requests")
+
+        # Get all thaw requests
+        requests = list_thaw_requests(self.client)
+
+        if not requests:
+            rprint("\n[yellow]No thaw requests found.[/yellow]\n")
+            return
+
+        # Process each request
+        for req in requests:
+            request_id = req["id"]
+
+            # Get the full request data
+            try:
+                request = get_thaw_request(self.client, request_id)
+            except Exception as e:
+                self.loggit.warning("Failed to get thaw request %s: %s", request_id, e)
+                continue
+
+            # Get the repository objects
+            repos = get_repositories_by_names(self.client, request.get("repos", []))
+
+            if not repos:
+                self.loggit.warning("No repositories found for thaw request %s", request_id)
+                continue
+
+            # Display request header with date range
+            start_date_str = request.get("start_date", "")
+            end_date_str = request.get("end_date", "")
+
+            # Format dates
+            if start_date_str and "T" in start_date_str:
+                start_date_display = start_date_str.replace("T", " ").split(".")[0]
+            else:
+                start_date_display = start_date_str if start_date_str else "--"
+
+            if end_date_str and "T" in end_date_str:
+                end_date_display = end_date_str.replace("T", " ").split(".")[0]
+            else:
+                end_date_display = end_date_str if end_date_str else "--"
+
+            # Display request info
+            rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
+            rprint(f"[cyan]Status: {request['status']}[/cyan]")
+            rprint(f"[cyan]Created: {request['created_at']}[/cyan]")
+            rprint(f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n")
+
+            # Create table for repository status
+            table = Table(title="Repository Status")
+            table.add_column("Repository", style="cyan")
+            table.add_column("Bucket", style="magenta")
+            table.add_column("Path", style="magenta")
+            table.add_column("Mounted", style="magenta")
+            table.add_column("Thawed", style="magenta")
+            table.add_column("Restore Progress", style="yellow")
+
+            # Check each repository's status
+            for repo in repos:
+                # Check restore status if not mounted
+                if not repo.is_mounted:
+                    try:
+                        status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                        if status["complete"]:
+                            progress = f"{status['restored']}/{status['total']} (Ready)"
+                        else:
+                            progress = f"{status['restored']}/{status['total']}"
+                    except Exception as e:
+                        self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
+                        progress = "Error"
+                else:
+                    progress = "Complete"
+
+                table.add_row(
+                    repo.name,
+                    repo.bucket or "--",
+                    repo.base_path or "--",
+                    "Yes" if repo.is_mounted else "No",
+                    "Yes" if repo.is_thawed else "No",
+                    progress,
+                )
+
+            self.console.print(table)
+            rprint()
+
     def do_list_requests(self) -> None:
         """
         List all thaw requests in a formatted table.
@@ -530,6 +626,13 @@ class Thaw:
             self.loggit.info("DRY-RUN: Would mount any repositories with completed restoration")
             return
 
+        if self.mode == "check_all_status":
+            self.loggit.info("DRY-RUN: Would check status of all thaw requests")
+            # Still show status in dry-run
+            self.do_check_all_status()
+            self.loggit.info("DRY-RUN: Would NOT mount any repositories (check-all is read-only)")
+            return
+
         # Create mode
         msg = (
             f"DRY-RUN: Thawing repositories with data between "
@@ -575,6 +678,10 @@ class Thaw:
 
         if self.mode == "check_status":
             self.do_check_status()
+            return
+
+        if self.mode == "check_all_status":
+            self.do_check_all_status()
             return
 
         # Create mode - original thaw logic
