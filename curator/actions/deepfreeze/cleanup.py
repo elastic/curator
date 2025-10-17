@@ -3,6 +3,7 @@
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 from elasticsearch import Elasticsearch
 
@@ -10,7 +11,9 @@ from curator.actions.deepfreeze.utilities import (
     check_restore_status,
     get_all_indices_in_repo,
     get_matching_repos,
+    get_repositories_by_names,
     get_settings,
+    list_thaw_requests,
 )
 from curator.s3client import s3_client_factory
 
@@ -143,6 +146,116 @@ class Cleanup:
         self.loggit.info("Found %d indices to delete", len(indices_to_delete))
         return indices_to_delete
 
+    def _cleanup_old_thaw_requests(self) -> tuple[list[str], list[str]]:
+        """
+        Clean up old thaw requests based on status and age.
+
+        Deletes:
+        - Completed requests older than retention period
+        - Failed requests older than retention period
+        - Stale in-progress requests where all referenced repos are no longer thawed
+
+        :return: Tuple of (deleted_request_ids, skipped_request_ids)
+        :rtype: tuple[list[str], list[str]]
+        """
+        self.loggit.debug("Cleaning up old thaw requests")
+
+        # Get all thaw requests
+        try:
+            requests = list_thaw_requests(self.client)
+        except Exception as e:
+            self.loggit.error("Failed to list thaw requests: %s", e)
+            return [], []
+
+        if not requests:
+            self.loggit.debug("No thaw requests found")
+            return [], []
+
+        self.loggit.info("Found %d thaw requests to evaluate for cleanup", len(requests))
+
+        now = datetime.now(timezone.utc)
+        deleted = []
+        skipped = []
+
+        # Get retention settings
+        retention_completed = self.settings.thaw_request_retention_days_completed
+        retention_failed = self.settings.thaw_request_retention_days_failed
+
+        for request in requests:
+            request_id = request.get("id")
+            status = request.get("status", "unknown")
+            created_at_str = request.get("created_at")
+            repos = request.get("repos", [])
+
+            try:
+                created_at = datetime.fromisoformat(created_at_str)
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                age_days = (now - created_at).days
+
+                should_delete = False
+                reason = ""
+
+                if status == "completed" and age_days > retention_completed:
+                    should_delete = True
+                    reason = f"completed request older than {retention_completed} days (age: {age_days} days)"
+
+                elif status == "failed" and age_days > retention_failed:
+                    should_delete = True
+                    reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
+
+                elif status == "in_progress":
+                    # Check if all referenced repos are no longer thawed
+                    if repos:
+                        try:
+                            repo_objects = get_repositories_by_names(self.client, repos)
+                            # Check if any repos are still thawed
+                            any_thawed = any(repo.is_thawed for repo in repo_objects)
+
+                            if not any_thawed:
+                                should_delete = True
+                                reason = f"in-progress request with no thawed repos (all repos have expired)"
+                        except Exception as e:
+                            self.loggit.warning(
+                                "Could not check repos for request %s: %s", request_id, e
+                            )
+                            skipped.append(request_id)
+                            continue
+
+                if should_delete:
+                    try:
+                        from curator.actions.deepfreeze.constants import STATUS_INDEX
+                        self.client.delete(index=STATUS_INDEX, id=request_id)
+                        self.loggit.info(
+                            "Deleted thaw request %s (%s)", request_id, reason
+                        )
+                        deleted.append(request_id)
+                    except Exception as e:
+                        self.loggit.error(
+                            "Failed to delete thaw request %s: %s", request_id, e
+                        )
+                        skipped.append(request_id)
+                else:
+                    self.loggit.debug(
+                        "Keeping thaw request %s (status: %s, age: %d days)",
+                        request_id,
+                        status,
+                        age_days
+                    )
+
+            except Exception as e:
+                self.loggit.error(
+                    "Error processing thaw request %s: %s", request_id, e
+                )
+                skipped.append(request_id)
+
+        self.loggit.info(
+            "Thaw request cleanup complete: %d deleted, %d skipped",
+            len(deleted),
+            len(skipped)
+        )
+        return deleted, skipped
+
     def do_action(self) -> None:
         """
         Check thawed repositories and unmount them if their S3 objects have reverted to Glacier.
@@ -235,6 +348,15 @@ class Cleanup:
             except Exception as e:
                 self.loggit.error("Error deleting indices: %s", e)
 
+        # Clean up old thaw requests
+        self.loggit.info("Cleaning up old thaw requests")
+        try:
+            deleted, skipped = self._cleanup_old_thaw_requests()
+            if deleted:
+                self.loggit.info("Deleted %d old thaw requests", len(deleted))
+        except Exception as e:
+            self.loggit.error("Error cleaning up thaw requests: %s", e)
+
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the cleanup operation.
@@ -305,6 +427,77 @@ class Cleanup:
                     self.loggit.info("DRY-RUN: No indices would be deleted")
             except Exception as e:
                 self.loggit.error("DRY-RUN: Error finding indices to delete: %s", e)
+
+        # Show which thaw requests would be cleaned up
+        self.loggit.info("DRY-RUN: Checking for old thaw requests that would be deleted")
+        try:
+            requests = list_thaw_requests(self.client)
+
+            if not requests:
+                self.loggit.info("DRY-RUN: No thaw requests found")
+            else:
+                now = datetime.now(timezone.utc)
+                retention_completed = self.settings.thaw_request_retention_days_completed
+                retention_failed = self.settings.thaw_request_retention_days_failed
+
+                would_delete = []
+
+                for request in requests:
+                    request_id = request.get("id")
+                    status = request.get("status", "unknown")
+                    created_at_str = request.get("created_at")
+                    repos = request.get("repos", [])
+
+                    try:
+                        created_at = datetime.fromisoformat(created_at_str)
+                        if created_at.tzinfo is None:
+                            created_at = created_at.replace(tzinfo=timezone.utc)
+                        age_days = (now - created_at).days
+
+                        should_delete = False
+                        reason = ""
+
+                        if status == "completed" and age_days > retention_completed:
+                            should_delete = True
+                            reason = f"completed request older than {retention_completed} days (age: {age_days} days)"
+
+                        elif status == "failed" and age_days > retention_failed:
+                            should_delete = True
+                            reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
+
+                        elif status == "in_progress" and repos:
+                            try:
+                                repo_objects = get_repositories_by_names(self.client, repos)
+                                any_thawed = any(repo.is_thawed for repo in repo_objects)
+
+                                if not any_thawed:
+                                    should_delete = True
+                                    reason = "in-progress request with no thawed repos (all repos have expired)"
+                            except Exception as e:
+                                self.loggit.warning(
+                                    "DRY-RUN: Could not check repos for request %s: %s", request_id, e
+                                )
+
+                        if should_delete:
+                            would_delete.append((request_id, reason))
+
+                    except Exception as e:
+                        self.loggit.error(
+                            "DRY-RUN: Error processing thaw request %s: %s", request_id, e
+                        )
+
+                if would_delete:
+                    self.loggit.info(
+                        "DRY-RUN: Would delete %d old thaw requests:",
+                        len(would_delete)
+                    )
+                    for request_id, reason in would_delete:
+                        self.loggit.info("DRY-RUN:   - %s (%s)", request_id, reason)
+                else:
+                    self.loggit.info("DRY-RUN: No thaw requests would be deleted")
+
+        except Exception as e:
+            self.loggit.error("DRY-RUN: Error checking thaw requests: %s", e)
 
     def do_singleton_action(self) -> None:
         """

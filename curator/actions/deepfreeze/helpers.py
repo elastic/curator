@@ -213,6 +213,8 @@ class Settings:
         rotate_by (str): The rotation style.
         style (str): The style of the settings.
         last_suffix (str): The last suffix.
+        thaw_request_retention_days_completed (int): Days to retain completed thaw requests.
+        thaw_request_retention_days_failed (int): Days to retain failed thaw requests.
 
     """
 
@@ -226,6 +228,8 @@ class Settings:
     rotate_by: str = "path"
     style: str = "oneup"
     last_suffix: str = None
+    thaw_request_retention_days_completed: int = 7
+    thaw_request_retention_days_failed: int = 30
 
     def __init__(
         self,
@@ -239,6 +243,8 @@ class Settings:
         rotate_by: str = "path",
         style: str = "oneup",
         last_suffix: str = None,
+        thaw_request_retention_days_completed: int = 7,
+        thaw_request_retention_days_failed: int = 30,
     ) -> None:
         if settings_hash is not None:
             for key, value in settings_hash.items():
@@ -261,3 +267,7 @@ class Settings:
             self.style = style
         if last_suffix:
             self.last_suffix = last_suffix
+        if thaw_request_retention_days_completed:
+            self.thaw_request_retention_days_completed = thaw_request_retention_days_completed
+        if thaw_request_retention_days_failed:
+            self.thaw_request_retention_days_failed = thaw_request_retention_days_failed
