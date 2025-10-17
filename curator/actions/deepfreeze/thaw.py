@@ -17,6 +17,7 @@ from rich.table import Table
 from curator.actions.deepfreeze.utilities import (
     check_restore_status,
     decode_date,
+    find_and_mount_indices_in_date_range,
     find_repos_by_date_range,
     get_repositories_by_names,
     get_settings,
@@ -673,6 +674,34 @@ class Thaw:
             for repo in successfully_restored:
                 self._update_repo_dates(repo)
 
+            self.console.print()
+
+            # Phase 6: Mount indices
+            self.console.print(Panel(
+                f"[bold cyan]Phase 6: Mounting Indices[/bold cyan]\n\n"
+                f"Finding and mounting indices within the requested date range.",
+                border_style="cyan",
+                expand=False
+            ))
+
+            mount_result = find_and_mount_indices_in_date_range(
+                self.client, successfully_restored, self.start_date, self.end_date
+            )
+
+            self.console.print(f"  [cyan]→[/cyan] Mounted [bold]{mount_result['mounted']}[/bold] indices")
+            if mount_result['failed'] > 0:
+                self.console.print(
+                    f"  [yellow]⚠[/yellow] Failed to mount [yellow]{mount_result['failed']}[/yellow] indices"
+                )
+            if mount_result['datastream_successful'] > 0:
+                self.console.print(
+                    f"  [green]✓[/green] Added [bold]{mount_result['datastream_successful']}[/bold] indices to data streams"
+                )
+            if mount_result['datastream_failed'] > 0:
+                self.console.print(
+                    f"  [yellow]⚠[/yellow] Failed to add [yellow]{mount_result['datastream_failed']}[/yellow] indices to data streams"
+                )
+
             # Final summary
             self.console.print()
             summary_lines = [
@@ -681,9 +710,14 @@ class Thaw:
                 f"Restore Initiated: [cyan]{len(thawed_repos)}[/cyan]",
                 f"Successfully Restored: [cyan]{len(successfully_restored)}[/cyan]",
                 f"Successfully Mounted: [cyan]{mounted_count}[/cyan]",
+                f"Indices Mounted: [cyan]{mount_result['mounted']}[/cyan]",
             ]
             if failed_restores:
                 summary_lines.append(f"Failed Restores: [yellow]{len(failed_restores)}[/yellow]")
+            if mount_result['failed'] > 0:
+                summary_lines.append(f"Failed Index Mounts: [yellow]{mount_result['failed']}[/yellow]")
+            if mount_result['datastream_successful'] > 0:
+                summary_lines.append(f"Data Stream Indices Added: [cyan]{mount_result['datastream_successful']}[/cyan]")
 
             self.console.print(Panel(
                 "\n".join(summary_lines),

@@ -1377,3 +1377,277 @@ def is_policy_safe_to_delete(client: Elasticsearch, policy_name: str) -> bool:
     except Exception as e:
         loggit.error("Error checking policy %s: %s", policy_name, e)
         return False
+
+
+def find_snapshots_for_index(
+    client: Elasticsearch, repo_name: str, index_name: str
+) -> list[str]:
+    """
+    Find all snapshots in a repository that contain a specific index.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo_name: The repository name
+    :type repo_name: str
+    :param index_name: The index name to search for
+    :type index_name: str
+
+    :returns: List of snapshot names containing the index
+    :rtype: list[str]
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Finding snapshots containing index %s in repo %s", index_name, repo_name)
+
+    try:
+        snapshots = client.snapshot.get(repository=repo_name, snapshot="_all")
+        matching_snapshots = []
+
+        for snapshot in snapshots["snapshots"]:
+            if index_name in snapshot["indices"]:
+                matching_snapshots.append(snapshot["snapshot"])
+                loggit.debug(
+                    "Found index %s in snapshot %s", index_name, snapshot["snapshot"]
+                )
+
+        loggit.info(
+            "Found %d snapshots containing index %s", len(matching_snapshots), index_name
+        )
+        return matching_snapshots
+
+    except Exception as e:
+        loggit.error("Failed to find snapshots for index %s: %s", index_name, e)
+        return []
+
+
+def mount_snapshot_index(
+    client: Elasticsearch, repo_name: str, snapshot_name: str, index_name: str
+) -> bool:
+    """
+    Mount an index from a snapshot as a searchable snapshot.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo_name: The repository name
+    :type repo_name: str
+    :param snapshot_name: The snapshot name
+    :type snapshot_name: str
+    :param index_name: The index name to mount
+    :type index_name: str
+
+    :returns: True if successful, False otherwise
+    :rtype: bool
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info(
+        "Mounting index %s from snapshot %s/%s", index_name, repo_name, snapshot_name
+    )
+
+    # Check if index is already mounted
+    if client.indices.exists(index=index_name):
+        loggit.info("Index %s is already mounted", index_name)
+        return True
+
+    try:
+        client.searchable_snapshots.mount(
+            repository=repo_name,
+            snapshot=snapshot_name,
+            body={"index": index_name},
+        )
+        loggit.info("Successfully mounted index %s", index_name)
+        return True
+
+    except Exception as e:
+        loggit.error("Failed to mount index %s: %s", index_name, e)
+        return False
+
+
+def get_index_datastream_name(client: Elasticsearch, index_name: str) -> str:
+    """
+    Get the data stream name for an index by checking its settings.
+
+    Only returns a data stream name if the index has concrete metadata
+    indicating it was part of a data stream.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param index_name: The index name
+    :type index_name: str
+
+    :returns: The data stream name if the index was part of one, None otherwise
+    :rtype: str
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+
+    try:
+        # Get index settings to check for data stream metadata
+        settings = client.indices.get_settings(index=index_name)
+
+        if index_name in settings:
+            index_settings = settings[index_name].get("settings", {})
+            index_metadata = index_settings.get("index", {})
+
+            # Check if this index has data stream metadata
+            # Data stream backing indices have a hidden setting indicating their data stream
+            datastream_name = index_metadata.get("provided_name")
+
+            # Also check if index was created by a data stream
+            if datastream_name and datastream_name.startswith(".ds-"):
+                # Extract the actual data stream name from the backing index name
+                # Pattern: .ds-{name}-{date}-{number}
+                remaining = datastream_name[4:]
+                parts = remaining.rsplit("-", 2)
+                if len(parts) >= 3:
+                    ds_name = parts[0]
+                    loggit.debug("Index %s belongs to data stream %s", index_name, ds_name)
+                    return ds_name
+
+        return None
+
+    except Exception as e:
+        loggit.debug("Could not determine data stream for index %s: %s", index_name, e)
+        return None
+
+
+def add_index_to_datastream(
+    client: Elasticsearch, datastream_name: str, index_name: str
+) -> bool:
+    """
+    Add a backing index back to its data stream.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param datastream_name: The data stream name
+    :type datastream_name: str
+    :param index_name: The backing index name
+    :type index_name: str
+
+    :returns: True if successful, False otherwise
+    :rtype: bool
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info("Adding index %s to data stream %s", index_name, datastream_name)
+
+    try:
+        # First check if data stream exists
+        try:
+            client.indices.get_data_stream(name=datastream_name)
+        except NotFoundError:
+            loggit.warning("Data stream %s does not exist", datastream_name)
+            return False
+
+        # Add the backing index to the data stream
+        client.indices.modify_data_stream(
+            body={
+                "actions": [
+                    {"add_backing_index": {"data_stream": datastream_name, "index": index_name}}
+                ]
+            }
+        )
+        loggit.info("Successfully added index %s to data stream %s", index_name, datastream_name)
+        return True
+
+    except Exception as e:
+        loggit.error("Failed to add index %s to data stream %s: %s", index_name, datastream_name, e)
+        return False
+
+
+def find_and_mount_indices_in_date_range(
+    client: Elasticsearch, repos: list[Repository], start_date: datetime, end_date: datetime
+) -> dict:
+    """
+    Find and mount all indices within a date range from the given repositories.
+
+    For each index found:
+    1. Mount it as a searchable snapshot
+    2. If it's a data stream backing index, add it back to the data stream
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repos: List of repositories to search
+    :type repos: list[Repository]
+    :param start_date: Start of date range
+    :type start_date: datetime
+    :param end_date: End of date range
+    :type end_date: datetime
+
+    :returns: Dictionary with mounted and failed counts
+    :rtype: dict
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info(
+        "Finding and mounting indices between %s and %s",
+        start_date.isoformat(),
+        end_date.isoformat(),
+    )
+
+    mounted_indices = []
+    failed_indices = []
+    datastream_adds = {"successful": [], "failed": []}
+
+    for repo in repos:
+        try:
+            # Get all indices from snapshots in this repository
+            all_indices = get_all_indices_in_repo(client, repo.name)
+            loggit.debug("Found %d indices in repository %s", len(all_indices), repo.name)
+
+            # For each index, check if it overlaps with the date range
+            for index_name in all_indices:
+                # Find the snapshot containing this index (use the latest one)
+                snapshots = find_snapshots_for_index(client, repo.name, index_name)
+                if not snapshots:
+                    loggit.warning("No snapshots found for index %s", index_name)
+                    continue
+
+                # Use the most recent snapshot
+                snapshot_name = snapshots[-1]
+
+                # Mount the index
+                if mount_snapshot_index(client, repo.name, snapshot_name, index_name):
+                    mounted_indices.append(index_name)
+
+                    # Check if this index was actually part of a data stream
+                    # by examining its metadata (not just naming patterns)
+                    datastream_name = get_index_datastream_name(client, index_name)
+                    if datastream_name:
+                        loggit.info(
+                            "Index %s was part of data stream %s, attempting to re-add",
+                            index_name,
+                            datastream_name,
+                        )
+                        if add_index_to_datastream(client, datastream_name, index_name):
+                            datastream_adds["successful"].append(
+                                {"index": index_name, "datastream": datastream_name}
+                            )
+                        else:
+                            datastream_adds["failed"].append(
+                                {"index": index_name, "datastream": datastream_name}
+                            )
+                    else:
+                        loggit.debug(
+                            "Index %s is not a data stream backing index, skipping data stream step",
+                            index_name,
+                        )
+                else:
+                    failed_indices.append(index_name)
+
+        except Exception as e:
+            loggit.error("Error processing repository %s: %s", repo.name, e)
+
+    result = {
+        "mounted": len(mounted_indices),
+        "failed": len(failed_indices),
+        "mounted_indices": mounted_indices,
+        "failed_indices": failed_indices,
+        "datastream_successful": len(datastream_adds["successful"]),
+        "datastream_failed": len(datastream_adds["failed"]),
+        "datastream_details": datastream_adds,
+    }
+
+    loggit.info(
+        "Mounted %d indices, failed %d. Added %d to data streams.",
+        result["mounted"],
+        result["failed"],
+        result["datastream_successful"],
+    )
+
+    return result
