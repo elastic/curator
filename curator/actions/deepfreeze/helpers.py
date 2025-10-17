@@ -193,7 +193,7 @@ class Repository:
         logging.debug(f"Repository name: {self.name}")
         logging.debug(f"Repository id: {self.docid}")
         logging.debug(f"Repository body: {self.to_dict()}")
-        es.update(index=STATUS_INDEX, id=self.docid, doc=self.to_dict())
+        es.update(index=STATUS_INDEX, id=self.docid, body={"doc": self.to_dict()})
 
 
 @dataclass
