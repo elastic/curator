@@ -33,23 +33,25 @@ class Repository:
         end (datetime): The end date of the repository.
         is_thawed (bool): Whether the repository is thawed (DEPRECATED - use thaw_state).
         is_mounted (bool): Whether the repository is mounted.
-        thaw_state (str): Lifecycle state - "frozen", "thawing", "thawed", "expired"
+        thaw_state (str): Lifecycle state - "active", "frozen", "thawing", "thawed", "expired"
         thawed_at (datetime): When S3 restore completed (thawing -> thawed transition).
         expires_at (datetime): When S3 restore will/did expire.
         doctype (str): The document type of the repository.
         id [str]: The ID of the repository in Elasticsearch.
 
     Lifecycle States:
-        frozen: Normal state, in Glacier, not thawed
+        active: Active repository, never been through thaw lifecycle
+        frozen: In cold storage (Glacier), not currently accessible
         thawing: S3 restore in progress, waiting for retrieval
         thawed: S3 restore complete, mounted and in use
         expired: S3 restore expired, reverted to Glacier, ready for cleanup
 
     State Transitions:
+        active -> frozen: When repository is moved to cold storage (future feature)
         frozen -> thawing: When thaw request initiated
         thawing -> thawed: When S3 restore completes and repo is mounted
         thawed -> expired: When S3 restore expiry time passes
-        expired -> frozen: When cleanup runs
+        expired -> frozen: When cleanup runs (refreeze operation)
 
     Methods:
         to_dict() -> dict:
@@ -78,7 +80,7 @@ class Repository:
     end: datetime = None
     is_thawed: bool = False  # DEPRECATED - use thaw_state instead
     is_mounted: bool = True
-    thaw_state: str = "frozen"  # frozen, thawing, thawed, expired
+    thaw_state: str = "active"  # active, frozen, thawing, thawed, expired
     thawed_at: datetime = None  # When restore completed
     expires_at: datetime = None  # When restore will/did expire
     doctype: str = "repository"
