@@ -95,10 +95,6 @@ class Repository:
         if isinstance(self.expires_at, str):
             self.expires_at = datetime.fromisoformat(self.expires_at)
 
-        # Backward compatibility: sync is_thawed with thaw_state
-        if self.is_thawed and self.thaw_state == "frozen":
-            # Old docs that only have is_thawed=True should be "thawed"
-            self.thaw_state = "thawed" if self.is_mounted else "thawing"
 
     @classmethod
     def from_elasticsearch(

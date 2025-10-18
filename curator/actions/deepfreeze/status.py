@@ -300,35 +300,16 @@ class Status:
         # Create the table
         table = Table(title="Thawed Repositories")
         table.add_column("Repository", style="cyan")
-        table.add_column("State", style="yellow")  # New state column
-        table.add_column("Status", style="magenta")
+        table.add_column("State", style="yellow")
+        table.add_column("Mounted", style="green")
         table.add_column("Snapshots", style="magenta")
-        table.add_column("Expires", style="red")  # Show expiry time
+        table.add_column("Expires", style="red")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
 
         for repo in thawed_repos:
-            status = "U"
-            if repo.is_mounted:
-                status = "M"
-
-            # Check thaw status
-            if repo.name in repos_being_thawed:
-                # Repository is in an active thaw request - check S3 for actual status
-                try:
-                    restore_status = check_restore_status(self.s3, repo.bucket, repo.base_path)
-                    if restore_status["complete"] and restore_status["total"] > 0:
-                        status = "T" if repo.is_mounted else "t"
-                    else:
-                        status = "t"
-                except Exception as e:
-                    self.loggit.warning("Could not check restore status for %s: %s", repo.name, e)
-                    status = "t"
-            elif repo.is_thawed:
-                if repo.is_mounted:
-                    status = "T"
-                else:
-                    status = "t"
+            # Determine mounted status
+            mounted_status = "yes" if repo.is_mounted else "no"
 
             # Get snapshot count
             count = "--"
@@ -361,9 +342,9 @@ class Status:
             )
 
             if self.porcelain:
-                print(f"{repo.name}\t{repo.thaw_state}\t{status}\t{count}\t{expires_str}\t{start_str}\t{end_str}")
+                print(f"{repo.name}\t{repo.thaw_state}\t{mounted_status}\t{count}\t{expires_str}\t{start_str}\t{end_str}")
             else:
-                table.add_row(repo.name, repo.thaw_state, status, str(count), expires_str, start_str, end_str)
+                table.add_row(repo.name, repo.thaw_state, mounted_status, str(count), expires_str, start_str, end_str)
 
         if not self.porcelain:
             self.console.print(table)
@@ -413,51 +394,20 @@ class Status:
 
         table = Table(title=table_title)
         table.add_column("Repository", style="cyan")
-        table.add_column("State", style="yellow")  # New state column
-        table.add_column("Status", style="magenta")
+        table.add_column("State", style="yellow")
+        table.add_column("Mounted", style="green")
         table.add_column("Snapshots", style="magenta")
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
 
         for repo in repos_to_display:
-            status = "U"
-            if repo.is_mounted:
-                status = "M"
-                if repo.name == active_repo:
-                    status = "M*"
+            # Mark active repository with asterisk
+            repo_name = f"{repo.name}*" if repo.name == active_repo else repo.name
 
-            # Check if repository is thawed or being thawed
-            # Only check repos in active thaw requests or marked as thawed
-            # Skip expensive S3 checks for frozen repos
-            if repo.name in repos_being_thawed:
-                # Repository is in an active thaw request - check S3 for actual status
-                try:
-                    self.loggit.debug("Checking S3 restore status for %s (in active thaw request)",
-                                    repo.name)
-                    restore_status = check_restore_status(self.s3, repo.bucket, repo.base_path)
-                    self.loggit.info("Restore status for %s: %s", repo.name, restore_status)
-                    if restore_status["complete"] and restore_status["total"] > 0:
-                        # Restoration complete but not yet mounted
-                        status = "T" if repo.is_mounted else "t"
-                    else:
-                        # Still in progress
-                        status = "t"
-                except Exception as e:
-                    self.loggit.warning("Could not check restore status for %s: %s", repo.name, e)
-                    status = "t"  # Assume thawing if we can't check
-            elif repo.is_thawed:
-                # Marked as thawed in the status index
-                if repo.is_mounted:
-                    status = "T"  # Fully thawed and mounted
-                else:
-                    status = "t"  # Marked thawed but not mounted
+            # Determine mounted status
+            mounted_status = "yes" if repo.is_mounted else "no"
 
-            # Active repo gets marked with asterisk (but preserve t/T status)
-            if repo.name == active_repo and repo.is_mounted and status not in ["t", "T"]:
-                status = "M*"
-            elif repo.name == active_repo and status == "T":
-                status = "T*"
-
+            # Get snapshot count
             count = "--"
             self.loggit.debug(f"Checking mount status for {repo.name}")
             if repo.is_mounted:
@@ -470,6 +420,7 @@ class Status:
                 except Exception as e:
                     self.loggit.warning("Repository %s not mounted: %s", repo.name, e)
                     repo.unmount()
+
             # Format dates for display
             start_str = (
                 repo.start.isoformat() if isinstance(repo.start, datetime)
@@ -481,11 +432,12 @@ class Status:
                 else repo.end if repo.end
                 else "N/A"
             )
+
             if self.porcelain:
                 # Output tab-separated values for scripting
-                print(f"{repo.name}\t{repo.thaw_state}\t{status}\t{count}\t{start_str}\t{end_str}")
+                print(f"{repo_name}\t{repo.thaw_state}\t{mounted_status}\t{count}\t{start_str}\t{end_str}")
             else:
-                table.add_row(repo.name, repo.thaw_state, status, str(count), start_str, end_str)
+                table.add_row(repo_name, repo.thaw_state, mounted_status, str(count), start_str, end_str)
 
         if not self.porcelain:
             self.console.print(table)

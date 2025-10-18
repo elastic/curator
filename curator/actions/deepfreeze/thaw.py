@@ -478,9 +478,9 @@ class Thaw:
             table.add_column("Repository", style="cyan")
             table.add_column("Bucket", style="magenta")
             table.add_column("Path", style="magenta")
-            table.add_column("Mounted", style="magenta")
-            table.add_column("Thawed", style="magenta")
-            table.add_column("Restore Progress", style="yellow")
+            table.add_column("State", style="yellow")
+            table.add_column("Mounted", style="green")
+            table.add_column("Restore Progress", style="magenta")
 
             # Check each repository's status
             for repo in repos:
@@ -502,8 +502,8 @@ class Thaw:
                     repo.name,
                     repo.bucket or "--",
                     repo.base_path or "--",
-                    "Yes" if repo.is_mounted else "No",
-                    "Yes" if repo.is_thawed else "No",
+                    repo.thaw_state,
+                    "yes" if repo.is_mounted else "no",
                     progress,
                 )
 
@@ -598,16 +598,16 @@ class Thaw:
         table.add_column("Repository", style="cyan")
         table.add_column("Bucket", style="magenta")
         table.add_column("Path", style="magenta")
-        table.add_column("Mounted", style="magenta")
-        table.add_column("Thawed", style="magenta")
+        table.add_column("State", style="yellow")
+        table.add_column("Mounted", style="green")
 
         for repo in repos:
             table.add_row(
                 repo.name,
                 repo.bucket or "--",
                 repo.base_path or "--",
-                "Yes" if repo.is_mounted else "No",
-                "Yes" if repo.is_thawed else "No",
+                repo.thaw_state,
+                "yes" if repo.is_mounted else "no",
             )
 
         self.console.print(table)
