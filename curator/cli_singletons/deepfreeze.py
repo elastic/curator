@@ -357,8 +357,8 @@ def cleanup(
     "--thaw-request-id",
     "thaw_request_id",
     type=str,
-    required=True,
-    help="The ID of the thaw request to refreeze",
+    default=None,
+    help="The ID of the thaw request to refreeze (optional - if not provided, all open requests)",
 )
 @click.pass_context
 def refreeze(
@@ -366,18 +366,27 @@ def refreeze(
     thaw_request_id,
 ):
     """
-    Unmount repositories from a thaw request and reset them to frozen state.
+    Unmount repositories from thaw request(s) and reset them to frozen state.
 
     This is a user-initiated operation to signal "I'm done with this thaw."
-    It unmounts all repositories associated with the thaw request and resets
+    It unmounts all repositories associated with the thaw request(s) and resets
     their state back to frozen, even if the S3 restore hasn't expired yet.
 
     \b
-    Example:
+    Two modes of operation:
+    1. Specific request: Provide -t <thaw-request-id> to refreeze one request
+    2. All open requests: Omit -t to refreeze all open requests (requires confirmation)
+
+    \b
+    Examples:
 
       # Refreeze a specific thaw request
 
       curator_cli deepfreeze refreeze -t <thaw-request-id>
+
+      # Refreeze all open thaw requests (with confirmation)
+
+      curator_cli deepfreeze refreeze
     """
     manual_options = {
         "thaw_request_id": thaw_request_id,

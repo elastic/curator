@@ -12,6 +12,7 @@ from curator.actions.deepfreeze.utilities import (
     get_repositories_by_names,
     get_settings,
     get_thaw_request,
+    list_thaw_requests,
 )
 
 
@@ -31,7 +32,7 @@ class Refreeze:
 
     :param client: A client connection object
     :type client: Elasticsearch
-    :param thaw_request_id: The ID of the thaw request to refreeze
+    :param thaw_request_id: The ID of the thaw request to refreeze (optional - if None, all open requests)
     :type thaw_request_id: str
 
     :methods:
@@ -40,42 +41,87 @@ class Refreeze:
         do_singleton_action: Entry point for singleton CLI execution.
     """
 
-    def __init__(self, client: Elasticsearch, thaw_request_id: str) -> None:
+    def __init__(self, client: Elasticsearch, thaw_request_id: str = None) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Refreeze")
-
-        if not thaw_request_id:
-            raise ValueError("thaw_request_id is required")
 
         self.client = client
         self.thaw_request_id = thaw_request_id
         self.settings = get_settings(client)
 
-        self.loggit.info("Deepfreeze Refreeze initialized for request %s", thaw_request_id)
+        if thaw_request_id:
+            self.loggit.info("Deepfreeze Refreeze initialized for request %s", thaw_request_id)
+        else:
+            self.loggit.info("Deepfreeze Refreeze initialized for all open requests")
 
-    def do_action(self) -> None:
+    def _get_open_thaw_requests(self) -> list:
         """
-        Unmount repositories from a thaw request and reset them to frozen state.
+        Get all open (in_progress) thaw requests.
 
-        :return: None
-        :rtype: None
+        :return: List of thaw request dicts
+        :rtype: list
         """
-        self.loggit.info("Refreezing thaw request %s", self.thaw_request_id)
+        all_requests = list_thaw_requests(self.client)
+        return [req for req in all_requests if req.get("status") == "in_progress"]
+
+    def _confirm_bulk_refreeze(self, requests: list) -> bool:
+        """
+        Display a list of thaw requests and get user confirmation to proceed.
+
+        :param requests: List of thaw request dicts
+        :type requests: list
+
+        :return: True if user confirms, False otherwise
+        :rtype: bool
+        """
+        rprint(f"\n[bold yellow]WARNING: This will refreeze {len(requests)} open thaw request(s)[/bold yellow]\n")
+
+        # Show the requests
+        for req in requests:
+            request_id = req.get("id")
+            repo_count = len(req.get("repos", []))
+            created_at = req.get("created_at", "Unknown")
+            start_date = req.get("start_date", "--")
+            end_date = req.get("end_date", "--")
+
+            rprint(f"  [cyan]• {request_id}[/cyan]")
+            rprint(f"    [dim]Created: {created_at}[/dim]")
+            rprint(f"    [dim]Date Range: {start_date} to {end_date}[/dim]")
+            rprint(f"    [dim]Repositories: {repo_count}[/dim]\n")
+
+        # Get confirmation
+        try:
+            response = input("Do you want to proceed with refreezing all these requests? [y/N]: ").strip().lower()
+            return response in ['y', 'yes']
+        except (EOFError, KeyboardInterrupt):
+            rprint("\n[yellow]Operation cancelled by user[/yellow]")
+            return False
+
+    def _refreeze_single_request(self, request_id: str) -> tuple[list, list]:
+        """
+        Refreeze a single thaw request.
+
+        :param request_id: The thaw request ID
+        :type request_id: str
+
+        :return: Tuple of (unmounted_repos, failed_repos)
+        :rtype: tuple[list, list]
+        """
+        self.loggit.info("Refreezing thaw request %s", request_id)
 
         # Get the thaw request
         try:
-            request = get_thaw_request(self.client, self.thaw_request_id)
+            request = get_thaw_request(self.client, request_id)
         except Exception as e:
-            self.loggit.error("Failed to get thaw request %s: %s", self.thaw_request_id, e)
-            rprint(f"[red]Error: Could not find thaw request '{self.thaw_request_id}'[/red]")
-            return
+            self.loggit.error("Failed to get thaw request %s: %s", request_id, e)
+            rprint(f"[red]Error: Could not find thaw request '{request_id}'[/red]")
+            return [], []
 
         # Get the repositories from the request
         repo_names = request.get("repos", [])
         if not repo_names:
-            self.loggit.warning("No repositories found in thaw request %s", self.thaw_request_id)
-            rprint(f"[yellow]Warning: No repositories found in thaw request '{self.thaw_request_id}'[/yellow]")
-            return
+            self.loggit.warning("No repositories found in thaw request %s", request_id)
+            return [], []
 
         self.loggit.info("Found %d repositories to refreeze", len(repo_names))
 
@@ -84,13 +130,11 @@ class Refreeze:
             repos = get_repositories_by_names(self.client, repo_names)
         except Exception as e:
             self.loggit.error("Failed to get repositories: %s", e)
-            rprint(f"[red]Error: Failed to get repositories: {e}[/red]")
-            return
+            return [], []
 
         if not repos:
             self.loggit.warning("No repository objects found for names: %s", repo_names)
-            rprint(f"[yellow]Warning: No repository objects found[/yellow]")
-            return
+            return [], []
 
         # Track success/failure
         unmounted = []
@@ -131,71 +175,142 @@ class Refreeze:
         try:
             self.client.update(
                 index=STATUS_INDEX,
-                id=self.thaw_request_id,
+                id=request_id,
                 body={"doc": {"status": "completed"}}
             )
-            self.loggit.info("Thaw request %s marked as completed", self.thaw_request_id)
+            self.loggit.info("Thaw request %s marked as completed", request_id)
         except Exception as e:
             self.loggit.error("Failed to update thaw request status: %s", e)
 
+        return unmounted, failed
+
+    def do_action(self) -> None:
+        """
+        Unmount repositories from thaw request(s) and reset them to frozen state.
+
+        If thaw_request_id is provided, refreeze that specific request.
+        If thaw_request_id is None, refreeze all open requests (with confirmation).
+
+        :return: None
+        :rtype: None
+        """
+        # Determine which requests to process
+        if self.thaw_request_id:
+            # Single request mode
+            request_ids = [self.thaw_request_id]
+        else:
+            # Bulk mode - get all open requests
+            open_requests = self._get_open_thaw_requests()
+
+            if not open_requests:
+                rprint("[yellow]No open thaw requests found to refreeze[/yellow]")
+                return
+
+            # Get confirmation
+            if not self._confirm_bulk_refreeze(open_requests):
+                rprint("[yellow]Refreeze operation cancelled[/yellow]")
+                return
+
+            request_ids = [req.get("id") for req in open_requests]
+
+        # Process each request
+        total_unmounted = []
+        total_failed = []
+
+        for request_id in request_ids:
+            unmounted, failed = self._refreeze_single_request(request_id)
+            total_unmounted.extend(unmounted)
+            total_failed.extend(failed)
+
         # Report results
-        rprint(f"\n[green]Refreeze completed for thaw request '{self.thaw_request_id}'[/green]")
-        rprint(f"[cyan]Processed {len(repos)} repositories[/cyan]")
-        if unmounted:
-            rprint(f"[cyan]Unmounted {len(unmounted)} repositories[/cyan]")
-        if failed:
-            rprint(f"[red]Failed to process {len(failed)} repositories: {', '.join(failed)}[/red]")
+        if len(request_ids) == 1:
+            rprint(f"\n[green]Refreeze completed for thaw request '{request_ids[0]}'[/green]")
+        else:
+            rprint(f"\n[green]Refreeze completed for {len(request_ids)} thaw requests[/green]")
+
+        rprint(f"[cyan]Unmounted {len(total_unmounted)} repositories[/cyan]")
+        if total_failed:
+            rprint(f"[red]Failed to process {len(total_failed)} repositories: {', '.join(total_failed)}[/red]")
 
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the refreeze operation.
         Shows which repositories would be unmounted and reset.
 
+        If thaw_request_id is provided, show dry-run for that specific request.
+        If thaw_request_id is None, show dry-run for all open requests.
+
         :return: None
         :rtype: None
         """
-        self.loggit.info("DRY-RUN: Refreezing thaw request %s", self.thaw_request_id)
+        # Determine which requests to process
+        if self.thaw_request_id:
+            # Single request mode
+            request_ids = [self.thaw_request_id]
+            rprint(f"\n[cyan]DRY-RUN: Would refreeze thaw request '{self.thaw_request_id}'[/cyan]\n")
+        else:
+            # Bulk mode - get all open requests
+            open_requests = self._get_open_thaw_requests()
 
-        # Get the thaw request
-        try:
-            request = get_thaw_request(self.client, self.thaw_request_id)
-        except Exception as e:
-            self.loggit.error("DRY-RUN: Failed to get thaw request %s: %s", self.thaw_request_id, e)
-            rprint(f"[red]DRY-RUN: Could not find thaw request '{self.thaw_request_id}'[/red]")
-            return
+            if not open_requests:
+                rprint("[yellow]DRY-RUN: No open thaw requests found to refreeze[/yellow]")
+                return
 
-        # Get the repositories from the request
-        repo_names = request.get("repos", [])
-        if not repo_names:
-            self.loggit.warning("DRY-RUN: No repositories found in thaw request %s", self.thaw_request_id)
-            rprint(f"[yellow]DRY-RUN: No repositories found in thaw request '{self.thaw_request_id}'[/yellow]")
-            return
+            rprint(f"\n[cyan]DRY-RUN: Would refreeze {len(open_requests)} open thaw requests:[/cyan]\n")
 
-        self.loggit.info("DRY-RUN: Found %d repositories to refreeze", len(repo_names))
+            # Show the requests
+            for req in open_requests:
+                request_id = req.get("id")
+                repo_count = len(req.get("repos", []))
+                created_at = req.get("created_at", "Unknown")
+                start_date = req.get("start_date", "--")
+                end_date = req.get("end_date", "--")
 
-        # Get the repository objects
-        try:
-            repos = get_repositories_by_names(self.client, repo_names)
-        except Exception as e:
-            self.loggit.error("DRY-RUN: Failed to get repositories: %s", e)
-            rprint(f"[red]DRY-RUN: Failed to get repositories: {e}[/red]")
-            return
+                rprint(f"  [cyan]• {request_id}[/cyan]")
+                rprint(f"    [dim]Created: {created_at}[/dim]")
+                rprint(f"    [dim]Date Range: {start_date} to {end_date}[/dim]")
+                rprint(f"    [dim]Repositories: {repo_count}[/dim]\n")
 
-        if not repos:
-            self.loggit.warning("DRY-RUN: No repository objects found for names: %s", repo_names)
-            rprint(f"[yellow]DRY-RUN: No repository objects found[/yellow]")
-            return
+            request_ids = [req.get("id") for req in open_requests]
 
-        rprint(f"\n[cyan]DRY-RUN: Would refreeze thaw request '{self.thaw_request_id}'[/cyan]")
-        rprint(f"[cyan]DRY-RUN: Would process {len(repos)} repositories:[/cyan]\n")
+        # Process each request in dry-run mode
+        total_repos = 0
+        for request_id in request_ids:
+            try:
+                request = get_thaw_request(self.client, request_id)
+            except Exception as e:
+                self.loggit.error("DRY-RUN: Failed to get thaw request %s: %s", request_id, e)
+                rprint(f"[red]DRY-RUN: Could not find thaw request '{request_id}'[/red]")
+                continue
 
-        # Show what would be done for each repository
-        for repo in repos:
-            action = "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
-            rprint(f"  [cyan]- {repo.name}[/cyan] (state: {repo.thaw_state}, mounted: {repo.is_mounted})")
-            rprint(f"    [dim]Would {action}[/dim]")
+            repo_names = request.get("repos", [])
+            if not repo_names:
+                continue
 
-        rprint(f"\n[cyan]DRY-RUN: Would mark thaw request '{self.thaw_request_id}' as completed[/cyan]\n")
+            try:
+                repos = get_repositories_by_names(self.client, repo_names)
+            except Exception as e:
+                self.loggit.error("DRY-RUN: Failed to get repositories for request %s: %s", request_id, e)
+                continue
+
+            if not repos:
+                continue
+
+            # Show details if single request, or summary if bulk
+            if len(request_ids) == 1:
+                rprint(f"[cyan]Would process {len(repos)} repositories:[/cyan]\n")
+                for repo in repos:
+                    action = "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
+                    rprint(f"  [cyan]- {repo.name}[/cyan] (state: {repo.thaw_state}, mounted: {repo.is_mounted})")
+                    rprint(f"    [dim]Would {action}[/dim]")
+                rprint(f"\n[cyan]DRY-RUN: Would mark thaw request '{request_id}' as completed[/cyan]\n")
+
+            total_repos += len(repos)
+
+        # Summary for bulk mode
+        if len(request_ids) > 1:
+            rprint(f"[cyan]DRY-RUN: Would process {total_repos} total repositories across {len(request_ids)} thaw requests[/cyan]")
+            rprint(f"[cyan]DRY-RUN: Would mark {len(request_ids)} thaw requests as completed[/cyan]\n")
 
     def do_singleton_action(self) -> None:
         """
