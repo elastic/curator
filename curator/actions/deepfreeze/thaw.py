@@ -184,6 +184,18 @@ class Thaw:
             self.loggit.info(
                 "Successfully initiated restore for repository %s", repo.name
             )
+
+            # Update repository state to 'thawing'
+            from datetime import timedelta, timezone
+            expires_at = datetime.now(timezone.utc) + timedelta(days=self.duration)
+            repo.start_thawing(expires_at)
+            repo.persist(self.client)
+            self.loggit.debug(
+                "Repository %s marked as 'thawing', expires at %s",
+                repo.name,
+                expires_at.isoformat()
+            )
+
             return True
         except Exception as e:
             self.loggit.error("Failed to thaw repository %s: %s", repo.name, e)

@@ -300,8 +300,10 @@ class Status:
         # Create the table
         table = Table(title="Thawed Repositories")
         table.add_column("Repository", style="cyan")
+        table.add_column("State", style="yellow")  # New state column
         table.add_column("Status", style="magenta")
         table.add_column("Snapshots", style="magenta")
+        table.add_column("Expires", style="red")  # Show expiry time
         table.add_column("Start", style="magenta")
         table.add_column("End", style="magenta")
 
@@ -351,10 +353,17 @@ class Status:
                 else "N/A"
             )
 
+            # Format expiry time
+            expires_str = (
+                repo.expires_at.isoformat() if isinstance(repo.expires_at, datetime)
+                else repo.expires_at if repo.expires_at
+                else "N/A"
+            )
+
             if self.porcelain:
-                print(f"{repo.name}\t{status}\t{count}\t{start_str}\t{end_str}")
+                print(f"{repo.name}\t{repo.thaw_state}\t{status}\t{count}\t{expires_str}\t{start_str}\t{end_str}")
             else:
-                table.add_row(repo.name, status, str(count), start_str, end_str)
+                table.add_row(repo.name, repo.thaw_state, status, str(count), expires_str, start_str, end_str)
 
         if not self.porcelain:
             self.console.print(table)
@@ -404,6 +413,7 @@ class Status:
 
         table = Table(title=table_title)
         table.add_column("Repository", style="cyan")
+        table.add_column("State", style="yellow")  # New state column
         table.add_column("Status", style="magenta")
         table.add_column("Snapshots", style="magenta")
         table.add_column("Start", style="magenta")
@@ -473,9 +483,9 @@ class Status:
             )
             if self.porcelain:
                 # Output tab-separated values for scripting
-                print(f"{repo.name}\t{status}\t{count}\t{start_str}\t{end_str}")
+                print(f"{repo.name}\t{repo.thaw_state}\t{status}\t{count}\t{start_str}\t{end_str}")
             else:
-                table.add_row(repo.name, status, str(count), start_str, end_str)
+                table.add_row(repo.name, repo.thaw_state, status, str(count), start_str, end_str)
 
         if not self.porcelain:
             self.console.print(table)

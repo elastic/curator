@@ -205,16 +205,20 @@ class Cleanup:
                     reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
 
                 elif status == "in_progress":
-                    # Check if all referenced repos are no longer thawed
+                    # Check if all referenced repos are no longer in thawing/thawed state
                     if repos:
                         try:
+                            from curator.actions.deepfreeze.constants import THAW_STATE_THAWING, THAW_STATE_THAWED
                             repo_objects = get_repositories_by_names(self.client, repos)
-                            # Check if any repos are still thawed
-                            any_thawed = any(repo.is_thawed for repo in repo_objects)
+                            # Check if any repos are still in thawing or thawed state
+                            any_active = any(
+                                repo.thaw_state in [THAW_STATE_THAWING, THAW_STATE_THAWED]
+                                for repo in repo_objects
+                            )
 
-                            if not any_thawed:
+                            if not any_active:
                                 should_delete = True
-                                reason = f"in-progress request with no thawed repos (all repos have expired)"
+                                reason = f"in-progress request with no active repos (all repos have been cleaned up)"
                         except Exception as e:
                             self.loggit.warning(
                                 "Could not check repos for request %s: %s", request_id, e
@@ -266,79 +270,47 @@ class Cleanup:
         """
         self.loggit.debug("Checking for expired thawed repositories")
 
-        # Get all thawed repositories (regardless of mount status)
+        # Get all repositories and filter for expired ones
+        from curator.actions.deepfreeze.constants import THAW_STATE_EXPIRED
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        thawed_repos = [repo for repo in all_repos if repo.is_thawed]
+        expired_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_EXPIRED]
 
-        if not thawed_repos:
-            self.loggit.info("No thawed repositories found")
+        if not expired_repos:
+            self.loggit.info("No expired repositories found to clean up")
             return
 
-        self.loggit.info("Found %d thawed repositories to check", len(thawed_repos))
+        self.loggit.info("Found %d expired repositories to clean up", len(expired_repos))
 
-        # Track repositories that will be cleaned up
+        # Track repositories that were successfully cleaned up
         repos_to_cleanup = []
 
-        for repo in thawed_repos:
-            self.loggit.debug("Checking thaw status for repository %s", repo.name)
+        for repo in expired_repos:
+            self.loggit.info("Cleaning up expired repository %s", repo.name)
 
             try:
-                # Check restoration status
-                status = check_restore_status(self.s3, repo.bucket, repo.base_path)
-
-                # Distinguish between in-progress restoration and expired thaw
-                # - in_progress > 0: Objects are being restored (active thaw)
-                # - not_restored > 0 and in_progress == 0: Objects have reverted to Glacier (expired thaw)
-                if status["in_progress"] > 0:
-                    # Restoration is still in progress, this is an active thaw
-                    self.loggit.debug(
-                        "Repository %s has active restoration (%d/%d objects in progress)",
-                        repo.name,
-                        status["in_progress"],
-                        status["total"]
-                    )
-                elif status["not_restored"] > 0:
-                    # Objects have reverted to Glacier, thaw has expired
-                    self.loggit.info(
-                        "Repository %s has expired thaw: %d/%d objects in Glacier, cleaning up",
-                        repo.name,
-                        status["not_restored"],
-                        status["total"]
-                    )
-
-                    # Add to cleanup list
-                    repos_to_cleanup.append(repo)
-
-                    # Mark as not thawed
-                    repo.is_thawed = False
-
-                    # Unmount if still mounted
-                    if repo.is_mounted:
-                        try:
-                            self.client.snapshot.delete_repository(name=repo.name)
-                            self.loggit.info("Repository %s unmounted successfully", repo.name)
-                            repo.is_mounted = False
-                        except Exception as e:
-                            self.loggit.warning(
-                                "Failed to unmount repository %s: %s", repo.name, e
-                            )
-                    else:
-                        self.loggit.debug("Repository %s was not mounted, only updating status", repo.name)
-
-                    # Persist updated status to status index
-                    repo.persist(self.client)
-                    self.loggit.info("Repository %s status updated", repo.name)
+                # Unmount if still mounted
+                if repo.is_mounted:
+                    try:
+                        self.client.snapshot.delete_repository(name=repo.name)
+                        self.loggit.info("Repository %s unmounted successfully", repo.name)
+                    except Exception as e:
+                        self.loggit.warning(
+                            "Failed to unmount repository %s: %s", repo.name, e
+                        )
                 else:
-                    # All objects are restored and available
-                    self.loggit.debug(
-                        "Repository %s has all objects restored (%d/%d)",
-                        repo.name,
-                        status["restored"],
-                        status["total"]
-                    )
+                    self.loggit.debug("Repository %s was not mounted", repo.name)
+
+                # Reset repository to frozen state
+                repo.reset_to_frozen()
+                repo.persist(self.client)
+                self.loggit.info("Repository %s reset to frozen state", repo.name)
+
+                # Add to cleanup list for index deletion
+                repos_to_cleanup.append(repo)
+
             except Exception as e:
                 self.loggit.error(
-                    "Error checking thaw status for repository %s: %s", repo.name, e
+                    "Error cleaning up repository %s: %s", repo.name, e
                 )
 
         # Delete indices whose snapshots are only in repositories being cleaned up
@@ -382,58 +354,29 @@ class Cleanup:
         """
         self.loggit.info("DRY-RUN MODE. No changes will be made.")
 
-        # Get all thawed repositories (regardless of mount status)
+        # Get all repositories and filter for expired ones
+        from curator.actions.deepfreeze.constants import THAW_STATE_EXPIRED
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        thawed_repos = [repo for repo in all_repos if repo.is_thawed]
+        expired_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_EXPIRED]
 
-        if not thawed_repos:
-            self.loggit.info("DRY-RUN: No thawed repositories found")
+        if not expired_repos:
+            self.loggit.info("DRY-RUN: No expired repositories found to clean up")
             return
 
-        self.loggit.info("DRY-RUN: Found %d thawed repositories to check", len(thawed_repos))
+        self.loggit.info("DRY-RUN: Found %d expired repositories to clean up", len(expired_repos))
 
         # Track repositories that would be cleaned up
         repos_to_cleanup = []
 
-        for repo in thawed_repos:
-            self.loggit.debug("DRY-RUN: Checking thaw status for repository %s", repo.name)
-
-            try:
-                # Check restoration status
-                status = check_restore_status(self.s3, repo.bucket, repo.base_path)
-
-                # Distinguish between in-progress restoration and expired thaw
-                if status["in_progress"] > 0:
-                    # Restoration is still in progress
-                    self.loggit.debug(
-                        "DRY-RUN: Repository %s has active restoration (%d/%d objects in progress)",
-                        repo.name,
-                        status["in_progress"],
-                        status["total"]
-                    )
-                elif status["not_restored"] > 0:
-                    # Objects have reverted to Glacier, thaw has expired
-                    action = "unmount and mark as not thawed" if repo.is_mounted else "mark as not thawed"
-                    self.loggit.info(
-                        "DRY-RUN: Would %s repository %s (expired thaw: %d/%d objects in Glacier)",
-                        action,
-                        repo.name,
-                        status["not_restored"],
-                        status["total"]
-                    )
-                    repos_to_cleanup.append(repo)
-                else:
-                    # All objects are restored
-                    self.loggit.debug(
-                        "DRY-RUN: Repository %s has all objects restored (%d/%d)",
-                        repo.name,
-                        status["restored"],
-                        status["total"]
-                    )
-            except Exception as e:
-                self.loggit.error(
-                    "DRY-RUN: Error checking thaw status for repository %s: %s", repo.name, e
-                )
+        for repo in expired_repos:
+            action = "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
+            self.loggit.info(
+                "DRY-RUN: Would %s repository %s (state: %s)",
+                action,
+                repo.name,
+                repo.thaw_state
+            )
+            repos_to_cleanup.append(repo)
 
         # Show which indices would be deleted
         if repos_to_cleanup:
@@ -494,12 +437,16 @@ class Cleanup:
 
                         elif status == "in_progress" and repos:
                             try:
+                                from curator.actions.deepfreeze.constants import THAW_STATE_THAWING, THAW_STATE_THAWED
                                 repo_objects = get_repositories_by_names(self.client, repos)
-                                any_thawed = any(repo.is_thawed for repo in repo_objects)
+                                any_active = any(
+                                    repo.thaw_state in [THAW_STATE_THAWING, THAW_STATE_THAWED]
+                                    for repo in repo_objects
+                                )
 
-                                if not any_thawed:
+                                if not any_active:
                                     should_delete = True
-                                    reason = "in-progress request with no thawed repos (all repos have expired)"
+                                    reason = "in-progress request with no active repos (all repos have been cleaned up)"
                             except Exception as e:
                                 self.loggit.warning(
                                     "DRY-RUN: Could not check repos for request %s: %s", request_id, e

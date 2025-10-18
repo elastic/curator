@@ -876,11 +876,10 @@ def mount_repo(client: Elasticsearch, repo: Repository) -> None:
         )
         loggit.info("Repository %s created successfully", repo.name)
 
-        # Update repository status to mounted and thawed
-        repo.is_mounted = True
-        repo.is_thawed = True
+        # Mark repository as thawed (uses new state machine)
+        repo.mark_thawed()
         repo.persist(client)
-        loggit.info("Repository %s status updated", repo.name)
+        loggit.info("Repository %s status updated to 'thawed'", repo.name)
 
     except Exception as e:
         loggit.error("Failed to mount repository %s: %s", repo.name, e)
