@@ -353,25 +353,34 @@ def cleanup(
 
 @deepfreeze.command()
 @click.option(
-    "-r",
-    "--repo-id",
+    "-t",
+    "--thaw-request-id",
+    "thaw_request_id",
     type=str,
-    default=None,
-    help="Repository name to refreeze (if not provided, all thawed repos will be refrozen with confirmation)",
+    required=True,
+    help="The ID of the thaw request to refreeze",
 )
 @click.pass_context
 def refreeze(
     ctx,
-    repo_id,
+    thaw_request_id,
 ):
     """
-    Force thawed repositories back to Glacier ahead of schedule.
+    Unmount repositories from a thaw request and reset them to frozen state.
 
-    If --repo-id is specified, only that repository will be refrozen.
-    If no --repo-id is provided, all thawed repositories will be listed and confirmation will be required.
+    This is a user-initiated operation to signal "I'm done with this thaw."
+    It unmounts all repositories associated with the thaw request and resets
+    their state back to frozen, even if the S3 restore hasn't expired yet.
+
+    \b
+    Example:
+
+      # Refreeze a specific thaw request
+
+      curator_cli deepfreeze refreeze -t <thaw-request-id>
     """
     manual_options = {
-        "repo_id": repo_id,
+        "thaw_request_id": thaw_request_id,
     }
     action = CLIAction(
         ctx.info_name,

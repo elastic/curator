@@ -3,289 +3,199 @@
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
 import logging
-import sys
 
 from elasticsearch import Elasticsearch
 from rich import print as rprint
-from rich.console import Console
-from rich.table import Table
 
+from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.utilities import (
-    get_all_indices_in_repo,
-    get_matching_repos,
-    get_repository,
+    get_repositories_by_names,
     get_settings,
-    push_to_glacier,
-    unmount_repo,
+    get_thaw_request,
 )
-from curator.s3client import s3_client_factory
 
 
 class Refreeze:
     """
-    The Refreeze action forces thawed repositories back to Glacier storage ahead of schedule.
-    It deletes indices that have snapshots in the thawed repositories, unmounts the repositories,
-    and pushes the S3 objects back to Glacier storage.
+    The Refreeze action is a user-initiated operation to signal "I'm done with this thaw."
+    It unmounts repositories that were previously thawed and resets them back to frozen state.
 
-    When repositories are thawed, their S3 objects are restored to Standard tier temporarily.
-    This action allows you to refreeze them before their automatic expiration, which is useful
-    for cost optimization when the thawed data is no longer needed.
+    Unlike the automatic Cleanup action which processes expired repositories on a schedule,
+    Refreeze is explicitly invoked by users when they're finished accessing thawed data,
+    even if the S3 restore hasn't expired yet.
 
-    IMPORTANT: This action deletes live indices from the cluster but preserves all snapshots
-    in S3. The snapshots remain intact and the S3 data is pushed back to Glacier storage.
+    When you thaw from AWS Glacier, you get a temporary restored copy that exists for a
+    specified duration. After that expires, AWS automatically removes the temporary copy -
+    the original Glacier object never moved. Refreeze doesn't push anything back; it's about
+    unmounting the repositories and resetting state.
 
     :param client: A client connection object
     :type client: Elasticsearch
-    :param repo_id: Optional repository name to refreeze (if not provided, refreeze all thawed repos)
-    :type repo_id: str
+    :param thaw_request_id: The ID of the thaw request to refreeze
+    :type thaw_request_id: str
 
     :methods:
-        do_action: Perform the refreeze operation (delete indices, unmount repos, push to Glacier).
+        do_action: Perform the refreeze operation.
         do_dry_run: Perform a dry-run of the refreeze operation.
         do_singleton_action: Entry point for singleton CLI execution.
     """
 
-    def __init__(self, client: Elasticsearch, repo_id: str = None) -> None:
+    def __init__(self, client: Elasticsearch, thaw_request_id: str) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Refreeze")
 
+        if not thaw_request_id:
+            raise ValueError("thaw_request_id is required")
+
         self.client = client
-        self.repo_id = repo_id
+        self.thaw_request_id = thaw_request_id
         self.settings = get_settings(client)
-        self.s3 = s3_client_factory(self.settings.provider)
-        self.console = Console()
 
-        self.loggit.info("Deepfreeze Refreeze initialized")
-
-    def _get_repos_to_process(self) -> list:
-        """
-        Get the list of repositories to refreeze.
-        If repo_id is specified, return only that repository.
-        Otherwise, return all thawed repositories.
-
-        :return: List of Repository objects to process
-        :rtype: list
-        """
-        # Get all thawed repositories
-        all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        thawed_repos = [repo for repo in all_repos if repo.is_thawed and repo.is_mounted]
-
-        if self.repo_id:
-            # Filter to the specific repository
-            matching = [repo for repo in thawed_repos if repo.name == self.repo_id]
-            if not matching:
-                self.loggit.error("Repository %s not found or not thawed", self.repo_id)
-                return []
-            return matching
-
-        return thawed_repos
-
-    def _get_indices_to_delete(self, repo) -> list[str]:
-        """
-        Get all indices that have snapshots in this repository.
-
-        :param repo: The Repository object being refrozen
-        :type repo: Repository
-
-        :return: List of index names to delete
-        :rtype: list[str]
-        """
-        self.loggit.debug("Finding indices to delete from repository %s", repo.name)
-
-        try:
-            indices = get_all_indices_in_repo(self.client, repo.name)
-            self.loggit.debug(
-                "Repository %s contains %d indices in its snapshots",
-                repo.name,
-                len(indices)
-            )
-        except Exception as e:
-            self.loggit.warning(
-                "Could not get indices from repository %s: %s", repo.name, e
-            )
-            return []
-
-        # Filter to only indices that actually exist in the cluster
-        indices_to_delete = []
-        for index in indices:
-            if self.client.indices.exists(index=index):
-                indices_to_delete.append(index)
-                self.loggit.debug("Index %s exists and will be deleted", index)
-            else:
-                self.loggit.debug("Index %s does not exist in cluster, skipping", index)
-
-        self.loggit.info("Found %d indices to delete from repository %s",
-                        len(indices_to_delete), repo.name)
-        return indices_to_delete
-
-    def _display_preview_and_confirm(self, repos_with_indices: dict) -> bool:
-        """
-        Display a preview of what will be refrozen and get user confirmation.
-
-        :param repos_with_indices: Dict mapping repo names to lists of indices
-        :type repos_with_indices: dict
-
-        :return: True if user confirms, False otherwise
-        :rtype: bool
-        """
-        rprint("\n[bold yellow]WARNING: This will refreeze the following repositories and delete their indices[/bold yellow]\n")
-
-        # Create table
-        table = Table(title="Repositories to Refreeze")
-        table.add_column("Repository", style="cyan")
-        table.add_column("Indices to Delete", style="magenta")
-        table.add_column("Count", style="green")
-
-        total_indices = 0
-        for repo_name, indices in repos_with_indices.items():
-            count = len(indices)
-            total_indices += count
-
-            # Format indices list
-            if count == 0:
-                indices_str = "[dim]none[/dim]"
-            elif count <= 3:
-                indices_str = ", ".join(indices)
-            else:
-                indices_str = f"{', '.join(indices[:3])}, ... (+{count - 3} more)"
-
-            table.add_row(repo_name, indices_str, str(count))
-
-        self.console.print(table)
-        rprint(f"\n[bold]Total: {len(repos_with_indices)} repositories, {total_indices} indices to delete[/bold]\n")
-
-        # Get confirmation
-        try:
-            response = input("Do you want to proceed? [y/N]: ").strip().lower()
-            return response in ['y', 'yes']
-        except (EOFError, KeyboardInterrupt):
-            rprint("\n[yellow]Operation cancelled by user[/yellow]")
-            return False
+        self.loggit.info("Deepfreeze Refreeze initialized for request %s", thaw_request_id)
 
     def do_action(self) -> None:
         """
-        Force thawed repositories back to Glacier by deleting their indices,
-        unmounting them, and pushing S3 objects back to Glacier storage.
+        Unmount repositories from a thaw request and reset them to frozen state.
 
         :return: None
         :rtype: None
         """
-        self.loggit.debug("Checking for thawed repositories to refreeze")
+        self.loggit.info("Refreezing thaw request %s", self.thaw_request_id)
 
-        # Get repositories to process
-        repos_to_refreeze = self._get_repos_to_process()
-
-        if not repos_to_refreeze:
-            self.loggit.info("No thawed repositories found to refreeze")
+        # Get the thaw request
+        try:
+            request = get_thaw_request(self.client, self.thaw_request_id)
+        except Exception as e:
+            self.loggit.error("Failed to get thaw request %s: %s", self.thaw_request_id, e)
+            rprint(f"[red]Error: Could not find thaw request '{self.thaw_request_id}'[/red]")
             return
 
-        # If no specific repo_id was provided and we have multiple repos, show preview and get confirmation
-        if not self.repo_id and len(repos_to_refreeze) > 0:
-            # Build preview
-            repos_with_indices = {}
-            for repo in repos_to_refreeze:
-                indices = self._get_indices_to_delete(repo)
-                repos_with_indices[repo.name] = indices
+        # Get the repositories from the request
+        repo_names = request.get("repos", [])
+        if not repo_names:
+            self.loggit.warning("No repositories found in thaw request %s", self.thaw_request_id)
+            rprint(f"[yellow]Warning: No repositories found in thaw request '{self.thaw_request_id}'[/yellow]")
+            return
 
-            # Show preview and get confirmation
-            if not self._display_preview_and_confirm(repos_with_indices):
-                self.loggit.info("Refreeze operation cancelled by user")
-                rprint("[yellow]Operation cancelled[/yellow]")
-                return
+        self.loggit.info("Found %d repositories to refreeze", len(repo_names))
 
-        self.loggit.info("Found %d thawed repositories to refreeze", len(repos_to_refreeze))
+        # Get the repository objects
+        try:
+            repos = get_repositories_by_names(self.client, repo_names)
+        except Exception as e:
+            self.loggit.error("Failed to get repositories: %s", e)
+            rprint(f"[red]Error: Failed to get repositories: {e}[/red]")
+            return
 
-        for repo in repos_to_refreeze:
-            self.loggit.info("Processing repository %s for refreeze", repo.name)
+        if not repos:
+            self.loggit.warning("No repository objects found for names: %s", repo_names)
+            rprint(f"[yellow]Warning: No repository objects found[/yellow]")
+            return
+
+        # Track success/failure
+        unmounted = []
+        failed = []
+
+        # Process each repository
+        for repo in repos:
+            self.loggit.info("Processing repository %s (state: %s, mounted: %s)",
+                           repo.name, repo.thaw_state, repo.is_mounted)
 
             try:
-                # Step 1: Get indices to delete
-                indices_to_delete = self._get_indices_to_delete(repo)
-
-                # Step 2: Delete indices
-                if indices_to_delete:
-                    self.loggit.info(
-                        "Deleting %d indices from repository %s",
-                        len(indices_to_delete),
-                        repo.name
-                    )
-                    for index in indices_to_delete:
-                        try:
-                            self.client.indices.delete(index=index)
-                            self.loggit.info("Deleted index %s", index)
-                        except Exception as e:
-                            self.loggit.error("Failed to delete index %s: %s", index, e)
+                # Unmount if still mounted
+                if repo.is_mounted:
+                    try:
+                        self.client.snapshot.delete_repository(name=repo.name)
+                        self.loggit.info("Unmounted repository %s", repo.name)
+                        unmounted.append(repo.name)
+                    except Exception as e:
+                        # If it's already unmounted, that's okay
+                        if "repository_missing_exception" in str(e).lower():
+                            self.loggit.debug("Repository %s was already unmounted", repo.name)
+                        else:
+                            self.loggit.warning("Failed to unmount repository %s: %s", repo.name, e)
+                            # Continue anyway to update the state
                 else:
-                    self.loggit.info("No indices to delete for repository %s", repo.name)
+                    self.loggit.debug("Repository %s was not mounted", repo.name)
 
-                # Step 3: Unmount the repository
-                self.loggit.info("Unmounting repository %s", repo.name)
-                unmounted_repo = unmount_repo(self.client, repo.name)
-
-                # Step 4: Push to Glacier
-                self.loggit.info("Pushing repository %s back to Glacier", repo.name)
-                push_to_glacier(self.s3, unmounted_repo)
-
-                # Step 5: Update repository status
-                repo.is_thawed = False
-                repo.is_mounted = False
+                # Reset to frozen state
+                repo.reset_to_frozen()
                 repo.persist(self.client)
-                self.loggit.info("Repository %s successfully refrozen", repo.name)
+                self.loggit.info("Repository %s reset to frozen state", repo.name)
 
             except Exception as e:
-                self.loggit.error(
-                    "Error refreezing repository %s: %s", repo.name, e
-                )
-                continue
+                self.loggit.error("Error processing repository %s: %s", repo.name, e)
+                failed.append(repo.name)
 
-        self.loggit.info("Refreeze operation completed")
+        # Update the thaw request status to completed
+        try:
+            self.client.update(
+                index=STATUS_INDEX,
+                id=self.thaw_request_id,
+                body={"doc": {"status": "completed"}}
+            )
+            self.loggit.info("Thaw request %s marked as completed", self.thaw_request_id)
+        except Exception as e:
+            self.loggit.error("Failed to update thaw request status: %s", e)
+
+        # Report results
+        rprint(f"\n[green]Refreeze completed for thaw request '{self.thaw_request_id}'[/green]")
+        rprint(f"[cyan]Processed {len(repos)} repositories[/cyan]")
+        if unmounted:
+            rprint(f"[cyan]Unmounted {len(unmounted)} repositories[/cyan]")
+        if failed:
+            rprint(f"[red]Failed to process {len(failed)} repositories: {', '.join(failed)}[/red]")
 
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the refreeze operation.
-        Shows which repositories would be refrozen and which indices would be deleted.
+        Shows which repositories would be unmounted and reset.
 
         :return: None
         :rtype: None
         """
-        self.loggit.info("DRY-RUN MODE. No changes will be made.")
+        self.loggit.info("DRY-RUN: Refreezing thaw request %s", self.thaw_request_id)
 
-        # Get repositories to process
-        repos_to_refreeze = self._get_repos_to_process()
-
-        if not repos_to_refreeze:
-            self.loggit.info("DRY-RUN: No thawed repositories found to refreeze")
+        # Get the thaw request
+        try:
+            request = get_thaw_request(self.client, self.thaw_request_id)
+        except Exception as e:
+            self.loggit.error("DRY-RUN: Failed to get thaw request %s: %s", self.thaw_request_id, e)
+            rprint(f"[red]DRY-RUN: Could not find thaw request '{self.thaw_request_id}'[/red]")
             return
 
-        self.loggit.info("DRY-RUN: Found %d thawed repositories to refreeze", len(repos_to_refreeze))
+        # Get the repositories from the request
+        repo_names = request.get("repos", [])
+        if not repo_names:
+            self.loggit.warning("DRY-RUN: No repositories found in thaw request %s", self.thaw_request_id)
+            rprint(f"[yellow]DRY-RUN: No repositories found in thaw request '{self.thaw_request_id}'[/yellow]")
+            return
 
-        for repo in repos_to_refreeze:
-            self.loggit.info("DRY-RUN: Would refreeze repository %s", repo.name)
+        self.loggit.info("DRY-RUN: Found %d repositories to refreeze", len(repo_names))
 
-            try:
-                # Show indices that would be deleted
-                indices_to_delete = self._get_indices_to_delete(repo)
+        # Get the repository objects
+        try:
+            repos = get_repositories_by_names(self.client, repo_names)
+        except Exception as e:
+            self.loggit.error("DRY-RUN: Failed to get repositories: %s", e)
+            rprint(f"[red]DRY-RUN: Failed to get repositories: {e}[/red]")
+            return
 
-                if indices_to_delete:
-                    self.loggit.info(
-                        "DRY-RUN: Would delete %d indices from repository %s:",
-                        len(indices_to_delete),
-                        repo.name
-                    )
-                    for index in indices_to_delete:
-                        self.loggit.info("DRY-RUN:   - %s", index)
-                else:
-                    self.loggit.info("DRY-RUN: No indices to delete for repository %s", repo.name)
+        if not repos:
+            self.loggit.warning("DRY-RUN: No repository objects found for names: %s", repo_names)
+            rprint(f"[yellow]DRY-RUN: No repository objects found[/yellow]")
+            return
 
-                # Show what would happen
-                self.loggit.info("DRY-RUN: Would unmount repository %s", repo.name)
-                self.loggit.info("DRY-RUN: Would push repository %s to Glacier", repo.name)
-                self.loggit.info("DRY-RUN: Would update status to thawed=False, mounted=False")
+        rprint(f"\n[cyan]DRY-RUN: Would refreeze thaw request '{self.thaw_request_id}'[/cyan]")
+        rprint(f"[cyan]DRY-RUN: Would process {len(repos)} repositories:[/cyan]\n")
 
-            except Exception as e:
-                self.loggit.error(
-                    "DRY-RUN: Error processing repository %s: %s", repo.name, e
-                )
+        # Show what would be done for each repository
+        for repo in repos:
+            action = "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
+            rprint(f"  [cyan]- {repo.name}[/cyan] (state: {repo.thaw_state}, mounted: {repo.is_mounted})")
+            rprint(f"    [dim]Would {action}[/dim]")
+
+        rprint(f"\n[cyan]DRY-RUN: Would mark thaw request '{self.thaw_request_id}' as completed[/cyan]\n")
 
     def do_singleton_action(self) -> None:
         """
