@@ -31,10 +31,25 @@ class Repository:
         base_path (str): The base path of the repository.
         start (datetime): The start date of the repository.
         end (datetime): The end date of the repository.
-        is_thawed (bool): Whether the repository is thawed.
+        is_thawed (bool): Whether the repository is thawed (DEPRECATED - use thaw_state).
         is_mounted (bool): Whether the repository is mounted.
+        thaw_state (str): Lifecycle state - "frozen", "thawing", "thawed", "expired"
+        thawed_at (datetime): When S3 restore completed (thawing -> thawed transition).
+        expires_at (datetime): When S3 restore will/did expire.
         doctype (str): The document type of the repository.
         id [str]: The ID of the repository in Elasticsearch.
+
+    Lifecycle States:
+        frozen: Normal state, in Glacier, not thawed
+        thawing: S3 restore in progress, waiting for retrieval
+        thawed: S3 restore complete, mounted and in use
+        expired: S3 restore expired, reverted to Glacier, ready for cleanup
+
+    State Transitions:
+        frozen -> thawing: When thaw request initiated
+        thawing -> thawed: When S3 restore completes and repo is mounted
+        thawed -> expired: When S3 restore expiry time passes
+        expired -> frozen: When cleanup runs
 
     Methods:
         to_dict() -> dict:
@@ -61,8 +76,11 @@ class Repository:
     base_path: str = None
     start: datetime = None
     end: datetime = None
-    is_thawed: bool = False
+    is_thawed: bool = False  # DEPRECATED - use thaw_state instead
     is_mounted: bool = True
+    thaw_state: str = "frozen"  # frozen, thawing, thawed, expired
+    thawed_at: datetime = None  # When restore completed
+    expires_at: datetime = None  # When restore will/did expire
     doctype: str = "repository"
     docid: str = None
 
@@ -72,6 +90,15 @@ class Repository:
             self.start = datetime.fromisoformat(self.start)
         if isinstance(self.end, str):
             self.end = datetime.fromisoformat(self.end)
+        if isinstance(self.thawed_at, str):
+            self.thawed_at = datetime.fromisoformat(self.thawed_at)
+        if isinstance(self.expires_at, str):
+            self.expires_at = datetime.fromisoformat(self.expires_at)
+
+        # Backward compatibility: sync is_thawed with thaw_state
+        if self.is_thawed and self.thaw_state == "frozen":
+            # Old docs that only have is_thawed=True should be "thawed"
+            self.thaw_state = "thawed" if self.is_mounted else "thawing"
 
     @classmethod
     def from_elasticsearch(
@@ -132,14 +159,20 @@ class Repository:
         # Convert datetime objects to ISO strings for proper storage
         start_str = self.start.isoformat() if isinstance(self.start, datetime) else self.start
         end_str = self.end.isoformat() if isinstance(self.end, datetime) else self.end
+        thawed_at_str = self.thawed_at.isoformat() if isinstance(self.thawed_at, datetime) else self.thawed_at
+        expires_at_str = self.expires_at.isoformat() if isinstance(self.expires_at, datetime) else self.expires_at
+
         return {
             "name": self.name,
             "bucket": self.bucket,
             "base_path": self.base_path,
             "start": start_str,
             "end": end_str,
-            "is_thawed": self.is_thawed,
+            "is_thawed": self.is_thawed,  # Keep for backward compatibility
             "is_mounted": self.is_mounted,
+            "thaw_state": self.thaw_state,
+            "thawed_at": thawed_at_str,
+            "expires_at": expires_at_str,
             "doctype": self.doctype,
         }
 
@@ -154,6 +187,69 @@ class Repository:
             None
         """
         self.is_mounted = False
+
+    def start_thawing(self, expires_at: datetime) -> None:
+        """
+        Transition repository to 'thawing' state when S3 restore is initiated.
+
+        Params:
+            expires_at (datetime): When the S3 restore will expire
+
+        Returns:
+            None
+        """
+        from .constants import THAW_STATE_THAWING
+        self.thaw_state = THAW_STATE_THAWING
+        self.expires_at = expires_at
+        self.is_thawed = True  # Maintain backward compatibility
+
+    def mark_thawed(self) -> None:
+        """
+        Transition repository to 'thawed' state when S3 restore completes and repo is mounted.
+
+        Params:
+            None
+
+        Returns:
+            None
+        """
+        from .constants import THAW_STATE_THAWED
+        from datetime import datetime, timezone
+        self.thaw_state = THAW_STATE_THAWED
+        self.thawed_at = datetime.now(timezone.utc)
+        self.is_thawed = True  # Maintain backward compatibility
+        self.is_mounted = True
+
+    def mark_expired(self) -> None:
+        """
+        Transition repository to 'expired' state when S3 restore has expired.
+
+        Params:
+            None
+
+        Returns:
+            None
+        """
+        from .constants import THAW_STATE_EXPIRED
+        self.thaw_state = THAW_STATE_EXPIRED
+        # Keep thawed_at and expires_at for historical tracking
+
+    def reset_to_frozen(self) -> None:
+        """
+        Transition repository back to 'frozen' state after cleanup.
+
+        Params:
+            None
+
+        Returns:
+            None
+        """
+        from .constants import THAW_STATE_FROZEN
+        self.thaw_state = THAW_STATE_FROZEN
+        self.is_thawed = False  # Maintain backward compatibility
+        self.is_mounted = False
+        self.thawed_at = None
+        self.expires_at = None
 
     def to_json(self) -> str:
         """
