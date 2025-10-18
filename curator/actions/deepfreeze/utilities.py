@@ -652,20 +652,24 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
 
         loggit.debug("Timestamp range: %s to %s", earliest, latest)
 
-        # Update repository dates if needed
-        changed = False
+        # Update repository dates to reflect currently mounted indices
+        # Always replace (not expand) to accurately track what's actually mounted
         earliest_dt = decode_date(earliest)
         latest_dt = decode_date(latest)
 
-        if not repo.start or earliest_dt < decode_date(repo.start):
+        # Check if dates have actually changed
+        changed = False
+        if repo.start != earliest_dt or repo.end != latest_dt:
             repo.start = earliest_dt
-            changed = True
-            loggit.debug("Updated start date to %s", earliest_dt)
-
-        if not repo.end or latest_dt > decode_date(repo.end):
             repo.end = latest_dt
             changed = True
-            loggit.debug("Updated end date to %s", latest_dt)
+            loggit.debug(
+                "Updated date range to %s - %s (was %s - %s)",
+                earliest_dt,
+                latest_dt,
+                repo.start,
+                repo.end,
+            )
 
         if changed:
             # Persist to status index
