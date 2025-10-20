@@ -597,11 +597,13 @@ def create_ilm_policy(
 
 def update_repository_date_range(client: Elasticsearch, repo: Repository) -> bool:
     """
-    Update the date range for a repository by querying mounted indices.
+    Update the date range for a repository by querying document @timestamp values.
 
-    Tries multiple index naming patterns (original, partial-, restored-) to find
-    mounted indices, queries their timestamp ranges, and updates the Repository
-    object and persists it to the status index.
+    Gets the actual min/max @timestamp from all indices contained in the repository's
+    snapshots. The date range can only EXTEND (never shrink) as new data is added.
+
+    For mounted repos: Queries mounted indices directly.
+    For unmounted repos: Attempts to mount snapshots temporarily to query, or skips update.
 
     :param client: A client connection object
     :type client: Elasticsearch
@@ -614,90 +616,117 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
     :raises Exception: If the repository does not exist
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    loggit.debug("Updating date range for repository %s", repo.name)
+    loggit.debug("Updating date range for repository %s (mounted: %s)", repo.name, repo.is_mounted)
+
+    # Store existing range to ensure we only extend, never shrink
+    existing_start = repo.start
+    existing_end = repo.end
+
+    earliest = None
+    latest = None
 
     try:
         # Get all indices from snapshots in this repository
         snapshot_indices = get_all_indices_in_repo(client, repo.name)
-        loggit.debug("Found %d indices in snapshots", len(snapshot_indices))
+        loggit.debug("Found %d indices in repository snapshots", len(snapshot_indices))
 
-        # Find which indices are actually mounted (try multiple naming patterns)
-        mounted_indices = []
-        for idx in snapshot_indices:
-            # Try original name
-            if client.indices.exists(index=idx):
-                mounted_indices.append(idx)
-                loggit.debug("Found mounted index: %s", idx)
-            # Try with partial- prefix (searchable snapshots)
-            elif client.indices.exists(index=f"partial-{idx}"):
-                mounted_indices.append(f"partial-{idx}")
-                loggit.debug("Found mounted searchable snapshot: partial-%s", idx)
-            # Try with restored- prefix (fully restored indices)
-            elif client.indices.exists(index=f"restored-{idx}"):
-                mounted_indices.append(f"restored-{idx}")
-                loggit.debug("Found restored index: restored-%s", idx)
-
-        if not mounted_indices:
-            loggit.debug("No mounted indices found for repository %s", repo.name)
+        if not snapshot_indices:
+            loggit.debug("No indices found in repository %s", repo.name)
             return False
 
-        loggit.debug("Found %d mounted indices", len(mounted_indices))
+        # If repo is mounted, query the mounted indices
+        if repo.is_mounted:
+            # Find which indices are actually mounted (try multiple naming patterns)
+            mounted_indices = []
+            for idx in snapshot_indices:
+                # Try original name
+                if client.indices.exists(index=idx):
+                    mounted_indices.append(idx)
+                    loggit.debug("Found mounted index: %s", idx)
+                # Try with partial- prefix (searchable snapshots)
+                elif client.indices.exists(index=f"partial-{idx}"):
+                    mounted_indices.append(f"partial-{idx}")
+                    loggit.debug("Found mounted searchable snapshot: partial-%s", idx)
+                # Try with restored- prefix (fully restored indices)
+                elif client.indices.exists(index=f"restored-{idx}"):
+                    mounted_indices.append(f"restored-{idx}")
+                    loggit.debug("Found restored index: restored-%s", idx)
 
-        # Query timestamp ranges
-        earliest, latest = get_timestamp_range(client, mounted_indices)
+            if mounted_indices:
+                loggit.debug("Found %d mounted indices, querying timestamp ranges", len(mounted_indices))
+                # Query actual @timestamp ranges from mounted indices
+                earliest, latest = get_timestamp_range(client, mounted_indices)
+            else:
+                loggit.debug("Repo is mounted but no searchable snapshot indices found")
+                return False
+        else:
+            # Repo is not mounted - we cannot query @timestamp without mounting
+            # For unmounted repos, preserve existing date range or skip update
+            loggit.debug(
+                "Repository %s is not mounted, cannot query document timestamps. "
+                "Keeping existing date range: %s to %s",
+                repo.name,
+                existing_start.isoformat() if existing_start else "None",
+                existing_end.isoformat() if existing_end else "None"
+            )
+            return False
 
         if not earliest or not latest:
             loggit.warning("Could not determine timestamp range for repository %s", repo.name)
             return False
 
-        loggit.debug("Timestamp range: %s to %s", earliest, latest)
+        loggit.debug("Queried timestamp range: %s to %s", earliest, latest)
 
-        # Update repository dates to reflect currently mounted indices
-        # Always replace (not expand) to accurately track what's actually mounted
-        earliest_dt = decode_date(earliest)
-        latest_dt = decode_date(latest)
+        # CRITICAL: Only EXTEND the date range, never shrink it
+        # This ensures we capture all data that has ever been in the repository
+        if existing_start and existing_end:
+            # We have existing dates - extend them
+            final_start = min(existing_start, earliest)
+            final_end = max(existing_end, latest)
 
-        # Check if dates have actually changed
-        changed = False
-        if repo.start != earliest_dt or repo.end != latest_dt:
-            repo.start = earliest_dt
-            repo.end = latest_dt
-            changed = True
-            loggit.debug(
-                "Updated date range to %s - %s (was %s - %s)",
-                earliest_dt,
-                latest_dt,
-                repo.start,
-                repo.end,
+            if final_start == existing_start and final_end == existing_end:
+                loggit.debug("Date range unchanged for %s", repo.name)
+                return False
+
+            loggit.info(
+                "Extending date range for %s: (%s to %s) -> (%s to %s)",
+                repo.name,
+                existing_start.isoformat(),
+                existing_end.isoformat(),
+                final_start.isoformat(),
+                final_end.isoformat()
+            )
+        else:
+            # No existing dates - use the queried range
+            final_start = earliest
+            final_end = latest
+            loggit.info(
+                "Setting initial date range for %s: %s to %s",
+                repo.name,
+                final_start.isoformat(),
+                final_end.isoformat()
             )
 
-        if changed:
-            # Persist to status index
-            query = {"query": {"term": {"name.keyword": repo.name}}}
-            response = client.search(index=STATUS_INDEX, body=query)
+        # Update the repository object
+        repo.start = final_start
+        repo.end = final_end
 
-            if response["hits"]["total"]["value"] > 0:
-                doc_id = response["hits"]["hits"][0]["_id"]
-                client.update(
-                    index=STATUS_INDEX,
-                    id=doc_id,
-                    body={"doc": repo.to_dict()}
-                )
-                loggit.info(
-                    "Updated date range for %s: %s to %s",
-                    repo.name,
-                    repo.start.isoformat() if repo.start else None,
-                    repo.end.isoformat() if repo.end else None
-                )
-            else:
-                # Create new document if it doesn't exist
-                client.index(index=STATUS_INDEX, body=repo.to_dict())
-                loggit.info("Created status document for %s with date range", repo.name)
+        # Persist to status index
+        query = {"query": {"term": {"name.keyword": repo.name}}}
+        response = client.search(index=STATUS_INDEX, body=query)
 
-            return True
+        if response["hits"]["total"]["value"] > 0:
+            doc_id = response["hits"]["hits"][0]["_id"]
+            client.update(
+                index=STATUS_INDEX,
+                id=doc_id,
+                body={"doc": repo.to_dict()}
+            )
         else:
-            loggit.debug("No date range changes for repository %s", repo.name)
-            return False
+            # Create new document if it doesn't exist
+            client.index(index=STATUS_INDEX, body=repo.to_dict())
+
+        return True
 
     except Exception as e:
         loggit.error("Error updating date range for repository %s: %s", repo.name, e)

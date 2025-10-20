@@ -377,41 +377,61 @@ class Thaw:
                 )
                 all_complete = False
 
-        # Mount indices if all repositories are complete and we have date range info
-        if all_complete and mounted_count > 0:
-            # Parse date range from the thaw request
-            start_date_str = request.get("start_date")
-            end_date_str = request.get("end_date")
+        # Mount indices if all repositories are complete and at least one is mounted
+        # Parse date range from the thaw request
+        start_date_str = request.get("start_date")
+        end_date_str = request.get("end_date")
 
-            if start_date_str and end_date_str:
-                try:
-                    start_date = decode_date(start_date_str)
-                    end_date = decode_date(end_date_str)
+        # Check if we should mount indices:
+        # - All repos are complete (restoration finished)
+        # - At least one repo is mounted
+        # - We have date range info
+        should_mount_indices = (
+            all_complete
+            and start_date_str
+            and end_date_str
+            and any(repo.is_mounted for repo in repos)
+        )
 
-                    self.loggit.info(
-                        "Mounting indices for date range %s to %s",
-                        start_date.isoformat(),
-                        end_date.isoformat(),
-                    )
+        if should_mount_indices:
+            try:
+                start_date = decode_date(start_date_str)
+                end_date = decode_date(end_date_str)
 
-                    mount_result = find_and_mount_indices_in_date_range(
-                        self.client, newly_mounted_repos, start_date, end_date
-                    )
-
-                    self.loggit.info(
-                        "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
-                        mount_result["mounted"],
-                        mount_result["skipped"],
-                        mount_result["failed"],
-                        mount_result["datastream_successful"],
-                    )
-
-                except Exception as e:
-                    self.loggit.warning("Failed to mount indices: %s", e)
-            else:
-                self.loggit.debug(
-                    "No date range information in thaw request, skipping index mounting"
+                self.loggit.info(
+                    "Mounting indices for date range %s to %s",
+                    start_date.isoformat(),
+                    end_date.isoformat(),
                 )
+
+                # Use all mounted repos, not just newly mounted ones
+                # This handles the case where repos were already mounted
+                mounted_repos = [repo for repo in repos if repo.is_mounted]
+
+                mount_result = find_and_mount_indices_in_date_range(
+                    self.client, mounted_repos, start_date, end_date
+                )
+
+                self.loggit.info(
+                    "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
+                    mount_result["mounted"],
+                    mount_result["skipped"],
+                    mount_result["failed"],
+                    mount_result["datastream_successful"],
+                )
+
+                if not self.porcelain:
+                    rprint(
+                        f"[green]Mounted {mount_result['mounted']} indices "
+                        f"({mount_result['skipped']} skipped outside date range, "
+                        f"{mount_result['failed']} failed, "
+                        f"{mount_result['datastream_successful']} added to data streams)[/green]"
+                    )
+
+            except Exception as e:
+                self.loggit.warning("Failed to mount indices: %s", e)
+                if not self.porcelain:
+                    rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
 
         # Update thaw request status if all repositories are ready
         if all_complete:
@@ -552,42 +572,59 @@ class Thaw:
 
                 self.console.print(table)
 
-            # Mount indices if all repositories are complete and we have date range info
-            if all_complete and mounted_count > 0:
-                if start_date_str and end_date_str:
-                    try:
-                        start_date = decode_date(start_date_str)
-                        end_date = decode_date(end_date_str)
+            # Mount indices if all repositories are complete and mounted
+            # Check if we should mount indices:
+            # - All repos are complete (restoration finished)
+            # - We have date range info
+            # - At least one repo is mounted
+            # Note: We don't check if request is completed because we want to mount
+            # indices even if the request was previously marked complete but indices
+            # weren't mounted (e.g., if repo was mounted in a previous check-status call)
+            should_mount_indices = (
+                all_complete
+                and start_date_str
+                and end_date_str
+                and any(repo.is_mounted for repo in repos)
+            )
 
-                        self.loggit.info(
-                            "Mounting indices for date range %s to %s",
-                            start_date.isoformat(),
-                            end_date.isoformat(),
+            if should_mount_indices:
+                try:
+                    start_date = decode_date(start_date_str)
+                    end_date = decode_date(end_date_str)
+
+                    self.loggit.info(
+                        "Mounting indices for date range %s to %s",
+                        start_date.isoformat(),
+                        end_date.isoformat(),
+                    )
+
+                    # Use all mounted repos, not just newly mounted ones
+                    # This handles the case where repos were mounted in a previous check
+                    mounted_repos = [repo for repo in repos if repo.is_mounted]
+
+                    mount_result = find_and_mount_indices_in_date_range(
+                        self.client, mounted_repos, start_date, end_date
+                    )
+
+                    self.loggit.info(
+                        "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
+                        mount_result["mounted"],
+                        mount_result["skipped"],
+                        mount_result["failed"],
+                        mount_result["datastream_successful"],
+                    )
+
+                    if not self.porcelain:
+                        rprint(
+                            f"[green]Mounted {mount_result['mounted']} indices "
+                            f"({mount_result['skipped']} skipped outside date range, "
+                            f"{mount_result['failed']} failed, "
+                            f"{mount_result['datastream_successful']} added to data streams)[/green]"
                         )
-
-                        mount_result = find_and_mount_indices_in_date_range(
-                            self.client, newly_mounted_repos, start_date, end_date
-                        )
-
-                        self.loggit.info(
-                            "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
-                            mount_result["mounted"],
-                            mount_result["skipped"],
-                            mount_result["failed"],
-                            mount_result["datastream_successful"],
-                        )
-
-                        if not self.porcelain:
-                            rprint(
-                                f"[green]Mounted {mount_result['mounted']} indices "
-                                f"({mount_result['skipped']} skipped outside date range, "
-                                f"{mount_result['failed']} failed, "
-                                f"{mount_result['datastream_successful']} added to data streams)[/green]"
-                            )
-                    except Exception as e:
-                        self.loggit.warning("Failed to mount indices: %s", e)
-                        if not self.porcelain:
-                            rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
+                except Exception as e:
+                    self.loggit.warning("Failed to mount indices: %s", e)
+                    if not self.porcelain:
+                        rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
 
             # Update thaw request status if all repositories are ready
             if all_complete:

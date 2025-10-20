@@ -137,15 +137,16 @@ class Rotate:
 
         """
         self.loggit.debug("Updating repo date ranges")
-        # Get the repo objects (not names) which match our prefix
+        # Get ALL repo objects (not just mounted) which match our prefix
+        # We need to update date ranges for all repos to avoid gaps in coverage
         repos = get_matching_repos(
-            self.client, self.settings.repo_name_prefix, mounted=True  # type: ignore
+            self.client, self.settings.repo_name_prefix, mounted=None  # type: ignore
         )
         self.loggit.debug("Found %s matching repos", len(repos))
 
-        # Update date range for each mounted repository
+        # Update date range for each repository
         for repo in repos:
-            self.loggit.debug("Updating date range for %s", repo.name)
+            self.loggit.debug("Updating date range for %s (mounted: %s)", repo.name, repo.is_mounted)
 
             if dry_run:
                 self.loggit.info("DRY-RUN: Would update date range for %s", repo.name)
