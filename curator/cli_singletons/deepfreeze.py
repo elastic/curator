@@ -147,6 +147,12 @@ def deepfreeze():
     default="deepfreeze-sample-policy",
     help="Name of the sample ILM policy",
 )
+@click.option(
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Machine-readable output (tab-separated values, no formatting)",
+)
 @click.pass_context
 def setup(
     ctx,
@@ -162,6 +168,7 @@ def setup(
     style,
     create_sample_ilm_policy,
     ilm_policy_name,
+    porcelain,
 ):
     """
     Set up a cluster for deepfreeze and save the configuration for all future actions.
@@ -187,6 +194,7 @@ def setup(
         "style": style,
         "create_sample_ilm_policy": create_sample_ilm_policy,
         "ilm_policy_name": ilm_policy_name,
+        "porcelain": porcelain,
     }
 
     action = CLIAction(
@@ -360,10 +368,17 @@ def cleanup(
     default=None,
     help="The ID of the thaw request to refreeze (optional - if not provided, all open requests)",
 )
+@click.option(
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Machine-readable output (tab-separated values, no formatting)",
+)
 @click.pass_context
 def refreeze(
     ctx,
     thaw_request_id,
+    porcelain,
 ):
     """
     Unmount repositories from thaw request(s) and reset them to frozen state.
@@ -390,6 +405,7 @@ def refreeze(
     """
     manual_options = {
         "thaw_request_id": thaw_request_id,
+        "porcelain": porcelain,
     }
     action = CLIAction(
         ctx.info_name,

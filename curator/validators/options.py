@@ -70,6 +70,7 @@ def action_specific(action):
             option_defaults.style(),
             option_defaults.create_sample_ilm_policy(),
             option_defaults.ilm_policy_name(),
+            option_defaults.porcelain(),
         ],
         'rotate': [
             option_defaults.keep(),
@@ -99,6 +100,7 @@ def action_specific(action):
         ],
         'refreeze': [
             option_defaults.repo_id(),
+            option_defaults.porcelain(),
         ],
         'delete_indices': [
             option_defaults.search_pattern(),

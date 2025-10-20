@@ -71,6 +71,7 @@ class Setup:
         style: str = "oneup",
         create_sample_ilm_policy: bool = False,
         ilm_policy_name: str = "deepfreeze-sample-policy",
+        porcelain: bool = False,
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Setup")
@@ -79,6 +80,7 @@ class Setup:
         self.console = Console(stderr=True)
 
         self.client = client
+        self.porcelain = porcelain
         self.year = year
         self.month = month
         self.settings = Settings(
@@ -169,28 +171,36 @@ class Setup:
 
         # If any errors were found, display them all and raise exception
         if errors:
-            self.console.print("\n[bold red]Setup Preconditions Failed[/bold red]\n", style="bold")
+            if self.porcelain:
+                # Machine-readable output: tab-separated values
+                for error in errors:
+                    # Extract clean text from rich markup
+                    issue_text = error['issue'].replace('[cyan]', '').replace('[/cyan]', '').replace('[yellow]', '').replace('[/yellow]', '').replace('[bold]', '').replace('[/bold]', '').replace('\n', ' ')
+                    print(f"ERROR\tprecondition\t{issue_text}")
+            else:
+                self.console.print("\n[bold red]Setup Preconditions Failed[/bold red]\n", style="bold")
 
-            for i, error in enumerate(errors, 1):
+                for i, error in enumerate(errors, 1):
+                    self.console.print(Panel(
+                        f"[bold]Issue:[/bold]\n{error['issue']}\n\n"
+                        f"[bold]Solution:[/bold]\n{error['solution']}",
+                        title=f"[bold red]Error {i} of {len(errors)}[/bold red]",
+                        border_style="red",
+                        expand=False
+                    ))
+                    self.console.print()  # Add spacing between panels
+
+                # Create summary error message
+                summary = f"Found {len(errors)} precondition error{'s' if len(errors) > 1 else ''} that must be resolved before setup can proceed."
                 self.console.print(Panel(
-                    f"[bold]Issue:[/bold]\n{error['issue']}\n\n"
-                    f"[bold]Solution:[/bold]\n{error['solution']}",
-                    title=f"[bold red]Error {i} of {len(errors)}[/bold red]",
+                    f"[bold]{summary}[/bold]\n\n"
+                    "Deepfreeze setup requires a clean environment. Please resolve the issues above and try again.",
+                    title="[bold red]Setup Cannot Continue[/bold red]",
                     border_style="red",
                     expand=False
                 ))
-                self.console.print()  # Add spacing between panels
 
-            # Create summary error message
             summary = f"Found {len(errors)} precondition error{'s' if len(errors) > 1 else ''} that must be resolved before setup can proceed."
-            self.console.print(Panel(
-                f"[bold]{summary}[/bold]\n\n"
-                "Deepfreeze setup requires a clean environment. Please resolve the issues above and try again.",
-                title="[bold red]Setup Cannot Continue[/bold red]",
-                border_style="red",
-                expand=False
-            ))
-
             raise PreconditionError(summary)
 
     def do_dry_run(self) -> None:
@@ -235,17 +245,20 @@ class Setup:
                 ensure_settings_index(self.client, create_if_missing=True)
                 save_settings(self.client, self.settings)
             except Exception as e:
-                self.console.print(Panel(
-                    f"[bold]Failed to create settings index or save configuration[/bold]\n\n"
-                    f"Error: {escape(str(e))}\n\n"
-                    f"[bold]Possible Solutions:[/bold]\n"
-                    f"  • Check Elasticsearch connection and permissions\n"
-                    f"  • Verify the cluster is healthy and has capacity\n"
-                    f"  • Check Elasticsearch logs for details",
-                    title="[bold red]Settings Index Error[/bold red]",
-                    border_style="red",
-                    expand=False
-                ))
+                if self.porcelain:
+                    print(f"ERROR\tsettings_index\t{str(e)}")
+                else:
+                    self.console.print(Panel(
+                        f"[bold]Failed to create settings index or save configuration[/bold]\n\n"
+                        f"Error: {escape(str(e))}\n\n"
+                        f"[bold]Possible Solutions:[/bold]\n"
+                        f"  • Check Elasticsearch connection and permissions\n"
+                        f"  • Verify the cluster is healthy and has capacity\n"
+                        f"  • Check Elasticsearch logs for details",
+                        title="[bold red]Settings Index Error[/bold red]",
+                        border_style="red",
+                        expand=False
+                    ))
                 raise
 
             # Create S3 bucket
@@ -253,19 +266,22 @@ class Setup:
             try:
                 self.s3.create_bucket(self.new_bucket_name)
             except Exception as e:
-                self.console.print(Panel(
-                    f"[bold]Failed to create S3 bucket [cyan]{self.new_bucket_name}[/cyan][/bold]\n\n"
-                    f"Error: {escape(str(e))}\n\n"
-                    f"[bold]Possible Solutions:[/bold]\n"
-                    f"  • Check AWS credentials and permissions\n"
-                    f"  • Verify IAM policy allows s3:CreateBucket\n"
-                    f"  • Check if bucket name is globally unique\n"
-                    f"  • Verify AWS region settings\n"
-                    f"  • Check AWS account limits for S3 buckets",
-                    title="[bold red]S3 Bucket Creation Error[/bold red]",
-                    border_style="red",
-                    expand=False
-                ))
+                if self.porcelain:
+                    print(f"ERROR\ts3_bucket\t{self.new_bucket_name}\t{str(e)}")
+                else:
+                    self.console.print(Panel(
+                        f"[bold]Failed to create S3 bucket [cyan]{self.new_bucket_name}[/cyan][/bold]\n\n"
+                        f"Error: {escape(str(e))}\n\n"
+                        f"[bold]Possible Solutions:[/bold]\n"
+                        f"  • Check AWS credentials and permissions\n"
+                        f"  • Verify IAM policy allows s3:CreateBucket\n"
+                        f"  • Check if bucket name is globally unique\n"
+                        f"  • Verify AWS region settings\n"
+                        f"  • Check AWS account limits for S3 buckets",
+                        title="[bold red]S3 Bucket Creation Error[/bold red]",
+                        border_style="red",
+                        expand=False
+                    ))
                 raise
 
             # Create repository
@@ -280,19 +296,22 @@ class Setup:
                     self.settings.storage_class,
                 )
             except Exception as e:
-                self.console.print(Panel(
-                    f"[bold]Failed to create repository [cyan]{self.new_repo_name}[/cyan][/bold]\n\n"
-                    f"Error: {escape(str(e))}\n\n"
-                    f"[bold]Possible Solutions:[/bold]\n"
-                    f"  • Verify Elasticsearch has S3 plugin installed\n"
-                    f"  • Check AWS credentials are configured in Elasticsearch keystore\n"
-                    f"  • Verify S3 bucket [cyan]{self.new_bucket_name}[/cyan] is accessible\n"
-                    f"  • Check repository settings (ACL, storage class, etc.)\n"
-                    f"  • Review Elasticsearch logs for detailed error messages",
-                    title="[bold red]Repository Creation Error[/bold red]",
-                    border_style="red",
-                    expand=False
-                ))
+                if self.porcelain:
+                    print(f"ERROR\trepository\t{self.new_repo_name}\t{str(e)}")
+                else:
+                    self.console.print(Panel(
+                        f"[bold]Failed to create repository [cyan]{self.new_repo_name}[/cyan][/bold]\n\n"
+                        f"Error: {escape(str(e))}\n\n"
+                        f"[bold]Possible Solutions:[/bold]\n"
+                        f"  • Verify Elasticsearch has S3 plugin installed\n"
+                        f"  • Check AWS credentials are configured in Elasticsearch keystore\n"
+                        f"  • Verify S3 bucket [cyan]{self.new_bucket_name}[/cyan] is accessible\n"
+                        f"  • Check repository settings (ACL, storage class, etc.)\n"
+                        f"  • Review Elasticsearch logs for detailed error messages",
+                        title="[bold red]Repository Creation Error[/bold red]",
+                        border_style="red",
+                        expand=False
+                    ))
                 raise
 
             # Optionally create sample ILM policy
@@ -332,31 +351,41 @@ class Setup:
                     )
                 except Exception as e:
                     # ILM policy creation is optional, so just warn but don't fail
-                    self.console.print(Panel(
-                        f"[bold yellow]Warning: Failed to create sample ILM policy[/bold yellow]\n\n"
-                        f"Error: {escape(str(e))}\n\n"
-                        f"Setup will continue, but you'll need to create the ILM policy manually.\n"
-                        f"This is not a critical error.",
-                        title="[bold yellow]ILM Policy Warning[/bold yellow]",
-                        border_style="yellow",
-                        expand=False
-                    ))
+                    if self.porcelain:
+                        print(f"WARNING\tilm_policy\t{policy_name}\t{str(e)}")
+                    else:
+                        self.console.print(Panel(
+                            f"[bold yellow]Warning: Failed to create sample ILM policy[/bold yellow]\n\n"
+                            f"Error: {escape(str(e))}\n\n"
+                            f"Setup will continue, but you'll need to create the ILM policy manually.\n"
+                            f"This is not a critical error.",
+                            title="[bold yellow]ILM Policy Warning[/bold yellow]",
+                            border_style="yellow",
+                            expand=False
+                        ))
                     self.loggit.warning("Failed to create sample ILM policy: %s", e)
 
             # Success!
-            self.console.print(Panel(
-                f"[bold green]Setup completed successfully![/bold green]\n\n"
-                f"Repository: [cyan]{self.new_repo_name}[/cyan]\n"
-                f"S3 Bucket: [cyan]{self.new_bucket_name}[/cyan]\n"
-                f"Base Path: [cyan]{escape(self.base_path)}[/cyan]\n\n"
-                f"[bold]Next Steps:[/bold]\n"
-                f"  1. Update your ILM policies to use repository [cyan]{self.new_repo_name}[/cyan]\n"
-                f"  2. Ensure all ILM policies have [yellow]delete_searchable_snapshot: false[/yellow]\n"
-                f"  3. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html",
-                title="[bold green]Deepfreeze Setup Complete[/bold green]",
-                border_style="green",
-                expand=False
-            ))
+            if self.porcelain:
+                # Machine-readable output: tab-separated values
+                # Format: SUCCESS\t{repo_name}\t{bucket_name}\t{base_path}
+                print(f"SUCCESS\t{self.new_repo_name}\t{self.new_bucket_name}\t{self.base_path}")
+                if self.create_sample_ilm_policy:
+                    print(f"ILM_POLICY\t{self.ilm_policy_name}\tcreated")
+            else:
+                self.console.print(Panel(
+                    f"[bold green]Setup completed successfully![/bold green]\n\n"
+                    f"Repository: [cyan]{self.new_repo_name}[/cyan]\n"
+                    f"S3 Bucket: [cyan]{self.new_bucket_name}[/cyan]\n"
+                    f"Base Path: [cyan]{escape(self.base_path)}[/cyan]\n\n"
+                    f"[bold]Next Steps:[/bold]\n"
+                    f"  1. Update your ILM policies to use repository [cyan]{self.new_repo_name}[/cyan]\n"
+                    f"  2. Ensure all ILM policies have [yellow]delete_searchable_snapshot: false[/yellow]\n"
+                    f"  3. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html",
+                    title="[bold green]Deepfreeze Setup Complete[/bold green]",
+                    border_style="green",
+                    expand=False
+                ))
 
             self.loggit.info("Setup complete. Repository %s is ready to use.", self.new_repo_name)
 
@@ -365,17 +394,20 @@ class Setup:
             raise
         except Exception as e:
             # Catch any unexpected errors
-            self.console.print(Panel(
-                f"[bold]An unexpected error occurred during setup[/bold]\n\n"
-                f"Error: {escape(str(e))}\n\n"
-                f"[bold]What to do:[/bold]\n"
-                f"  • Check the logs for detailed error information\n"
-                f"  • Verify all prerequisites are met (AWS credentials, ES connection, etc.)\n"
-                f"  • You may need to manually clean up any partially created resources\n"
-                f"  • Run [yellow]curator_cli deepfreeze cleanup[/yellow] to remove any partial state",
-                title="[bold red]Unexpected Setup Error[/bold red]",
-                border_style="red",
-                expand=False
-            ))
+            if self.porcelain:
+                print(f"ERROR\tunexpected\t{str(e)}")
+            else:
+                self.console.print(Panel(
+                    f"[bold]An unexpected error occurred during setup[/bold]\n\n"
+                    f"Error: {escape(str(e))}\n\n"
+                    f"[bold]What to do:[/bold]\n"
+                    f"  • Check the logs for detailed error information\n"
+                    f"  • Verify all prerequisites are met (AWS credentials, ES connection, etc.)\n"
+                    f"  • You may need to manually clean up any partially created resources\n"
+                    f"  • Run [yellow]curator_cli deepfreeze cleanup[/yellow] to remove any partial state",
+                    title="[bold red]Unexpected Setup Error[/bold red]",
+                    border_style="red",
+                    expand=False
+                ))
             self.loggit.error("Unexpected error during setup: %s", e, exc_info=True)
             raise
