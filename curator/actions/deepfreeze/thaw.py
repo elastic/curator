@@ -420,7 +420,8 @@ class Thaw:
 
     def do_check_all_status(self) -> None:
         """
-        Check the status of all thaw requests and display grouped by request ID.
+        Check the status of all thaw requests, mount repositories when ready,
+        and display grouped by request ID.
 
         :return: None
         :rtype: None
@@ -482,19 +483,32 @@ class Thaw:
             table.add_column("Mounted", style="green")
             table.add_column("Restore Progress", style="magenta")
 
-            # Check each repository's status
+            # Track mounting for this request
+            all_complete = True
+            mounted_count = 0
+            newly_mounted_repos = []
+
+            # Check each repository's status and mount if ready
             for repo in repos:
                 # Check restore status if not mounted
                 if not repo.is_mounted:
                     try:
                         status = check_restore_status(self.s3, repo.bucket, repo.base_path)
                         if status["complete"]:
-                            progress = f"{status['restored']}/{status['total']} (Ready)"
+                            # Mount the repository
+                            self.loggit.info("Restoration complete for %s, mounting...", repo.name)
+                            mount_repo(self.client, repo)
+                            self._update_repo_dates(repo)
+                            mounted_count += 1
+                            newly_mounted_repos.append(repo)
+                            progress = "Complete"
                         else:
                             progress = f"{status['restored']}/{status['total']}"
+                            all_complete = False
                     except Exception as e:
                         self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
                         progress = "Error"
+                        all_complete = False
                 else:
                     progress = "Complete"
 
@@ -508,6 +522,51 @@ class Thaw:
                 )
 
             self.console.print(table)
+
+            # Mount indices if all repositories are complete and we have date range info
+            if all_complete and mounted_count > 0:
+                if start_date_str and end_date_str:
+                    try:
+                        start_date = decode_date(start_date_str)
+                        end_date = decode_date(end_date_str)
+
+                        self.loggit.info(
+                            "Mounting indices for date range %s to %s",
+                            start_date.isoformat(),
+                            end_date.isoformat(),
+                        )
+
+                        mount_result = find_and_mount_indices_in_date_range(
+                            self.client, newly_mounted_repos, start_date, end_date
+                        )
+
+                        self.loggit.info(
+                            "Mounted %d indices (%d failed, %d added to data streams)",
+                            mount_result["mounted"],
+                            mount_result["failed"],
+                            mount_result["datastream_successful"],
+                        )
+
+                        rprint(
+                            f"[green]Mounted {mount_result['mounted']} indices "
+                            f"({mount_result['failed']} failed, "
+                            f"{mount_result['datastream_successful']} added to data streams)[/green]"
+                        )
+                    except Exception as e:
+                        self.loggit.warning("Failed to mount indices: %s", e)
+                        rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
+
+            # Update thaw request status if all repositories are ready
+            if all_complete:
+                update_thaw_request(self.client, request_id, status="completed")
+                self.loggit.info("Thaw request %s completed", request_id)
+                rprint(f"[green]Request {request_id} completed[/green]")
+            elif mounted_count > 0:
+                rprint(
+                    f"[yellow]Mounted {mounted_count} repositories. "
+                    f"Some restorations still in progress.[/yellow]"
+                )
+
             rprint()
 
     def do_list_requests(self) -> None:
@@ -639,10 +698,7 @@ class Thaw:
             return
 
         if self.mode == "check_all_status":
-            self.loggit.info("DRY-RUN: Would check status of all thaw requests")
-            # Still show status in dry-run
-            self.do_check_all_status()
-            self.loggit.info("DRY-RUN: Would NOT mount any repositories (check-all is read-only)")
+            self.loggit.info("DRY-RUN: Would check status of all thaw requests and mount any repositories with completed restoration")
             return
 
         # Create mode

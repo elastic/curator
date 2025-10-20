@@ -474,7 +474,7 @@ def thaw(
     Four modes of operation:
     1. Create new thaw: Requires --start-date and --end-date
     2. Check specific request: Use --check-status <thaw-id> (mounts if ready)
-    3. Check all requests: Use --check-status (without value, shows status grouped by ID)
+    3. Check all requests: Use --check-status (without value, mounts if ready)
     4. List requests: Use --list (shows summary table)
 
     \b
@@ -492,7 +492,7 @@ def thaw(
 
       curator_cli deepfreeze thaw --check-status <thaw-id>
 
-      # Check status of ALL thaw requests (grouped by ID with restore progress)
+      # Check status of ALL thaw requests and mount if ready
 
       curator_cli deepfreeze thaw --check-status
 
