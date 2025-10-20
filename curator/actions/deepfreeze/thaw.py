@@ -698,38 +698,79 @@ class Thaw:
         :return: None
         :rtype: None
         """
+        # Get date range for display/output
+        start_date_str = request.get("start_date", "")
+        end_date_str = request.get("end_date", "")
+
+        # Build repo data with restore progress
+        repo_data = []
+        for repo in repos:
+            # Check restore status if not mounted
+            if not repo.is_mounted:
+                try:
+                    status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                    if status["complete"]:
+                        progress = "Complete"
+                    else:
+                        progress = f"{status['restored']}/{status['total']}"
+                except Exception as e:
+                    self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
+                    progress = "Error"
+            else:
+                progress = "Complete"
+
+            repo_data.append({
+                "name": repo.name,
+                "bucket": repo.bucket if repo.bucket else "",
+                "path": repo.base_path if repo.base_path else "",
+                "state": repo.thaw_state,
+                "mounted": "yes" if repo.is_mounted else "no",
+                "progress": progress,
+            })
+
         if self.porcelain:
             # Machine-readable output: tab-separated values
-            # Format: REQUEST\t{request_id}\t{status}\t{created_at}
-            print(f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}")
+            # Format: REQUEST\t{request_id}\t{status}\t{created_at}\t{start_date}\t{end_date}
+            print(f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}\t{start_date_str}\t{end_date_str}")
 
-            # Format: REPO\t{name}\t{bucket}\t{path}\t{state}\t{mounted}
-            for repo in repos:
-                bucket = repo.bucket if repo.bucket else ""
-                path = repo.base_path if repo.base_path else ""
-                mounted = "yes" if repo.is_mounted else "no"
-                print(f"REPO\t{repo.name}\t{bucket}\t{path}\t{repo.thaw_state}\t{mounted}")
+            # Format: REPO\t{name}\t{bucket}\t{path}\t{state}\t{mounted}\t{progress}
+            for repo_info in repo_data:
+                print(f"REPO\t{repo_info['name']}\t{repo_info['bucket']}\t{repo_info['path']}\t{repo_info['state']}\t{repo_info['mounted']}\t{repo_info['progress']}")
         else:
             # Human-readable output: formatted display
+            # Format dates for display
+            if start_date_str and "T" in start_date_str:
+                start_date_display = start_date_str.replace("T", " ").split(".")[0]
+            else:
+                start_date_display = start_date_str if start_date_str else "--"
+
+            if end_date_str and "T" in end_date_str:
+                end_date_display = end_date_str.replace("T", " ").split(".")[0]
+            else:
+                end_date_display = end_date_str if end_date_str else "--"
+
             rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
             rprint(f"[cyan]Status: {request['status']}[/cyan]")
-            rprint(f"[cyan]Created: {request['created_at']}[/cyan]\n")
+            rprint(f"[cyan]Created: {request['created_at']}[/cyan]")
+            rprint(f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n")
 
-            # Create table for repositories
-            table = Table(title="Repositories")
+            # Create table for repository status
+            table = Table(title="Repository Status")
             table.add_column("Repository", style="cyan")
             table.add_column("Bucket", style="magenta")
             table.add_column("Path", style="magenta")
             table.add_column("State", style="yellow")
             table.add_column("Mounted", style="green")
+            table.add_column("Restore Progress", style="magenta")
 
-            for repo in repos:
+            for repo_info in repo_data:
                 table.add_row(
-                    repo.name,
-                    repo.bucket or "--",
-                    repo.base_path or "--",
-                    repo.thaw_state,
-                    "yes" if repo.is_mounted else "no",
+                    repo_info['name'],
+                    repo_info['bucket'] if repo_info['bucket'] else "--",
+                    repo_info['path'] if repo_info['path'] else "--",
+                    repo_info['state'],
+                    repo_info['mounted'],
+                    repo_info['progress'],
                 )
 
             self.console.print(table)
