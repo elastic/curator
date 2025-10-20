@@ -52,6 +52,8 @@ class Thaw:
     :type check_status: str
     :param list_requests: List all thaw requests
     :type list_requests: bool
+    :param porcelain: Output plain text without rich formatting
+    :type porcelain: bool
 
     :methods:
         do_action: Perform the thaw operation or route to appropriate mode.
@@ -75,6 +77,7 @@ class Thaw:
         retrieval_tier: str = "Standard",
         check_status: str = None,
         list_requests: bool = False,
+        porcelain: bool = False,
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Thaw")
@@ -85,6 +88,7 @@ class Thaw:
         self.retrieval_tier = retrieval_tier
         self.check_status = check_status
         self.list_requests = list_requests
+        self.porcelain = porcelain
         self.console = Console()
 
         # Determine operation mode
@@ -395,8 +399,9 @@ class Thaw:
                     )
 
                     self.loggit.info(
-                        "Mounted %d indices (%d failed, %d added to data streams)",
+                        "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
                         mount_result["mounted"],
+                        mount_result["skipped"],
                         mount_result["failed"],
                         mount_result["datastream_successful"],
                     )
@@ -432,7 +437,8 @@ class Thaw:
         requests = list_thaw_requests(self.client)
 
         if not requests:
-            rprint("\n[yellow]No thaw requests found.[/yellow]\n")
+            if not self.porcelain:
+                rprint("\n[yellow]No thaw requests found.[/yellow]\n")
             return
 
         # Process each request
@@ -453,40 +459,15 @@ class Thaw:
                 self.loggit.warning("No repositories found for thaw request %s", request_id)
                 continue
 
-            # Display request header with date range
+            # Get date range for display/output
             start_date_str = request.get("start_date", "")
             end_date_str = request.get("end_date", "")
-
-            # Format dates
-            if start_date_str and "T" in start_date_str:
-                start_date_display = start_date_str.replace("T", " ").split(".")[0]
-            else:
-                start_date_display = start_date_str if start_date_str else "--"
-
-            if end_date_str and "T" in end_date_str:
-                end_date_display = end_date_str.replace("T", " ").split(".")[0]
-            else:
-                end_date_display = end_date_str if end_date_str else "--"
-
-            # Display request info
-            rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
-            rprint(f"[cyan]Status: {request['status']}[/cyan]")
-            rprint(f"[cyan]Created: {request['created_at']}[/cyan]")
-            rprint(f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n")
-
-            # Create table for repository status
-            table = Table(title="Repository Status")
-            table.add_column("Repository", style="cyan")
-            table.add_column("Bucket", style="magenta")
-            table.add_column("Path", style="magenta")
-            table.add_column("State", style="yellow")
-            table.add_column("Mounted", style="green")
-            table.add_column("Restore Progress", style="magenta")
 
             # Track mounting for this request
             all_complete = True
             mounted_count = 0
             newly_mounted_repos = []
+            repo_data = []  # Store repo info for output
 
             # Check each repository's status and mount if ready
             for repo in repos:
@@ -512,16 +493,64 @@ class Thaw:
                 else:
                     progress = "Complete"
 
-                table.add_row(
-                    repo.name,
-                    repo.bucket or "--",
-                    repo.base_path or "--",
-                    repo.thaw_state,
-                    "yes" if repo.is_mounted else "no",
-                    progress,
-                )
+                # Store repo data for output
+                repo_data.append({
+                    "name": repo.name,
+                    "bucket": repo.bucket if repo.bucket else "",
+                    "path": repo.base_path if repo.base_path else "",
+                    "state": repo.thaw_state,
+                    "mounted": "yes" if repo.is_mounted else "no",
+                    "progress": progress,
+                })
 
-            self.console.print(table)
+            # Output based on mode
+            if self.porcelain:
+                # Machine-readable output: tab-separated values
+                # Format: REQUEST\t{request_id}\t{status}\t{created_at}\t{start_date}\t{end_date}
+                print(f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}\t{start_date_str}\t{end_date_str}")
+
+                # Format: REPO\t{name}\t{bucket}\t{path}\t{state}\t{mounted}\t{progress}
+                for repo_info in repo_data:
+                    print(f"REPO\t{repo_info['name']}\t{repo_info['bucket']}\t{repo_info['path']}\t{repo_info['state']}\t{repo_info['mounted']}\t{repo_info['progress']}")
+            else:
+                # Human-readable output: formatted display
+                # Format dates for display
+                if start_date_str and "T" in start_date_str:
+                    start_date_display = start_date_str.replace("T", " ").split(".")[0]
+                else:
+                    start_date_display = start_date_str if start_date_str else "--"
+
+                if end_date_str and "T" in end_date_str:
+                    end_date_display = end_date_str.replace("T", " ").split(".")[0]
+                else:
+                    end_date_display = end_date_str if end_date_str else "--"
+
+                # Display request info
+                rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
+                rprint(f"[cyan]Status: {request['status']}[/cyan]")
+                rprint(f"[cyan]Created: {request['created_at']}[/cyan]")
+                rprint(f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n")
+
+                # Create table for repository status
+                table = Table(title="Repository Status")
+                table.add_column("Repository", style="cyan")
+                table.add_column("Bucket", style="magenta")
+                table.add_column("Path", style="magenta")
+                table.add_column("State", style="yellow")
+                table.add_column("Mounted", style="green")
+                table.add_column("Restore Progress", style="magenta")
+
+                for repo_info in repo_data:
+                    table.add_row(
+                        repo_info['name'],
+                        repo_info['bucket'] if repo_info['bucket'] else "--",
+                        repo_info['path'] if repo_info['path'] else "--",
+                        repo_info['state'],
+                        repo_info['mounted'],
+                        repo_info['progress'],
+                    )
+
+                self.console.print(table)
 
             # Mount indices if all repositories are complete and we have date range info
             if all_complete and mounted_count > 0:
@@ -541,33 +570,40 @@ class Thaw:
                         )
 
                         self.loggit.info(
-                            "Mounted %d indices (%d failed, %d added to data streams)",
+                            "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
                             mount_result["mounted"],
+                            mount_result["skipped"],
                             mount_result["failed"],
                             mount_result["datastream_successful"],
                         )
 
-                        rprint(
-                            f"[green]Mounted {mount_result['mounted']} indices "
-                            f"({mount_result['failed']} failed, "
-                            f"{mount_result['datastream_successful']} added to data streams)[/green]"
-                        )
+                        if not self.porcelain:
+                            rprint(
+                                f"[green]Mounted {mount_result['mounted']} indices "
+                                f"({mount_result['skipped']} skipped outside date range, "
+                                f"{mount_result['failed']} failed, "
+                                f"{mount_result['datastream_successful']} added to data streams)[/green]"
+                            )
                     except Exception as e:
                         self.loggit.warning("Failed to mount indices: %s", e)
-                        rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
+                        if not self.porcelain:
+                            rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
 
             # Update thaw request status if all repositories are ready
             if all_complete:
                 update_thaw_request(self.client, request_id, status="completed")
                 self.loggit.info("Thaw request %s completed", request_id)
-                rprint(f"[green]Request {request_id} completed[/green]")
+                if not self.porcelain:
+                    rprint(f"[green]Request {request_id} completed[/green]")
             elif mounted_count > 0:
-                rprint(
-                    f"[yellow]Mounted {mounted_count} repositories. "
-                    f"Some restorations still in progress.[/yellow]"
-                )
+                if not self.porcelain:
+                    rprint(
+                        f"[yellow]Mounted {mounted_count} repositories. "
+                        f"Some restorations still in progress.[/yellow]"
+                    )
 
-            rprint()
+            if not self.porcelain:
+                rprint()
 
     def do_list_requests(self) -> None:
         """
@@ -581,60 +617,74 @@ class Thaw:
         requests = list_thaw_requests(self.client)
 
         if not requests:
-            rprint("\n[yellow]No thaw requests found.[/yellow]\n")
+            if not self.porcelain:
+                rprint("\n[yellow]No thaw requests found.[/yellow]\n")
             return
 
-        # Create table
-        table = Table(title="Thaw Requests")
-        table.add_column("Request ID", style="cyan")
-        table.add_column("St", style="magenta")  # Abbreviated Status
-        table.add_column("Repos", style="magenta")  # Abbreviated Repositories
-        table.add_column("Start Date", style="green")
-        table.add_column("End Date", style="green")
-        table.add_column("Created At", style="magenta")
+        if self.porcelain:
+            # Machine-readable output: tab-separated values
+            # Format: REQUEST\t{id}\t{status}\t{repo_count}\t{start_date}\t{end_date}\t{created_at}
+            for req in requests:
+                repo_count = str(len(req.get("repos", [])))
+                status = req.get("status", "unknown")
+                start_date = req.get("start_date", "")
+                end_date = req.get("end_date", "")
+                created_at = req.get("created_at", "")
 
-        # Add rows
-        for req in requests:
-            repo_count = str(len(req.get("repos", [])))
-            created_at = req.get("created_at", "Unknown")
-            # Format datetime if it's ISO format
-            if "T" in created_at:
-                created_at = created_at.replace("T", " ").split(".")[0]
+                print(f"REQUEST\t{req['id']}\t{status}\t{repo_count}\t{start_date}\t{end_date}\t{created_at}")
+        else:
+            # Human-readable output: formatted table
+            # Create table
+            table = Table(title="Thaw Requests")
+            table.add_column("Request ID", style="cyan")
+            table.add_column("St", style="magenta")  # Abbreviated Status
+            table.add_column("Repos", style="magenta")  # Abbreviated Repositories
+            table.add_column("Start Date", style="green")
+            table.add_column("End Date", style="green")
+            table.add_column("Created At", style="magenta")
 
-            # Format date range
-            start_date = req.get("start_date", "")
-            end_date = req.get("end_date", "")
+            # Add rows
+            for req in requests:
+                repo_count = str(len(req.get("repos", [])))
+                created_at = req.get("created_at", "Unknown")
+                # Format datetime if it's ISO format
+                if "T" in created_at:
+                    created_at = created_at.replace("T", " ").split(".")[0]
 
-            # Format dates to show full datetime (same format as created_at)
-            if start_date and "T" in start_date:
-                start_date = start_date.replace("T", " ").split(".")[0]
-            if end_date and "T" in end_date:
-                end_date = end_date.replace("T", " ").split(".")[0]
+                # Format date range
+                start_date = req.get("start_date", "")
+                end_date = req.get("end_date", "")
 
-            # Use "--" for missing dates
-            start_date = start_date if start_date else "--"
-            end_date = end_date if end_date else "--"
+                # Format dates to show full datetime (same format as created_at)
+                if start_date and "T" in start_date:
+                    start_date = start_date.replace("T", " ").split(".")[0]
+                if end_date and "T" in end_date:
+                    end_date = end_date.replace("T", " ").split(".")[0]
 
-            # Abbreviate status for display
-            status = req.get("status", "unknown")
-            status_abbrev = {
-                "in_progress": "IP",
-                "completed": "C",
-                "failed": "F",
-                "unknown": "U",
-            }.get(status, status[:2].upper())
+                # Use "--" for missing dates
+                start_date = start_date if start_date else "--"
+                end_date = end_date if end_date else "--"
 
-            table.add_row(
-                req["id"],  # Show full Request ID
-                status_abbrev,
-                repo_count,
-                start_date,
-                end_date,
-                created_at,
-            )
+                # Abbreviate status for display
+                status = req.get("status", "unknown")
+                status_abbrev = {
+                    "in_progress": "IP",
+                    "completed": "C",
+                    "failed": "F",
+                    "unknown": "U",
+                }.get(status, status[:2].upper())
 
-        self.console.print(table)
-        rprint("[dim]Status: IP=In Progress, C=Completed, F=Failed, U=Unknown[/dim]")
+                table.add_row(
+                    req["id"],  # Show full Request ID
+                    status_abbrev,
+                    repo_count,
+                    start_date,
+                    end_date,
+                    created_at,
+                )
+
+            self.console.print(table)
+            rprint("[dim]Status: IP=In Progress, C=Completed, F=Failed, U=Unknown[/dim]")
 
     def _display_thaw_status(self, request: dict, repos: list) -> None:
         """
@@ -648,29 +698,42 @@ class Thaw:
         :return: None
         :rtype: None
         """
-        rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
-        rprint(f"[cyan]Status: {request['status']}[/cyan]")
-        rprint(f"[cyan]Created: {request['created_at']}[/cyan]\n")
+        if self.porcelain:
+            # Machine-readable output: tab-separated values
+            # Format: REQUEST\t{request_id}\t{status}\t{created_at}
+            print(f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}")
 
-        # Create table for repositories
-        table = Table(title="Repositories")
-        table.add_column("Repository", style="cyan")
-        table.add_column("Bucket", style="magenta")
-        table.add_column("Path", style="magenta")
-        table.add_column("State", style="yellow")
-        table.add_column("Mounted", style="green")
+            # Format: REPO\t{name}\t{bucket}\t{path}\t{state}\t{mounted}
+            for repo in repos:
+                bucket = repo.bucket if repo.bucket else ""
+                path = repo.base_path if repo.base_path else ""
+                mounted = "yes" if repo.is_mounted else "no"
+                print(f"REPO\t{repo.name}\t{bucket}\t{path}\t{repo.thaw_state}\t{mounted}")
+        else:
+            # Human-readable output: formatted display
+            rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
+            rprint(f"[cyan]Status: {request['status']}[/cyan]")
+            rprint(f"[cyan]Created: {request['created_at']}[/cyan]\n")
 
-        for repo in repos:
-            table.add_row(
-                repo.name,
-                repo.bucket or "--",
-                repo.base_path or "--",
-                repo.thaw_state,
-                "yes" if repo.is_mounted else "no",
-            )
+            # Create table for repositories
+            table = Table(title="Repositories")
+            table.add_column("Repository", style="cyan")
+            table.add_column("Bucket", style="magenta")
+            table.add_column("Path", style="magenta")
+            table.add_column("State", style="yellow")
+            table.add_column("Mounted", style="green")
 
-        self.console.print(table)
-        rprint()
+            for repo in repos:
+                table.add_row(
+                    repo.name,
+                    repo.bucket or "--",
+                    repo.base_path or "--",
+                    repo.thaw_state,
+                    "yes" if repo.is_mounted else "no",
+                )
+
+            self.console.print(table)
+            rprint()
 
     def do_dry_run(self) -> None:
         """
@@ -925,6 +988,10 @@ class Thaw:
             )
 
             self.console.print(f"  [cyan]→[/cyan] Mounted [bold]{mount_result['mounted']}[/bold] indices")
+            if mount_result['skipped'] > 0:
+                self.console.print(
+                    f"  [dim]•[/dim] Skipped [dim]{mount_result['skipped']}[/dim] indices outside date range"
+                )
             if mount_result['failed'] > 0:
                 self.console.print(
                     f"  [yellow]⚠[/yellow] Failed to mount [yellow]{mount_result['failed']}[/yellow] indices"

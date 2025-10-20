@@ -1577,7 +1577,9 @@ def find_and_mount_indices_in_date_range(
 
     For each index found:
     1. Mount it as a searchable snapshot
-    2. If it's a data stream backing index, add it back to the data stream
+    2. Check if its @timestamp range overlaps with the requested date range
+    3. If no overlap, unmount the index
+    4. If overlap and it's a data stream backing index, add it back to the data stream
 
     :param client: A client connection object
     :type client: Elasticsearch
@@ -1588,7 +1590,7 @@ def find_and_mount_indices_in_date_range(
     :param end_date: End of date range
     :type end_date: datetime
 
-    :returns: Dictionary with mounted and failed counts
+    :returns: Dictionary with mounted, skipped, and failed counts
     :rtype: dict
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
@@ -1599,6 +1601,7 @@ def find_and_mount_indices_in_date_range(
     )
 
     mounted_indices = []
+    skipped_indices = []
     failed_indices = []
     datastream_adds = {"successful": [], "failed": []}
 
@@ -1619,42 +1622,90 @@ def find_and_mount_indices_in_date_range(
                 # Use the most recent snapshot
                 snapshot_name = snapshots[-1]
 
-                # Mount the index
-                if mount_snapshot_index(client, repo.name, snapshot_name, index_name):
-                    mounted_indices.append(index_name)
-
-                    # Check if this index was actually part of a data stream
-                    # by examining its metadata (not just naming patterns)
-                    datastream_name = get_index_datastream_name(client, index_name)
-                    if datastream_name:
-                        loggit.info(
-                            "Index %s was part of data stream %s, attempting to re-add",
-                            index_name,
-                            datastream_name,
-                        )
-                        if add_index_to_datastream(client, datastream_name, index_name):
-                            datastream_adds["successful"].append(
-                                {"index": index_name, "datastream": datastream_name}
-                            )
-                        else:
-                            datastream_adds["failed"].append(
-                                {"index": index_name, "datastream": datastream_name}
-                            )
-                    else:
-                        loggit.debug(
-                            "Index %s is not a data stream backing index, skipping data stream step",
-                            index_name,
-                        )
-                else:
+                # Mount the index temporarily to check its date range
+                if not mount_snapshot_index(client, repo.name, snapshot_name, index_name):
                     failed_indices.append(index_name)
+                    continue
+
+                # Query the index to get its actual @timestamp range
+                try:
+                    index_start, index_end = get_timestamp_range(client, [index_name])
+
+                    if not index_start or not index_end:
+                        loggit.warning(
+                            "Could not determine date range for %s, keeping mounted",
+                            index_name
+                        )
+                        mounted_indices.append(index_name)
+                    else:
+                        # Check if index date range overlaps with requested range
+                        # Overlap occurs if: index_start <= end_date AND index_end >= start_date
+                        index_start_dt = decode_date(index_start)
+                        index_end_dt = decode_date(index_end)
+
+                        if index_start_dt <= end_date and index_end_dt >= start_date:
+                            loggit.info(
+                                "Index %s overlaps date range (%s to %s), keeping mounted",
+                                index_name,
+                                index_start_dt.isoformat(),
+                                index_end_dt.isoformat(),
+                            )
+                            mounted_indices.append(index_name)
+
+                            # Check if this index was actually part of a data stream
+                            # by examining its metadata (not just naming patterns)
+                            datastream_name = get_index_datastream_name(client, index_name)
+                            if datastream_name:
+                                loggit.info(
+                                    "Index %s was part of data stream %s, attempting to re-add",
+                                    index_name,
+                                    datastream_name,
+                                )
+                                if add_index_to_datastream(client, datastream_name, index_name):
+                                    datastream_adds["successful"].append(
+                                        {"index": index_name, "datastream": datastream_name}
+                                    )
+                                else:
+                                    datastream_adds["failed"].append(
+                                        {"index": index_name, "datastream": datastream_name}
+                                    )
+                            else:
+                                loggit.debug(
+                                    "Index %s is not a data stream backing index, skipping data stream step",
+                                    index_name,
+                                )
+                        else:
+                            loggit.info(
+                                "Index %s does not overlap date range (%s to %s), unmounting",
+                                index_name,
+                                index_start_dt.isoformat(),
+                                index_end_dt.isoformat(),
+                            )
+                            # Unmount the index since it's outside the date range
+                            try:
+                                client.indices.delete(index=index_name)
+                                loggit.debug("Unmounted index %s", index_name)
+                            except Exception as e:
+                                loggit.warning("Failed to unmount index %s: %s", index_name, e)
+                            skipped_indices.append(index_name)
+
+                except Exception as e:
+                    loggit.warning(
+                        "Error checking date range for index %s: %s, keeping mounted",
+                        index_name,
+                        e
+                    )
+                    mounted_indices.append(index_name)
 
         except Exception as e:
             loggit.error("Error processing repository %s: %s", repo.name, e)
 
     result = {
         "mounted": len(mounted_indices),
+        "skipped": len(skipped_indices),
         "failed": len(failed_indices),
         "mounted_indices": mounted_indices,
+        "skipped_indices": skipped_indices,
         "failed_indices": failed_indices,
         "datastream_successful": len(datastream_adds["successful"]),
         "datastream_failed": len(datastream_adds["failed"]),
@@ -1662,8 +1713,9 @@ def find_and_mount_indices_in_date_range(
     }
 
     loggit.info(
-        "Mounted %d indices, failed %d. Added %d to data streams.",
+        "Mounted %d indices, skipped %d outside date range, failed %d. Added %d to data streams.",
         result["mounted"],
+        result["skipped"],
         result["failed"],
         result["datastream_successful"],
     )

@@ -95,6 +95,7 @@ def action_specific(action):
             option_defaults.retrieval_tier(),
             option_defaults.check_status(),
             option_defaults.list_requests(),
+            option_defaults.porcelain(),
         ],
         'refreeze': [
             option_defaults.repo_id(),

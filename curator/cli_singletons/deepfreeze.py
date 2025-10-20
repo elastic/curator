@@ -455,6 +455,12 @@ def refreeze(
     default=False,
     help="List all active thaw requests",
 )
+@click.option(
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Machine-readable output (tab-separated values, no formatting)",
+)
 @click.pass_context
 def thaw(
     ctx,
@@ -465,6 +471,7 @@ def thaw(
     retrieval_tier,
     check_status,
     list_requests,
+    porcelain,
 ):
     """
     Thaw repositories from Glacier storage for a specified date range,
@@ -533,6 +540,7 @@ def thaw(
         "retrieval_tier": retrieval_tier,
         "check_status": check_status,
         "list_requests": list_requests,
+        "porcelain": porcelain,
     }
     action = CLIAction(
         ctx.info_name,
