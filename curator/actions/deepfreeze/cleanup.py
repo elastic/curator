@@ -288,15 +288,50 @@ class Cleanup:
             self.loggit.info("Cleaning up expired repository %s", repo.name)
 
             try:
-                # Unmount if still mounted
-                if repo.is_mounted:
+                # CRITICAL FIX: Verify repository mount status from Elasticsearch
+                # The in-memory flag may be out of sync with actual cluster state
+                is_actually_mounted = False
+                try:
+                    existing_repos = self.client.snapshot.get_repository(name=repo.name)
+                    is_actually_mounted = repo.name in existing_repos
+                    if is_actually_mounted:
+                        self.loggit.debug("Repository %s is mounted in Elasticsearch", repo.name)
+                    else:
+                        self.loggit.debug("Repository %s is not mounted in Elasticsearch", repo.name)
+                except Exception as e:
+                    self.loggit.warning(
+                        "Could not verify mount status for repository %s: %s",
+                        repo.name,
+                        e
+                    )
+                    is_actually_mounted = False
+
+                # Unmount if actually mounted
+                if is_actually_mounted:
                     try:
+                        self.loggit.info(
+                            "Unmounting repository %s (state: %s, expires_at: %s)",
+                            repo.name,
+                            repo.thaw_state,
+                            repo.expires_at
+                        )
                         self.client.snapshot.delete_repository(name=repo.name)
                         self.loggit.info("Repository %s unmounted successfully", repo.name)
                     except Exception as e:
-                        self.loggit.warning(
-                            "Failed to unmount repository %s: %s", repo.name, e
+                        self.loggit.error(
+                            "Failed to unmount repository %s: %s (type: %s)",
+                            repo.name,
+                            str(e),
+                            type(e).__name__
                         )
+                        # Don't add to cleanup list if unmount failed
+                        continue
+                elif repo.is_mounted:
+                    # In-memory flag says mounted, but ES says not mounted
+                    self.loggit.info(
+                        "Repository %s marked as mounted but not found in Elasticsearch (likely already unmounted)",
+                        repo.name
+                    )
                 else:
                     self.loggit.debug("Repository %s was not mounted", repo.name)
 
@@ -326,10 +361,41 @@ class Cleanup:
                     )
                     for index in indices_to_delete:
                         try:
+                            # CRITICAL FIX: Validate index exists and get its status before deletion
+                            if not self.client.indices.exists(index=index):
+                                self.loggit.warning("Index %s no longer exists, skipping deletion", index)
+                                continue
+
+                            # Get index health before deletion for audit trail
+                            try:
+                                health = self.client.cluster.health(index=index, level='indices')
+                                index_health = health.get('indices', {}).get(index, {})
+                                status = index_health.get('status', 'unknown')
+                                active_shards = index_health.get('active_shards', 'unknown')
+                                active_primary_shards = index_health.get('active_primary_shards', 'unknown')
+
+                                self.loggit.info(
+                                    "Preparing to delete index %s (health: %s, primary_shards: %s, total_shards: %s)",
+                                    index,
+                                    status,
+                                    active_primary_shards,
+                                    active_shards
+                                )
+                            except Exception as health_error:
+                                # Log but don't fail deletion if health check fails
+                                self.loggit.debug("Could not get health for index %s: %s", index, health_error)
+
+                            # Perform deletion
                             self.client.indices.delete(index=index)
-                            self.loggit.info("Deleted index %s", index)
+                            self.loggit.info("Successfully deleted index %s", index)
+
                         except Exception as e:
-                            self.loggit.error("Failed to delete index %s: %s", index, e)
+                            self.loggit.error(
+                                "Failed to delete index %s: %s (type: %s)",
+                                index,
+                                str(e),
+                                type(e).__name__
+                            )
                 else:
                     self.loggit.info("No indices need to be deleted")
             except Exception as e:

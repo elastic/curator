@@ -8,12 +8,14 @@ from elasticsearch import Elasticsearch
 from rich import print as rprint
 
 from curator.actions.deepfreeze.constants import STATUS_INDEX
+from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.actions.deepfreeze.utilities import (
     get_repositories_by_names,
     get_settings,
     get_thaw_request,
     list_thaw_requests,
 )
+from curator.exceptions import ActionError
 
 
 class Refreeze:
@@ -48,7 +50,26 @@ class Refreeze:
         self.client = client
         self.thaw_request_id = thaw_request_id
         self.porcelain = porcelain
-        self.settings = get_settings(client)
+
+        # CRITICAL FIX: Validate that settings exist before proceeding
+        try:
+            self.settings = get_settings(client)
+            if self.settings is None:
+                error_msg = (
+                    f"Deepfreeze settings not found in status index {STATUS_INDEX}. "
+                    f"Run 'curator_cli deepfreeze setup' first to initialize deepfreeze."
+                )
+                self.loggit.error(error_msg)
+                if self.porcelain:
+                    rprint(f"ERROR\tmissing_settings\t{error_msg}")
+                raise ActionError(error_msg)
+            self.loggit.debug("Settings loaded successfully")
+        except MissingIndexError as e:
+            error_msg = f"Status index {STATUS_INDEX} does not exist. Run 'curator_cli deepfreeze setup' first."
+            self.loggit.error(error_msg)
+            if self.porcelain:
+                rprint(f"ERROR\tmissing_index\t{error_msg}")
+            raise ActionError(error_msg) from e
 
         if thaw_request_id:
             self.loggit.info("Deepfreeze Refreeze initialized for request %s", thaw_request_id)
@@ -151,33 +172,64 @@ class Refreeze:
 
         # Process each repository
         for repo in repos:
-            self.loggit.info("Processing repository %s (state: %s, mounted: %s)",
-                           repo.name, repo.thaw_state, repo.is_mounted)
+            # ENHANCED LOGGING: Add detailed repository state information
+            self.loggit.info(
+                "Processing repository %s - current state: mounted=%s, thaw_state=%s, bucket=%s, base_path=%s",
+                repo.name,
+                repo.is_mounted,
+                repo.thaw_state,
+                repo.bucket,
+                repo.base_path
+            )
 
             try:
                 # Unmount if still mounted
                 if repo.is_mounted:
                     try:
+                        self.loggit.info("Unmounting repository %s", repo.name)
                         self.client.snapshot.delete_repository(name=repo.name)
-                        self.loggit.info("Unmounted repository %s", repo.name)
+                        self.loggit.info("Successfully unmounted repository %s", repo.name)
                         unmounted.append(repo.name)
                     except Exception as e:
                         # If it's already unmounted, that's okay
                         if "repository_missing_exception" in str(e).lower():
                             self.loggit.debug("Repository %s was already unmounted", repo.name)
                         else:
-                            self.loggit.warning("Failed to unmount repository %s: %s", repo.name, e)
+                            self.loggit.warning(
+                                "Failed to unmount repository %s: %s (type: %s)",
+                                repo.name,
+                                e,
+                                type(e).__name__,
+                                exc_info=True
+                            )
                             # Continue anyway to update the state
                 else:
-                    self.loggit.debug("Repository %s was not mounted", repo.name)
+                    self.loggit.debug("Repository %s was not mounted, skipping unmount", repo.name)
 
                 # Reset to frozen state
+                self.loggit.debug(
+                    "Resetting repository %s to frozen state (old state: %s)",
+                    repo.name,
+                    repo.thaw_state
+                )
                 repo.reset_to_frozen()
+
+                # Persist the state change
+                self.loggit.debug("Persisting state change for repository %s", repo.name)
                 repo.persist(self.client)
-                self.loggit.info("Repository %s reset to frozen state", repo.name)
+                self.loggit.info(
+                    "Repository %s successfully reset to frozen state and persisted",
+                    repo.name
+                )
 
             except Exception as e:
-                self.loggit.error("Error processing repository %s: %s", repo.name, e)
+                self.loggit.error(
+                    "Error processing repository %s: %s (type: %s)",
+                    repo.name,
+                    e,
+                    type(e).__name__,
+                    exc_info=True
+                )
                 failed.append(repo.name)
 
         # Update the thaw request status to completed

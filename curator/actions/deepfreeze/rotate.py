@@ -547,17 +547,55 @@ class Rotate:
         ensure_settings_index(self.client)  # type: ignore
         self.loggit.debug("Saving settings")
         save_settings(self.client, self.settings)  # type: ignore
+
+        # HIGH PRIORITY FIX: Add validation and logging for bucket/repo creation
         # Create the new bucket and repo, but only if rotate_by is bucket
         if self.settings.rotate_by == "bucket":
-            self.s3.create_bucket(self.new_bucket_name)
-        create_repo(
-            self.client,  # type: ignore
+            self.loggit.info("Checking if bucket %s exists before creation", self.new_bucket_name)
+            try:
+                # create_bucket already checks bucket_exists internally
+                self.s3.create_bucket(self.new_bucket_name)
+            except Exception as e:
+                self.loggit.error(
+                    "Failed to create bucket %s: %s. Check S3 permissions and bucket naming rules.",
+                    self.new_bucket_name,
+                    e,
+                    exc_info=True
+                )
+                raise
+
+        # Verify repository doesn't already exist before creation
+        self.loggit.info(
+            "Creating repository %s with bucket=%s, base_path=%s, storage_class=%s",
             self.new_repo_name,
             self.new_bucket_name,
             self.base_path,
-            self.settings.canned_acl,
-            self.settings.storage_class,
+            self.settings.storage_class
         )
+        try:
+            existing_repos = self.client.snapshot.get_repository()
+            if self.new_repo_name in existing_repos:
+                error_msg = f"Repository {self.new_repo_name} already exists in Elasticsearch"
+                self.loggit.error(error_msg)
+                raise ActionError(error_msg)
+
+            create_repo(
+                self.client,  # type: ignore
+                self.new_repo_name,
+                self.new_bucket_name,
+                self.base_path,
+                self.settings.canned_acl,
+                self.settings.storage_class,
+            )
+            self.loggit.info("Successfully created repository %s", self.new_repo_name)
+        except Exception as e:
+            self.loggit.error(
+                "Failed to create repository %s: %s",
+                self.new_repo_name,
+                e,
+                exc_info=True
+            )
+            raise
         # Go through mounted repos and make sure the date ranges are up-to-date
         self.update_repo_date_range()
         self.update_ilm_policies()

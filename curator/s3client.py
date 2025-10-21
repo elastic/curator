@@ -41,6 +41,16 @@ class S3Client(metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
+    def test_connection(self) -> bool:
+        """
+        Test S3 connection and validate credentials.
+
+        :return: True if credentials are valid and S3 is accessible
+        :rtype: bool
+        """
+        return
+
+    @abc.abstractmethod
     def bucket_exists(self, bucket_name: str) -> bool:
         """
         Test whether or not the named bucket exists
@@ -186,8 +196,45 @@ class AwsS3Client(S3Client):
     """
 
     def __init__(self) -> None:
-        self.client = boto3.client("s3")
         self.loggit = logging.getLogger("AWS S3 Client")
+        try:
+            self.client = boto3.client("s3")
+            # HIGH PRIORITY FIX: Validate credentials by attempting a simple operation
+            self.loggit.debug("Validating AWS credentials")
+            self.client.list_buckets()
+            self.loggit.info("AWS S3 Client initialized successfully")
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            self.loggit.error("Failed to initialize AWS S3 Client: %s - %s", error_code, e)
+            if error_code in ["InvalidAccessKeyId", "SignatureDoesNotMatch"]:
+                raise ActionError(
+                    "AWS credentials are invalid or not configured. "
+                    "Check AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+                )
+            elif error_code == "AccessDenied":
+                raise ActionError(
+                    "AWS credentials do not have sufficient permissions. "
+                    "Minimum required: s3:ListAllMyBuckets"
+                )
+            raise ActionError(f"Failed to initialize AWS S3 Client: {e}")
+        except Exception as e:
+            self.loggit.error("Failed to initialize AWS S3 Client: %s", e, exc_info=True)
+            raise ActionError(f"Failed to initialize AWS S3 Client: {e}")
+
+    def test_connection(self) -> bool:
+        """
+        Test S3 connection and validate credentials.
+
+        :return: True if credentials are valid and S3 is accessible
+        :rtype: bool
+        """
+        try:
+            self.loggit.debug("Testing S3 connection")
+            self.client.list_buckets()
+            return True
+        except ClientError as e:
+            self.loggit.error("S3 connection test failed: %s", e)
+            return False
 
     def create_bucket(self, bucket_name: str) -> None:
         self.loggit.info(f"Creating bucket: {bucket_name}")
@@ -195,21 +242,38 @@ class AwsS3Client(S3Client):
             self.loggit.info(f"Bucket {bucket_name} already exists")
             raise ActionError(f"Bucket {bucket_name} already exists")
         try:
-            self.client.create_bucket(Bucket=bucket_name)
+            # HIGH PRIORITY FIX: Add region handling for bucket creation
+            # Get the region from the client configuration
+            region = self.client.meta.region_name
+            self.loggit.debug(f"Creating bucket in region: {region}")
+
+            # AWS requires LocationConstraint for all regions except us-east-1
+            if region and region != 'us-east-1':
+                self.client.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={'LocationConstraint': region}
+                )
+                self.loggit.info(f"Successfully created bucket {bucket_name} in region {region}")
+            else:
+                self.client.create_bucket(Bucket=bucket_name)
+                self.loggit.info(f"Successfully created bucket {bucket_name} in us-east-1")
         except ClientError as e:
-            self.loggit.error(e)
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            self.loggit.error(f"Error creating bucket {bucket_name}: {error_code} - {e}")
             raise ActionError(f"Error creating bucket {bucket_name}: {e}")
 
     def bucket_exists(self, bucket_name: str) -> bool:
-        self.loggit.info(f"Checking if bucket {bucket_name} exists")
+        self.loggit.debug(f"Checking if bucket {bucket_name} exists")
         try:
             self.client.head_bucket(Bucket=bucket_name)
+            self.loggit.debug(f"Bucket {bucket_name} exists")
             return True
         except ClientError as e:
             if e.response["Error"]["Code"] == "404":
+                self.loggit.debug(f"Bucket {bucket_name} does not exist")
                 return False
             else:
-                self.loggit.error(e)
+                self.loggit.error("Error checking bucket existence for %s: %s", bucket_name, e)
                 raise ActionError(e)
 
     def thaw(
@@ -233,9 +297,23 @@ class AwsS3Client(S3Client):
         Returns:
             None
         """
-        self.loggit.info(f"Thawing bucket: {bucket_name} at path: {base_path}")
-        for key in object_keys:
+        # ENHANCED LOGGING: Add parameter details and progress tracking
+        self.loggit.info(
+            "Starting thaw operation - bucket: %s, base_path: %s, objects: %d, restore_days: %d, tier: %s",
+            bucket_name,
+            base_path,
+            len(object_keys),
+            restore_days,
+            retrieval_tier
+        )
+
+        restored_count = 0
+        skipped_count = 0
+        error_count = 0
+
+        for idx, key in enumerate(object_keys, 1):
             if not key.startswith(base_path):
+                skipped_count += 1
                 continue  # Skip objects outside the base path
 
             # ? Do we need to keep track of what tier this came from instead of just assuming Glacier?
@@ -244,7 +322,13 @@ class AwsS3Client(S3Client):
                 storage_class = response.get("StorageClass", "")
 
                 if storage_class in ["GLACIER", "DEEP_ARCHIVE", "GLACIER_IR"]:
-                    self.loggit.debug(f"Restoring: {key} from {storage_class})")
+                    self.loggit.debug(
+                        "Restoring object %d/%d: %s from %s",
+                        idx,
+                        len(object_keys),
+                        key,
+                        storage_class
+                    )
                     self.client.restore_object(
                         Bucket=bucket_name,
                         Key=key,
@@ -253,13 +337,36 @@ class AwsS3Client(S3Client):
                             "GlacierJobParameters": {"Tier": retrieval_tier},
                         },
                     )
+                    restored_count += 1
                 else:
                     self.loggit.debug(
-                        f"Skipping: {key} (Storage Class: {storage_class})"
+                        "Skipping object %d/%d: %s (storage class: %s, not in Glacier)",
+                        idx,
+                        len(object_keys),
+                        key,
+                        storage_class
                     )
+                    skipped_count += 1
 
             except Exception as e:
-                self.loggit.error(f"Error restoring {key}: {str(e)}")
+                error_count += 1
+                self.loggit.error(
+                    "Error restoring object %d/%d (%s): %s (type: %s)",
+                    idx,
+                    len(object_keys),
+                    key,
+                    str(e),
+                    type(e).__name__
+                )
+
+        # Log summary
+        self.loggit.info(
+            "Thaw operation completed - restored: %d, skipped: %d, errors: %d (total: %d)",
+            restored_count,
+            skipped_count,
+            error_count,
+            len(object_keys)
+        )
 
     def refreeze(
         self, bucket_name: str, path: str, storage_class: str = "GLACIER"
@@ -275,28 +382,64 @@ class AwsS3Client(S3Client):
         Returns:
             None
         """
-        self.loggit.info(f"Refreezing objects in bucket: {bucket_name} at path: {path}")
+        # ENHANCED LOGGING: Add parameter details and progress tracking
+        self.loggit.info(
+            "Starting refreeze operation - bucket: %s, path: %s, target_storage_class: %s",
+            bucket_name,
+            path,
+            storage_class
+        )
+
+        refrozen_count = 0
+        error_count = 0
 
         paginator = self.client.get_paginator("list_objects_v2")
         pages = paginator.paginate(Bucket=bucket_name, Prefix=path)
 
-        for page in pages:
+        for page_num, page in enumerate(pages, 1):
             if "Contents" in page:
-                for obj in page["Contents"]:
+                page_objects = len(page["Contents"])
+                self.loggit.debug("Processing page %d with %d objects", page_num, page_objects)
+
+                for obj_num, obj in enumerate(page["Contents"], 1):
                     key = obj["Key"]
+                    current_storage = obj.get("StorageClass", "STANDARD")
 
                     try:
                         # Copy the object with a new storage class
+                        self.loggit.debug(
+                            "Refreezing object %d/%d in page %d: %s (from %s to %s)",
+                            obj_num,
+                            page_objects,
+                            page_num,
+                            key,
+                            current_storage,
+                            storage_class
+                        )
                         self.client.copy_object(
                             Bucket=bucket_name,
                             CopySource={"Bucket": bucket_name, "Key": key},
                             Key=key,
                             StorageClass=storage_class,
                         )
-                        self.loggit.info(f"Refrozen: {key} to {storage_class}")
+                        refrozen_count += 1
 
                     except Exception as e:
-                        self.loggit.error(f"Error refreezing {key}: {str(e)}")
+                        error_count += 1
+                        self.loggit.error(
+                            "Error refreezing object %s: %s (type: %s)",
+                            key,
+                            str(e),
+                            type(e).__name__,
+                            exc_info=True
+                        )
+
+        # Log summary
+        self.loggit.info(
+            "Refreeze operation completed - refrozen: %d, errors: %d",
+            refrozen_count,
+            error_count
+        )
 
     def list_objects(self, bucket_name: str, prefix: str) -> list[str]:
         """

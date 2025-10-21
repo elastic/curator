@@ -169,6 +169,38 @@ class Setup:
                            "Or use a different bucket_name_prefix in your configuration."
             })
 
+        # HIGH PRIORITY FIX: Check for S3 repository plugin
+        self.loggit.debug("Checking if S3 repository plugin is installed")
+        try:
+            # Get cluster plugins
+            nodes_info = self.client.nodes.info(node_id="_all", metric="plugins")
+
+            # Check if any node has the S3 plugin
+            has_s3_plugin = False
+            for node_id, node_data in nodes_info.get("nodes", {}).items():
+                plugins = node_data.get("plugins", [])
+                for plugin in plugins:
+                    if plugin.get("name") == "repository-s3":
+                        has_s3_plugin = True
+                        self.loggit.debug("Found S3 plugin on node %s", node_id)
+                        break
+                if has_s3_plugin:
+                    break
+
+            if not has_s3_plugin:
+                errors.append({
+                    "issue": "Elasticsearch S3 repository plugin is not installed",
+                    "solution": "Install the S3 repository plugin on all Elasticsearch nodes:\n"
+                               "  [yellow]bin/elasticsearch-plugin install repository-s3[/yellow]\n"
+                               "  Then restart all Elasticsearch nodes.\n"
+                               "  See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3.html"
+                })
+            else:
+                self.loggit.debug("S3 repository plugin is installed")
+        except Exception as e:
+            self.loggit.warning("Could not verify S3 plugin installation: %s", e)
+            # Don't add to errors - this is a soft check that may fail due to permissions
+
         # If any errors were found, display them all and raise exception
         if errors:
             if self.porcelain:
@@ -262,9 +294,23 @@ class Setup:
                 raise
 
             # Create S3 bucket
-            self.loggit.info("Creating S3 bucket %s", self.new_bucket_name)
+            # ENHANCED LOGGING: Log bucket creation parameters
+            self.loggit.info(
+                "Creating S3 bucket %s with ACL=%s, storage_class=%s",
+                self.new_bucket_name,
+                self.settings.canned_acl,
+                self.settings.storage_class
+            )
+            self.loggit.debug(
+                "Full bucket creation parameters: bucket=%s, ACL=%s, storage_class=%s, provider=%s",
+                self.new_bucket_name,
+                self.settings.canned_acl,
+                self.settings.storage_class,
+                self.settings.provider
+            )
             try:
                 self.s3.create_bucket(self.new_bucket_name)
+                self.loggit.info("Successfully created S3 bucket %s", self.new_bucket_name)
             except Exception as e:
                 if self.porcelain:
                     print(f"ERROR\ts3_bucket\t{self.new_bucket_name}\t{str(e)}")
@@ -285,7 +331,16 @@ class Setup:
                 raise
 
             # Create repository
+            # ENHANCED LOGGING: Log repository configuration
             self.loggit.info("Creating repository %s", self.new_repo_name)
+            self.loggit.debug(
+                "Repository configuration: name=%s, bucket=%s, base_path=%s, ACL=%s, storage_class=%s",
+                self.new_repo_name,
+                self.new_bucket_name,
+                self.base_path,
+                self.settings.canned_acl,
+                self.settings.storage_class
+            )
             try:
                 create_repo(
                     self.client,
@@ -295,6 +350,7 @@ class Setup:
                     self.settings.canned_acl,
                     self.settings.storage_class,
                 )
+                self.loggit.info("Successfully created repository %s", self.new_repo_name)
             except Exception as e:
                 if self.porcelain:
                     print(f"ERROR\trepository\t{self.new_repo_name}\t{str(e)}")

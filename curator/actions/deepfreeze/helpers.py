@@ -137,7 +137,13 @@ class Repository:
             return cls(**doc, docid=id)
 
         except Exception as e:
-            print(f"Error fetching Repository from Elasticsearch: {e}")
+            # CRITICAL FIX: Use logger instead of print()
+            logging.error(
+                "Error fetching Repository from Elasticsearch: %s (type: %s)",
+                e,
+                type(e).__name__,
+                exc_info=True
+            )
             return None
 
     def to_dict(self) -> dict:
