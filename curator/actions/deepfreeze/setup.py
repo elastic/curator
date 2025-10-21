@@ -169,36 +169,55 @@ class Setup:
                            "Or use a different bucket_name_prefix in your configuration."
             })
 
-        # HIGH PRIORITY FIX: Check for S3 repository plugin
-        self.loggit.debug("Checking if S3 repository plugin is installed")
+        # HIGH PRIORITY FIX: Check for S3 repository plugin (only for ES 7.x and below)
+        # NOTE: Elasticsearch 8.x+ has built-in S3 repository support, no plugin needed
+        self.loggit.debug("Checking S3 repository support")
         try:
-            # Get cluster plugins
-            nodes_info = self.client.nodes.info(node_id="_all", metric="plugins")
+            # Get Elasticsearch version
+            cluster_info = self.client.info()
+            es_version = cluster_info.get("version", {}).get("number", "0.0.0")
+            major_version = int(es_version.split(".")[0])
 
-            # Check if any node has the S3 plugin
-            has_s3_plugin = False
-            for node_id, node_data in nodes_info.get("nodes", {}).items():
-                plugins = node_data.get("plugins", [])
-                for plugin in plugins:
-                    if plugin.get("name") == "repository-s3":
-                        has_s3_plugin = True
-                        self.loggit.debug("Found S3 plugin on node %s", node_id)
+            if major_version < 8:
+                # ES 7.x and below require the repository-s3 plugin
+                self.loggit.debug(
+                    "Elasticsearch %s detected - checking for S3 repository plugin",
+                    es_version
+                )
+
+                # Get cluster plugins
+                nodes_info = self.client.nodes.info(node_id="_all", metric="plugins")
+
+                # Check if any node has the S3 plugin
+                has_s3_plugin = False
+                for node_id, node_data in nodes_info.get("nodes", {}).items():
+                    plugins = node_data.get("plugins", [])
+                    for plugin in plugins:
+                        if plugin.get("name") == "repository-s3":
+                            has_s3_plugin = True
+                            self.loggit.debug("Found S3 plugin on node %s", node_id)
+                            break
+                    if has_s3_plugin:
                         break
-                if has_s3_plugin:
-                    break
 
-            if not has_s3_plugin:
-                errors.append({
-                    "issue": "Elasticsearch S3 repository plugin is not installed",
-                    "solution": "Install the S3 repository plugin on all Elasticsearch nodes:\n"
-                               "  [yellow]bin/elasticsearch-plugin install repository-s3[/yellow]\n"
-                               "  Then restart all Elasticsearch nodes.\n"
-                               "  See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3.html"
-                })
+                if not has_s3_plugin:
+                    errors.append({
+                        "issue": "Elasticsearch S3 repository plugin is not installed",
+                        "solution": "Install the S3 repository plugin on all Elasticsearch nodes:\n"
+                                   "  [yellow]bin/elasticsearch-plugin install repository-s3[/yellow]\n"
+                                   "  Then restart all Elasticsearch nodes.\n"
+                                   "  See: https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3.html"
+                    })
+                else:
+                    self.loggit.debug("S3 repository plugin is installed")
             else:
-                self.loggit.debug("S3 repository plugin is installed")
+                # ES 8.x+ has built-in S3 support
+                self.loggit.debug(
+                    "Elasticsearch %s detected - S3 repository support is built-in",
+                    es_version
+                )
         except Exception as e:
-            self.loggit.warning("Could not verify S3 plugin installation: %s", e)
+            self.loggit.warning("Could not verify S3 repository support: %s", e)
             # Don't add to errors - this is a soft check that may fail due to permissions
 
         # If any errors were found, display them all and raise exception
