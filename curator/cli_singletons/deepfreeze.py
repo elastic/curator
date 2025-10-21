@@ -51,7 +51,7 @@ def deepfreeze():
     help="prefix for naming buckets",
 )
 @click.option(
-    "-p",
+    "-d",
     "--base_path_prefix",
     type=str,
     default="snapshots",
@@ -148,6 +148,7 @@ def deepfreeze():
     help="Name of the sample ILM policy",
 )
 @click.option(
+    "-p",
     "--porcelain",
     is_flag=True,
     default=False,
@@ -369,6 +370,7 @@ def cleanup(
     help="The ID of the thaw request to refreeze (optional - if not provided, all open requests)",
 )
 @click.option(
+    "-p",
     "--porcelain",
     is_flag=True,
     default=False,
@@ -472,6 +474,7 @@ def refreeze(
     help="List all active thaw requests",
 )
 @click.option(
+    "-p",
     "--porcelain",
     is_flag=True,
     default=False,
