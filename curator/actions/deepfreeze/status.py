@@ -143,8 +143,8 @@ class Status:
                 print(f"{setting}\t{value}")
         else:
             table = Table(title="Configuration")
-            table.add_column("Setting", style="cyan")
-            table.add_column("Value", style="magenta")
+            table.add_column("Setting", style="cyan", no_wrap=False, overflow="fold")
+            table.add_column("Value", style="magenta", no_wrap=False, overflow="fold")
 
             for setting, value in config_items:
                 table.add_row(setting, value)
@@ -159,10 +159,10 @@ class Status:
         :rtype: None
         """
         table = Table(title="ILM Policies")
-        table.add_column("Policy", style="cyan")
-        table.add_column("Repository", style="magenta")
-        table.add_column("Indices", style="magenta")
-        table.add_column("Datastreams", style="magenta")
+        table.add_column("Policy", style="cyan", no_wrap=False, overflow="fold")
+        table.add_column("Repository", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("Indices", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("Datastreams", style="magenta", no_wrap=False, overflow="fold")
 
         current_repo = f"{self.settings.repo_name_prefix}-{self.settings.last_suffix}"
         policies = self.client.ilm.get_lifecycle()
@@ -243,9 +243,9 @@ class Status:
             table_title = "Buckets"
 
         table = Table(title=table_title)
-        table.add_column("Provider", style="cyan")
-        table.add_column("Bucket", style="magenta")
-        table.add_column("Base_path", style="magenta")
+        table.add_column("Provider", style="cyan", no_wrap=False, overflow="fold")
+        table.add_column("Bucket", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("Base_path", style="magenta", no_wrap=False, overflow="fold")
 
         for bucket, base_path in sorted_buckets:
             # Mark current bucket/base_path with asterisk
@@ -299,13 +299,13 @@ class Status:
 
         # Create the table
         table = Table(title="Thawed Repositories")
-        table.add_column("Repository", style="cyan")
-        table.add_column("State", style="yellow")
-        table.add_column("Mounted", style="green")
-        table.add_column("Snapshots", style="magenta")
-        table.add_column("Expires", style="red")
-        table.add_column("Start", style="magenta")
-        table.add_column("End", style="magenta")
+        table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
+        table.add_column("State", style="yellow", no_wrap=False, overflow="fold")
+        table.add_column("Mounted", style="green", no_wrap=False, overflow="fold")
+        table.add_column("Snapshots", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("Expires", style="red", no_wrap=False, overflow="fold")
+        table.add_column("Start", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("End", style="magenta", no_wrap=False, overflow="fold")
 
         for repo in thawed_repos:
             # Determine mounted status
@@ -393,12 +393,12 @@ class Status:
             table_title = "Repositories"
 
         table = Table(title=table_title)
-        table.add_column("Repository", style="cyan")
-        table.add_column("State", style="yellow")
-        table.add_column("Mounted", style="green")
-        table.add_column("Snapshots", style="magenta")
-        table.add_column("Start", style="magenta")
-        table.add_column("End", style="magenta")
+        table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
+        table.add_column("State", style="yellow", no_wrap=False, overflow="fold")
+        table.add_column("Mounted", style="green", no_wrap=False, overflow="fold")
+        table.add_column("Snapshots", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("Start", style="magenta", no_wrap=False, overflow="fold")
+        table.add_column("End", style="magenta", no_wrap=False, overflow="fold")
 
         for repo in repos_to_display:
             # Mark active repository with asterisk

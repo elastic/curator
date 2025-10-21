@@ -553,12 +553,12 @@ class Thaw:
 
                 # Create table for repository status
                 table = Table(title="Repository Status")
-                table.add_column("Repository", style="cyan")
-                table.add_column("Bucket", style="magenta")
-                table.add_column("Path", style="magenta")
-                table.add_column("State", style="yellow")
-                table.add_column("Mounted", style="green")
-                table.add_column("Restore Progress", style="magenta")
+                table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
+                table.add_column("Bucket", style="magenta", no_wrap=False, overflow="fold")
+                table.add_column("Path", style="magenta", no_wrap=False, overflow="fold")
+                table.add_column("State", style="yellow", no_wrap=False, overflow="fold")
+                table.add_column("Mounted", style="green", no_wrap=False, overflow="fold")
+                table.add_column("Restore Progress", style="magenta", no_wrap=False, overflow="fold")
 
                 for repo_info in repo_data:
                     table.add_row(
@@ -673,12 +673,12 @@ class Thaw:
             # Human-readable output: formatted table
             # Create table
             table = Table(title="Thaw Requests")
-            table.add_column("Request ID", style="cyan")
-            table.add_column("St", style="magenta")  # Abbreviated Status
-            table.add_column("Repos", style="magenta")  # Abbreviated Repositories
-            table.add_column("Start Date", style="green")
-            table.add_column("End Date", style="green")
-            table.add_column("Created At", style="magenta")
+            table.add_column("Request ID", style="cyan", no_wrap=False, overflow="fold")
+            table.add_column("St", style="magenta", no_wrap=False, overflow="fold")  # Abbreviated Status
+            table.add_column("Repos", style="magenta", no_wrap=False, overflow="fold")  # Abbreviated Repositories
+            table.add_column("Start Date", style="green", no_wrap=False, overflow="fold")
+            table.add_column("End Date", style="green", no_wrap=False, overflow="fold")
+            table.add_column("Created At", style="magenta", no_wrap=False, overflow="fold")
 
             # Add rows
             for req in requests:
@@ -793,12 +793,12 @@ class Thaw:
 
             # Create table for repository status
             table = Table(title="Repository Status")
-            table.add_column("Repository", style="cyan")
-            table.add_column("Bucket", style="magenta")
-            table.add_column("Path", style="magenta")
-            table.add_column("State", style="yellow")
-            table.add_column("Mounted", style="green")
-            table.add_column("Restore Progress", style="magenta")
+            table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
+            table.add_column("Bucket", style="magenta", no_wrap=False, overflow="fold")
+            table.add_column("Path", style="magenta", no_wrap=False, overflow="fold")
+            table.add_column("State", style="yellow", no_wrap=False, overflow="fold")
+            table.add_column("Mounted", style="green", no_wrap=False, overflow="fold")
+            table.add_column("Restore Progress", style="magenta", no_wrap=False, overflow="fold")
 
             for repo_info in repo_data:
                 table.add_row(
@@ -928,9 +928,9 @@ class Thaw:
         if self.sync:
             # Display found repositories
             table = Table(title=f"Found {len(repos)} Repositories")
-            table.add_column("Repository", style="cyan")
-            table.add_column("Bucket", style="magenta")
-            table.add_column("Base Path", style="magenta")
+            table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
+            table.add_column("Bucket", style="magenta", no_wrap=False, overflow="fold")
+            table.add_column("Base Path", style="magenta", no_wrap=False, overflow="fold")
             for repo in repos:
                 table.add_row(repo.name, repo.bucket or "--", repo.base_path or "--")
             self.console.print(table)
