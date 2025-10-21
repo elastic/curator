@@ -1545,8 +1545,22 @@ def get_index_datastream_name(client: Elasticsearch, index_name: str) -> str:
                 parts = remaining.rsplit("-", 2)
                 if len(parts) >= 3:
                     ds_name = parts[0]
-                    loggit.debug("Index %s belongs to data stream %s", index_name, ds_name)
+                    loggit.debug("Index %s belongs to data stream %s (from metadata)", index_name, ds_name)
                     return ds_name
+
+        # Fallback: check the actual index name itself
+        # When indices are remounted from snapshots, metadata might not be preserved
+        # but the index name pattern (.ds-{name}-{date}-{number}) is retained
+        if index_name.startswith(".ds-"):
+            loggit.debug("Checking index name %s for data stream pattern", index_name)
+            # Extract the actual data stream name from the backing index name
+            # Pattern: .ds-{name}-{date}-{number}
+            remaining = index_name[4:]
+            parts = remaining.rsplit("-", 2)
+            if len(parts) >= 3:
+                ds_name = parts[0]
+                loggit.debug("Index %s belongs to data stream %s (from index name)", index_name, ds_name)
+                return ds_name
 
         return None
 

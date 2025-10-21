@@ -28,6 +28,8 @@ from curator.actions.deepfreeze.utilities import (
     get_policies_for_repo,
     get_policies_by_suffix,
     is_policy_safe_to_delete,
+    get_index_datastream_name,
+    add_index_to_datastream,
 )
 from curator.actions.deepfreeze.helpers import Repository, Settings
 from curator.actions.deepfreeze.constants import STATUS_INDEX, SETTINGS_ID
@@ -1232,5 +1234,117 @@ class TestIsPolicySafeToDelete(TestCase):
 
         with patch('curator.actions.deepfreeze.utilities.logging'):
             result = is_policy_safe_to_delete(mock_client, 'test-policy')
+
+        assert result is False
+
+
+class TestGetIndexDatastreamName(TestCase):
+    """Test get_index_datastream_name function"""
+
+    def test_datastream_from_metadata(self):
+        """Test extracting data stream name from index metadata"""
+        mock_client = Mock()
+        mock_client.indices.get_settings.return_value = {
+            '.ds-logs-2024.01.01-000001': {
+                'settings': {
+                    'index': {
+                        'provided_name': '.ds-logs-2024.01.01-000001'
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_index_datastream_name(mock_client, '.ds-logs-2024.01.01-000001')
+
+        assert result == 'logs'
+
+    def test_datastream_from_index_name_fallback(self):
+        """Test extracting data stream name from index name when metadata is missing"""
+        mock_client = Mock()
+        mock_client.indices.get_settings.return_value = {
+            '.ds-metrics-cpu-2024.01.01-000002': {
+                'settings': {
+                    'index': {
+                        # No provided_name - testing fallback to index name
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_index_datastream_name(mock_client, '.ds-metrics-cpu-2024.01.01-000002')
+
+        assert result == 'metrics-cpu'
+
+    def test_non_datastream_index(self):
+        """Test that non-datastream indices return None"""
+        mock_client = Mock()
+        mock_client.indices.get_settings.return_value = {
+            'regular-index-2024.01.01': {
+                'settings': {
+                    'index': {
+                        'provided_name': 'regular-index-2024.01.01'
+                    }
+                }
+            }
+        }
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_index_datastream_name(mock_client, 'regular-index-2024.01.01')
+
+        assert result is None
+
+    def test_exception_handling(self):
+        """Test error handling when getting index settings fails"""
+        mock_client = Mock()
+        mock_client.indices.get_settings.side_effect = Exception('Connection error')
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = get_index_datastream_name(mock_client, '.ds-logs-2024.01.01-000001')
+
+        assert result is None
+
+
+class TestAddIndexToDatastream(TestCase):
+    """Test add_index_to_datastream function"""
+
+    def test_add_index_successfully(self):
+        """Test successfully adding an index to a data stream"""
+        mock_client = Mock()
+        mock_client.indices.get_data_stream.return_value = {'data_streams': [{'name': 'logs'}]}
+        mock_client.indices.modify_data_stream.return_value = {'acknowledged': True}
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = add_index_to_datastream(mock_client, 'logs', '.ds-logs-2024.01.01-000001')
+
+        assert result is True
+        mock_client.indices.modify_data_stream.assert_called_once_with(
+            body={
+                'actions': [
+                    {'add_backing_index': {'data_stream': 'logs', 'index': '.ds-logs-2024.01.01-000001'}}
+                ]
+            }
+        )
+
+    def test_datastream_not_found(self):
+        """Test adding index when data stream doesn't exist"""
+        mock_client = Mock()
+        from elasticsearch8 import NotFoundError
+        mock_client.indices.get_data_stream.side_effect = NotFoundError(404, 'not_found', {})
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = add_index_to_datastream(mock_client, 'logs', '.ds-logs-2024.01.01-000001')
+
+        assert result is False
+
+    def test_add_index_fails(self):
+        """Test when adding index to data stream fails"""
+        mock_client = Mock()
+        mock_client.indices.get_data_stream.return_value = {'data_streams': [{'name': 'logs'}]}
+        mock_client.indices.modify_data_stream.side_effect = Exception('Failed to modify')
+
+        with patch('curator.actions.deepfreeze.utilities.logging'):
+            result = add_index_to_datastream(mock_client, 'logs', '.ds-logs-2024.01.01-000001')
 
         assert result is False
