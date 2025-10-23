@@ -415,7 +415,7 @@ class Thaw:
                 )
 
                 if not self.porcelain:
-                    rprint("[cyan]Mounting indices in date range...[/cyan]")
+                    rprint("[cyan]Looking for indices to mount...[/cyan]")
 
                 # Use all mounted repos, not just newly mounted ones
                 # This handles the case where repos were already mounted
@@ -569,7 +569,7 @@ class Thaw:
                     )
 
                     if not self.porcelain:
-                        rprint("[cyan]Mounting indices in date range...[/cyan]")
+                        rprint("[cyan]Looking for indices to mount...[/cyan]")
 
                     # Use all mounted repos, not just newly mounted ones
                     # This handles the case where repos were mounted in a previous check

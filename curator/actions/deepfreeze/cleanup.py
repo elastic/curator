@@ -410,6 +410,80 @@ class Cleanup:
         except Exception as e:
             self.loggit.error("Error cleaning up thaw requests: %s", e)
 
+        # Clean up orphaned thawed ILM policies
+        self.loggit.info("Cleaning up orphaned thawed ILM policies")
+        try:
+            deleted_policies = self._cleanup_orphaned_thawed_policies()
+            if deleted_policies:
+                self.loggit.info("Deleted %d orphaned thawed ILM policies", len(deleted_policies))
+        except Exception as e:
+            self.loggit.error("Error cleaning up orphaned ILM policies: %s", e)
+
+    def _cleanup_orphaned_thawed_policies(self) -> list[str]:
+        """
+        Delete thawed ILM policies that no longer have any indices assigned to them.
+
+        Thawed ILM policies are named {repo_name}-thawed (e.g., deepfreeze-000010-thawed).
+        When all indices using a thawed policy have been deleted, the policy should be
+        removed to prevent accumulation.
+
+        :return: List of deleted policy names
+        :rtype: list[str]
+        """
+        self.loggit.debug("Searching for orphaned thawed ILM policies")
+
+        deleted_policies = []
+
+        try:
+            # Get all ILM policies
+            all_policies = self.client.ilm.get_lifecycle()
+
+            # Filter for thawed policies (ending with -thawed)
+            thawed_policies = {
+                name: data for name, data in all_policies.items()
+                if name.endswith("-thawed") and name.startswith(self.settings.repo_name_prefix)
+            }
+
+            if not thawed_policies:
+                self.loggit.debug("No thawed ILM policies found")
+                return deleted_policies
+
+            self.loggit.debug("Found %d thawed ILM policies to check", len(thawed_policies))
+
+            for policy_name, policy_data in thawed_policies.items():
+                try:
+                    # Check if policy has any indices assigned
+                    in_use_by = policy_data.get("in_use_by", {})
+                    indices = in_use_by.get("indices", [])
+                    datastreams = in_use_by.get("data_streams", [])
+
+                    if not indices and not datastreams:
+                        # Policy has no indices or datastreams, safe to delete
+                        self.loggit.info(
+                            "Deleting orphaned thawed ILM policy %s (no indices assigned)",
+                            policy_name
+                        )
+                        self.client.ilm.delete_lifecycle(name=policy_name)
+                        deleted_policies.append(policy_name)
+                        self.loggit.info("Successfully deleted ILM policy %s", policy_name)
+                    else:
+                        self.loggit.debug(
+                            "Keeping ILM policy %s (%d indices, %d datastreams)",
+                            policy_name,
+                            len(indices),
+                            len(datastreams)
+                        )
+
+                except Exception as e:
+                    self.loggit.error(
+                        "Failed to check/delete ILM policy %s: %s", policy_name, e
+                    )
+
+        except Exception as e:
+            self.loggit.error("Error listing ILM policies: %s", e)
+
+        return deleted_policies
+
     def do_dry_run(self) -> None:
         """
         Perform a dry-run of the cleanup operation.

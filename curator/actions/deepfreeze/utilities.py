@@ -4,6 +4,7 @@
 
 import logging
 import re
+import time
 from datetime import datetime, timezone
 
 import botocore
@@ -593,6 +594,68 @@ def create_ilm_policy(
     except Exception as e:
         loggit.error(e)
         raise ActionError(e)
+
+
+def create_thawed_ilm_policy(client: Elasticsearch, repo_name: str) -> str:
+    """
+    Create an ILM policy for thawed indices from a specific repository.
+
+    The policy is named {repo_name}-thawed and includes:
+    - Frozen phase (immediate): References the source repository
+    - Delete phase (29 days): Deletes the index and searchable snapshot
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param repo_name: The repository name (e.g., "deepfreeze-000010")
+    :type repo_name: str
+
+    :returns: The created policy name
+    :rtype: str
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+
+    policy_name = f"{repo_name}-thawed"
+    policy_body = {
+        "policy": {
+            "phases": {
+                "frozen": {
+                    "min_age": "0ms",
+                    "actions": {
+                        "searchable_snapshot": {
+                            "snapshot_repository": repo_name
+                        }
+                    },
+                },
+                "delete": {
+                    "min_age": "29d",
+                    "actions": {
+                        "delete": {"delete_searchable_snapshot": True}
+                    },
+                },
+            }
+        }
+    }
+
+    loggit.info("Creating thawed ILM policy %s for repository %s", policy_name, repo_name)
+    loggit.debug("Thawed ILM policy body: %s", policy_body)
+
+    try:
+        # Check if policy already exists
+        try:
+            client.ilm.get_lifecycle(name=policy_name)
+            loggit.info("Thawed ILM policy %s already exists, skipping creation", policy_name)
+            return policy_name
+        except Exception:
+            # Policy doesn't exist, create it
+            pass
+
+        client.ilm.put_lifecycle(name=policy_name, body=policy_body)
+        loggit.info("Successfully created thawed ILM policy %s", policy_name)
+        return policy_name
+
+    except Exception as e:
+        loggit.error("Failed to create thawed ILM policy %s: %s", policy_name, e)
+        raise ActionError(f"Failed to create thawed ILM policy {policy_name}: {e}")
 
 
 def update_repository_date_range(client: Elasticsearch, repo: Repository) -> bool:
@@ -1467,7 +1530,7 @@ def find_snapshots_for_index(
 
 
 def mount_snapshot_index(
-    client: Elasticsearch, repo_name: str, snapshot_name: str, index_name: str
+    client: Elasticsearch, repo_name: str, snapshot_name: str, index_name: str, ilm_policy: str = None
 ) -> bool:
     """
     Mount an index from a snapshot as a searchable snapshot.
@@ -1480,6 +1543,8 @@ def mount_snapshot_index(
     :type snapshot_name: str
     :param index_name: The index name to mount
     :type index_name: str
+    :param ilm_policy: Optional ILM policy to assign to the index
+    :type ilm_policy: str
 
     :returns: True if successful, False otherwise
     :rtype: bool
@@ -1490,8 +1555,19 @@ def mount_snapshot_index(
     )
 
     # Check if index is already mounted
-    if client.indices.exists(index=index_name):
+    already_mounted = client.indices.exists(index=index_name)
+    if already_mounted:
         loggit.info("Index %s is already mounted", index_name)
+        # Still assign ILM policy if provided and not already mounted
+        if ilm_policy:
+            try:
+                client.indices.put_settings(
+                    index=index_name,
+                    body={"index.lifecycle.name": ilm_policy}
+                )
+                loggit.info("Assigned ILM policy %s to already-mounted index %s", ilm_policy, index_name)
+            except Exception as e:
+                loggit.warning("Failed to assign ILM policy to already-mounted index %s: %s", index_name, e)
         return True
 
     try:
@@ -1501,11 +1577,64 @@ def mount_snapshot_index(
             body={"index": index_name},
         )
         loggit.info("Successfully mounted index %s", index_name)
+
+        # Assign ILM policy if provided
+        if ilm_policy:
+            try:
+                client.indices.put_settings(
+                    index=index_name,
+                    body={"index.lifecycle.name": ilm_policy}
+                )
+                loggit.info("Assigned ILM policy %s to index %s", ilm_policy, index_name)
+            except Exception as e:
+                loggit.warning("Failed to assign ILM policy to index %s: %s", index_name, e)
+
         return True
 
     except Exception as e:
         loggit.error("Failed to mount index %s: %s", index_name, e)
         return False
+
+
+def wait_for_index_ready(
+    client: Elasticsearch, index_name: str, max_wait_seconds: int = 30
+) -> bool:
+    """
+    Wait for an index to become ready for search queries after mounting.
+
+    Searchable snapshot indices need time for shards to allocate before
+    they can handle queries. This function waits for the index to have
+    at least one active shard.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param index_name: The index name to wait for
+    :type index_name: str
+    :param max_wait_seconds: Maximum time to wait in seconds
+    :type max_wait_seconds: int
+
+    :returns: True if index is ready, False if timeout
+    :rtype: bool
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Waiting for index %s to be ready", index_name)
+
+    start_time = time.time()
+    while time.time() - start_time < max_wait_seconds:
+        try:
+            # Check if at least one shard is active
+            health = client.cluster.health(index=index_name, wait_for_active_shards=1, timeout="5s")
+            if health.get("active_shards", 0) > 0:
+                loggit.debug("Index %s is ready (active shards: %d)", index_name, health["active_shards"])
+                return True
+        except Exception as e:
+            loggit.debug("Index %s not ready yet: %s", index_name, e)
+
+        # Wait a bit before retrying
+        time.sleep(2)
+
+    loggit.warning("Index %s did not become ready within %d seconds", index_name, max_wait_seconds)
+    return False
 
 
 def get_index_datastream_name(client: Elasticsearch, index_name: str) -> str:
@@ -1613,16 +1742,27 @@ def add_index_to_datastream(
 
 
 def find_and_mount_indices_in_date_range(
-    client: Elasticsearch, repos: list[Repository], start_date: datetime, end_date: datetime
+    client: Elasticsearch, repos: list[Repository], start_date: datetime, end_date: datetime, ilm_policy: str = None
 ) -> dict:
     """
     Find and mount all indices within a date range from the given repositories.
 
+    For each repository, creates a per-repo thawed ILM policy ({repo_name}-thawed) that:
+    - References the specific repository in the frozen phase
+    - Deletes indices after 29 days
+
     For each index found:
     1. Mount it as a searchable snapshot
-    2. Check if its @timestamp range overlaps with the requested date range
-    3. If no overlap, unmount the index
-    4. If overlap and it's a data stream backing index, add it back to the data stream
+    2. Wait for the index to become ready for queries
+    3. Try to check if its @timestamp range overlaps with the requested date range
+    4. If no overlap, unmount the index
+    5. If overlap (or if timestamp check fails), keep mounted
+    6. Assign the per-repo thawed ILM policy to the index
+    7. For any kept index that's a data stream backing index, add it back to the data stream
+
+    Note: Data stream reassignment happens for ALL mounted indices, even if the
+    timestamp query fails. This ensures indices are properly rejoined to their
+    data streams regardless of query errors.
 
     :param client: A client connection object
     :type client: Elasticsearch
@@ -1632,8 +1772,10 @@ def find_and_mount_indices_in_date_range(
     :type start_date: datetime
     :param end_date: End of date range
     :type end_date: datetime
+    :param ilm_policy: Deprecated - per-repo policies are now created automatically
+    :type ilm_policy: str
 
-    :returns: Dictionary with mounted, skipped, and failed counts
+    :returns: Dictionary with mounted, skipped, failed counts, and created policies
     :rtype: dict
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
@@ -1647,8 +1789,18 @@ def find_and_mount_indices_in_date_range(
     skipped_indices = []
     failed_indices = []
     datastream_adds = {"successful": [], "failed": []}
+    created_policies = []
 
     for repo in repos:
+        # Create per-repo thawed ILM policy
+        try:
+            thawed_policy = create_thawed_ilm_policy(client, repo.name)
+            created_policies.append(thawed_policy)
+            loggit.info("Using thawed ILM policy %s for repository %s", thawed_policy, repo.name)
+        except Exception as e:
+            loggit.error("Failed to create thawed ILM policy for %s: %s", repo.name, e)
+            # Continue anyway - indices will still mount, just without ILM policy
+            thawed_policy = None
         try:
             # Get all indices from snapshots in this repository
             all_indices = get_all_indices_in_repo(client, repo.name)
@@ -1665,23 +1817,32 @@ def find_and_mount_indices_in_date_range(
                 # Use the most recent snapshot
                 snapshot_name = snapshots[-1]
 
-                # Mount the index temporarily to check its date range
-                if not mount_snapshot_index(client, repo.name, snapshot_name, index_name):
-                    failed_indices.append(index_name)
-                    continue
+                # Check if index is already mounted - if so, skip the mount call
+                already_mounted = client.indices.exists(index=index_name)
+                if already_mounted:
+                    loggit.debug("Index %s is already mounted, skipping mount operation", index_name)
+                    # Still assign ILM policy if provided
+                    if thawed_policy and not mount_snapshot_index(client, repo.name, snapshot_name, index_name, thawed_policy):
+                        loggit.warning("Failed to assign ILM policy to already-mounted index %s", index_name)
+                else:
+                    # Mount the index temporarily to check its date range
+                    if not mount_snapshot_index(client, repo.name, snapshot_name, index_name, thawed_policy):
+                        failed_indices.append(index_name)
+                        continue
 
-                # Query the index to get its actual @timestamp range
+                    # Wait for index to become ready for queries
+                    if not wait_for_index_ready(client, index_name):
+                        loggit.warning("Index %s did not become ready in time, may have query issues", index_name)
+
+                # Track if index should stay mounted (default: yes, we're conservative)
+                keep_mounted = True
+
+                # Try to check date range to see if we should keep it
                 try:
                     index_start, index_end = get_timestamp_range(client, [index_name])
 
-                    if not index_start or not index_end:
-                        loggit.warning(
-                            "Could not determine date range for %s, keeping mounted",
-                            index_name
-                        )
-                        mounted_indices.append(index_name)
-                    else:
-                        # Check if index date range overlaps with requested range
+                    if index_start and index_end:
+                        # We have timestamps, check if index overlaps with requested range
                         # Overlap occurs if: index_start <= end_date AND index_end >= start_date
                         index_start_dt = decode_date(index_start)
                         index_end_dt = decode_date(index_end)
@@ -1693,52 +1854,62 @@ def find_and_mount_indices_in_date_range(
                                 index_start_dt.isoformat(),
                                 index_end_dt.isoformat(),
                             )
-                            mounted_indices.append(index_name)
-
-                            # Check if this index was actually part of a data stream
-                            # by examining its metadata (not just naming patterns)
-                            datastream_name = get_index_datastream_name(client, index_name)
-                            if datastream_name:
-                                loggit.info(
-                                    "Index %s was part of data stream %s, attempting to re-add",
-                                    index_name,
-                                    datastream_name,
-                                )
-                                if add_index_to_datastream(client, datastream_name, index_name):
-                                    datastream_adds["successful"].append(
-                                        {"index": index_name, "datastream": datastream_name}
-                                    )
-                                else:
-                                    datastream_adds["failed"].append(
-                                        {"index": index_name, "datastream": datastream_name}
-                                    )
-                            else:
-                                loggit.debug(
-                                    "Index %s is not a data stream backing index, skipping data stream step",
-                                    index_name,
-                                )
                         else:
+                            # No overlap, unmount the index
                             loggit.info(
                                 "Index %s does not overlap date range (%s to %s), unmounting",
                                 index_name,
                                 index_start_dt.isoformat(),
                                 index_end_dt.isoformat(),
                             )
-                            # Unmount the index since it's outside the date range
+                            keep_mounted = False
                             try:
                                 client.indices.delete(index=index_name)
                                 loggit.debug("Unmounted index %s", index_name)
                             except Exception as e:
                                 loggit.warning("Failed to unmount index %s: %s", index_name, e)
                             skipped_indices.append(index_name)
+                    else:
+                        # Could not get timestamps, keep mounted since we can't determine overlap
+                        loggit.warning(
+                            "Could not determine date range for %s, keeping mounted",
+                            index_name
+                        )
 
                 except Exception as e:
+                    # Error during date range check, keep mounted to be safe
                     loggit.warning(
                         "Error checking date range for index %s: %s, keeping mounted",
                         index_name,
                         e
                     )
+
+                # For any index that's still mounted, add to list and check for data stream
+                if keep_mounted:
                     mounted_indices.append(index_name)
+
+                    # Check if this index was part of a data stream and reassign it
+                    # This happens regardless of whether timestamp query succeeded
+                    datastream_name = get_index_datastream_name(client, index_name)
+                    if datastream_name:
+                        loggit.info(
+                            "Index %s was part of data stream %s, attempting to re-add",
+                            index_name,
+                            datastream_name,
+                        )
+                        if add_index_to_datastream(client, datastream_name, index_name):
+                            datastream_adds["successful"].append(
+                                {"index": index_name, "datastream": datastream_name}
+                            )
+                        else:
+                            datastream_adds["failed"].append(
+                                {"index": index_name, "datastream": datastream_name}
+                            )
+                    else:
+                        loggit.debug(
+                            "Index %s is not a data stream backing index, skipping data stream step",
+                            index_name,
+                        )
 
         except Exception as e:
             loggit.error("Error processing repository %s: %s", repo.name, e)
@@ -1753,6 +1924,7 @@ def find_and_mount_indices_in_date_range(
         "datastream_successful": len(datastream_adds["successful"]),
         "datastream_failed": len(datastream_adds["failed"]),
         "datastream_details": datastream_adds,
+        "created_policies": created_policies,
     }
 
     loggit.info(

@@ -456,7 +456,8 @@ class Setup:
                     f"[bold]Next Steps:[/bold]\n"
                     f"  1. Update your ILM policies to use repository [cyan]{self.new_repo_name}[/cyan]\n"
                     f"  2. Ensure all ILM policies have [yellow]delete_searchable_snapshot: false[/yellow]\n"
-                    f"  3. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html",
+                    f"  3. Thawed indices will automatically get per-repository ILM policies\n"
+                    f"  4. See: https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-delete.html",
                     title="[bold green]Deepfreeze Setup Complete[/bold green]",
                     border_style="green",
                     expand=False
