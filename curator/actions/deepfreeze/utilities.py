@@ -600,9 +600,12 @@ def create_thawed_ilm_policy(client: Elasticsearch, repo_name: str) -> str:
     """
     Create an ILM policy for thawed indices from a specific repository.
 
-    The policy is named {repo_name}-thawed and includes:
-    - Frozen phase (immediate): References the source repository
-    - Delete phase (29 days): Deletes the index and searchable snapshot
+    The policy is named {repo_name}-thawed and includes only a delete phase
+    since the indices are already mounted as searchable snapshots.
+
+    NOTE: Thawed indices are ALREADY searchable snapshots mounted from the frozen
+    repository. They don't need a frozen phase - just a delete phase to clean up
+    after the thaw period expires.
 
     :param client: A client connection object
     :type client: Elasticsearch
@@ -618,14 +621,6 @@ def create_thawed_ilm_policy(client: Elasticsearch, repo_name: str) -> str:
     policy_body = {
         "policy": {
             "phases": {
-                "frozen": {
-                    "min_age": "0ms",
-                    "actions": {
-                        "searchable_snapshot": {
-                            "snapshot_repository": repo_name
-                        }
-                    },
-                },
                 "delete": {
                     "min_age": "29d",
                     "actions": {
