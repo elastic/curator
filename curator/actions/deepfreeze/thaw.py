@@ -52,6 +52,8 @@ class Thaw:
     :type check_status: str
     :param list_requests: List all thaw requests
     :type list_requests: bool
+    :param include_completed: Include completed requests when listing (default: exclude)
+    :type include_completed: bool
     :param porcelain: Output plain text without rich formatting
     :type porcelain: bool
 
@@ -77,6 +79,7 @@ class Thaw:
         retrieval_tier: str = "Standard",
         check_status: str = None,
         list_requests: bool = False,
+        include_completed: bool = False,
         porcelain: bool = False,
     ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
@@ -88,6 +91,7 @@ class Thaw:
         self.retrieval_tier = retrieval_tier
         self.check_status = check_status
         self.list_requests = list_requests
+        self.include_completed = include_completed
         self.porcelain = porcelain
         self.console = Console()
 
@@ -693,18 +697,34 @@ class Thaw:
 
     def do_list_requests(self) -> None:
         """
-        List all thaw requests in a formatted table.
+        List thaw requests in a formatted table.
+
+        By default, excludes completed requests. Use include_completed=True to show all.
 
         :return: None
         :rtype: None
         """
-        self.loggit.info("Listing all thaw requests")
+        self.loggit.info("Listing thaw requests (include_completed=%s)", self.include_completed)
 
-        requests = list_thaw_requests(self.client)
+        all_requests = list_thaw_requests(self.client)
+
+        # Filter completed requests unless explicitly included
+        if not self.include_completed:
+            requests = [req for req in all_requests if req.get("status") != "completed"]
+            self.loggit.debug(
+                "Filtered %d completed requests, %d remaining",
+                len(all_requests) - len(requests),
+                len(requests)
+            )
+        else:
+            requests = all_requests
 
         if not requests:
             if not self.porcelain:
-                rprint("\n[yellow]No thaw requests found.[/yellow]\n")
+                if self.include_completed:
+                    rprint("\n[yellow]No thaw requests found.[/yellow]\n")
+                else:
+                    rprint("\n[yellow]No active thaw requests found. Use --include-completed to see completed requests.[/yellow]\n")
             return
 
         if self.porcelain:

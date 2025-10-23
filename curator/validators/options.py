@@ -96,6 +96,7 @@ def action_specific(action):
             option_defaults.retrieval_tier(),
             option_defaults.check_status(),
             option_defaults.list_requests(),
+            option_defaults.include_completed(),
             option_defaults.porcelain(),
         ],
         'refreeze': [

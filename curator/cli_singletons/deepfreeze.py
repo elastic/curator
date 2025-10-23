@@ -474,6 +474,14 @@ def refreeze(
     help="List all active thaw requests",
 )
 @click.option(
+    "-c",
+    "--include-completed",
+    "include_completed",
+    is_flag=True,
+    default=False,
+    help="Include completed requests when listing (default: exclude completed)",
+)
+@click.option(
     "-p",
     "--porcelain",
     is_flag=True,
@@ -490,6 +498,7 @@ def thaw(
     retrieval_tier,
     check_status,
     list_requests,
+    include_completed,
     porcelain,
 ):
     """
@@ -522,9 +531,14 @@ def thaw(
 
       curator_cli deepfreeze thaw --check-status
 
-      # List all thaw requests (summary table with date ranges)
+      # List active thaw requests (excludes completed by default)
 
       curator_cli deepfreeze thaw --list
+
+      # List all thaw requests (including completed)
+
+      curator_cli deepfreeze thaw --list --include-completed
+      curator_cli deepfreeze thaw --list -c
     """
     # Validate mutual exclusivity
     # Note: check_status can be None (not provided), "" (flag without value), or a string ID
@@ -559,6 +573,7 @@ def thaw(
         "retrieval_tier": retrieval_tier,
         "check_status": check_status,
         "list_requests": list_requests,
+        "include_completed": include_completed,
         "porcelain": porcelain,
     }
     action = CLIAction(

@@ -998,3 +998,10 @@ def thaw_request_id():
     Thaw request ID to refreeze (if not provided, all open thaw requests will be refrozen)
     """
     return {Optional("thaw_request_id", default=None): Any(None, str)}
+
+
+def include_completed():
+    """
+    Include completed requests when listing thaw requests (default: exclude completed)
+    """
+    return {Optional("include_completed", default=False): Any(bool, All(Any(str), Boolean()))}
