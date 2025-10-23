@@ -445,7 +445,7 @@ def refreeze(
     "-d",
     "--duration",
     type=int,
-    default=7,
+    default=30,
     show_default=True,
     help="Number of days to keep objects restored from Glacier",
 )
