@@ -99,7 +99,7 @@ def action_specific(action):
             option_defaults.porcelain(),
         ],
         'refreeze': [
-            option_defaults.repo_id(),
+            option_defaults.thaw_request_id(),
             option_defaults.porcelain(),
         ],
         'delete_indices': [

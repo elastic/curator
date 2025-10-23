@@ -10,6 +10,7 @@ from rich import print as rprint
 from curator.actions.deepfreeze.constants import STATUS_INDEX
 from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.actions.deepfreeze.utilities import (
+    get_all_indices_in_repo,
     get_repositories_by_names,
     get_settings,
     get_thaw_request,
@@ -124,15 +125,127 @@ class Refreeze:
             rprint("\n[yellow]Operation cancelled by user[/yellow]")
             return False
 
-    def _refreeze_single_request(self, request_id: str) -> tuple[list, list]:
+    def _delete_mounted_indices_for_repo(self, repo_name: str) -> tuple[int, list[str]]:
+        """
+        Delete all mounted indices from a repository.
+
+        Searchable snapshot indices can exist with multiple name variations:
+        - Original name (e.g., .ds-df-test-2024.01.01-000001)
+        - partial- prefix (e.g., partial-.ds-df-test-2024.01.01-000001)
+        - restored- prefix (e.g., restored-.ds-df-test-2024.01.01-000001)
+
+        :param repo_name: The repository name
+        :type repo_name: str
+
+        :return: Tuple of (deleted_count, failed_indices)
+        :rtype: tuple[int, list[str]]
+        """
+        deleted_count = 0
+        failed_indices = []
+
+        try:
+            # Get all indices from repository snapshots
+            snapshot_indices = get_all_indices_in_repo(self.client, repo_name)
+            self.loggit.debug(
+                "Found %d indices in repository %s snapshots",
+                len(snapshot_indices),
+                repo_name
+            )
+
+            # Check for each index with all possible name variations
+            for base_index in snapshot_indices:
+                # Try all possible index name variations
+                possible_names = [
+                    base_index,  # Original name
+                    f"partial-{base_index}",  # Searchable snapshot
+                    f"restored-{base_index}",  # Fully restored
+                ]
+
+                for index_name in possible_names:
+                    try:
+                        if self.client.indices.exists(index=index_name):
+                            self.loggit.info("Deleting index %s from repository %s", index_name, repo_name)
+                            self.client.indices.delete(index=index_name)
+                            deleted_count += 1
+                            self.loggit.debug("Successfully deleted index %s", index_name)
+                            # Only try one variation - if we found and deleted it, stop
+                            break
+                    except Exception as e:
+                        self.loggit.error(
+                            "Failed to delete index %s: %s (type: %s)",
+                            index_name,
+                            e,
+                            type(e).__name__,
+                            exc_info=True
+                        )
+                        failed_indices.append(index_name)
+
+        except Exception as e:
+            self.loggit.error(
+                "Failed to get indices from repository %s: %s",
+                repo_name,
+                e,
+                exc_info=True
+            )
+            return 0, []
+
+        return deleted_count, failed_indices
+
+    def _delete_thawed_ilm_policy(self, repo_name: str) -> bool:
+        """
+        Delete the per-repository thawed ILM policy.
+
+        Policy name format: {repo_name}-thawed (e.g., deepfreeze-000010-thawed)
+
+        :param repo_name: The repository name
+        :type repo_name: str
+
+        :return: True if deleted successfully, False otherwise
+        :rtype: bool
+        """
+        policy_name = f"{repo_name}-thawed"
+
+        try:
+            # Check if policy exists first
+            self.client.ilm.get_lifecycle(name=policy_name)
+
+            # Policy exists, delete it
+            self.loggit.info("Deleting thawed ILM policy %s", policy_name)
+            self.client.ilm.delete_lifecycle(name=policy_name)
+            self.loggit.debug("Successfully deleted ILM policy %s", policy_name)
+            return True
+
+        except Exception as e:
+            # If policy doesn't exist (404), that's okay - might be pre-ILM implementation
+            if "404" in str(e) or "resource_not_found" in str(e).lower():
+                self.loggit.debug("ILM policy %s does not exist, skipping deletion", policy_name)
+                return True
+            else:
+                self.loggit.warning(
+                    "Failed to delete ILM policy %s: %s (type: %s)",
+                    policy_name,
+                    e,
+                    type(e).__name__,
+                    exc_info=True
+                )
+                return False
+
+    def _refreeze_single_request(self, request_id: str) -> dict:
         """
         Refreeze a single thaw request.
+
+        Operations performed for each repository:
+        1. Delete all mounted indices from the repository
+        2. Unmount the repository from Elasticsearch
+        3. Delete the per-repository thawed ILM policy
+        4. Reset repository state to frozen
+        5. Persist state changes
 
         :param request_id: The thaw request ID
         :type request_id: str
 
-        :return: Tuple of (unmounted_repos, failed_repos)
-        :rtype: tuple[list, list]
+        :return: Dict with unmounted_repos, failed_repos, deleted_indices, deleted_policies
+        :rtype: dict
         """
         self.loggit.info("Refreezing thaw request %s", request_id)
 
@@ -145,13 +258,13 @@ class Refreeze:
                 print(f"ERROR\trequest_not_found\t{request_id}\t{str(e)}")
             else:
                 rprint(f"[red]Error: Could not find thaw request '{request_id}'[/red]")
-            return [], []
+            return {"unmounted_repos": [], "failed_repos": [], "deleted_indices": 0, "deleted_policies": 0}
 
         # Get the repositories from the request
         repo_names = request.get("repos", [])
         if not repo_names:
             self.loggit.warning("No repositories found in thaw request %s", request_id)
-            return [], []
+            return {"unmounted_repos": [], "failed_repos": [], "deleted_indices": 0, "deleted_policies": 0}
 
         self.loggit.info("Found %d repositories to refreeze", len(repo_names))
 
@@ -160,15 +273,17 @@ class Refreeze:
             repos = get_repositories_by_names(self.client, repo_names)
         except Exception as e:
             self.loggit.error("Failed to get repositories: %s", e)
-            return [], []
+            return {"unmounted_repos": [], "failed_repos": [], "deleted_indices": 0, "deleted_policies": 0}
 
         if not repos:
             self.loggit.warning("No repository objects found for names: %s", repo_names)
-            return [], []
+            return {"unmounted_repos": [], "failed_repos": [], "deleted_indices": 0, "deleted_policies": 0}
 
-        # Track success/failure
+        # Track success/failure and statistics
         unmounted = []
         failed = []
+        total_deleted_indices = 0
+        total_deleted_policies = 0
 
         # Process each repository
         for repo in repos:
@@ -183,7 +298,24 @@ class Refreeze:
             )
 
             try:
-                # Unmount if still mounted
+                # STEP 1: Delete mounted indices BEFORE unmounting repository
+                self.loggit.info("Deleting mounted indices for repository %s", repo.name)
+                deleted_count, failed_indices = self._delete_mounted_indices_for_repo(repo.name)
+                total_deleted_indices += deleted_count
+                if deleted_count > 0:
+                    self.loggit.info(
+                        "Deleted %d indices from repository %s",
+                        deleted_count,
+                        repo.name
+                    )
+                if failed_indices:
+                    self.loggit.warning(
+                        "Failed to delete %d indices from repository %s",
+                        len(failed_indices),
+                        repo.name
+                    )
+
+                # STEP 2: Unmount repository if still mounted
                 if repo.is_mounted:
                     try:
                         self.loggit.info("Unmounting repository %s", repo.name)
@@ -206,7 +338,12 @@ class Refreeze:
                 else:
                     self.loggit.debug("Repository %s was not mounted, skipping unmount", repo.name)
 
-                # Reset to frozen state
+                # STEP 3: Delete per-repository thawed ILM policy
+                if self._delete_thawed_ilm_policy(repo.name):
+                    total_deleted_policies += 1
+                    self.loggit.debug("Deleted ILM policy for repository %s", repo.name)
+
+                # STEP 4: Reset to frozen state
                 self.loggit.debug(
                     "Resetting repository %s to frozen state (old state: %s)",
                     repo.name,
@@ -232,7 +369,8 @@ class Refreeze:
                 )
                 failed.append(repo.name)
 
-        # Update the thaw request status to completed
+        # STEP 5: Update the thaw request status to completed
+        # (Cleanup action will remove old completed requests based on retention settings)
         try:
             self.client.update(
                 index=STATUS_INDEX,
@@ -243,7 +381,12 @@ class Refreeze:
         except Exception as e:
             self.loggit.error("Failed to update thaw request status: %s", e)
 
-        return unmounted, failed
+        return {
+            "unmounted_repos": unmounted,
+            "failed_repos": failed,
+            "deleted_indices": total_deleted_indices,
+            "deleted_policies": total_deleted_policies,
+        }
 
     def do_action(self) -> None:
         """
@@ -279,11 +422,15 @@ class Refreeze:
         # Process each request
         total_unmounted = []
         total_failed = []
+        total_deleted_indices = 0
+        total_deleted_policies = 0
 
         for request_id in request_ids:
-            unmounted, failed = self._refreeze_single_request(request_id)
-            total_unmounted.extend(unmounted)
-            total_failed.extend(failed)
+            result = self._refreeze_single_request(request_id)
+            total_unmounted.extend(result["unmounted_repos"])
+            total_failed.extend(result["failed_repos"])
+            total_deleted_indices += result["deleted_indices"]
+            total_deleted_policies += result["deleted_policies"]
 
         # Report results
         if self.porcelain:
@@ -292,7 +439,7 @@ class Refreeze:
                 print(f"UNMOUNTED\t{repo_name}")
             for repo_name in total_failed:
                 print(f"FAILED\t{repo_name}")
-            print(f"SUMMARY\t{len(total_unmounted)}\t{len(total_failed)}\t{len(request_ids)}")
+            print(f"SUMMARY\t{len(total_unmounted)}\t{len(total_failed)}\t{total_deleted_indices}\t{total_deleted_policies}\t{len(request_ids)}")
         else:
             if len(request_ids) == 1:
                 rprint(f"\n[green]Refreeze completed for thaw request '{request_ids[0]}'[/green]")
@@ -300,6 +447,8 @@ class Refreeze:
                 rprint(f"\n[green]Refreeze completed for {len(request_ids)} thaw requests[/green]")
 
             rprint(f"[cyan]Unmounted {len(total_unmounted)} repositories[/cyan]")
+            rprint(f"[cyan]Deleted {total_deleted_indices} indices[/cyan]")
+            rprint(f"[cyan]Deleted {total_deleted_policies} ILM policies[/cyan]")
             if total_failed:
                 rprint(f"[red]Failed to process {len(total_failed)} repositories: {', '.join(total_failed)}[/red]")
 
@@ -349,6 +498,9 @@ class Refreeze:
 
         # Process each request in dry-run mode
         total_repos = 0
+        total_indices = 0
+        total_policies = 0
+
         for request_id in request_ids:
             try:
                 request = get_thaw_request(self.client, request_id)
@@ -373,12 +525,60 @@ class Refreeze:
             if not repos:
                 continue
 
+            # Count indices and policies that would be deleted
+            for repo in repos:
+                # Count indices
+                try:
+                    snapshot_indices = get_all_indices_in_repo(self.client, repo.name)
+                    for base_index in snapshot_indices:
+                        # Check if any variation exists
+                        possible_names = [
+                            base_index,
+                            f"partial-{base_index}",
+                            f"restored-{base_index}",
+                        ]
+                        for index_name in possible_names:
+                            if self.client.indices.exists(index=index_name):
+                                total_indices += 1
+                                break
+                except Exception:
+                    pass
+
+                # Count policies
+                policy_name = f"{repo.name}-thawed"
+                try:
+                    self.client.ilm.get_lifecycle(name=policy_name)
+                    total_policies += 1
+                except Exception:
+                    pass
+
             # Show details if single request, or summary if bulk
             if self.porcelain:
                 # Machine-readable output
                 for repo in repos:
                     action = "unmount_and_reset" if repo.is_mounted else "reset"
-                    print(f"DRY_RUN\t{repo.name}\t{repo.thaw_state}\t{repo.is_mounted}\t{action}")
+                    # Count indices for this repo
+                    repo_index_count = 0
+                    try:
+                        snapshot_indices = get_all_indices_in_repo(self.client, repo.name)
+                        for base_index in snapshot_indices:
+                            possible_names = [base_index, f"partial-{base_index}", f"restored-{base_index}"]
+                            for index_name in possible_names:
+                                if self.client.indices.exists(index=index_name):
+                                    repo_index_count += 1
+                                    break
+                    except Exception:
+                        pass
+
+                    # Check if policy exists
+                    policy_exists = False
+                    try:
+                        self.client.ilm.get_lifecycle(name=f"{repo.name}-thawed")
+                        policy_exists = True
+                    except Exception:
+                        pass
+
+                    print(f"DRY_RUN\t{repo.name}\t{repo.thaw_state}\t{repo.is_mounted}\t{action}\t{repo_index_count}\t{policy_exists}")
             else:
                 if len(request_ids) == 1:
                     rprint(f"[cyan]Would process {len(repos)} repositories:[/cyan]\n")
@@ -386,6 +586,30 @@ class Refreeze:
                         action = "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
                         rprint(f"  [cyan]- {repo.name}[/cyan] (state: {repo.thaw_state}, mounted: {repo.is_mounted})")
                         rprint(f"    [dim]Would {action}[/dim]")
+
+                        # Show indices that would be deleted
+                        try:
+                            snapshot_indices = get_all_indices_in_repo(self.client, repo.name)
+                            repo_index_count = 0
+                            for base_index in snapshot_indices:
+                                possible_names = [base_index, f"partial-{base_index}", f"restored-{base_index}"]
+                                for index_name in possible_names:
+                                    if self.client.indices.exists(index=index_name):
+                                        repo_index_count += 1
+                                        break
+                            if repo_index_count > 0:
+                                rprint(f"    [dim]Would delete {repo_index_count} mounted indices[/dim]")
+                        except Exception:
+                            pass
+
+                        # Show ILM policy that would be deleted
+                        policy_name = f"{repo.name}-thawed"
+                        try:
+                            self.client.ilm.get_lifecycle(name=policy_name)
+                            rprint(f"    [dim]Would delete ILM policy {policy_name}[/dim]")
+                        except Exception:
+                            pass
+
                     rprint(f"\n[cyan]DRY-RUN: Would mark thaw request '{request_id}' as completed[/cyan]\n")
 
             total_repos += len(repos)
@@ -393,11 +617,12 @@ class Refreeze:
         # Summary for bulk mode
         if len(request_ids) > 1 and not self.porcelain:
             rprint(f"[cyan]DRY-RUN: Would process {total_repos} total repositories across {len(request_ids)} thaw requests[/cyan]")
+            rprint(f"[cyan]DRY-RUN: Would delete {total_indices} indices and {total_policies} ILM policies[/cyan]")
             rprint(f"[cyan]DRY-RUN: Would mark {len(request_ids)} thaw requests as completed[/cyan]\n")
 
         # Porcelain mode summary
         if self.porcelain:
-            print(f"DRY_RUN_SUMMARY\t{total_repos}\t{len(request_ids)}")
+            print(f"DRY_RUN_SUMMARY\t{total_repos}\t{total_indices}\t{total_policies}\t{len(request_ids)}")
 
     def do_singleton_action(self) -> None:
         """

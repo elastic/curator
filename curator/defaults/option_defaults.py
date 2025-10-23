@@ -991,3 +991,10 @@ def repo_id():
     Repository name/ID to refreeze (if not provided, all thawed repos will be refrozen)
     """
     return {Optional("repo_id", default=None): Any(None, str)}
+
+
+def thaw_request_id():
+    """
+    Thaw request ID to refreeze (if not provided, all open thaw requests will be refrozen)
+    """
+    return {Optional("thaw_request_id", default=None): Any(None, str)}
