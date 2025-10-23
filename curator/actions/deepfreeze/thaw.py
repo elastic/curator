@@ -332,6 +332,8 @@ class Thaw:
         Check the status of a thaw request and mount repositories if restoration is complete.
         Also mounts indices in the date range if all repositories are ready.
 
+        IMPORTANT: Mounting happens BEFORE status display so users see current state.
+
         :return: None
         :rtype: None
         """
@@ -347,27 +349,35 @@ class Thaw:
             self.loggit.warning("No repositories found for thaw request")
             return
 
-        # Display current status
-        self._display_thaw_status(request, repos)
-
-        # Check restoration status and mount if ready
+        # STEP 1: Check restoration status and mount repositories if ready
+        # This happens BEFORE displaying status so users see current state
         all_complete = True
         mounted_count = 0
         newly_mounted_repos = []
 
+        # Show progress if mounting will happen
+        repos_to_check = [repo for repo in repos if not repo.is_mounted]
+
+        if repos_to_check and not self.porcelain:
+            rprint("[cyan]Checking restoration status...[/cyan]")
+
         for repo in repos:
             if repo.is_mounted:
-                self.loggit.info("Repository %s is already mounted", repo.name)
+                self.loggit.debug("Repository %s is already mounted", repo.name)
                 continue
 
             status = check_restore_status(self.s3, repo.bucket, repo.base_path)
 
             if status["complete"]:
                 self.loggit.info("Restoration complete for %s, mounting...", repo.name)
+                if not self.porcelain:
+                    rprint(f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]...")
                 mount_repo(self.client, repo)
                 self._update_repo_dates(repo)
                 mounted_count += 1
                 newly_mounted_repos.append(repo)
+                if not self.porcelain:
+                    rprint(f"    [green]✓[/green] Mounted successfully")
             else:
                 self.loggit.info(
                     "Restoration in progress for %s: %d/%d objects restored",
@@ -377,7 +387,7 @@ class Thaw:
                 )
                 all_complete = False
 
-        # Mount indices if all repositories are complete and at least one is mounted
+        # STEP 2: Mount indices if all repositories are complete
         # Parse date range from the thaw request
         start_date_str = request.get("start_date")
         end_date_str = request.get("end_date")
@@ -403,6 +413,9 @@ class Thaw:
                     start_date.isoformat(),
                     end_date.isoformat(),
                 )
+
+                if not self.porcelain:
+                    rprint("[cyan]Mounting indices in date range...[/cyan]")
 
                 # Use all mounted repos, not just newly mounted ones
                 # This handles the case where repos were already mounted
@@ -433,20 +446,29 @@ class Thaw:
                 if not self.porcelain:
                     rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
 
-        # Update thaw request status if all repositories are ready
+        # STEP 3: Update thaw request status if all repositories are ready
         if all_complete:
             update_thaw_request(self.client, self.check_status, status="completed")
             self.loggit.info("All repositories restored and mounted. Thaw request completed.")
         else:
-            self.loggit.info(
-                "Mounted %d repositories. Some restorations still in progress.",
-                mounted_count,
-            )
+            if mounted_count > 0:
+                self.loggit.info(
+                    "Mounted %d repositories. Some restorations still in progress.",
+                    mounted_count,
+                )
+
+        # STEP 4: Display updated status AFTER mounting
+        # Now users see the current state including any newly mounted repos/indices
+        if not self.porcelain:
+            rprint()  # Blank line before status display
+        self._display_thaw_status(request, repos)
 
     def do_check_all_status(self) -> None:
         """
         Check the status of all thaw requests, mount repositories when ready,
         and display grouped by request ID.
+
+        IMPORTANT: Mounting happens BEFORE status display so users see current state.
 
         :return: None
         :rtype: None
@@ -483,11 +505,16 @@ class Thaw:
             start_date_str = request.get("start_date", "")
             end_date_str = request.get("end_date", "")
 
-            # Track mounting for this request
+            # STEP 1: Check restoration status and mount repositories if ready
+            # This happens BEFORE displaying status so users see current state
             all_complete = True
             mounted_count = 0
             newly_mounted_repos = []
-            repo_data = []  # Store repo info for output
+
+            # Show progress indicator if any repos need checking
+            repos_to_check = [repo for repo in repos if not repo.is_mounted]
+            if repos_to_check and not self.porcelain:
+                rprint(f"[cyan]Checking request {request_id}...[/cyan]")
 
             # Check each repository's status and mount if ready
             for repo in repos:
@@ -498,22 +525,102 @@ class Thaw:
                         if status["complete"]:
                             # Mount the repository
                             self.loggit.info("Restoration complete for %s, mounting...", repo.name)
+                            if not self.porcelain:
+                                rprint(f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]...")
                             mount_repo(self.client, repo)
                             self._update_repo_dates(repo)
                             mounted_count += 1
                             newly_mounted_repos.append(repo)
-                            progress = "Complete"
+                            if not self.porcelain:
+                                rprint(f"    [green]✓[/green] Mounted successfully")
                         else:
-                            progress = f"{status['restored']}/{status['total']}"
+                            self.loggit.debug(
+                                "Restoration in progress for %s: %d/%d objects restored",
+                                repo.name,
+                                status["restored"],
+                                status["total"],
+                            )
                             all_complete = False
                     except Exception as e:
                         self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
-                        progress = "Error"
                         all_complete = False
+
+            # STEP 2: Mount indices if all repositories are complete and mounted
+            # Check if we should mount indices:
+            # - All repos are complete (restoration finished)
+            # - We have date range info
+            # - At least one repo is mounted
+            should_mount_indices = (
+                all_complete
+                and start_date_str
+                and end_date_str
+                and any(repo.is_mounted for repo in repos)
+            )
+
+            if should_mount_indices:
+                try:
+                    start_date = decode_date(start_date_str)
+                    end_date = decode_date(end_date_str)
+
+                    self.loggit.info(
+                        "Mounting indices for date range %s to %s",
+                        start_date.isoformat(),
+                        end_date.isoformat(),
+                    )
+
+                    if not self.porcelain:
+                        rprint("[cyan]Mounting indices in date range...[/cyan]")
+
+                    # Use all mounted repos, not just newly mounted ones
+                    # This handles the case where repos were mounted in a previous check
+                    mounted_repos = [repo for repo in repos if repo.is_mounted]
+
+                    mount_result = find_and_mount_indices_in_date_range(
+                        self.client, mounted_repos, start_date, end_date
+                    )
+
+                    self.loggit.info(
+                        "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
+                        mount_result["mounted"],
+                        mount_result["skipped"],
+                        mount_result["failed"],
+                        mount_result["datastream_successful"],
+                    )
+
+                    if not self.porcelain:
+                        rprint(
+                            f"[green]Mounted {mount_result['mounted']} indices "
+                            f"({mount_result['skipped']} skipped outside date range, "
+                            f"{mount_result['failed']} failed, "
+                            f"{mount_result['datastream_successful']} added to data streams)[/green]"
+                        )
+                except Exception as e:
+                    self.loggit.warning("Failed to mount indices: %s", e)
+                    if not self.porcelain:
+                        rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
+
+            # STEP 3: Update thaw request status if all repositories are ready
+            if all_complete:
+                update_thaw_request(self.client, request_id, status="completed")
+                self.loggit.info("Thaw request %s completed", request_id)
+
+            # STEP 4: Build repo data for display AFTER mounting
+            repo_data = []
+            for repo in repos:
+                # Check restore status if not mounted
+                if not repo.is_mounted:
+                    try:
+                        status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                        if status["complete"]:
+                            progress = "Complete"
+                        else:
+                            progress = f"{status['restored']}/{status['total']}"
+                    except Exception as e:
+                        self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
+                        progress = "Error"
                 else:
                     progress = "Complete"
 
-                # Store repo data for output
                 repo_data.append({
                     "name": repo.name,
                     "bucket": repo.bucket if repo.bucket else "",
@@ -523,7 +630,7 @@ class Thaw:
                     "progress": progress,
                 })
 
-            # Output based on mode
+            # STEP 5: Display updated status AFTER mounting
             if self.porcelain:
                 # Machine-readable output: tab-separated values
                 # Format: REQUEST\t{request_id}\t{status}\t{created_at}\t{start_date}\t{end_date}
@@ -572,68 +679,10 @@ class Thaw:
 
                 self.console.print(table)
 
-            # Mount indices if all repositories are complete and mounted
-            # Check if we should mount indices:
-            # - All repos are complete (restoration finished)
-            # - We have date range info
-            # - At least one repo is mounted
-            # Note: We don't check if request is completed because we want to mount
-            # indices even if the request was previously marked complete but indices
-            # weren't mounted (e.g., if repo was mounted in a previous check-status call)
-            should_mount_indices = (
-                all_complete
-                and start_date_str
-                and end_date_str
-                and any(repo.is_mounted for repo in repos)
-            )
-
-            if should_mount_indices:
-                try:
-                    start_date = decode_date(start_date_str)
-                    end_date = decode_date(end_date_str)
-
-                    self.loggit.info(
-                        "Mounting indices for date range %s to %s",
-                        start_date.isoformat(),
-                        end_date.isoformat(),
-                    )
-
-                    # Use all mounted repos, not just newly mounted ones
-                    # This handles the case where repos were mounted in a previous check
-                    mounted_repos = [repo for repo in repos if repo.is_mounted]
-
-                    mount_result = find_and_mount_indices_in_date_range(
-                        self.client, mounted_repos, start_date, end_date
-                    )
-
-                    self.loggit.info(
-                        "Mounted %d indices (%d skipped outside date range, %d failed, %d added to data streams)",
-                        mount_result["mounted"],
-                        mount_result["skipped"],
-                        mount_result["failed"],
-                        mount_result["datastream_successful"],
-                    )
-
-                    if not self.porcelain:
-                        rprint(
-                            f"[green]Mounted {mount_result['mounted']} indices "
-                            f"({mount_result['skipped']} skipped outside date range, "
-                            f"{mount_result['failed']} failed, "
-                            f"{mount_result['datastream_successful']} added to data streams)[/green]"
-                        )
-                except Exception as e:
-                    self.loggit.warning("Failed to mount indices: %s", e)
-                    if not self.porcelain:
-                        rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
-
-            # Update thaw request status if all repositories are ready
-            if all_complete:
-                update_thaw_request(self.client, request_id, status="completed")
-                self.loggit.info("Thaw request %s completed", request_id)
-                if not self.porcelain:
+                # Show completion/progress message
+                if all_complete:
                     rprint(f"[green]Request {request_id} completed[/green]")
-            elif mounted_count > 0:
-                if not self.porcelain:
+                elif mounted_count > 0:
                     rprint(
                         f"[yellow]Mounted {mounted_count} repositories. "
                         f"Some restorations still in progress.[/yellow]"
