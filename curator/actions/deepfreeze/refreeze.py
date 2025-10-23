@@ -7,7 +7,7 @@ import logging
 from elasticsearch import Elasticsearch
 from rich import print as rprint
 
-from curator.actions.deepfreeze.constants import STATUS_INDEX
+from curator.actions.deepfreeze.constants import STATUS_INDEX, THAW_STATUS_REFROZEN
 from curator.actions.deepfreeze.exceptions import MissingIndexError
 from curator.actions.deepfreeze.utilities import (
     get_all_indices_in_repo,
@@ -369,15 +369,15 @@ class Refreeze:
                 )
                 failed.append(repo.name)
 
-        # STEP 5: Update the thaw request status to completed
-        # (Cleanup action will remove old completed requests based on retention settings)
+        # STEP 5: Update the thaw request status to refrozen
+        # (Cleanup action will remove old refrozen requests based on retention settings)
         try:
             self.client.update(
                 index=STATUS_INDEX,
                 id=request_id,
-                body={"doc": {"status": "completed"}}
+                body={"doc": {"status": THAW_STATUS_REFROZEN}}
             )
-            self.loggit.info("Thaw request %s marked as completed", request_id)
+            self.loggit.info("Thaw request %s marked as refrozen", request_id)
         except Exception as e:
             self.loggit.error("Failed to update thaw request status: %s", e)
 

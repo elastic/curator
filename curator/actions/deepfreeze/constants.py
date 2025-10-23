@@ -20,3 +20,16 @@ THAW_STATES = [
     THAW_STATE_THAWED,
     THAW_STATE_EXPIRED,
 ]
+
+# Thaw request status lifecycle
+THAW_STATUS_IN_PROGRESS = "in_progress"  # Thaw operation is actively running
+THAW_STATUS_COMPLETED = "completed"      # Thaw completed, data available and mounted
+THAW_STATUS_FAILED = "failed"            # Thaw operation failed
+THAW_STATUS_REFROZEN = "refrozen"        # Thaw was completed but has been refrozen (cleaned up)
+
+THAW_REQUEST_STATUSES = [
+    THAW_STATUS_IN_PROGRESS,
+    THAW_STATUS_COMPLETED,
+    THAW_STATUS_FAILED,
+    THAW_STATUS_REFROZEN,
+]

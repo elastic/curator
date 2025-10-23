@@ -337,6 +337,7 @@ class Thaw:
         Also mounts indices in the date range if all repositories are ready.
 
         IMPORTANT: Mounting happens BEFORE status display so users see current state.
+        NOTE: Skips refrozen requests as they have been cleaned up and are no longer active.
 
         :return: None
         :rtype: None
@@ -345,6 +346,13 @@ class Thaw:
 
         # Retrieve the thaw request
         request = get_thaw_request(self.client, self.check_status)
+
+        # Skip refrozen requests - they have been cleaned up and are no longer active
+        if request.get("status") == "refrozen":
+            self.loggit.info("Thaw request %s has been refrozen, skipping status check", self.check_status)
+            if not self.porcelain:
+                rprint(f"\n[yellow]Thaw request {self.check_status} has been refrozen and is no longer active.[/yellow]\n")
+            return
 
         # Get the repository objects
         repos = get_repositories_by_names(self.client, request["repos"])
@@ -473,6 +481,7 @@ class Thaw:
         and display grouped by request ID.
 
         IMPORTANT: Mounting happens BEFORE status display so users see current state.
+        NOTE: Skips refrozen requests as they have been cleaned up and are no longer active.
 
         :return: None
         :rtype: None
@@ -480,11 +489,17 @@ class Thaw:
         self.loggit.info("Checking status of all thaw requests")
 
         # Get all thaw requests
-        requests = list_thaw_requests(self.client)
+        all_requests = list_thaw_requests(self.client)
+
+        # Filter out refrozen requests - they have been cleaned up and are no longer active
+        requests = [req for req in all_requests if req.get("status") != "refrozen"]
+        filtered_count = len(all_requests) - len(requests)
+        if filtered_count > 0:
+            self.loggit.debug("Filtered %d refrozen requests", filtered_count)
 
         if not requests:
             if not self.porcelain:
-                rprint("\n[yellow]No thaw requests found.[/yellow]\n")
+                rprint("\n[yellow]No active thaw requests found.[/yellow]\n")
             return
 
         # Process each request
@@ -699,7 +714,7 @@ class Thaw:
         """
         List thaw requests in a formatted table.
 
-        By default, excludes completed requests. Use include_completed=True to show all.
+        By default, excludes completed and refrozen requests. Use include_completed=True to show all.
 
         :return: None
         :rtype: None
@@ -708,12 +723,13 @@ class Thaw:
 
         all_requests = list_thaw_requests(self.client)
 
-        # Filter completed requests unless explicitly included
+        # Filter completed and refrozen requests unless explicitly included
         if not self.include_completed:
-            requests = [req for req in all_requests if req.get("status") != "completed"]
+            requests = [req for req in all_requests if req.get("status") not in ("completed", "refrozen")]
+            filtered_count = len(all_requests) - len(requests)
             self.loggit.debug(
-                "Filtered %d completed requests, %d remaining",
-                len(all_requests) - len(requests),
+                "Filtered %d completed/refrozen requests, %d remaining",
+                filtered_count,
                 len(requests)
             )
         else:
@@ -724,7 +740,7 @@ class Thaw:
                 if self.include_completed:
                     rprint("\n[yellow]No thaw requests found.[/yellow]\n")
                 else:
-                    rprint("\n[yellow]No active thaw requests found. Use --include-completed to see completed requests.[/yellow]\n")
+                    rprint("\n[yellow]No active thaw requests found. Use --include-completed to see completed/refrozen requests.[/yellow]\n")
             return
 
         if self.porcelain:
@@ -777,6 +793,7 @@ class Thaw:
                     "in_progress": "IP",
                     "completed": "C",
                     "failed": "F",
+                    "refrozen": "R",
                     "unknown": "U",
                 }.get(status, status[:2].upper())
 
@@ -790,7 +807,7 @@ class Thaw:
                 )
 
             self.console.print(table)
-            rprint("[dim]Status: IP=In Progress, C=Completed, F=Failed, U=Unknown[/dim]")
+            rprint("[dim]Status: IP=In Progress, C=Completed, R=Refrozen, F=Failed, U=Unknown[/dim]")
 
     def _display_thaw_status(self, request: dict, repos: list) -> None:
         """

@@ -315,6 +315,7 @@ class Settings:
         last_suffix (str): The last suffix.
         thaw_request_retention_days_completed (int): Days to retain completed thaw requests.
         thaw_request_retention_days_failed (int): Days to retain failed thaw requests.
+        thaw_request_retention_days_refrozen (int): Days to retain refrozen thaw requests.
 
     """
 
@@ -330,6 +331,7 @@ class Settings:
     last_suffix: str = None
     thaw_request_retention_days_completed: int = 7
     thaw_request_retention_days_failed: int = 30
+    thaw_request_retention_days_refrozen: int = 35
 
     def __init__(
         self,
@@ -345,6 +347,7 @@ class Settings:
         last_suffix: str = None,
         thaw_request_retention_days_completed: int = 7,
         thaw_request_retention_days_failed: int = 30,
+        thaw_request_retention_days_refrozen: int = 35,
     ) -> None:
         if settings_hash is not None:
             for key, value in settings_hash.items():
@@ -371,3 +374,5 @@ class Settings:
             self.thaw_request_retention_days_completed = thaw_request_retention_days_completed
         if thaw_request_retention_days_failed:
             self.thaw_request_retention_days_failed = thaw_request_retention_days_failed
+        if thaw_request_retention_days_refrozen:
+            self.thaw_request_retention_days_refrozen = thaw_request_retention_days_refrozen

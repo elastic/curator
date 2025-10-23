@@ -153,6 +153,7 @@ class Cleanup:
         Deletes:
         - Completed requests older than retention period
         - Failed requests older than retention period
+        - Refrozen requests older than retention period (35 days by default)
         - Stale in-progress requests where all referenced repos are no longer thawed
 
         :return: Tuple of (deleted_request_ids, skipped_request_ids)
@@ -180,6 +181,7 @@ class Cleanup:
         # Get retention settings
         retention_completed = self.settings.thaw_request_retention_days_completed
         retention_failed = self.settings.thaw_request_retention_days_failed
+        retention_refrozen = self.settings.thaw_request_retention_days_refrozen
 
         for request in requests:
             request_id = request.get("id")
@@ -203,6 +205,10 @@ class Cleanup:
                 elif status == "failed" and age_days > retention_failed:
                     should_delete = True
                     reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
+
+                elif status == "refrozen" and age_days > retention_refrozen:
+                    should_delete = True
+                    reason = f"refrozen request older than {retention_refrozen} days (age: {age_days} days)"
 
                 elif status == "in_progress":
                     # Check if all referenced repos are no longer in thawing/thawed state
@@ -549,6 +555,7 @@ class Cleanup:
                 now = datetime.now(timezone.utc)
                 retention_completed = self.settings.thaw_request_retention_days_completed
                 retention_failed = self.settings.thaw_request_retention_days_failed
+                retention_refrozen = self.settings.thaw_request_retention_days_refrozen
 
                 would_delete = []
 
@@ -574,6 +581,10 @@ class Cleanup:
                         elif status == "failed" and age_days > retention_failed:
                             should_delete = True
                             reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
+
+                        elif status == "refrozen" and age_days > retention_refrozen:
+                            should_delete = True
+                            reason = f"refrozen request older than {retention_refrozen} days (age: {age_days} days)"
 
                         elif status == "in_progress" and repos:
                             try:
