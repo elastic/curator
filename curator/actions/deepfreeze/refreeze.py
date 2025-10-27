@@ -197,6 +197,9 @@ class Refreeze:
 
         Policy name format: {repo_name}-thawed (e.g., deepfreeze-000010-thawed)
 
+        Before deleting the policy, removes it from any indices still using it to avoid
+        "policy in use" errors.
+
         :param repo_name: The repository name
         :type repo_name: str
 
@@ -209,7 +212,40 @@ class Refreeze:
             # Check if policy exists first
             self.client.ilm.get_lifecycle(name=policy_name)
 
-            # Policy exists, delete it
+            # Before deleting, remove the policy from any indices still using it
+            self.loggit.debug("Checking for indices using ILM policy %s", policy_name)
+            try:
+                # Get all indices using this policy
+                ilm_explain = self.client.ilm.explain_lifecycle(index="*")
+                indices_using_policy = [
+                    idx for idx, info in ilm_explain.get("indices", {}).items()
+                    if info.get("policy") == policy_name
+                ]
+
+                if indices_using_policy:
+                    self.loggit.info(
+                        "Found %d indices still using policy %s, removing policy from them",
+                        len(indices_using_policy),
+                        policy_name
+                    )
+                    for idx in indices_using_policy:
+                        try:
+                            self.loggit.debug("Removing ILM policy from index %s", idx)
+                            self.client.ilm.remove_policy(index=idx)
+                        except Exception as idx_err:
+                            self.loggit.warning(
+                                "Failed to remove ILM policy from index %s: %s",
+                                idx,
+                                idx_err
+                            )
+            except Exception as check_err:
+                self.loggit.warning(
+                    "Failed to check for indices using policy %s: %s",
+                    policy_name,
+                    check_err
+                )
+
+            # Policy exists and indices have been cleaned up, delete it
             self.loggit.info("Deleting thawed ILM policy %s", policy_name)
             self.client.ilm.delete_lifecycle(name=policy_name)
             self.loggit.debug("Successfully deleted ILM policy %s", policy_name)

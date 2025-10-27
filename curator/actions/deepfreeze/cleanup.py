@@ -26,14 +26,18 @@ class Cleanup:
 
     When objects are restored from Glacier, they're temporarily available in Standard tier
     for a specified duration. After that duration expires, they revert to Glacier storage.
-    This action detects when thawed repositories have expired, unmounts them, and removes
-    any indices that were only backed up to those repositories.
+    This action:
+    1. Detects thawed repositories that have passed their expires_at timestamp and marks them as expired
+    2. Unmounts expired repositories and resets them to frozen state
+    3. Deletes indices whose snapshots are only in expired repositories
+    4. Cleans up old thaw requests based on status and retention settings
+    5. Cleans up orphaned thawed ILM policies
 
     :param client: A client connection object
     :type client: Elasticsearch
 
     :methods:
-        do_action: Perform the cleanup operation (unmount repos and delete indices).
+        do_action: Perform the cleanup operation (detect expired repos, unmount, delete indices).
         do_dry_run: Perform a dry-run of the cleanup operation.
         do_singleton_action: Entry point for singleton CLI execution.
     """
@@ -145,6 +149,133 @@ class Cleanup:
 
         self.loggit.info("Found %d indices to delete", len(indices_to_delete))
         return indices_to_delete
+
+    def _detect_and_mark_expired_repos(self) -> int:
+        """
+        Detect repositories whose S3 restore has expired and mark them as expired.
+
+        Checks repositories in two ways:
+        1. Thawed repos with expires_at timestamp that has passed
+        2. Mounted repos (regardless of state) by checking S3 restore status directly
+
+        :return: Count of repositories marked as expired
+        :rtype: int
+        """
+        self.loggit.debug("Detecting expired repositories")
+
+        from curator.actions.deepfreeze.constants import THAW_STATE_THAWED
+        all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
+
+        # Get thawed repos for timestamp-based checking
+        thawed_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_THAWED]
+
+        # Get mounted repos for S3-based checking (may overlap with thawed_repos)
+        mounted_repos = [repo for repo in all_repos if repo.is_mounted]
+
+        self.loggit.debug(
+            "Found %d thawed repositories and %d mounted repositories to check",
+            len(thawed_repos),
+            len(mounted_repos)
+        )
+
+        now = datetime.now(timezone.utc)
+        expired_count = 0
+        checked_repos = set()  # Track repos we've already processed
+
+        # METHOD 1: Check thawed repos with expires_at timestamp
+        for repo in thawed_repos:
+            if repo.name in checked_repos:
+                continue
+
+            if repo.expires_at:
+                expires_at = repo.expires_at
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+                if now >= expires_at:
+                    self.loggit.info(
+                        "Repository %s has expired based on timestamp (expired at %s)",
+                        repo.name,
+                        expires_at.isoformat()
+                    )
+                    repo.mark_expired()
+                    try:
+                        repo.persist(self.client)
+                        self.loggit.info("Marked repository %s as expired", repo.name)
+                        expired_count += 1
+                        checked_repos.add(repo.name)
+                    except Exception as e:
+                        self.loggit.error(
+                            "Failed to mark repository %s as expired: %s",
+                            repo.name,
+                            e
+                        )
+                else:
+                    checked_repos.add(repo.name)
+            else:
+                self.loggit.warning(
+                    "Repository %s is in thawed state but has no expires_at timestamp",
+                    repo.name
+                )
+
+        # METHOD 2: Check mounted repos by querying S3 restore status
+        self.loggit.debug("Checking S3 restore status for mounted repositories")
+        for repo in mounted_repos:
+            if repo.name in checked_repos:
+                continue
+
+            try:
+                # Check actual S3 restore status
+                self.loggit.debug(
+                    "Checking S3 restore status for repository %s (bucket: %s, path: %s)",
+                    repo.name,
+                    repo.bucket,
+                    repo.base_path
+                )
+
+                status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+
+                # If all objects are back in Glacier (not restored), mark as expired
+                if status["not_restored"] > 0 and status["restored"] == 0 and status["in_progress"] == 0:
+                    self.loggit.info(
+                        "Repository %s has expired based on S3 status: %d/%d objects not restored",
+                        repo.name,
+                        status["not_restored"],
+                        status["total"]
+                    )
+                    repo.mark_expired()
+                    try:
+                        repo.persist(self.client)
+                        self.loggit.info("Marked repository %s as expired", repo.name)
+                        expired_count += 1
+                        checked_repos.add(repo.name)
+                    except Exception as e:
+                        self.loggit.error(
+                            "Failed to mark repository %s as expired: %s",
+                            repo.name,
+                            e
+                        )
+                elif status["restored"] > 0 or status["in_progress"] > 0:
+                    self.loggit.debug(
+                        "Repository %s still has restored objects: %d restored, %d in progress",
+                        repo.name,
+                        status["restored"],
+                        status["in_progress"]
+                    )
+                    checked_repos.add(repo.name)
+
+            except Exception as e:
+                self.loggit.error(
+                    "Failed to check S3 restore status for repository %s: %s",
+                    repo.name,
+                    e
+                )
+                continue
+
+        if expired_count > 0:
+            self.loggit.info("Marked %d repositories as expired", expired_count)
+
+        return expired_count
 
     def _cleanup_old_thaw_requests(self) -> tuple[list[str], list[str]]:
         """
@@ -275,6 +406,15 @@ class Cleanup:
         :rtype: None
         """
         self.loggit.debug("Checking for expired thawed repositories")
+
+        # First, detect and mark any thawed repositories that have passed their expiration time
+        self.loggit.info("Detecting expired thawed repositories based on expires_at timestamp")
+        try:
+            newly_expired = self._detect_and_mark_expired_repos()
+            if newly_expired > 0:
+                self.loggit.info("Detected and marked %d newly expired repositories", newly_expired)
+        except Exception as e:
+            self.loggit.error("Error detecting expired repositories: %s", e)
 
         # Get all repositories and filter for expired ones
         from curator.actions.deepfreeze.constants import THAW_STATE_EXPIRED
@@ -500,6 +640,55 @@ class Cleanup:
         """
         self.loggit.info("DRY-RUN MODE. No changes will be made.")
 
+        # First, show which thawed repositories would be detected as expired
+        self.loggit.info("DRY-RUN: Checking for thawed repositories that have passed expiration time")
+        from curator.actions.deepfreeze.constants import THAW_STATE_THAWED
+        all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
+        thawed_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_THAWED]
+
+        if thawed_repos:
+            now = datetime.now(timezone.utc)
+            would_expire = []
+
+            for repo in thawed_repos:
+                if repo.expires_at:
+                    expires_at = repo.expires_at
+                    if expires_at.tzinfo is None:
+                        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+                    if now >= expires_at:
+                        time_expired = now - expires_at
+                        would_expire.append((repo.name, expires_at, time_expired))
+                    else:
+                        time_remaining = expires_at - now
+                        self.loggit.debug(
+                            "DRY-RUN: Repository %s not yet expired (expires in %s)",
+                            repo.name,
+                            time_remaining
+                        )
+                else:
+                    self.loggit.warning(
+                        "DRY-RUN: Repository %s is thawed but has no expires_at timestamp",
+                        repo.name
+                    )
+
+            if would_expire:
+                self.loggit.info(
+                    "DRY-RUN: Would mark %d repositories as expired:",
+                    len(would_expire)
+                )
+                for name, expired_at, time_ago in would_expire:
+                    self.loggit.info(
+                        "DRY-RUN:   - %s (expired %s ago at %s)",
+                        name,
+                        time_ago,
+                        expired_at.isoformat()
+                    )
+            else:
+                self.loggit.info("DRY-RUN: No thawed repositories have passed expiration time")
+        else:
+            self.loggit.info("DRY-RUN: No thawed repositories found to check")
+
         # Get all repositories and filter for expired ones
         from curator.actions.deepfreeze.constants import THAW_STATE_EXPIRED
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
@@ -624,11 +813,17 @@ class Cleanup:
         except Exception as e:
             self.loggit.error("DRY-RUN: Error checking thaw requests: %s", e)
 
-    def do_singleton_action(self) -> None:
+    def do_singleton_action(self, dry_run: bool = False) -> None:
         """
         Entry point for singleton CLI execution.
+
+        :param dry_run: If True, perform a dry-run without making changes
+        :type dry_run: bool
 
         :return: None
         :rtype: None
         """
-        self.do_action()
+        if dry_run:
+            self.do_dry_run()
+        else:
+            self.do_action()
