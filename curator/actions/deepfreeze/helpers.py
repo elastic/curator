@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 
 from .constants import STATUS_INDEX
 

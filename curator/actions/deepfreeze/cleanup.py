@@ -3,9 +3,9 @@
 # pylint: disable=too-many-arguments,too-many-instance-attributes, raise-missing-from
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 
 from curator.actions.deepfreeze.utilities import (
     check_restore_status,
@@ -316,9 +316,17 @@ class Cleanup:
 
         for request in requests:
             request_id = request.get("id")
+            if not request_id:
+                self.loggit.warning("Thaw request missing id, skipping")
+                continue
+
             status = request.get("status", "unknown")
             created_at_str = request.get("created_at")
             repos = request.get("repos", [])
+
+            if not created_at_str:
+                self.loggit.warning("Thaw request %s missing created_at timestamp, skipping", request_id)
+                continue
 
             try:
                 created_at = datetime.fromisoformat(created_at_str)
@@ -355,7 +363,7 @@ class Cleanup:
 
                             if not any_active:
                                 should_delete = True
-                                reason = f"in-progress request with no active repos (all repos have been cleaned up)"
+                                reason = "in-progress request with no active repos (all repos have been cleaned up)"
                         except Exception as e:
                             self.loggit.warning(
                                 "Could not check repos for request %s: %s", request_id, e
@@ -552,7 +560,7 @@ class Cleanup:
         try:
             deleted, skipped = self._cleanup_old_thaw_requests()
             if deleted:
-                self.loggit.info("Deleted %d old thaw requests", len(deleted))
+                self.loggit.info("Deleted %d old thaw requests (%d skipped)", len(deleted), len(skipped))
         except Exception as e:
             self.loggit.error("Error cleaning up thaw requests: %s", e)
 
@@ -750,9 +758,17 @@ class Cleanup:
 
                 for request in requests:
                     request_id = request.get("id")
+                    if not request_id:
+                        self.loggit.warning("Thaw request missing id, skipping")
+                        continue
+
                     status = request.get("status", "unknown")
                     created_at_str = request.get("created_at")
                     repos = request.get("repos", [])
+
+                    if not created_at_str:
+                        self.loggit.warning("Thaw request %s missing created_at timestamp, skipping", request_id)
+                        continue
 
                     try:
                         created_at = datetime.fromisoformat(created_at_str)

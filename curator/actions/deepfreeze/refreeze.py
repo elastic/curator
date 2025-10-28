@@ -4,7 +4,7 @@
 
 import logging
 
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 from rich import print as rprint
 
 from curator.actions.deepfreeze.constants import STATUS_INDEX, THAW_STATUS_REFROZEN

@@ -5,7 +5,7 @@
 import logging
 from datetime import datetime
 
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 from rich import print
 from rich.console import Console
 from rich.table import Table

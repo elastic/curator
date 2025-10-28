@@ -5,7 +5,7 @@
 import logging
 import sys
 
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 
 from curator.actions.deepfreeze.cleanup import Cleanup
 from curator.actions.deepfreeze.constants import STATUS_INDEX

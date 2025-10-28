@@ -6,8 +6,9 @@ import logging
 import time
 import uuid
 from datetime import datetime
+from typing import Optional
 
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
@@ -72,12 +73,12 @@ class Thaw:
     def __init__(
         self,
         client: Elasticsearch,
-        start_date: str = None,
-        end_date: str = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
         sync: bool = False,
         duration: int = 7,
         retrieval_tier: str = "Standard",
-        check_status: str = None,
+        check_status: Optional[str] = None,
         list_requests: bool = False,
         include_completed: bool = False,
         porcelain: bool = False,
@@ -173,8 +174,7 @@ class Thaw:
         self.loggit.debug(
             "Listing objects in s3://%s/%s", repo.bucket, repo.base_path
         )
-        objects = self.s3.list_objects(repo.bucket, repo.base_path)
-        object_keys = [obj["Key"] for obj in objects]
+        object_keys = self.s3.list_objects(repo.bucket, repo.base_path)
 
         self.loggit.info(
             "Found %d objects to restore in repository %s", len(object_keys), repo.name
@@ -342,6 +342,10 @@ class Thaw:
         :return: None
         :rtype: None
         """
+        # Type guard: check_status must be a non-empty string in this mode
+        if not self.check_status:
+            raise ValueError("check_status must be provided for single status check")
+
         self.loggit.info("Checking status of thaw request %s", self.check_status)
 
         # Retrieve the thaw request
@@ -389,7 +393,7 @@ class Thaw:
                 mounted_count += 1
                 newly_mounted_repos.append(repo)
                 if not self.porcelain:
-                    rprint(f"    [green]✓[/green] Mounted successfully")
+                    rprint("    [green]✓[/green] Mounted successfully")
             else:
                 self.loggit.info(
                     "Restoration in progress for %s: %d/%d objects restored",
@@ -416,6 +420,9 @@ class Thaw:
         )
 
         if should_mount_indices:
+            # Type guards: these must be strings if should_mount_indices is True
+            assert start_date_str is not None
+            assert end_date_str is not None
             try:
                 start_date = decode_date(start_date_str)
                 end_date = decode_date(end_date_str)
@@ -551,7 +558,7 @@ class Thaw:
                             mounted_count += 1
                             newly_mounted_repos.append(repo)
                             if not self.porcelain:
-                                rprint(f"    [green]✓[/green] Mounted successfully")
+                                rprint("    [green]✓[/green] Mounted successfully")
                         else:
                             self.loggit.debug(
                                 "Restoration in progress for %s: %d/%d objects restored",
@@ -914,6 +921,10 @@ class Thaw:
             return
 
         if self.mode == "check_status":
+            # Type guard: check_status must be a non-empty string in this mode
+            if not self.check_status:
+                raise ValueError("check_status must be provided for single status check")
+
             self.loggit.info(
                 "DRY-RUN: Would check status of thaw request %s", self.check_status
             )
@@ -1039,10 +1050,10 @@ class Thaw:
             if self._thaw_repository(repo):
                 thawed_repos.append(repo)
                 if self.sync:
-                    self.console.print(f"    [green]✓[/green] Restore initiated successfully")
+                    self.console.print("    [green]✓[/green] Restore initiated successfully")
             else:
                 if self.sync:
-                    self.console.print(f"    [red]✗[/red] Failed to initiate restore")
+                    self.console.print("    [red]✗[/red] Failed to initiate restore")
 
         if not thawed_repos:
             self.loggit.error("Failed to thaw any repositories")
@@ -1074,9 +1085,9 @@ class Thaw:
 
             # Phase 3: Wait for restoration
             self.console.print(Panel(
-                f"[bold cyan]Phase 3: Waiting for Glacier Restoration[/bold cyan]\n\n"
-                f"This may take several hours depending on the retrieval tier.\n"
-                f"Progress will be updated as objects are restored.",
+                "[bold cyan]Phase 3: Waiting for Glacier Restoration[/bold cyan]\n\n"
+                "This may take several hours depending on the retrieval tier.\n"
+                "Progress will be updated as objects are restored.",
                 border_style="cyan",
                 expand=False
             ))
@@ -1119,7 +1130,7 @@ class Thaw:
                 self.console.print(f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]...")
                 try:
                     mount_repo(self.client, repo)
-                    self.console.print(f"    [green]✓[/green] Mounted successfully")
+                    self.console.print("    [green]✓[/green] Mounted successfully")
                     mounted_count += 1
                 except Exception as e:
                     self.console.print(f"    [red]✗[/red] Failed to mount: {e}")
@@ -1141,8 +1152,8 @@ class Thaw:
 
             # Phase 6: Mount indices
             self.console.print(Panel(
-                f"[bold cyan]Phase 6: Mounting Indices[/bold cyan]\n\n"
-                f"Finding and mounting indices within the requested date range.",
+                "[bold cyan]Phase 6: Mounting Indices[/bold cyan]\n\n"
+                "Finding and mounting indices within the requested date range.",
                 border_style="cyan",
                 expand=False
             ))
@@ -1172,7 +1183,7 @@ class Thaw:
             # Final summary
             self.console.print()
             summary_lines = [
-                f"[bold green]Thaw Operation Completed Successfully![/bold green]\n",
+                "[bold green]Thaw Operation Completed Successfully![/bold green]\n",
                 f"Repositories Processed: [cyan]{len(repos)}[/cyan]",
                 f"Restore Initiated: [cyan]{len(thawed_repos)}[/cyan]",
                 f"Successfully Restored: [cyan]{len(successfully_restored)}[/cyan]",
