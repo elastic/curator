@@ -20,12 +20,12 @@ Set CURATOR_CONFIG environment variable to use a different config file.
 import os
 import time
 import warnings
+import yaml
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Tuple
 
 import pytest
 from es_client.builder import Builder
-from es_client.helpers.config import get_config
 
 from curator.actions.deepfreeze import STATUS_INDEX, Cleanup, Refreeze, Thaw
 from curator.actions.deepfreeze.utilities import (
@@ -178,8 +178,10 @@ class TestDeepfreezeThaw(DeepfreezeTestCase):
 
         # Get configuration dictionary
         try:
-            config = get_config(CONFIG_FILE)
-            configdict = config['elasticsearch']
+            with open(CONFIG_FILE, 'r') as f:
+                config = yaml.safe_load(f)
+            # Builder expects full config with 'elasticsearch' key, not just elasticsearch section
+            configdict = config
         except Exception as e:
             pytest.skip(f"Failed to load configuration from {CONFIG_FILE}: {e}")
 
