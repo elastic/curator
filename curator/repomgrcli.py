@@ -7,14 +7,14 @@ import click
 from elasticsearch8 import ApiError, NotFoundError
 from es_client.defaults import LOGGING_SETTINGS, SHOW_OPTION
 from es_client.builder import Builder
-from es_client.helpers.config import (
+from es_client.config import (
     cli_opts,
     context_settings,
     generate_configdict,
     get_config,
 )
-from es_client.helpers.logging import configure_logging
-from es_client.helpers.utils import option_wrapper
+from es_client.logging import configure_logging
+from es_client.utils import option_wrapper
 from curator.debug import debug
 from curator.defaults.settings import (
     CLICK_DEBUG,
