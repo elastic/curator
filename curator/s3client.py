@@ -102,7 +102,7 @@ class S3Client(metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def list_objects(self, bucket_name: str, prefix: str) -> list[str]:
+    def list_objects(self, bucket_name: str, prefix: str) -> list[dict]:
         """
         List objects in a bucket with a given prefix.
 
@@ -111,7 +111,7 @@ class S3Client(metaclass=abc.ABCMeta):
             prefix (str): The prefix to use when listing objects.
 
         Returns:
-            list[str]: A list of object keys.
+            list[dict]: A list of object metadata dictionaries (each containing 'Key', 'StorageClass', etc.).
         """
         return
 
@@ -311,16 +311,35 @@ class AwsS3Client(S3Client):
         skipped_count = 0
         error_count = 0
 
-        for idx, key in enumerate(object_keys, 1):
+        for idx, obj in enumerate(object_keys, 1):
+            # Extract key from object metadata dict
+            key = obj.get("Key") if isinstance(obj, dict) else obj
+
             if not key.startswith(base_path):
                 skipped_count += 1
                 continue  # Skip objects outside the base path
 
-            # ? Do we need to keep track of what tier this came from instead of just assuming Glacier?
-            try:
-                response = self.client.head_object(Bucket=bucket_name, Key=key)
-                storage_class = response.get("StorageClass", "")
+            # Get storage class from object metadata (if available) or fetch it
+            if isinstance(obj, dict) and "StorageClass" in obj:
+                storage_class = obj.get("StorageClass", "")
+            else:
+                # ? Do we need to keep track of what tier this came from instead of just assuming Glacier?
+                try:
+                    response = self.client.head_object(Bucket=bucket_name, Key=key)
+                    storage_class = response.get("StorageClass", "")
+                except Exception as e:
+                    error_count += 1
+                    self.loggit.error(
+                        "Error getting metadata for object %d/%d (%s): %s (type: %s)",
+                        idx,
+                        len(object_keys),
+                        key,
+                        str(e),
+                        type(e).__name__
+                    )
+                    continue
 
+            try:
                 if storage_class in ["GLACIER", "DEEP_ARCHIVE", "GLACIER_IR"]:
                     self.loggit.debug(
                         "Restoring object %d/%d: %s from %s",
@@ -441,7 +460,7 @@ class AwsS3Client(S3Client):
             error_count
         )
 
-    def list_objects(self, bucket_name: str, prefix: str) -> list[str]:
+    def list_objects(self, bucket_name: str, prefix: str) -> list[dict]:
         """
         List objects in a bucket with a given prefix.
 
@@ -450,7 +469,7 @@ class AwsS3Client(S3Client):
             prefix (str): The prefix to use when listing objects.
 
         Returns:
-            list[str]: A list of object keys.
+            list[dict]: A list of object metadata dictionaries (each containing 'Key', 'StorageClass', etc.).
         """
         self.loggit.info(
             f"Listing objects in bucket: {bucket_name} with prefix: {prefix}"

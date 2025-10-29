@@ -170,14 +170,14 @@ class Thaw:
             self.loggit.info("Repository %s is already thawed and mounted", repo.name)
             return True
 
-        # Get the list of object keys to restore
+        # Get the list of objects to restore
         self.loggit.debug(
             "Listing objects in s3://%s/%s", repo.bucket, repo.base_path
         )
-        object_keys = self.s3.list_objects(repo.bucket, repo.base_path)
+        objects = self.s3.list_objects(repo.bucket, repo.base_path)
 
         self.loggit.info(
-            "Found %d objects to restore in repository %s", len(object_keys), repo.name
+            "Found %d objects to restore in repository %s", len(objects), repo.name
         )
 
         # Restore objects from Glacier
@@ -185,7 +185,7 @@ class Thaw:
             self.s3.thaw(
                 bucket_name=repo.bucket,
                 base_path=repo.base_path,
-                object_keys=object_keys,
+                object_keys=objects,
                 restore_days=self.duration,
                 retrieval_tier=self.retrieval_tier,
             )
