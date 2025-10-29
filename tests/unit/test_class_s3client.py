@@ -28,13 +28,71 @@ class TestAwsS3Client:
     def test_init(self):
         """Test AwsS3Client initialization"""
         with patch('boto3.client') as mock_boto:
+            mock_client = MagicMock()
+            mock_boto.return_value = mock_client
             s3 = AwsS3Client()
             mock_boto.assert_called_with("s3")
             assert s3.loggit is not None
+            # Verify credential validation call
+            mock_client.list_buckets.assert_called_once()
 
-    def test_create_bucket_success(self):
-        """Test successful bucket creation"""
+    def test_init_invalid_credentials(self):
+        """Test AwsS3Client initialization with invalid credentials"""
+        with patch('boto3.client') as mock_boto:
+            mock_client = MagicMock()
+            mock_client.list_buckets.side_effect = ClientError(
+                {"Error": {"Code": "InvalidAccessKeyId"}}, "list_buckets"
+            )
+            mock_boto.return_value = mock_client
+
+            with pytest.raises(ActionError, match="AWS credentials are invalid"):
+                AwsS3Client()
+
+    def test_init_access_denied(self):
+        """Test AwsS3Client initialization with insufficient permissions"""
+        with patch('boto3.client') as mock_boto:
+            mock_client = MagicMock()
+            mock_client.list_buckets.side_effect = ClientError(
+                {"Error": {"Code": "AccessDenied"}}, "list_buckets"
+            )
+            mock_boto.return_value = mock_client
+
+            with pytest.raises(ActionError, match="do not have sufficient permissions"):
+                AwsS3Client()
+
+    def test_test_connection_success(self):
+        """Test successful connection test"""
+        self.s3.client.list_buckets.return_value = {"Buckets": []}
+        assert self.s3.test_connection() is True
+
+    def test_test_connection_failure(self):
+        """Test failed connection test"""
+        self.s3.client.list_buckets.side_effect = ClientError(
+            {"Error": {"Code": "NetworkError"}}, "list_buckets"
+        )
+        assert self.s3.test_connection() is False
+
+    def test_create_bucket_success_us_east_1(self):
+        """Test successful bucket creation in us-east-1"""
         self.s3.bucket_exists = MagicMock(return_value=False)
+        self.s3.client.meta.region_name = 'us-east-1'
+        self.s3.create_bucket("test-bucket")
+        self.s3.client.create_bucket.assert_called_with(Bucket="test-bucket")
+
+    def test_create_bucket_success_other_region(self):
+        """Test successful bucket creation in non-us-east-1 region"""
+        self.s3.bucket_exists = MagicMock(return_value=False)
+        self.s3.client.meta.region_name = 'us-west-2'
+        self.s3.create_bucket("test-bucket")
+        self.s3.client.create_bucket.assert_called_with(
+            Bucket="test-bucket",
+            CreateBucketConfiguration={'LocationConstraint': 'us-west-2'}
+        )
+
+    def test_create_bucket_success_no_region(self):
+        """Test successful bucket creation with no region specified"""
+        self.s3.bucket_exists = MagicMock(return_value=False)
+        self.s3.client.meta.region_name = None
         self.s3.create_bucket("test-bucket")
         self.s3.client.create_bucket.assert_called_with(Bucket="test-bucket")
 
@@ -75,13 +133,17 @@ class TestAwsS3Client:
             self.s3.bucket_exists("test-bucket")
 
     def test_thaw_glacier_objects(self):
-        """Test thawing objects from Glacier"""
-        self.s3.client.head_object.return_value = {"StorageClass": "GLACIER"}
+        """Test thawing objects from Glacier with dict metadata"""
+        # Test with dict metadata (preferred format)
+        object_keys = [
+            {"Key": "base_path/file1", "StorageClass": "GLACIER"},
+            {"Key": "base_path/file2", "StorageClass": "GLACIER"}
+        ]
 
         self.s3.thaw(
             "test-bucket",
             "base_path",
-            ["base_path/file1", "base_path/file2"],
+            object_keys,
             7,
             "Standard"
         )
@@ -95,6 +157,21 @@ class TestAwsS3Client:
                 "GlacierJobParameters": {"Tier": "Standard"}
             }
         )
+
+    def test_thaw_glacier_objects_string_keys(self):
+        """Test thawing objects from Glacier with string keys (legacy)"""
+        self.s3.client.head_object.return_value = {"StorageClass": "GLACIER"}
+
+        self.s3.thaw(
+            "test-bucket",
+            "base_path",
+            ["base_path/file1", "base_path/file2"],
+            7,
+            "Standard"
+        )
+
+        assert self.s3.client.restore_object.call_count == 2
+        assert self.s3.client.head_object.call_count == 2
 
     def test_thaw_deep_archive_objects(self):
         """Test thawing objects from Deep Archive"""
@@ -230,6 +307,42 @@ class TestAwsS3Client:
         self.s3.delete_bucket("test-bucket")
         self.s3.client.delete_bucket.assert_called_with(Bucket="test-bucket")
 
+    def test_delete_bucket_with_force(self):
+        """Test bucket deletion with force=True empties bucket first"""
+        paginator = MagicMock()
+        paginator.paginate.return_value = [
+            {"Contents": [{"Key": "file1.txt"}, {"Key": "file2.txt"}]}
+        ]
+        self.s3.client.get_paginator.return_value = paginator
+
+        self.s3.delete_bucket("test-bucket", force=True)
+
+        # Should list objects
+        self.s3.client.get_paginator.assert_called_with('list_objects_v2')
+        paginator.paginate.assert_called_with(Bucket="test-bucket")
+
+        # Should delete objects
+        self.s3.client.delete_objects.assert_called_once()
+        call_args = self.s3.client.delete_objects.call_args
+        assert call_args[1]["Bucket"] == "test-bucket"
+        assert len(call_args[1]["Delete"]["Objects"]) == 2
+
+        # Should delete bucket
+        self.s3.client.delete_bucket.assert_called_with(Bucket="test-bucket")
+
+    def test_delete_bucket_force_empty(self):
+        """Test bucket deletion with force=True on empty bucket"""
+        paginator = MagicMock()
+        paginator.paginate.return_value = [{}]  # No Contents
+        self.s3.client.get_paginator.return_value = paginator
+
+        self.s3.delete_bucket("test-bucket", force=True)
+
+        # Should not call delete_objects
+        self.s3.client.delete_objects.assert_not_called()
+        # Should still delete bucket
+        self.s3.client.delete_bucket.assert_called_with(Bucket="test-bucket")
+
     def test_delete_bucket_error(self):
         """Test bucket deletion error"""
         self.s3.client.delete_bucket.side_effect = ClientError(
@@ -308,6 +421,29 @@ class TestAwsS3Client:
         with pytest.raises(ActionError):
             self.s3.list_buckets()
 
+    def test_head_object_success(self):
+        """Test successful head object retrieval"""
+        mock_response = {
+            "ContentLength": 1024,
+            "StorageClass": "GLACIER",
+            "Restore": "ongoing-request=\"false\", expiry-date=\"Fri, 21 Dec 2025 00:00:00 GMT\""
+        }
+        self.s3.client.head_object.return_value = mock_response
+
+        result = self.s3.head_object("test-bucket", "test-key")
+
+        assert result == mock_response
+        self.s3.client.head_object.assert_called_with(Bucket="test-bucket", Key="test-key")
+
+    def test_head_object_error(self):
+        """Test head object error"""
+        self.s3.client.head_object.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchKey"}}, "head_object"
+        )
+
+        with pytest.raises(ActionError, match="Error getting metadata"):
+            self.s3.head_object("test-bucket", "test-key")
+
     def test_copy_object_success(self):
         """Test successful object copy"""
         self.s3.copy_object(
@@ -382,13 +518,11 @@ class TestS3ClientFactory:
 def test_create_bucket():
     s3 = AwsS3Client()
     s3.client = MagicMock()
+    s3.client.meta.region_name = 'us-east-1'  # Set region to us-east-1 for simple assertion
     s3.bucket_exists = MagicMock(return_value=False)  # Mock the method directly
 
     assert s3.bucket_exists("test-bucket") is False
 
-    # FIXME: This test is not working as expected. Something in the way it's mocked up
-    # FIXME: means that the call to create_bucket gets a different result when
-    # bucket_exists() is called.
     s3.create_bucket("test-bucket")
     s3.client.create_bucket.assert_called_with(Bucket="test-bucket")
 

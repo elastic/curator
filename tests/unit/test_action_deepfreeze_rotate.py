@@ -17,6 +17,8 @@ class TestDeepfreezeRotate(TestCase):
     def setUp(self):
         """Set up test fixtures"""
         self.client = Mock()
+        # Mock ILM get_lifecycle to return empty dict by default
+        self.client.ilm.get_lifecycle.return_value = {}
         self.mock_settings = Settings(
             repo_name_prefix="deepfreeze",
             bucket_name_prefix="deepfreeze",
@@ -39,17 +41,19 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory') as mock_factory:
-                        mock_s3 = Mock()
-                        mock_factory.return_value = mock_s3
-                        self.client.indices.exists.return_value = True
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            mock_s3 = Mock()
+                            mock_factory.return_value = mock_s3
+                            mock_policies.return_value = {"test-policy": {}}
+                            self.client.indices.exists.return_value = True
 
-                        rotate = Rotate(self.client)
+                            rotate = Rotate(self.client)
 
-                        assert rotate.client == self.client
-                        assert rotate.s3 == mock_s3
-                        assert rotate.settings == self.mock_settings
-                        assert rotate.latest_repo == "deepfreeze-000001"
-                        assert rotate.keep == 6  # default value
+                            assert rotate.client == self.client
+                            assert rotate.s3 == mock_s3
+                            assert rotate.settings == self.mock_settings
+                            assert rotate.latest_repo == "deepfreeze-000001"
+                            assert rotate.keep == 6  # default value
 
     def test_calculate_new_names_rotate_by_path_oneup(self):
         """Test name calculation for path rotation with oneup style"""
@@ -57,12 +61,14 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        self.client.indices.exists.return_value = True
-                        rotate = Rotate(self.client)
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            mock_policies.return_value = {"test-policy": {}}  # Mock at least one policy
+                            self.client.indices.exists.return_value = True
+                            rotate = Rotate(self.client)
 
-                        assert rotate.new_repo_name == "deepfreeze-000002"
-                        assert rotate.new_bucket_name == "deepfreeze"
-                        assert rotate.base_path == "snapshots-000002"
+                            assert rotate.new_repo_name == "deepfreeze-000002"
+                            assert rotate.new_bucket_name == "deepfreeze"
+                            assert rotate.base_path == "snapshots-000002"
 
     def test_calculate_new_names_rotate_by_bucket(self):
         """Test name calculation for bucket rotation"""
@@ -79,12 +85,14 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000003"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000004"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        self.client.indices.exists.return_value = True
-                        rotate = Rotate(self.client)
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            mock_policies.return_value = {"test-policy": {}}
+                            self.client.indices.exists.return_value = True
+                            rotate = Rotate(self.client)
 
-                        assert rotate.new_repo_name == "deepfreeze-000004"
-                        assert rotate.new_bucket_name == "deepfreeze-000004"
-                        assert rotate.base_path == "snapshots"
+                            assert rotate.new_repo_name == "deepfreeze-000004"
+                            assert rotate.new_bucket_name == "deepfreeze-000004"
+                            assert rotate.base_path == "snapshots"
 
     def test_calculate_new_names_monthly_style(self):
         """Test name calculation with monthly style"""
@@ -101,11 +109,13 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-2024.02"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="2024.03"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        self.client.indices.exists.return_value = True
-                        rotate = Rotate(self.client)
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            mock_policies.return_value = {"test-policy": {}}
+                            self.client.indices.exists.return_value = True
+                            rotate = Rotate(self.client)
 
-                        assert rotate.new_repo_name == "deepfreeze-2024.03"
-                        assert rotate.base_path == "snapshots-2024.03"
+                            assert rotate.new_repo_name == "deepfreeze-2024.03"
+                            assert rotate.base_path == "snapshots-2024.03"
 
     def test_check_preconditions_missing_index(self):
         """Test preconditions check when status index is missing"""
@@ -135,13 +145,15 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory') as mock_factory:
-                        mock_s3 = Mock()
-                        mock_factory.return_value = mock_s3
-                        self.client.indices.exists.return_value = True
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            mock_s3 = Mock()
+                            mock_factory.return_value = mock_s3
+                            mock_policies.return_value = {"test-policy": {}}
+                            self.client.indices.exists.return_value = True
 
-                        # Should not raise any exceptions
-                        rotate = Rotate(self.client)
-                        assert rotate is not None
+                            # Should not raise any exceptions
+                            rotate = Rotate(self.client)
+                            assert rotate is not None
 
     def test_update_ilm_policies_creates_versioned_policies(self):
         """Test that update_ilm_policies creates versioned policies instead of modifying existing ones"""
@@ -248,24 +260,26 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
-                            with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
-                                self.client.indices.exists.return_value = True
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
+                                with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
+                                    mock_policies.return_value = {"test-policy": {}}
+                                    self.client.indices.exists.return_value = True
 
-                                # Mock policies with suffix 000001
-                                mock_get_by_suffix.return_value = {
-                                    "my-policy-000001": {"policy": {}},
-                                    "other-policy-000001": {"policy": {}}
-                                }
-                                mock_is_safe.return_value = True
+                                    # Mock policies with suffix 000001
+                                    mock_get_by_suffix.return_value = {
+                                        "my-policy-000001": {"policy": {}},
+                                        "other-policy-000001": {"policy": {}}
+                                    }
+                                    mock_is_safe.return_value = True
 
-                                rotate = Rotate(self.client)
-                                rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=False)
+                                    rotate = Rotate(self.client)
+                                    rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=False)
 
-                                # Verify policies were deleted
-                                assert self.client.ilm.delete_lifecycle.call_count == 2
-                                self.client.ilm.delete_lifecycle.assert_any_call(name="my-policy-000001")
-                                self.client.ilm.delete_lifecycle.assert_any_call(name="other-policy-000001")
+                                    # Verify policies were deleted
+                                    assert self.client.ilm.delete_lifecycle.call_count == 2
+                                    self.client.ilm.delete_lifecycle.assert_any_call(name="my-policy-000001")
+                                    self.client.ilm.delete_lifecycle.assert_any_call(name="other-policy-000001")
 
     def test_cleanup_policies_for_repo_skips_in_use(self):
         """Test cleanup_policies_for_repo skips policies still in use"""
@@ -273,21 +287,23 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
-                            with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
-                                self.client.indices.exists.return_value = True
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
+                                with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
+                                    mock_policies.return_value = {"test-policy": {}}
+                                    self.client.indices.exists.return_value = True
 
-                                mock_get_by_suffix.return_value = {
-                                    "my-policy-000001": {"policy": {}}
-                                }
-                                # Policy is still in use
-                                mock_is_safe.return_value = False
+                                    mock_get_by_suffix.return_value = {
+                                        "my-policy-000001": {"policy": {}}
+                                    }
+                                    # Policy is still in use
+                                    mock_is_safe.return_value = False
 
-                                rotate = Rotate(self.client)
-                                rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=False)
+                                    rotate = Rotate(self.client)
+                                    rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=False)
 
-                                # Verify policy was NOT deleted
-                                self.client.ilm.delete_lifecycle.assert_not_called()
+                                    # Verify policy was NOT deleted
+                                    self.client.ilm.delete_lifecycle.assert_not_called()
 
     def test_cleanup_policies_for_repo_dry_run(self):
         """Test cleanup_policies_for_repo dry-run mode doesn't delete policies"""
@@ -295,20 +311,22 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000002"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
-                            with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
-                                self.client.indices.exists.return_value = True
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            with patch('curator.actions.deepfreeze.rotate.get_policies_by_suffix') as mock_get_by_suffix:
+                                with patch('curator.actions.deepfreeze.rotate.is_policy_safe_to_delete') as mock_is_safe:
+                                    mock_policies.return_value = {"test-policy": {}}
+                                    self.client.indices.exists.return_value = True
 
-                                mock_get_by_suffix.return_value = {
-                                    "my-policy-000001": {"policy": {}}
-                                }
-                                mock_is_safe.return_value = True
+                                    mock_get_by_suffix.return_value = {
+                                        "my-policy-000001": {"policy": {}}
+                                    }
+                                    mock_is_safe.return_value = True
 
-                                rotate = Rotate(self.client)
-                                rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=True)
+                                    rotate = Rotate(self.client)
+                                    rotate.cleanup_policies_for_repo("deepfreeze-000001", dry_run=True)
 
-                                # Verify no policies were deleted in dry-run
-                                self.client.ilm.delete_lifecycle.assert_not_called()
+                                    # Verify no policies were deleted in dry-run
+                                    self.client.ilm.delete_lifecycle.assert_not_called()
 
     def test_unmount_oldest_repos_calls_cleanup(self):
         """Test that unmount_oldest_repos calls cleanup_policies_for_repo"""
@@ -316,21 +334,25 @@ class TestDeepfreezeRotate(TestCase):
             with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000002", "deepfreeze-000001"]):
                 with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000003"):
                     with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
-                        with patch('curator.actions.deepfreeze.rotate.unmount_repo') as mock_unmount:
-                            with patch('curator.actions.deepfreeze.rotate.push_to_glacier'):
-                                with patch('curator.actions.deepfreeze.rotate.Repository') as mock_repo_class:
-                                    self.client.indices.exists.return_value = True
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            with patch('curator.actions.deepfreeze.rotate.unmount_repo') as mock_unmount:
+                                with patch('curator.actions.deepfreeze.rotate.push_to_glacier'):
+                                    with patch('curator.actions.deepfreeze.rotate.Repository') as mock_repo_class:
+                                        mock_policies.return_value = {"test-policy": {}}
+                                        self.client.indices.exists.return_value = True
 
-                                    mock_repo = Mock()
-                                    mock_repo.name = "deepfreeze-000001"
-                                    mock_repo_class.from_elasticsearch.return_value = mock_repo
+                                        mock_repo = Mock()
+                                        mock_repo.name = "deepfreeze-000001"
+                                        mock_repo.thaw_state = "frozen"  # Make sure repo is not thawed
+                                        mock_repo_class.from_elasticsearch.return_value = mock_repo
 
-                                    rotate = Rotate(self.client, keep="1")
+                                        rotate = Rotate(self.client, keep="1")
 
-                                    with patch.object(rotate, 'cleanup_policies_for_repo') as mock_cleanup:
-                                        rotate.unmount_oldest_repos(dry_run=False)
+                                        with patch.object(rotate, 'cleanup_policies_for_repo') as mock_cleanup:
+                                            with patch.object(rotate, 'is_thawed', return_value=False):
+                                                rotate.unmount_oldest_repos(dry_run=False)
 
-                                        # Verify cleanup was called for the unmounted repo
-                                        mock_cleanup.assert_called_once_with("deepfreeze-000001", dry_run=False)
+                                                # Verify cleanup was called for the unmounted repo
+                                                mock_cleanup.assert_called_once_with("deepfreeze-000001", dry_run=False)
 
 

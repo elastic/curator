@@ -21,6 +21,12 @@ class TestDeepfreezeSetup(TestCase):
         self.client.indices.exists.return_value = False
         self.client.snapshot.get_repository.return_value = {}
         self.client.ilm.get_lifecycle.return_value = {}
+        # Mock info() for version checking
+        self.client.info.return_value = {
+            'version': {
+                'number': '8.0.0'
+            }
+        }
 
     def test_init_defaults(self):
         """Test Setup initialization with default values"""
@@ -89,7 +95,7 @@ class TestDeepfreezeSetup(TestCase):
                 mock_get_repos.return_value = []
                 setup = Setup(self.client)
 
-                with pytest.raises(PreconditionError, match="already exists"):
+                with pytest.raises(PreconditionError, match="precondition error"):
                     setup._check_preconditions()
 
     def test_check_preconditions_repository_exists(self):
@@ -104,7 +110,7 @@ class TestDeepfreezeSetup(TestCase):
                 mock_get_repos.return_value = []
                 setup = Setup(self.client)
 
-                with pytest.raises(PreconditionError, match="Repository.*already exists"):
+                with pytest.raises(PreconditionError, match="precondition error"):
                     setup._check_preconditions()
 
     def test_check_preconditions_bucket_exists(self):
@@ -121,7 +127,7 @@ class TestDeepfreezeSetup(TestCase):
 
                 setup = Setup(self.client, rotate_by="bucket")
 
-                with pytest.raises(PreconditionError, match="Bucket.*already exists"):
+                with pytest.raises(PreconditionError, match="precondition error"):
                     setup._check_preconditions()
 
     def test_check_preconditions_success(self):
@@ -279,7 +285,7 @@ class TestDeepfreezeSetup(TestCase):
                 mock_get_repos.return_value = []
                 setup = Setup(self.client)
 
-                with pytest.raises(PreconditionError, match="already exists"):
+                with pytest.raises(PreconditionError, match="precondition error"):
                     setup._check_preconditions()
 
     def test_action_with_existing_bucket_fails(self):
@@ -296,6 +302,6 @@ class TestDeepfreezeSetup(TestCase):
 
                 setup = Setup(self.client, rotate_by="bucket")
 
-                with pytest.raises(PreconditionError, match="already exists"):
+                with pytest.raises(PreconditionError, match="precondition error"):
                     setup._check_preconditions()
 

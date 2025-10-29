@@ -166,8 +166,9 @@ class TestRepository(TestCase):
         assert result['is_thawed'] is True
         assert result['is_mounted'] is False
         assert result['doctype'] == "repository"
-        assert result['start'] == "2024-01-01"
-        assert result['end'] == "2024-12-31"
+        # Dates are converted to ISO format with time component
+        assert result['start'] == "2024-01-01T00:00:00"
+        assert result['end'] == "2024-12-31T00:00:00"
 
     def test_repository_to_dict_with_none_dates(self):
         """Test Repository.to_dict with None dates"""
@@ -233,7 +234,7 @@ class TestRepository(TestCase):
         call_args = mock_client.update.call_args
         assert call_args[1]['index'] == STATUS_INDEX
         assert call_args[1]['id'] == 'existing-id-123'
-        assert call_args[1]['doc']['name'] == 'test-repo'
+        assert call_args[1]['body']['doc']['name'] == 'test-repo'
 
     def test_repository_unmount(self):
         """Test Repository.unmount method"""
