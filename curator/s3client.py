@@ -67,7 +67,7 @@ class S3Client(metaclass=abc.ABCMeta):
         self,
         bucket_name: str,
         base_path: str,
-        object_keys: list[str],
+        object_keys: list[dict],
         restore_days: int = 7,
         retrieval_tier: str = "Standard",
     ) -> None:
@@ -76,8 +76,8 @@ class S3Client(metaclass=abc.ABCMeta):
 
         Args:
             bucket_name (str): The name of the bucket to return.
-            path (str): The path to the bucket to return.
-            object_keys (list[str]): A list of object keys to return.
+            base_path (str): The base path to the bucket to return.
+            object_keys (list[dict]): A list of object metadata dictionaries (each containing 'Key', 'StorageClass', etc.).
             restore_days (int): The number of days to keep the object restored.
             retrieval_tier (str): The retrieval tier to use.
 
@@ -280,7 +280,7 @@ class AwsS3Client(S3Client):
         self,
         bucket_name: str,
         base_path: str,
-        object_keys: list[str],
+        object_keys: list[dict],
         restore_days: int = 7,
         retrieval_tier: str = "Standard",
     ) -> None:
@@ -290,7 +290,7 @@ class AwsS3Client(S3Client):
         Args:
             bucket_name (str): The name of the bucket
             base_path (str): The base path (prefix) of the objects to thaw
-            object_keys (list[str]): A list of object keys to thaw
+            object_keys (list[dict]): A list of object metadata dictionaries (each containing 'Key', 'StorageClass', etc.)
             restore_days (int): The number of days to keep the object restored
             retrieval_tier (str): The retrieval tier to use
 
