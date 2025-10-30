@@ -103,6 +103,9 @@ def action_specific(action):
             option_defaults.thaw_request_id(),
             option_defaults.porcelain(),
         ],
+        'repair_metadata': [
+            option_defaults.porcelain(),
+        ],
         'delete_indices': [
             option_defaults.search_pattern(),
         ],

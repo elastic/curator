@@ -584,3 +584,44 @@ def thaw(
         True,
     )
     action.do_singleton_action(dry_run=ctx.obj["dry_run"])
+
+
+@deepfreeze.command()
+@click.option(
+    "-p",
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Output plain text without formatting (suitable for scripting)",
+)
+@click.pass_context
+def repair_metadata(ctx, porcelain):
+    """
+    Repair repository metadata to match actual S3 storage state
+
+    Scans all repositories and checks if their metadata (thaw_state) matches
+    the actual S3 storage class. Repositories stored in GLACIER should have
+    thaw_state='frozen', but sometimes metadata can get out of sync.
+
+    This command will:
+    - Scan all repositories in the status index
+    - Check actual S3 storage class for each repository
+    - Update thaw_state='frozen' for repositories actually in GLACIER
+    - Report on all changes made
+
+    Use --dry-run to see what would be changed without making modifications.
+    """
+    manual_options = {
+        "porcelain": porcelain,
+    }
+    # Normalize action name: Click converts underscores to dashes,
+    # but CLASS_MAP and options use underscores
+    action_name = ctx.info_name.replace('-', '_')
+    action = CLIAction(
+        action_name,
+        ctx.obj["configdict"],
+        manual_options,
+        [],
+        True,
+    )
+    action.do_singleton_action(dry_run=ctx.obj["dry_run"])

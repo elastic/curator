@@ -355,4 +355,43 @@ class TestDeepfreezeRotate(TestCase):
                                                 # Verify cleanup was called for the unmounted repo
                                                 mock_cleanup.assert_called_once_with("deepfreeze-000001", dry_run=False)
 
+    def test_unmount_oldest_repos_sets_thaw_state_frozen(self):
+        """
+        Test that unmount_oldest_repos properly sets thaw_state to 'frozen' after push_to_glacier.
+
+        This is a regression test for the bug where repositories were pushed to Glacier
+        but their metadata still showed thaw_state='active' instead of 'frozen'.
+        """
+        with patch('curator.actions.deepfreeze.rotate.get_settings', return_value=self.mock_settings):
+            with patch('curator.actions.deepfreeze.rotate.get_matching_repo_names', return_value=["deepfreeze-000002", "deepfreeze-000001"]):
+                with patch('curator.actions.deepfreeze.rotate.get_next_suffix', return_value="000003"):
+                    with patch('curator.actions.deepfreeze.rotate.s3_client_factory'):
+                        with patch('curator.actions.deepfreeze.rotate.get_policies_for_repo') as mock_policies:
+                            with patch('curator.actions.deepfreeze.rotate.unmount_repo') as mock_unmount:
+                                with patch('curator.actions.deepfreeze.rotate.push_to_glacier'):
+                                    with patch('curator.actions.deepfreeze.rotate.Repository') as mock_repo_class:
+                                        mock_policies.return_value = {"test-policy": {}}
+                                        self.client.indices.exists.return_value = True
+
+                                        # Create a mock repository that will be returned by from_elasticsearch
+                                        mock_repo = Mock()
+                                        mock_repo.name = "deepfreeze-000001"
+                                        mock_repo.thaw_state = "active"  # Initially active (bug scenario)
+                                        mock_repo.is_mounted = True
+                                        mock_repo.is_thawed = False
+                                        mock_repo_class.from_elasticsearch.return_value = mock_repo
+
+                                        rotate = Rotate(self.client, keep="1")
+
+                                        with patch.object(rotate, 'cleanup_policies_for_repo'):
+                                            with patch.object(rotate, 'is_thawed', return_value=False):
+                                                # Run the unmount operation
+                                                rotate.unmount_oldest_repos(dry_run=False)
+
+                                                # Verify reset_to_frozen was called (which sets thaw_state='frozen')
+                                                mock_repo.reset_to_frozen.assert_called_once()
+
+                                                # Verify persist was called to save the updated state
+                                                mock_repo.persist.assert_called_once_with(self.client)
+
 

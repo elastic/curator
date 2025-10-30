@@ -479,11 +479,11 @@ class Rotate:
                         self.client, repo, STATUS_INDEX
                     )
                     self.loggit.debug("Looking for %s, found %s", repo, repository)
-                    repository.unmount()  # type: ignore
+                    repository.reset_to_frozen()  # type: ignore
                     self.loggit.debug("preparing to persist %s", repo)
                     repository.persist(self.client)  # type: ignore
                     self.loggit.info(
-                        "Updated status to unmounted for repo %s", repository.name  # type: ignore
+                        "Updated status to frozen for repo %s", repository.name  # type: ignore
                     )
 
                     # Clean up ILM policies associated with this repository
