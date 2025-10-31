@@ -6,12 +6,12 @@ import logging
 from datetime import datetime, timezone
 
 from elasticsearch8 import Elasticsearch
+from rich import print as rprint
 
 from curator.actions.deepfreeze.utilities import (
     check_restore_status,
     get_all_indices_in_repo,
     get_matching_repos,
-    get_repositories_by_names,
     get_settings,
     list_thaw_requests,
 )
@@ -289,11 +289,10 @@ class Cleanup:
         """
         Clean up old thaw requests based on status and age.
 
-        Deletes:
-        - Completed requests older than retention period
-        - Failed requests older than retention period
-        - Refrozen requests older than retention period (35 days by default)
-        - Stale in-progress requests where all referenced repos are no longer thawed
+        Only deletes refrozen requests older than the retention period
+        (35 days by default, or CLI override with -f flag).
+
+        Completed, failed, and in-progress requests are never automatically deleted.
 
         :return: Tuple of (deleted_request_ids, skipped_request_ids)
         :rtype: tuple[list[str], list[str]]
@@ -319,9 +318,7 @@ class Cleanup:
         deleted = []
         skipped = []
 
-        # Get retention settings
-        retention_completed = self.settings.thaw_request_retention_days_completed
-        retention_failed = self.settings.thaw_request_retention_days_failed
+        # Get retention setting for refrozen requests
         # Use CLI override if provided, otherwise use settings value
         retention_refrozen = (
             self.refrozen_retention_days
@@ -337,7 +334,6 @@ class Cleanup:
 
             status = request.get("status", "unknown")
             created_at_str = request.get("created_at")
-            repos = request.get("repos", [])
 
             if not created_at_str:
                 self.loggit.warning(
@@ -354,46 +350,10 @@ class Cleanup:
                 should_delete = False
                 reason = ""
 
-                if status == "completed" and age_days > retention_completed:
-                    should_delete = True
-                    reason = f"completed request older than {retention_completed} days (age: {age_days} days)"
-
-                elif status == "failed" and age_days > retention_failed:
-                    should_delete = True
-                    reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
-
-                elif status == "refrozen" and age_days > retention_refrozen:
+                # Only delete refrozen requests
+                if status == "refrozen" and age_days >= retention_refrozen:
                     should_delete = True
                     reason = f"refrozen request older than {retention_refrozen} days (age: {age_days} days)"
-
-                elif status == "in_progress":
-                    # Check if all referenced repos are no longer in thawing/thawed state
-                    if repos:
-                        try:
-                            from curator.actions.deepfreeze.constants import (
-                                THAW_STATE_THAWING,
-                                THAW_STATE_THAWED,
-                            )
-
-                            repo_objects = get_repositories_by_names(self.client, repos)
-                            # Check if any repos are still in thawing or thawed state
-                            any_active = any(
-                                repo.thaw_state
-                                in [THAW_STATE_THAWING, THAW_STATE_THAWED]
-                                for repo in repo_objects
-                            )
-
-                            if not any_active:
-                                should_delete = True
-                                reason = "in-progress request with no active repos (all repos have been cleaned up)"
-                        except Exception as e:
-                            self.loggit.warning(
-                                "Could not check repos for request %s: %s",
-                                request_id,
-                                e,
-                            )
-                            skipped.append(request_id)
-                            continue
 
                 if should_delete:
                     try:
@@ -461,150 +421,156 @@ class Cleanup:
 
         if not expired_repos:
             self.loggit.info("No expired repositories found to clean up")
-            return
-
-        self.loggit.info(
-            "Found %d expired repositories to clean up", len(expired_repos)
-        )
-
-        # Track repositories that were successfully cleaned up
-        repos_to_cleanup = []
-
-        for repo in expired_repos:
-            self.loggit.info("Cleaning up expired repository %s", repo.name)
-
-            try:
-                # CRITICAL FIX: Verify repository mount status from Elasticsearch
-                # The in-memory flag may be out of sync with actual cluster state
-                is_actually_mounted = False
-                try:
-                    existing_repos = self.client.snapshot.get_repository(name=repo.name)
-                    is_actually_mounted = repo.name in existing_repos
-                    if is_actually_mounted:
-                        self.loggit.debug(
-                            "Repository %s is mounted in Elasticsearch", repo.name
-                        )
-                    else:
-                        self.loggit.debug(
-                            "Repository %s is not mounted in Elasticsearch", repo.name
-                        )
-                except Exception as e:
-                    self.loggit.warning(
-                        "Could not verify mount status for repository %s: %s",
-                        repo.name,
-                        e,
-                    )
-                    is_actually_mounted = False
-
-                # Unmount if actually mounted
-                if is_actually_mounted:
-                    try:
-                        self.loggit.info(
-                            "Unmounting repository %s (state: %s, expires_at: %s)",
-                            repo.name,
-                            repo.thaw_state,
-                            repo.expires_at,
-                        )
-                        self.client.snapshot.delete_repository(name=repo.name)
-                        self.loggit.info(
-                            "Repository %s unmounted successfully", repo.name
-                        )
-                    except Exception as e:
-                        self.loggit.error(
-                            "Failed to unmount repository %s: %s (type: %s)",
-                            repo.name,
-                            str(e),
-                            type(e).__name__,
-                        )
-                        # Don't add to cleanup list if unmount failed
-                        continue
-                elif repo.is_mounted:
-                    # In-memory flag says mounted, but ES says not mounted
-                    self.loggit.info(
-                        "Repository %s marked as mounted but not found in Elasticsearch (likely already unmounted)",
-                        repo.name,
-                    )
-                else:
-                    self.loggit.debug("Repository %s was not mounted", repo.name)
-
-                # Reset repository to frozen state
-                repo.reset_to_frozen()
-                repo.persist(self.client)
-                self.loggit.info("Repository %s reset to frozen state", repo.name)
-
-                # Add to cleanup list for index deletion
-                repos_to_cleanup.append(repo)
-
-            except Exception as e:
-                self.loggit.error("Error cleaning up repository %s: %s", repo.name, e)
-
-        # Delete indices whose snapshots are only in repositories being cleaned up
-        if repos_to_cleanup:
+        else:
             self.loggit.info(
-                "Checking for indices to delete from cleaned up repositories"
+                "Found %d expired repositories to clean up", len(expired_repos)
             )
-            try:
-                indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
 
-                if indices_to_delete:
-                    self.loggit.info(
-                        "Deleting %d indices whose snapshots are only in cleaned up repositories",
-                        len(indices_to_delete),
-                    )
-                    for index in indices_to_delete:
+            # Track repositories that were successfully cleaned up
+            repos_to_cleanup = []
+
+            for repo in expired_repos:
+                self.loggit.info("Cleaning up expired repository %s", repo.name)
+
+                try:
+                    # CRITICAL FIX: Verify repository mount status from Elasticsearch
+                    # The in-memory flag may be out of sync with actual cluster state
+                    is_actually_mounted = False
+                    try:
+                        existing_repos = self.client.snapshot.get_repository(
+                            name=repo.name
+                        )
+                        is_actually_mounted = repo.name in existing_repos
+                        if is_actually_mounted:
+                            self.loggit.debug(
+                                "Repository %s is mounted in Elasticsearch", repo.name
+                            )
+                        else:
+                            self.loggit.debug(
+                                "Repository %s is not mounted in Elasticsearch",
+                                repo.name,
+                            )
+                    except Exception as e:
+                        self.loggit.warning(
+                            "Could not verify mount status for repository %s: %s",
+                            repo.name,
+                            e,
+                        )
+                        is_actually_mounted = False
+
+                    # Unmount if actually mounted
+                    if is_actually_mounted:
                         try:
-                            # CRITICAL FIX: Validate index exists and get its status before deletion
-                            if not self.client.indices.exists(index=index):
-                                self.loggit.warning(
-                                    "Index %s no longer exists, skipping deletion",
-                                    index,
-                                )
-                                continue
-
-                            # Get index health before deletion for audit trail
-                            try:
-                                health = self.client.cluster.health(
-                                    index=index, level='indices'
-                                )
-                                index_health = health.get('indices', {}).get(index, {})
-                                status = index_health.get('status', 'unknown')
-                                active_shards = index_health.get(
-                                    'active_shards', 'unknown'
-                                )
-                                active_primary_shards = index_health.get(
-                                    'active_primary_shards', 'unknown'
-                                )
-
-                                self.loggit.info(
-                                    "Preparing to delete index %s (health: %s, primary_shards: %s, total_shards: %s)",
-                                    index,
-                                    status,
-                                    active_primary_shards,
-                                    active_shards,
-                                )
-                            except Exception as health_error:
-                                # Log but don't fail deletion if health check fails
-                                self.loggit.debug(
-                                    "Could not get health for index %s: %s",
-                                    index,
-                                    health_error,
-                                )
-
-                            # Perform deletion
-                            self.client.indices.delete(index=index)
-                            self.loggit.info("Successfully deleted index %s", index)
-
+                            self.loggit.info(
+                                "Unmounting repository %s (state: %s, expires_at: %s)",
+                                repo.name,
+                                repo.thaw_state,
+                                repo.expires_at,
+                            )
+                            self.client.snapshot.delete_repository(name=repo.name)
+                            self.loggit.info(
+                                "Repository %s unmounted successfully", repo.name
+                            )
                         except Exception as e:
                             self.loggit.error(
-                                "Failed to delete index %s: %s (type: %s)",
-                                index,
+                                "Failed to unmount repository %s: %s (type: %s)",
+                                repo.name,
                                 str(e),
                                 type(e).__name__,
                             )
-                else:
-                    self.loggit.info("No indices need to be deleted")
-            except Exception as e:
-                self.loggit.error("Error deleting indices: %s", e)
+                            # Don't add to cleanup list if unmount failed
+                            continue
+                    elif repo.is_mounted:
+                        # In-memory flag says mounted, but ES says not mounted
+                        self.loggit.info(
+                            "Repository %s marked as mounted but not found in Elasticsearch (likely already unmounted)",
+                            repo.name,
+                        )
+                    else:
+                        self.loggit.debug("Repository %s was not mounted", repo.name)
+
+                    # Reset repository to frozen state
+                    repo.reset_to_frozen()
+                    repo.persist(self.client)
+                    self.loggit.info("Repository %s reset to frozen state", repo.name)
+
+                    # Add to cleanup list for index deletion
+                    repos_to_cleanup.append(repo)
+
+                except Exception as e:
+                    self.loggit.error(
+                        "Error cleaning up repository %s: %s", repo.name, e
+                    )
+
+            # Delete indices whose snapshots are only in repositories being cleaned up
+            if repos_to_cleanup:
+                self.loggit.info(
+                    "Checking for indices to delete from cleaned up repositories"
+                )
+                try:
+                    indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
+
+                    if indices_to_delete:
+                        self.loggit.info(
+                            "Deleting %d indices whose snapshots are only in cleaned up repositories",
+                            len(indices_to_delete),
+                        )
+                        for index in indices_to_delete:
+                            try:
+                                # CRITICAL FIX: Validate index exists and get its status before deletion
+                                if not self.client.indices.exists(index=index):
+                                    self.loggit.warning(
+                                        "Index %s no longer exists, skipping deletion",
+                                        index,
+                                    )
+                                    continue
+
+                                # Get index health before deletion for audit trail
+                                try:
+                                    health = self.client.cluster.health(
+                                        index=index, level='indices'
+                                    )
+                                    index_health = health.get('indices', {}).get(
+                                        index, {}
+                                    )
+                                    status = index_health.get('status', 'unknown')
+                                    active_shards = index_health.get(
+                                        'active_shards', 'unknown'
+                                    )
+                                    active_primary_shards = index_health.get(
+                                        'active_primary_shards', 'unknown'
+                                    )
+
+                                    self.loggit.info(
+                                        "Preparing to delete index %s (health: %s, primary_shards: %s, total_shards: %s)",
+                                        index,
+                                        status,
+                                        active_primary_shards,
+                                        active_shards,
+                                    )
+                                except Exception as health_error:
+                                    # Log but don't fail deletion if health check fails
+                                    self.loggit.debug(
+                                        "Could not get health for index %s: %s",
+                                        index,
+                                        health_error,
+                                    )
+
+                                # Perform deletion
+                                self.client.indices.delete(index=index)
+                                self.loggit.info("Successfully deleted index %s", index)
+
+                            except Exception as e:
+                                self.loggit.error(
+                                    "Failed to delete index %s: %s (type: %s)",
+                                    index,
+                                    str(e),
+                                    type(e).__name__,
+                                )
+                    else:
+                        self.loggit.info("No indices need to be deleted")
+                except Exception as e:
+                    self.loggit.error("Error deleting indices: %s", e)
 
         # Clean up old thaw requests
         self.loggit.info("Cleaning up old thaw requests")
@@ -616,8 +582,16 @@ class Cleanup:
                     len(deleted),
                     len(skipped),
                 )
+                rprint(f"[green]Deleted {len(deleted)} old thaw request(s)[/green]")
+                if skipped:
+                    rprint(
+                        f"[yellow]Skipped {len(skipped)} request(s) due to errors[/yellow]"
+                    )
+            else:
+                rprint("[dim]No old thaw requests to delete.[/dim]")
         except Exception as e:
             self.loggit.error("Error cleaning up thaw requests: %s", e)
+            rprint(f"[red]Error cleaning up thaw requests: {e}[/red]")
 
         # Clean up orphaned thawed ILM policies
         self.loggit.info("Cleaning up orphaned thawed ILM policies")
@@ -776,46 +750,47 @@ class Cleanup:
 
         if not expired_repos:
             self.loggit.info("DRY-RUN: No expired repositories found to clean up")
-            return
-
-        self.loggit.info(
-            "DRY-RUN: Found %d expired repositories to clean up", len(expired_repos)
-        )
-
-        # Track repositories that would be cleaned up
-        repos_to_cleanup = []
-
-        for repo in expired_repos:
-            action = (
-                "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
-            )
+        else:
             self.loggit.info(
-                "DRY-RUN: Would %s repository %s (state: %s)",
-                action,
-                repo.name,
-                repo.thaw_state,
+                "DRY-RUN: Found %d expired repositories to clean up", len(expired_repos)
             )
-            repos_to_cleanup.append(repo)
 
-        # Show which indices would be deleted
-        if repos_to_cleanup:
-            self.loggit.info(
-                "DRY-RUN: Checking for indices that would be deleted from cleaned up repositories"
-            )
-            try:
-                indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
+            # Track repositories that would be cleaned up
+            repos_to_cleanup = []
 
-                if indices_to_delete:
-                    self.loggit.info(
-                        "DRY-RUN: Would delete %d indices whose snapshots are only in cleaned up repositories:",
-                        len(indices_to_delete),
-                    )
-                    for index in indices_to_delete:
-                        self.loggit.info("DRY-RUN:   - %s", index)
-                else:
-                    self.loggit.info("DRY-RUN: No indices would be deleted")
-            except Exception as e:
-                self.loggit.error("DRY-RUN: Error finding indices to delete: %s", e)
+            for repo in expired_repos:
+                action = (
+                    "unmount and reset to frozen"
+                    if repo.is_mounted
+                    else "reset to frozen"
+                )
+                self.loggit.info(
+                    "DRY-RUN: Would %s repository %s (state: %s)",
+                    action,
+                    repo.name,
+                    repo.thaw_state,
+                )
+                repos_to_cleanup.append(repo)
+
+            # Show which indices would be deleted
+            if repos_to_cleanup:
+                self.loggit.info(
+                    "DRY-RUN: Checking for indices that would be deleted from cleaned up repositories"
+                )
+                try:
+                    indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
+
+                    if indices_to_delete:
+                        self.loggit.info(
+                            "DRY-RUN: Would delete %d indices whose snapshots are only in cleaned up repositories:",
+                            len(indices_to_delete),
+                        )
+                        for index in indices_to_delete:
+                            self.loggit.info("DRY-RUN:   - %s", index)
+                    else:
+                        self.loggit.info("DRY-RUN: No indices would be deleted")
+                except Exception as e:
+                    self.loggit.error("DRY-RUN: Error finding indices to delete: %s", e)
 
         # Show which thaw requests would be cleaned up
         self.loggit.info(
@@ -828,10 +803,7 @@ class Cleanup:
                 self.loggit.info("DRY-RUN: No thaw requests found")
             else:
                 now = datetime.now(timezone.utc)
-                retention_completed = (
-                    self.settings.thaw_request_retention_days_completed
-                )
-                retention_failed = self.settings.thaw_request_retention_days_failed
+                # Get retention setting for refrozen requests
                 # Use CLI override if provided, otherwise use settings value
                 retention_refrozen = (
                     self.refrozen_retention_days
@@ -849,7 +821,6 @@ class Cleanup:
 
                     status = request.get("status", "unknown")
                     created_at_str = request.get("created_at")
-                    repos = request.get("repos", [])
 
                     if not created_at_str:
                         self.loggit.warning(
@@ -867,43 +838,10 @@ class Cleanup:
                         should_delete = False
                         reason = ""
 
-                        if status == "completed" and age_days > retention_completed:
-                            should_delete = True
-                            reason = f"completed request older than {retention_completed} days (age: {age_days} days)"
-
-                        elif status == "failed" and age_days > retention_failed:
-                            should_delete = True
-                            reason = f"failed request older than {retention_failed} days (age: {age_days} days)"
-
-                        elif status == "refrozen" and age_days > retention_refrozen:
+                        # Only delete refrozen requests
+                        if status == "refrozen" and age_days >= retention_refrozen:
                             should_delete = True
                             reason = f"refrozen request older than {retention_refrozen} days (age: {age_days} days)"
-
-                        elif status == "in_progress" and repos:
-                            try:
-                                from curator.actions.deepfreeze.constants import (
-                                    THAW_STATE_THAWING,
-                                    THAW_STATE_THAWED,
-                                )
-
-                                repo_objects = get_repositories_by_names(
-                                    self.client, repos
-                                )
-                                any_active = any(
-                                    repo.thaw_state
-                                    in [THAW_STATE_THAWING, THAW_STATE_THAWED]
-                                    for repo in repo_objects
-                                )
-
-                                if not any_active:
-                                    should_delete = True
-                                    reason = "in-progress request with no active repos (all repos have been cleaned up)"
-                            except Exception as e:
-                                self.loggit.warning(
-                                    "DRY-RUN: Could not check repos for request %s: %s",
-                                    request_id,
-                                    e,
-                                )
 
                         if should_delete:
                             would_delete.append((request_id, reason))
@@ -919,10 +857,16 @@ class Cleanup:
                     self.loggit.info(
                         "DRY-RUN: Would delete %d old thaw requests:", len(would_delete)
                     )
+                    rprint(
+                        f"\n[yellow]DRY RUN: Would delete {len(would_delete)} old thaw requests:[/yellow]"
+                    )
                     for request_id, reason in would_delete:
                         self.loggit.info("DRY-RUN:   - %s (%s)", request_id, reason)
+                        rprint(f"  [dim]• {request_id}[/dim] - {reason}")
+                    rprint()  # blank line
                 else:
                     self.loggit.info("DRY-RUN: No thaw requests would be deleted")
+                    rprint("[dim]No old thaw requests to delete.[/dim]")
 
         except Exception as e:
             self.loggit.error("DRY-RUN: Error checking thaw requests: %s", e)

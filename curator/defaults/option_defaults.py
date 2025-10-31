@@ -896,7 +896,7 @@ def refrozen_retention_days():
     """
     return {
         Optional("refrozen_retention_days", default=None): Any(
-            None, All(Coerce(int), Range(min=1, max=365))
+            None, All(Coerce(int), Range(min=0, max=365))
         )
     }
 
