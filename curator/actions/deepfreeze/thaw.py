@@ -12,7 +12,13 @@ from elasticsearch8 import Elasticsearch
 from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 
 from curator.actions.deepfreeze.utilities import (
@@ -171,9 +177,7 @@ class Thaw:
             return True
 
         # Get the list of objects to restore
-        self.loggit.debug(
-            "Listing objects in s3://%s/%s", repo.bucket, repo.base_path
-        )
+        self.loggit.debug("Listing objects in s3://%s/%s", repo.bucket, repo.base_path)
         objects = self.s3.list_objects(repo.bucket, repo.base_path)
 
         self.loggit.info(
@@ -195,13 +199,14 @@ class Thaw:
 
             # Update repository state to 'thawing'
             from datetime import timedelta, timezone
+
             expires_at = datetime.now(timezone.utc) + timedelta(days=self.duration)
             repo.start_thawing(expires_at)
             repo.persist(self.client)
             self.loggit.debug(
                 "Repository %s marked as 'thawing', expires at %s",
                 repo.name,
-                expires_at.isoformat()
+                expires_at.isoformat(),
             )
 
             return True
@@ -209,7 +214,9 @@ class Thaw:
             self.loggit.error("Failed to thaw repository %s: %s", repo.name, e)
             return False
 
-    def _wait_for_restore(self, repo, poll_interval: int = 30, show_progress: bool = False) -> bool:
+    def _wait_for_restore(
+        self, repo, poll_interval: int = 30, show_progress: bool = False
+    ) -> bool:
         """
         Wait for restoration to complete by polling S3.
 
@@ -246,7 +253,7 @@ class Thaw:
                 task = progress.add_task(
                     f"Restoring {repo.name}",
                     total=total_objects,
-                    completed=initial_status["restored"]
+                    completed=initial_status["restored"],
                 )
 
                 while attempt < max_attempts:
@@ -257,7 +264,9 @@ class Thaw:
 
                     if status["complete"]:
                         progress.update(task, completed=total_objects)
-                        self.loggit.info("Restoration complete for repository %s", repo.name)
+                        self.loggit.info(
+                            "Restoration complete for repository %s", repo.name
+                        )
                         return True
 
                     attempt += 1
@@ -284,7 +293,9 @@ class Thaw:
                 )
 
                 if status["complete"]:
-                    self.loggit.info("Restoration complete for repository %s", repo.name)
+                    self.loggit.info(
+                        "Restoration complete for repository %s", repo.name
+                    )
                     return True
 
                 attempt += 1
@@ -320,16 +331,12 @@ class Thaw:
                     "Updated date range for %s: %s to %s",
                     repo.name,
                     repo.start.isoformat() if repo.start else "None",
-                    repo.end.isoformat() if repo.end else "None"
+                    repo.end.isoformat() if repo.end else "None",
                 )
             else:
-                self.loggit.debug(
-                    "No date range update needed for %s", repo.name
-                )
+                self.loggit.debug("No date range update needed for %s", repo.name)
         except Exception as e:
-            self.loggit.warning(
-                "Failed to update date range for %s: %s", repo.name, e
-            )
+            self.loggit.warning("Failed to update date range for %s: %s", repo.name, e)
 
     def do_check_status(self) -> None:
         """
@@ -353,9 +360,14 @@ class Thaw:
 
         # Skip refrozen requests - they have been cleaned up and are no longer active
         if request.get("status") == "refrozen":
-            self.loggit.info("Thaw request %s has been refrozen, skipping status check", self.check_status)
+            self.loggit.info(
+                "Thaw request %s has been refrozen, skipping status check",
+                self.check_status,
+            )
             if not self.porcelain:
-                rprint(f"\n[yellow]Thaw request {self.check_status} has been refrozen and is no longer active.[/yellow]\n")
+                rprint(
+                    f"\n[yellow]Thaw request {self.check_status} has been refrozen and is no longer active.[/yellow]\n"
+                )
             return
 
         # Get the repository objects
@@ -371,18 +383,40 @@ class Thaw:
         mounted_count = 0
         newly_mounted_repos = []
 
+        # Cache status results to avoid redundant checks
+        # Key: repo.name, Value: status dict from check_restore_status
+        status_cache = {}
+
         # Show progress if mounting will happen
         repos_to_check = [repo for repo in repos if not repo.is_mounted]
+        total_repos_to_check = len(repos_to_check)
 
         if repos_to_check and not self.porcelain:
-            rprint("[cyan]Checking restoration status...[/cyan]")
+            rprint(
+                f"[cyan]Checking restoration status... ({total_repos_to_check} repos to check)[/cyan]"
+            )
 
+        checked_count = 0
         for repo in repos:
             if repo.is_mounted:
                 self.loggit.debug("Repository %s is already mounted", repo.name)
                 continue
 
+            checked_count += 1
+            if not self.porcelain:
+                rprint(
+                    f"  [dim]Checking {repo.name} ({checked_count}/{total_repos_to_check})...[/dim]",
+                    end="",
+                )
+
             status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+            # Cache the status for later use in display
+            status_cache[repo.name] = status
+
+            # Clear the progress line and show result
+            if not self.porcelain:
+                # Use carriage return to overwrite the progress line
+                rprint("\r" + " " * 80 + "\r", end="")
 
             if status["complete"]:
                 self.loggit.info("Restoration complete for %s, mounting...", repo.name)
@@ -468,7 +502,9 @@ class Thaw:
         # STEP 3: Update thaw request status if all repositories are ready
         if all_complete:
             update_thaw_request(self.client, self.check_status, status="completed")
-            self.loggit.info("All repositories restored and mounted. Thaw request completed.")
+            self.loggit.info(
+                "All repositories restored and mounted. Thaw request completed."
+            )
         else:
             if mounted_count > 0:
                 self.loggit.info(
@@ -480,7 +516,7 @@ class Thaw:
         # Now users see the current state including any newly mounted repos/indices
         if not self.porcelain:
             rprint()  # Blank line before status display
-        self._display_thaw_status(request, repos)
+        self._display_thaw_status(request, repos, status_cache=status_cache)
 
     def do_check_all_status(self) -> None:
         """
@@ -524,7 +560,9 @@ class Thaw:
             repos = get_repositories_by_names(self.client, request.get("repos", []))
 
             if not repos:
-                self.loggit.warning("No repositories found for thaw request %s", request_id)
+                self.loggit.warning(
+                    "No repositories found for thaw request %s", request_id
+                )
                 continue
 
             # Get date range for display/output
@@ -539,20 +577,50 @@ class Thaw:
 
             # Show progress indicator if any repos need checking
             repos_to_check = [repo for repo in repos if not repo.is_mounted]
+            total_repos_to_check = len(repos_to_check)
+
             if repos_to_check and not self.porcelain:
-                rprint(f"[cyan]Checking request {request_id}...[/cyan]")
+                rprint(
+                    f"[cyan]Checking request {request_id}... ({total_repos_to_check} repos to check)[/cyan]"
+                )
+
+            # Cache status results to avoid redundant checks
+            # Key: repo.name, Value: status dict from check_restore_status
+            status_cache = {}
 
             # Check each repository's status and mount if ready
+            checked_count = 0
             for repo in repos:
                 # Check restore status if not mounted
                 if not repo.is_mounted:
+                    checked_count += 1
+                    if not self.porcelain:
+                        rprint(
+                            f"  [dim]Checking {repo.name} ({checked_count}/{total_repos_to_check})...[/dim]",
+                            end="",
+                        )
+
                     try:
-                        status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                        status = check_restore_status(
+                            self.s3, repo.bucket, repo.base_path
+                        )
+                        # Cache the status for later use in display
+                        status_cache[repo.name] = status
+
+                        # Clear the progress line and show result
+                        if not self.porcelain:
+                            # Use carriage return to overwrite the progress line
+                            rprint("\r" + " " * 80 + "\r", end="")
+
                         if status["complete"]:
                             # Mount the repository
-                            self.loggit.info("Restoration complete for %s, mounting...", repo.name)
+                            self.loggit.info(
+                                "Restoration complete for %s, mounting...", repo.name
+                            )
                             if not self.porcelain:
-                                rprint(f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]...")
+                                rprint(
+                                    f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]..."
+                                )
                             mount_repo(self.client, repo)
                             self._update_repo_dates(repo)
                             mounted_count += 1
@@ -568,7 +636,9 @@ class Thaw:
                             )
                             all_complete = False
                     except Exception as e:
-                        self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
+                        self.loggit.warning(
+                            "Failed to check status for %s: %s", repo.name, e
+                        )
                         all_complete = False
 
             # STEP 2: Mount indices if all repositories are complete and mounted
@@ -623,7 +693,9 @@ class Thaw:
                 except Exception as e:
                     self.loggit.warning("Failed to mount indices: %s", e)
                     if not self.porcelain:
-                        rprint(f"[yellow]Warning: Failed to mount indices: {e}[/yellow]")
+                        rprint(
+                            f"[yellow]Warning: Failed to mount indices: {e}[/yellow]"
+                        )
 
             # STEP 3: Update thaw request status if all repositories are ready
             if all_complete:
@@ -633,38 +705,45 @@ class Thaw:
             # STEP 4: Build repo data for display AFTER mounting
             repo_data = []
             for repo in repos:
-                # Check restore status if not mounted
-                if not repo.is_mounted:
-                    try:
-                        status = check_restore_status(self.s3, repo.bucket, repo.base_path)
-                        if status["complete"]:
-                            progress = "Complete"
-                        else:
-                            progress = f"{status['restored']}/{status['total']}"
-                    except Exception as e:
-                        self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
-                        progress = "Error"
+                # Use cached status if available, otherwise mark as mounted/complete
+                if not repo.is_mounted and repo.name in status_cache:
+                    # Use cached status from earlier check
+                    status = status_cache[repo.name]
+                    if status["complete"]:
+                        progress = "Complete"
+                    else:
+                        progress = f"{status['restored']}/{status['total']}"
+                elif not repo.is_mounted:
+                    # No cached status (shouldn't happen, but handle it)
+                    progress = "Unknown"
                 else:
+                    # Repository is mounted
                     progress = "Complete"
 
-                repo_data.append({
-                    "name": repo.name,
-                    "bucket": repo.bucket if repo.bucket else "",
-                    "path": repo.base_path if repo.base_path else "",
-                    "state": repo.thaw_state,
-                    "mounted": "yes" if repo.is_mounted else "no",
-                    "progress": progress,
-                })
+                repo_data.append(
+                    {
+                        "name": repo.name,
+                        "bucket": repo.bucket if repo.bucket else "",
+                        "path": repo.base_path if repo.base_path else "",
+                        "state": repo.thaw_state,
+                        "mounted": "yes" if repo.is_mounted else "no",
+                        "progress": progress,
+                    }
+                )
 
             # STEP 5: Display updated status AFTER mounting
             if self.porcelain:
                 # Machine-readable output: tab-separated values
                 # Format: REQUEST\t{request_id}\t{status}\t{created_at}\t{start_date}\t{end_date}
-                print(f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}\t{start_date_str}\t{end_date_str}")
+                print(
+                    f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}\t{start_date_str}\t{end_date_str}"
+                )
 
                 # Format: REPO\t{name}\t{bucket}\t{path}\t{state}\t{mounted}\t{progress}
                 for repo_info in repo_data:
-                    print(f"REPO\t{repo_info['name']}\t{repo_info['bucket']}\t{repo_info['path']}\t{repo_info['state']}\t{repo_info['mounted']}\t{repo_info['progress']}")
+                    print(
+                        f"REPO\t{repo_info['name']}\t{repo_info['bucket']}\t{repo_info['path']}\t{repo_info['state']}\t{repo_info['mounted']}\t{repo_info['progress']}"
+                    )
             else:
                 # Human-readable output: formatted display
                 # Format dates for display
@@ -679,19 +758,35 @@ class Thaw:
                     end_date_display = end_date_str if end_date_str else "--"
 
                 # Display request info
-                rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
+                rprint(
+                    f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]"
+                )
                 rprint(f"[cyan]Status: {request['status']}[/cyan]")
                 rprint(f"[cyan]Created: {request['created_at']}[/cyan]")
-                rprint(f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n")
+                rprint(
+                    f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n"
+                )
 
                 # Create table for repository status
                 table = Table(title="Repository Status")
-                table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
-                table.add_column("Bucket", style="magenta", no_wrap=False, overflow="fold")
-                table.add_column("Path", style="magenta", no_wrap=False, overflow="fold")
-                table.add_column("State", style="yellow", no_wrap=False, overflow="fold")
-                table.add_column("Mounted", style="green", no_wrap=False, overflow="fold")
-                table.add_column("Restore Progress", style="magenta", no_wrap=False, overflow="fold")
+                table.add_column(
+                    "Repository", style="cyan", no_wrap=False, overflow="fold"
+                )
+                table.add_column(
+                    "Bucket", style="magenta", no_wrap=False, overflow="fold"
+                )
+                table.add_column(
+                    "Path", style="magenta", no_wrap=False, overflow="fold"
+                )
+                table.add_column(
+                    "State", style="yellow", no_wrap=False, overflow="fold"
+                )
+                table.add_column(
+                    "Mounted", style="green", no_wrap=False, overflow="fold"
+                )
+                table.add_column(
+                    "Restore Progress", style="magenta", no_wrap=False, overflow="fold"
+                )
 
                 for repo_info in repo_data:
                     table.add_row(
@@ -726,18 +821,24 @@ class Thaw:
         :return: None
         :rtype: None
         """
-        self.loggit.info("Listing thaw requests (include_completed=%s)", self.include_completed)
+        self.loggit.info(
+            "Listing thaw requests (include_completed=%s)", self.include_completed
+        )
 
         all_requests = list_thaw_requests(self.client)
 
         # Filter completed and refrozen requests unless explicitly included
         if not self.include_completed:
-            requests = [req for req in all_requests if req.get("status") not in ("completed", "refrozen")]
+            requests = [
+                req
+                for req in all_requests
+                if req.get("status") not in ("completed", "refrozen")
+            ]
             filtered_count = len(all_requests) - len(requests)
             self.loggit.debug(
                 "Filtered %d completed/refrozen requests, %d remaining",
                 filtered_count,
-                len(requests)
+                len(requests),
             )
         else:
             requests = all_requests
@@ -747,7 +848,9 @@ class Thaw:
                 if self.include_completed:
                     rprint("\n[yellow]No thaw requests found.[/yellow]\n")
                 else:
-                    rprint("\n[yellow]No active thaw requests found. Use --include-completed to see completed/refrozen requests.[/yellow]\n")
+                    rprint(
+                        "\n[yellow]No active thaw requests found. Use --include-completed to see completed/refrozen requests.[/yellow]\n"
+                    )
             return
 
         if self.porcelain:
@@ -760,17 +863,27 @@ class Thaw:
                 end_date = req.get("end_date", "")
                 created_at = req.get("created_at", "")
 
-                print(f"REQUEST\t{req['id']}\t{status}\t{repo_count}\t{start_date}\t{end_date}\t{created_at}")
+                print(
+                    f"REQUEST\t{req['id']}\t{status}\t{repo_count}\t{start_date}\t{end_date}\t{created_at}"
+                )
         else:
             # Human-readable output: formatted table
             # Create table
             table = Table(title="Thaw Requests")
             table.add_column("Request ID", style="cyan", no_wrap=False, overflow="fold")
-            table.add_column("St", style="magenta", no_wrap=False, overflow="fold")  # Abbreviated Status
-            table.add_column("Repos", style="magenta", no_wrap=False, overflow="fold")  # Abbreviated Repositories
-            table.add_column("Start Date", style="green", no_wrap=False, overflow="fold")
+            table.add_column(
+                "St", style="magenta", no_wrap=False, overflow="fold"
+            )  # Abbreviated Status
+            table.add_column(
+                "Repos", style="magenta", no_wrap=False, overflow="fold"
+            )  # Abbreviated Repositories
+            table.add_column(
+                "Start Date", style="green", no_wrap=False, overflow="fold"
+            )
             table.add_column("End Date", style="green", no_wrap=False, overflow="fold")
-            table.add_column("Created At", style="magenta", no_wrap=False, overflow="fold")
+            table.add_column(
+                "Created At", style="magenta", no_wrap=False, overflow="fold"
+            )
 
             # Add rows
             for req in requests:
@@ -814,9 +927,13 @@ class Thaw:
                 )
 
             self.console.print(table)
-            rprint("[dim]Status: IP=In Progress, C=Completed, R=Refrozen, F=Failed, U=Unknown[/dim]")
+            rprint(
+                "[dim]Status: IP=In Progress, C=Completed, R=Refrozen, F=Failed, U=Unknown[/dim]"
+            )
 
-    def _display_thaw_status(self, request: dict, repos: list) -> None:
+    def _display_thaw_status(
+        self, request: dict, repos: list, status_cache: dict = None
+    ) -> None:
         """
         Display detailed status information for a thaw request.
 
@@ -824,6 +941,8 @@ class Thaw:
         :type request: dict
         :param repos: List of Repository objects
         :type repos: list
+        :param status_cache: Optional cache of status results (repo.name -> status dict)
+        :type status_cache: dict
 
         :return: None
         :rtype: None
@@ -835,37 +954,56 @@ class Thaw:
         # Build repo data with restore progress
         repo_data = []
         for repo in repos:
-            # Check restore status if not mounted
+            # Use cached status if available, otherwise check restore status
             if not repo.is_mounted:
-                try:
-                    status = check_restore_status(self.s3, repo.bucket, repo.base_path)
+                # Try to use cached status first
+                if status_cache and repo.name in status_cache:
+                    status = status_cache[repo.name]
                     if status["complete"]:
                         progress = "Complete"
                     else:
                         progress = f"{status['restored']}/{status['total']}"
-                except Exception as e:
-                    self.loggit.warning("Failed to check status for %s: %s", repo.name, e)
-                    progress = "Error"
+                else:
+                    # No cache available, check status
+                    try:
+                        status = check_restore_status(
+                            self.s3, repo.bucket, repo.base_path
+                        )
+                        if status["complete"]:
+                            progress = "Complete"
+                        else:
+                            progress = f"{status['restored']}/{status['total']}"
+                    except Exception as e:
+                        self.loggit.warning(
+                            "Failed to check status for %s: %s", repo.name, e
+                        )
+                        progress = "Error"
             else:
                 progress = "Complete"
 
-            repo_data.append({
-                "name": repo.name,
-                "bucket": repo.bucket if repo.bucket else "",
-                "path": repo.base_path if repo.base_path else "",
-                "state": repo.thaw_state,
-                "mounted": "yes" if repo.is_mounted else "no",
-                "progress": progress,
-            })
+            repo_data.append(
+                {
+                    "name": repo.name,
+                    "bucket": repo.bucket if repo.bucket else "",
+                    "path": repo.base_path if repo.base_path else "",
+                    "state": repo.thaw_state,
+                    "mounted": "yes" if repo.is_mounted else "no",
+                    "progress": progress,
+                }
+            )
 
         if self.porcelain:
             # Machine-readable output: tab-separated values
             # Format: REQUEST\t{request_id}\t{status}\t{created_at}\t{start_date}\t{end_date}
-            print(f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}\t{start_date_str}\t{end_date_str}")
+            print(
+                f"REQUEST\t{request['request_id']}\t{request['status']}\t{request['created_at']}\t{start_date_str}\t{end_date_str}"
+            )
 
             # Format: REPO\t{name}\t{bucket}\t{path}\t{state}\t{mounted}\t{progress}
             for repo_info in repo_data:
-                print(f"REPO\t{repo_info['name']}\t{repo_info['bucket']}\t{repo_info['path']}\t{repo_info['state']}\t{repo_info['mounted']}\t{repo_info['progress']}")
+                print(
+                    f"REPO\t{repo_info['name']}\t{repo_info['bucket']}\t{repo_info['path']}\t{repo_info['state']}\t{repo_info['mounted']}\t{repo_info['progress']}"
+                )
         else:
             # Human-readable output: formatted display
             # Format dates for display
@@ -882,7 +1020,9 @@ class Thaw:
             rprint(f"\n[bold cyan]Thaw Request: {request['request_id']}[/bold cyan]")
             rprint(f"[cyan]Status: {request['status']}[/cyan]")
             rprint(f"[cyan]Created: {request['created_at']}[/cyan]")
-            rprint(f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n")
+            rprint(
+                f"[green]Date Range: {start_date_display} to {end_date_display}[/green]\n"
+            )
 
             # Create table for repository status
             table = Table(title="Repository Status")
@@ -891,7 +1031,9 @@ class Thaw:
             table.add_column("Path", style="magenta", no_wrap=False, overflow="fold")
             table.add_column("State", style="yellow", no_wrap=False, overflow="fold")
             table.add_column("Mounted", style="green", no_wrap=False, overflow="fold")
-            table.add_column("Restore Progress", style="magenta", no_wrap=False, overflow="fold")
+            table.add_column(
+                "Restore Progress", style="magenta", no_wrap=False, overflow="fold"
+            )
 
             for repo_info in repo_data:
                 table.add_row(
@@ -923,7 +1065,9 @@ class Thaw:
         if self.mode == "check_status":
             # Type guard: check_status must be a non-empty string in this mode
             if not self.check_status:
-                raise ValueError("check_status must be provided for single status check")
+                raise ValueError(
+                    "check_status must be provided for single status check"
+                )
 
             self.loggit.info(
                 "DRY-RUN: Would check status of thaw request %s", self.check_status
@@ -932,11 +1076,15 @@ class Thaw:
             request = get_thaw_request(self.client, self.check_status)
             repos = get_repositories_by_names(self.client, request["repos"])
             self._display_thaw_status(request, repos)
-            self.loggit.info("DRY-RUN: Would mount any repositories with completed restoration")
+            self.loggit.info(
+                "DRY-RUN: Would mount any repositories with completed restoration"
+            )
             return
 
         if self.mode == "check_all_status":
-            self.loggit.info("DRY-RUN: Would check status of all thaw requests and mount any repositories with completed restoration")
+            self.loggit.info(
+                "DRY-RUN: Would check status of all thaw requests and mount any repositories with completed restoration"
+            )
             return
 
         # Create mode
@@ -965,11 +1113,11 @@ class Thaw:
             )
 
         if self.sync:
-            self.loggit.info("DRY-RUN: Would wait for restoration and mount repositories")
-        else:
             self.loggit.info(
-                "DRY-RUN: Would return request ID: %s", self.request_id
+                "DRY-RUN: Would wait for restoration and mount repositories"
             )
+        else:
+            self.loggit.info("DRY-RUN: Would return request ID: %s", self.request_id)
 
     def do_action(self) -> None:
         """
@@ -999,25 +1147,29 @@ class Thaw:
 
         # Phase 1: Find matching repositories
         if self.sync:
-            self.console.print(Panel(
-                f"[bold cyan]Phase 1: Finding Repositories[/bold cyan]\n\n"
-                f"Date Range: [yellow]{self.start_date.isoformat()}[/yellow] to "
-                f"[yellow]{self.end_date.isoformat()}[/yellow]",
-                border_style="cyan",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    f"[bold cyan]Phase 1: Finding Repositories[/bold cyan]\n\n"
+                    f"Date Range: [yellow]{self.start_date.isoformat()}[/yellow] to "
+                    f"[yellow]{self.end_date.isoformat()}[/yellow]",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
 
         repos = find_repos_by_date_range(self.client, self.start_date, self.end_date)
 
         if not repos:
             self.loggit.warning("No repositories found for date range")
             if self.sync:
-                self.console.print(Panel(
-                    "[yellow]No repositories found matching the specified date range.[/yellow]",
-                    title="[bold yellow]No Repositories Found[/bold yellow]",
-                    border_style="yellow",
-                    expand=False
-                ))
+                self.console.print(
+                    Panel(
+                        "[yellow]No repositories found matching the specified date range.[/yellow]",
+                        title="[bold yellow]No Repositories Found[/bold yellow]",
+                        border_style="yellow",
+                        expand=False,
+                    )
+                )
             return
 
         self.loggit.info("Found %d repositories to thaw", len(repos))
@@ -1027,7 +1179,9 @@ class Thaw:
             table = Table(title=f"Found {len(repos)} Repositories")
             table.add_column("Repository", style="cyan", no_wrap=False, overflow="fold")
             table.add_column("Bucket", style="magenta", no_wrap=False, overflow="fold")
-            table.add_column("Base Path", style="magenta", no_wrap=False, overflow="fold")
+            table.add_column(
+                "Base Path", style="magenta", no_wrap=False, overflow="fold"
+            )
             for repo in repos:
                 table.add_row(repo.name, repo.bucket or "--", repo.base_path or "--")
             self.console.print(table)
@@ -1035,22 +1189,28 @@ class Thaw:
 
         # Phase 2: Initiate thaw for each repository
         if self.sync:
-            self.console.print(Panel(
-                f"[bold cyan]Phase 2: Initiating Glacier Restore[/bold cyan]\n\n"
-                f"Retrieval Tier: [yellow]{self.retrieval_tier}[/yellow]\n"
-                f"Duration: [yellow]{self.duration} days[/yellow]",
-                border_style="cyan",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    f"[bold cyan]Phase 2: Initiating Glacier Restore[/bold cyan]\n\n"
+                    f"Retrieval Tier: [yellow]{self.retrieval_tier}[/yellow]\n"
+                    f"Duration: [yellow]{self.duration} days[/yellow]",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
 
         thawed_repos = []
         for repo in repos:
             if self.sync:
-                self.console.print(f"  [cyan]→[/cyan] Initiating restore for [bold]{repo.name}[/bold]...")
+                self.console.print(
+                    f"  [cyan]→[/cyan] Initiating restore for [bold]{repo.name}[/bold]..."
+                )
             if self._thaw_repository(repo):
                 thawed_repos.append(repo)
                 if self.sync:
-                    self.console.print("    [green]✓[/green] Restore initiated successfully")
+                    self.console.print(
+                        "    [green]✓[/green] Restore initiated successfully"
+                    )
             else:
                 if self.sync:
                     self.console.print("    [red]✗[/red] Failed to initiate restore")
@@ -1058,15 +1218,19 @@ class Thaw:
         if not thawed_repos:
             self.loggit.error("Failed to thaw any repositories")
             if self.sync:
-                self.console.print(Panel(
-                    "[red]Failed to initiate restore for any repositories.[/red]",
-                    title="[bold red]Thaw Failed[/bold red]",
-                    border_style="red",
-                    expand=False
-                ))
+                self.console.print(
+                    Panel(
+                        "[red]Failed to initiate restore for any repositories.[/red]",
+                        title="[bold red]Thaw Failed[/bold red]",
+                        border_style="red",
+                        expand=False,
+                    )
+                )
             return
 
-        self.loggit.info("Successfully initiated thaw for %d repositories", len(thawed_repos))
+        self.loggit.info(
+            "Successfully initiated thaw for %d repositories", len(thawed_repos)
+        )
         if self.sync:
             self.console.print()
 
@@ -1081,16 +1245,20 @@ class Thaw:
                 self.start_date,
                 self.end_date,
             )
-            self.loggit.debug("Saved sync thaw request %s for status tracking", self.request_id)
+            self.loggit.debug(
+                "Saved sync thaw request %s for status tracking", self.request_id
+            )
 
             # Phase 3: Wait for restoration
-            self.console.print(Panel(
-                "[bold cyan]Phase 3: Waiting for Glacier Restoration[/bold cyan]\n\n"
-                "This may take several hours depending on the retrieval tier.\n"
-                "Progress will be updated as objects are restored.",
-                border_style="cyan",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    "[bold cyan]Phase 3: Waiting for Glacier Restoration[/bold cyan]\n\n"
+                    "This may take several hours depending on the retrieval tier.\n"
+                    "Progress will be updated as objects are restored.",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
 
             successfully_restored = []
             failed_restores = []
@@ -1106,28 +1274,34 @@ class Thaw:
                     )
 
             if not successfully_restored:
-                self.console.print(Panel(
-                    "[red]No repositories were successfully restored.[/red]",
-                    title="[bold red]Restoration Failed[/bold red]",
-                    border_style="red",
-                    expand=False
-                ))
+                self.console.print(
+                    Panel(
+                        "[red]No repositories were successfully restored.[/red]",
+                        title="[bold red]Restoration Failed[/bold red]",
+                        border_style="red",
+                        expand=False,
+                    )
+                )
                 return
 
             self.console.print()
 
             # Phase 4: Mount repositories
-            self.console.print(Panel(
-                f"[bold cyan]Phase 4: Mounting Repositories[/bold cyan]\n\n"
-                f"Mounting {len(successfully_restored)} restored "
-                f"repositor{'y' if len(successfully_restored) == 1 else 'ies'}.",
-                border_style="cyan",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    f"[bold cyan]Phase 4: Mounting Repositories[/bold cyan]\n\n"
+                    f"Mounting {len(successfully_restored)} restored "
+                    f"repositor{'y' if len(successfully_restored) == 1 else 'ies'}.",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
 
             mounted_count = 0
             for repo in successfully_restored:
-                self.console.print(f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]...")
+                self.console.print(
+                    f"  [cyan]→[/cyan] Mounting [bold]{repo.name}[/bold]..."
+                )
                 try:
                     mount_repo(self.client, repo)
                     self.console.print("    [green]✓[/green] Mounted successfully")
@@ -1139,11 +1313,13 @@ class Thaw:
             self.console.print()
 
             # Phase 5: Update date ranges
-            self.console.print(Panel(
-                "[bold cyan]Phase 5: Updating Repository Metadata[/bold cyan]",
-                border_style="cyan",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    "[bold cyan]Phase 5: Updating Repository Metadata[/bold cyan]",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
 
             for repo in successfully_restored:
                 self._update_repo_dates(repo)
@@ -1151,18 +1327,22 @@ class Thaw:
             self.console.print()
 
             # Phase 6: Mount indices
-            self.console.print(Panel(
-                "[bold cyan]Phase 6: Mounting Indices[/bold cyan]\n\n"
-                "Finding and mounting indices within the requested date range.",
-                border_style="cyan",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    "[bold cyan]Phase 6: Mounting Indices[/bold cyan]\n\n"
+                    "Finding and mounting indices within the requested date range.",
+                    border_style="cyan",
+                    expand=False,
+                )
+            )
 
             mount_result = find_and_mount_indices_in_date_range(
                 self.client, successfully_restored, self.start_date, self.end_date
             )
 
-            self.console.print(f"  [cyan]→[/cyan] Mounted [bold]{mount_result['mounted']}[/bold] indices")
+            self.console.print(
+                f"  [cyan]→[/cyan] Mounted [bold]{mount_result['mounted']}[/bold] indices"
+            )
             if mount_result['skipped'] > 0:
                 self.console.print(
                     f"  [dim]•[/dim] Skipped [dim]{mount_result['skipped']}[/dim] indices outside date range"
@@ -1191,18 +1371,26 @@ class Thaw:
                 f"Indices Mounted: [cyan]{mount_result['mounted']}[/cyan]",
             ]
             if failed_restores:
-                summary_lines.append(f"Failed Restores: [yellow]{len(failed_restores)}[/yellow]")
+                summary_lines.append(
+                    f"Failed Restores: [yellow]{len(failed_restores)}[/yellow]"
+                )
             if mount_result['failed'] > 0:
-                summary_lines.append(f"Failed Index Mounts: [yellow]{mount_result['failed']}[/yellow]")
+                summary_lines.append(
+                    f"Failed Index Mounts: [yellow]{mount_result['failed']}[/yellow]"
+                )
             if mount_result['datastream_successful'] > 0:
-                summary_lines.append(f"Data Stream Indices Added: [cyan]{mount_result['datastream_successful']}[/cyan]")
+                summary_lines.append(
+                    f"Data Stream Indices Added: [cyan]{mount_result['datastream_successful']}[/cyan]"
+                )
 
-            self.console.print(Panel(
-                "\n".join(summary_lines),
-                title="[bold green]Summary[/bold green]",
-                border_style="green",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    "\n".join(summary_lines),
+                    title="[bold green]Summary[/bold green]",
+                    border_style="green",
+                    expand=False,
+                )
+            )
 
             # Mark thaw request as completed
             update_thaw_request(self.client, self.request_id, status="completed")
@@ -1232,18 +1420,20 @@ class Thaw:
 
             # Display the thaw ID prominently for the user
             self.console.print()
-            self.console.print(Panel(
-                f"[bold green]Thaw Request Initiated[/bold green]\n\n"
-                f"Request ID: [cyan]{self.request_id}[/cyan]\n\n"
-                f"Glacier restore has been initiated for [cyan]{len(thawed_repos)}[/cyan] "
-                f"repositor{'y' if len(thawed_repos) == 1 else 'ies'}.\n"
-                f"Retrieval Tier: [yellow]{self.retrieval_tier}[/yellow]\n"
-                f"Duration: [yellow]{self.duration} days[/yellow]\n\n"
-                f"[dim]Check status with:[/dim]\n"
-                f"[yellow]curator_cli deepfreeze thaw --check-status {self.request_id}[/yellow]",
-                border_style="green",
-                expand=False
-            ))
+            self.console.print(
+                Panel(
+                    f"[bold green]Thaw Request Initiated[/bold green]\n\n"
+                    f"Request ID: [cyan]{self.request_id}[/cyan]\n\n"
+                    f"Glacier restore has been initiated for [cyan]{len(thawed_repos)}[/cyan] "
+                    f"repositor{'y' if len(thawed_repos) == 1 else 'ies'}.\n"
+                    f"Retrieval Tier: [yellow]{self.retrieval_tier}[/yellow]\n"
+                    f"Duration: [yellow]{self.duration} days[/yellow]\n\n"
+                    f"[dim]Check status with:[/dim]\n"
+                    f"[yellow]curator_cli deepfreeze thaw --check-status {self.request_id}[/yellow]",
+                    border_style="green",
+                    expand=False,
+                )
+            )
             self.console.print()
 
     def do_singleton_action(self) -> None:

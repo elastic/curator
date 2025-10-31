@@ -5,6 +5,7 @@
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 import botocore
@@ -521,7 +522,7 @@ def unmount_repo(client: Elasticsearch, repo: str) -> Repository:
             "Could not update date range for %s (keeping existing dates: %s to %s)",
             repo,
             repo_obj.start.isoformat() if repo_obj.start else "None",
-            repo_obj.end.isoformat() if repo_obj.end else "None"
+            repo_obj.end.isoformat() if repo_obj.end else "None",
         )
 
     # Mark repository as unmounted
@@ -623,22 +624,24 @@ def create_thawed_ilm_policy(client: Elasticsearch, repo_name: str) -> str:
             "phases": {
                 "delete": {
                     "min_age": "29d",
-                    "actions": {
-                        "delete": {"delete_searchable_snapshot": True}
-                    },
+                    "actions": {"delete": {"delete_searchable_snapshot": True}},
                 },
             }
         }
     }
 
-    loggit.info("Creating thawed ILM policy %s for repository %s", policy_name, repo_name)
+    loggit.info(
+        "Creating thawed ILM policy %s for repository %s", policy_name, repo_name
+    )
     loggit.debug("Thawed ILM policy body: %s", policy_body)
 
     try:
         # Check if policy already exists
         try:
             client.ilm.get_lifecycle(name=policy_name)
-            loggit.info("Thawed ILM policy %s already exists, skipping creation", policy_name)
+            loggit.info(
+                "Thawed ILM policy %s already exists, skipping creation", policy_name
+            )
             return policy_name
         except Exception:
             # Policy doesn't exist, create it
@@ -674,7 +677,11 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
     :raises Exception: If the repository does not exist
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    loggit.debug("Updating date range for repository %s (mounted: %s)", repo.name, repo.is_mounted)
+    loggit.debug(
+        "Updating date range for repository %s (mounted: %s)",
+        repo.name,
+        repo.is_mounted,
+    )
 
     # Store existing range to ensure we only extend, never shrink
     existing_start = repo.start
@@ -711,7 +718,10 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
                     loggit.debug("Found restored index: restored-%s", idx)
 
             if mounted_indices:
-                loggit.debug("Found %d mounted indices, querying timestamp ranges", len(mounted_indices))
+                loggit.debug(
+                    "Found %d mounted indices, querying timestamp ranges",
+                    len(mounted_indices),
+                )
                 # Query actual @timestamp ranges from mounted indices
                 earliest, latest = get_timestamp_range(client, mounted_indices)
             else:
@@ -725,12 +735,14 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
                 "Keeping existing date range: %s to %s",
                 repo.name,
                 existing_start.isoformat() if existing_start else "None",
-                existing_end.isoformat() if existing_end else "None"
+                existing_end.isoformat() if existing_end else "None",
             )
             return False
 
         if not earliest or not latest:
-            loggit.warning("Could not determine timestamp range for repository %s", repo.name)
+            loggit.warning(
+                "Could not determine timestamp range for repository %s", repo.name
+            )
             return False
 
         loggit.debug("Queried timestamp range: %s to %s", earliest, latest)
@@ -752,7 +764,7 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
                 existing_start.isoformat(),
                 existing_end.isoformat(),
                 final_start.isoformat(),
-                final_end.isoformat()
+                final_end.isoformat(),
             )
         else:
             # No existing dates - use the queried range
@@ -762,7 +774,7 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
                 "Setting initial date range for %s: %s to %s",
                 repo.name,
                 final_start.isoformat(),
-                final_end.isoformat()
+                final_end.isoformat(),
             )
 
         # Update the repository object
@@ -775,11 +787,7 @@ def update_repository_date_range(client: Elasticsearch, repo: Repository) -> boo
 
         if response["hits"]["total"]["value"] > 0:
             doc_id = response["hits"]["hits"][0]["_id"]
-            client.update(
-                index=STATUS_INDEX,
-                id=doc_id,
-                body={"doc": repo.to_dict()}
-            )
+            client.update(index=STATUS_INDEX, id=doc_id, body={"doc": repo.to_dict()})
         else:
             # Create new document if it doesn't exist
             client.index(index=STATUS_INDEX, body=repo.to_dict())
@@ -828,7 +836,7 @@ def find_repos_by_date_range(
                 ]
             }
         },
-        "size": 10000
+        "size": 10000,
     }
 
     try:
@@ -848,6 +856,9 @@ def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
     Uses head_object to check the Restore metadata field, which is the only way
     to determine if a Glacier object has been restored (storage class remains GLACIER
     even after restoration).
+
+    This function uses parallel processing to check multiple objects concurrently,
+    significantly improving performance when checking large numbers of objects.
 
     :param s3: The S3 client object
     :type s3: S3Client
@@ -870,14 +881,13 @@ def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
         normalized_path += "/"
 
     objects = s3.list_objects(bucket, normalized_path)
-
     total_count = len(objects)
-    restored_count = 0
-    in_progress_count = 0
-    not_restored_count = 0
+
+    # Separate objects by storage class
+    instant_access_count = 0
+    glacier_objects = []
 
     for obj in objects:
-        key = obj["Key"]
         storage_class = obj.get("StorageClass", "STANDARD")
 
         # For objects in instant-access tiers, no need to check restore status
@@ -887,10 +897,32 @@ def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
             "ONEZONE_IA",
             "INTELLIGENT_TIERING",
         ]:
-            restored_count += 1
-            continue
+            instant_access_count += 1
+        else:
+            # Collect Glacier objects for parallel checking
+            glacier_objects.append(obj["Key"])
 
-        # For Glacier objects, must use head_object to check Restore metadata
+    loggit.debug(
+        "Found %d instant-access objects and %d Glacier objects to check",
+        instant_access_count,
+        len(glacier_objects),
+    )
+
+    # If no Glacier objects, we're done
+    if not glacier_objects:
+        status = {
+            "total": total_count,
+            "restored": instant_access_count,
+            "in_progress": 0,
+            "not_restored": 0,
+            "complete": True if total_count > 0 else False,
+        }
+        loggit.debug("Restore status: %s", status)
+        return status
+
+    # Helper function to check a single Glacier object's restore status
+    def check_single_object(key: str) -> tuple:
+        """Check restore status for a single object. Returns (status, key) where status is 'restored', 'in_progress', or 'not_restored'."""
         try:
             metadata = s3.head_object(bucket, key)
             restore_header = metadata.get("Restore")
@@ -899,21 +931,53 @@ def check_restore_status(s3: S3Client, bucket: str, base_path: str) -> dict:
                 # Restore header exists - parse it to check status
                 # Format: 'ongoing-request="true"' or 'ongoing-request="false", expiry-date="..."'
                 if 'ongoing-request="true"' in restore_header:
-                    in_progress_count += 1
                     loggit.debug("Object %s: restoration in progress", key)
+                    return ("in_progress", key)
                 else:
                     # ongoing-request="false" means restoration is complete
-                    restored_count += 1
                     loggit.debug("Object %s: restored (expiry in header)", key)
+                    return ("restored", key)
             else:
                 # No Restore header means object is in Glacier and not being restored
-                not_restored_count += 1
-                loggit.debug("Object %s: in %s, not restored", key, storage_class)
+                loggit.debug("Object %s: in Glacier, not restored", key)
+                return ("not_restored", key)
 
         except Exception as e:
             loggit.warning("Failed to check restore status for %s: %s", key, e)
             # Count as not restored if we can't determine status
-            not_restored_count += 1
+            return ("not_restored", key)
+
+    # Check Glacier objects in parallel
+    restored_count = instant_access_count  # Start with instant-access objects
+    in_progress_count = 0
+    not_restored_count = 0
+
+    # Use ThreadPoolExecutor to check multiple objects concurrently
+    # boto3 client is thread-safe, so this is safe
+    max_workers = min(15, len(glacier_objects))  # Use up to 15 concurrent workers
+
+    loggit.debug(
+        "Checking %d Glacier objects using %d workers",
+        len(glacier_objects),
+        max_workers,
+    )
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all check tasks
+        future_to_key = {
+            executor.submit(check_single_object, key): key for key in glacier_objects
+        }
+
+        # Collect results as they complete
+        for future in as_completed(future_to_key):
+            status_result, key = future.result()
+
+            if status_result == "restored":
+                restored_count += 1
+            elif status_result == "in_progress":
+                in_progress_count += 1
+            else:  # not_restored
+                not_restored_count += 1
 
     status = {
         "total": total_count,
@@ -1152,7 +1216,7 @@ def get_repositories_by_names(
                 ]
             }
         },
-        "size": 10000
+        "size": 10000,
     }
 
     try:
@@ -1255,7 +1319,13 @@ def update_template_ilm_policy(
             template = templates["index_templates"][0]["index_template"]
 
             # Check if template uses the old policy
-            ilm_policy = template.get("template", {}).get("settings", {}).get("index", {}).get("lifecycle", {}).get("name")
+            ilm_policy = (
+                template.get("template", {})
+                .get("settings", {})
+                .get("index", {})
+                .get("lifecycle", {})
+                .get("name")
+            )
 
             if ilm_policy == old_policy_name:
                 # Update the policy name
@@ -1268,11 +1338,17 @@ def update_template_ilm_policy(
                 if "lifecycle" not in template["template"]["settings"]["index"]:
                     template["template"]["settings"]["index"]["lifecycle"] = {}
 
-                template["template"]["settings"]["index"]["lifecycle"]["name"] = new_policy_name
+                template["template"]["settings"]["index"]["lifecycle"][
+                    "name"
+                ] = new_policy_name
 
                 # Put the updated template
                 client.indices.put_index_template(name=template_name, body=template)
-                loggit.info("Updated composable template %s to use policy %s", template_name, new_policy_name)
+                loggit.info(
+                    "Updated composable template %s to use policy %s",
+                    template_name,
+                    new_policy_name,
+                )
                 return True
         else:
             # Get legacy template
@@ -1284,7 +1360,12 @@ def update_template_ilm_policy(
             template = templates[template_name]
 
             # Check if template uses the old policy
-            ilm_policy = template.get("settings", {}).get("index", {}).get("lifecycle", {}).get("name")
+            ilm_policy = (
+                template.get("settings", {})
+                .get("index", {})
+                .get("lifecycle", {})
+                .get("name")
+            )
 
             if ilm_policy == old_policy_name:
                 # Update the policy name
@@ -1299,7 +1380,11 @@ def update_template_ilm_policy(
 
                 # Put the updated template
                 client.indices.put_template(name=template_name, body=template)
-                loggit.info("Updated legacy template %s to use policy %s", template_name, new_policy_name)
+                loggit.info(
+                    "Updated legacy template %s to use policy %s",
+                    template_name,
+                    new_policy_name,
+                )
                 return True
 
         return False
@@ -1347,13 +1432,19 @@ def create_versioned_ilm_policy(
 
     # Deep copy the policy body to avoid modifying the original
     import copy
+
     new_policy_body = copy.deepcopy(base_policy_body)
 
     # Update all searchable_snapshot repository references
     if "phases" in new_policy_body:
         for phase_name, phase_config in new_policy_body["phases"].items():
-            if "actions" in phase_config and "searchable_snapshot" in phase_config["actions"]:
-                phase_config["actions"]["searchable_snapshot"]["snapshot_repository"] = new_repo_name
+            if (
+                "actions" in phase_config
+                and "searchable_snapshot" in phase_config["actions"]
+            ):
+                phase_config["actions"]["searchable_snapshot"][
+                    "snapshot_repository"
+                ] = new_repo_name
                 loggit.debug(
                     "Updated %s phase to reference repository %s",
                     phase_name,
@@ -1395,13 +1486,19 @@ def get_policies_for_repo(client: Elasticsearch, repo_name: str) -> dict:
         for phase_name, phase_config in phases.items():
             actions = phase_config.get("actions", {})
             if "searchable_snapshot" in actions:
-                snapshot_repo = actions["searchable_snapshot"].get("snapshot_repository")
+                snapshot_repo = actions["searchable_snapshot"].get(
+                    "snapshot_repository"
+                )
                 if snapshot_repo == repo_name:
                     matching_policies[policy_name] = policy_data
-                    loggit.debug("Found policy %s referencing %s", policy_name, repo_name)
+                    loggit.debug(
+                        "Found policy %s referencing %s", policy_name, repo_name
+                    )
                     break
 
-    loggit.info("Found %d policies referencing repository %s", len(matching_policies), repo_name)
+    loggit.info(
+        "Found %d policies referencing repository %s", len(matching_policies), repo_name
+    )
     return matching_policies
 
 
@@ -1501,7 +1598,9 @@ def find_snapshots_for_index(
     :rtype: list[str]
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
-    loggit.debug("Finding snapshots containing index %s in repo %s", index_name, repo_name)
+    loggit.debug(
+        "Finding snapshots containing index %s in repo %s", index_name, repo_name
+    )
 
     try:
         snapshots = client.snapshot.get(repository=repo_name, snapshot="_all")
@@ -1515,7 +1614,9 @@ def find_snapshots_for_index(
                 )
 
         loggit.info(
-            "Found %d snapshots containing index %s", len(matching_snapshots), index_name
+            "Found %d snapshots containing index %s",
+            len(matching_snapshots),
+            index_name,
         )
         return matching_snapshots
 
@@ -1525,7 +1626,11 @@ def find_snapshots_for_index(
 
 
 def mount_snapshot_index(
-    client: Elasticsearch, repo_name: str, snapshot_name: str, index_name: str, ilm_policy: str = None
+    client: Elasticsearch,
+    repo_name: str,
+    snapshot_name: str,
+    index_name: str,
+    ilm_policy: str = None,
 ) -> bool:
     """
     Mount an index from a snapshot as a searchable snapshot.
@@ -1557,12 +1662,19 @@ def mount_snapshot_index(
         if ilm_policy:
             try:
                 client.indices.put_settings(
-                    index=index_name,
-                    body={"index.lifecycle.name": ilm_policy}
+                    index=index_name, body={"index.lifecycle.name": ilm_policy}
                 )
-                loggit.info("Assigned ILM policy %s to already-mounted index %s", ilm_policy, index_name)
+                loggit.info(
+                    "Assigned ILM policy %s to already-mounted index %s",
+                    ilm_policy,
+                    index_name,
+                )
             except Exception as e:
-                loggit.warning("Failed to assign ILM policy to already-mounted index %s: %s", index_name, e)
+                loggit.warning(
+                    "Failed to assign ILM policy to already-mounted index %s: %s",
+                    index_name,
+                    e,
+                )
         return True
 
     try:
@@ -1577,12 +1689,15 @@ def mount_snapshot_index(
         if ilm_policy:
             try:
                 client.indices.put_settings(
-                    index=index_name,
-                    body={"index.lifecycle.name": ilm_policy}
+                    index=index_name, body={"index.lifecycle.name": ilm_policy}
                 )
-                loggit.info("Assigned ILM policy %s to index %s", ilm_policy, index_name)
+                loggit.info(
+                    "Assigned ILM policy %s to index %s", ilm_policy, index_name
+                )
             except Exception as e:
-                loggit.warning("Failed to assign ILM policy to index %s: %s", index_name, e)
+                loggit.warning(
+                    "Failed to assign ILM policy to index %s: %s", index_name, e
+                )
 
         return True
 
@@ -1618,9 +1733,15 @@ def wait_for_index_ready(
     while time.time() - start_time < max_wait_seconds:
         try:
             # Check if at least one shard is active
-            health = client.cluster.health(index=index_name, wait_for_active_shards=1, timeout="5s")
+            health = client.cluster.health(
+                index=index_name, wait_for_active_shards=1, timeout="5s"
+            )
             if health.get("active_shards", 0) > 0:
-                loggit.debug("Index %s is ready (active shards: %d)", index_name, health["active_shards"])
+                loggit.debug(
+                    "Index %s is ready (active shards: %d)",
+                    index_name,
+                    health["active_shards"],
+                )
                 return True
         except Exception as e:
             loggit.debug("Index %s not ready yet: %s", index_name, e)
@@ -1628,7 +1749,9 @@ def wait_for_index_ready(
         # Wait a bit before retrying
         time.sleep(2)
 
-    loggit.warning("Index %s did not become ready within %d seconds", index_name, max_wait_seconds)
+    loggit.warning(
+        "Index %s did not become ready within %d seconds", index_name, max_wait_seconds
+    )
     return False
 
 
@@ -1669,7 +1792,11 @@ def get_index_datastream_name(client: Elasticsearch, index_name: str) -> str:
                 parts = remaining.rsplit("-", 2)
                 if len(parts) >= 3:
                     ds_name = parts[0]
-                    loggit.debug("Index %s belongs to data stream %s (from metadata)", index_name, ds_name)
+                    loggit.debug(
+                        "Index %s belongs to data stream %s (from metadata)",
+                        index_name,
+                        ds_name,
+                    )
                     return ds_name
 
         # Fallback: check the actual index name itself
@@ -1683,7 +1810,11 @@ def get_index_datastream_name(client: Elasticsearch, index_name: str) -> str:
             parts = remaining.rsplit("-", 2)
             if len(parts) >= 3:
                 ds_name = parts[0]
-                loggit.debug("Index %s belongs to data stream %s (from index name)", index_name, ds_name)
+                loggit.debug(
+                    "Index %s belongs to data stream %s (from index name)",
+                    index_name,
+                    ds_name,
+                )
                 return ds_name
 
         return None
@@ -1724,20 +1855,36 @@ def add_index_to_datastream(
         client.indices.modify_data_stream(
             body={
                 "actions": [
-                    {"add_backing_index": {"data_stream": datastream_name, "index": index_name}}
+                    {
+                        "add_backing_index": {
+                            "data_stream": datastream_name,
+                            "index": index_name,
+                        }
+                    }
                 ]
             }
         )
-        loggit.info("Successfully added index %s to data stream %s", index_name, datastream_name)
+        loggit.info(
+            "Successfully added index %s to data stream %s", index_name, datastream_name
+        )
         return True
 
     except Exception as e:
-        loggit.error("Failed to add index %s to data stream %s: %s", index_name, datastream_name, e)
+        loggit.error(
+            "Failed to add index %s to data stream %s: %s",
+            index_name,
+            datastream_name,
+            e,
+        )
         return False
 
 
 def find_and_mount_indices_in_date_range(
-    client: Elasticsearch, repos: list[Repository], start_date: datetime, end_date: datetime, ilm_policy: str = None
+    client: Elasticsearch,
+    repos: list[Repository],
+    start_date: datetime,
+    end_date: datetime,
+    ilm_policy: str = None,
 ) -> dict:
     """
     Find and mount all indices within a date range from the given repositories.
@@ -1791,7 +1938,9 @@ def find_and_mount_indices_in_date_range(
         try:
             thawed_policy = create_thawed_ilm_policy(client, repo.name)
             created_policies.append(thawed_policy)
-            loggit.info("Using thawed ILM policy %s for repository %s", thawed_policy, repo.name)
+            loggit.info(
+                "Using thawed ILM policy %s for repository %s", thawed_policy, repo.name
+            )
         except Exception as e:
             loggit.error("Failed to create thawed ILM policy for %s: %s", repo.name, e)
             # Continue anyway - indices will still mount, just without ILM policy
@@ -1799,7 +1948,9 @@ def find_and_mount_indices_in_date_range(
         try:
             # Get all indices from snapshots in this repository
             all_indices = get_all_indices_in_repo(client, repo.name)
-            loggit.debug("Found %d indices in repository %s", len(all_indices), repo.name)
+            loggit.debug(
+                "Found %d indices in repository %s", len(all_indices), repo.name
+            )
 
             # For each index, check if it overlaps with the date range
             for index_name in all_indices:
@@ -1815,19 +1966,32 @@ def find_and_mount_indices_in_date_range(
                 # Check if index is already mounted - if so, skip the mount call
                 already_mounted = client.indices.exists(index=index_name)
                 if already_mounted:
-                    loggit.debug("Index %s is already mounted, skipping mount operation", index_name)
+                    loggit.debug(
+                        "Index %s is already mounted, skipping mount operation",
+                        index_name,
+                    )
                     # Still assign ILM policy if provided
-                    if thawed_policy and not mount_snapshot_index(client, repo.name, snapshot_name, index_name, thawed_policy):
-                        loggit.warning("Failed to assign ILM policy to already-mounted index %s", index_name)
+                    if thawed_policy and not mount_snapshot_index(
+                        client, repo.name, snapshot_name, index_name, thawed_policy
+                    ):
+                        loggit.warning(
+                            "Failed to assign ILM policy to already-mounted index %s",
+                            index_name,
+                        )
                 else:
                     # Mount the index temporarily to check its date range
-                    if not mount_snapshot_index(client, repo.name, snapshot_name, index_name, thawed_policy):
+                    if not mount_snapshot_index(
+                        client, repo.name, snapshot_name, index_name, thawed_policy
+                    ):
                         failed_indices.append(index_name)
                         continue
 
                     # Wait for index to become ready for queries
                     if not wait_for_index_ready(client, index_name):
-                        loggit.warning("Index %s did not become ready in time, may have query issues", index_name)
+                        loggit.warning(
+                            "Index %s did not become ready in time, may have query issues",
+                            index_name,
+                        )
 
                 # Track if index should stay mounted (default: yes, we're conservative)
                 keep_mounted = True
@@ -1862,13 +2026,15 @@ def find_and_mount_indices_in_date_range(
                                 client.indices.delete(index=index_name)
                                 loggit.debug("Unmounted index %s", index_name)
                             except Exception as e:
-                                loggit.warning("Failed to unmount index %s: %s", index_name, e)
+                                loggit.warning(
+                                    "Failed to unmount index %s: %s", index_name, e
+                                )
                             skipped_indices.append(index_name)
                     else:
                         # Could not get timestamps, keep mounted since we can't determine overlap
                         loggit.warning(
                             "Could not determine date range for %s, keeping mounted",
-                            index_name
+                            index_name,
                         )
 
                 except Exception as e:
@@ -1876,7 +2042,7 @@ def find_and_mount_indices_in_date_range(
                     loggit.warning(
                         "Error checking date range for index %s: %s, keeping mounted",
                         index_name,
-                        e
+                        e,
                     )
 
                 # For any index that's still mounted, add to list and check for data stream
