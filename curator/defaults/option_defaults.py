@@ -799,7 +799,11 @@ def month():
     """
     Month for deepfreeze operations
     """
-    return {Optional("month", default=datetime.today().month): All(Coerce(int), Range(min=1, max=12))}
+    return {
+        Optional("month", default=datetime.today().month): All(
+            Coerce(int), Range(min=1, max=12)
+        )
+    }
 
 
 def repo_name_prefix():
@@ -874,7 +878,9 @@ def style():
     """
     Naming style for deepfreeze repositories
     """
-    return {Optional("style", default="oneup"): Any("oneup", "date", "monthly", "weekly")}
+    return {
+        Optional("style", default="oneup"): Any("oneup", "date", "monthly", "weekly")
+    }
 
 
 def keep():
@@ -882,6 +888,17 @@ def keep():
     Number of repositories to keep mounted
     """
     return {Optional("keep", default=6): All(Coerce(int), Range(min=1, max=100))}
+
+
+def refrozen_retention_days():
+    """
+    Retention period in days for refrozen thaw requests (used by cleanup command)
+    """
+    return {
+        Optional("refrozen_retention_days", default=None): Any(
+            None, All(Coerce(int), Range(min=1, max=365))
+        )
+    }
 
 
 def start_date():
@@ -934,14 +951,20 @@ def list_requests():
     """
     Flag to list all thaw requests
     """
-    return {Optional("list_requests", default=False): Any(bool, All(Any(str), Boolean()))}
+    return {
+        Optional("list_requests", default=False): Any(bool, All(Any(str), Boolean()))
+    }
 
 
 def limit():
     """
     Number of most recent repositories to display in status
     """
-    return {Optional("limit", default=None): Any(None, All(Coerce(int), Range(min=1, max=10000)))}
+    return {
+        Optional("limit", default=None): Any(
+            None, All(Coerce(int), Range(min=1, max=10000))
+        )
+    }
 
 
 def show_repos():
@@ -962,7 +985,9 @@ def show_buckets():
     """
     Show buckets section in status output
     """
-    return {Optional("show_buckets", default=False): Any(bool, All(Any(str), Boolean()))}
+    return {
+        Optional("show_buckets", default=False): Any(bool, All(Any(str), Boolean()))
+    }
 
 
 def show_ilm():
@@ -1004,4 +1029,8 @@ def include_completed():
     """
     Include completed requests when listing thaw requests (default: exclude completed)
     """
-    return {Optional("include_completed", default=False): Any(bool, All(Any(str), Boolean()))}
+    return {
+        Optional("include_completed", default=False): Any(
+            bool, All(Any(str), Boolean())
+        )
+    }

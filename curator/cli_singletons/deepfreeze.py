@@ -342,14 +342,24 @@ def status(
 
 
 @deepfreeze.command()
+@click.option(
+    "-f",
+    "--refrozen-retention-days",
+    type=int,
+    default=None,
+    help="Override retention period for refrozen thaw requests (default: from config, typically 35 days)",
+)
 @click.pass_context
 def cleanup(
     ctx,
+    refrozen_retention_days,
 ):
     """
     Clean up expired thawed repositories
     """
-    manual_options = {}
+    manual_options = {
+        "refrozen_retention_days": refrozen_retention_days,
+    }
     action = CLIAction(
         ctx.info_name,
         ctx.obj["configdict"],

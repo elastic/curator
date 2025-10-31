@@ -35,6 +35,8 @@ class Cleanup:
 
     :param client: A client connection object
     :type client: Elasticsearch
+    :param refrozen_retention_days: Override retention period for refrozen thaw requests (default: None, uses config setting)
+    :type refrozen_retention_days: int
 
     :methods:
         do_action: Perform the cleanup operation (detect expired repos, unmount, delete indices).
@@ -42,13 +44,16 @@ class Cleanup:
         do_singleton_action: Entry point for singleton CLI execution.
     """
 
-    def __init__(self, client: Elasticsearch) -> None:
+    def __init__(
+        self, client: Elasticsearch, refrozen_retention_days: int = None
+    ) -> None:
         self.loggit = logging.getLogger("curator.actions.deepfreeze")
         self.loggit.debug("Initializing Deepfreeze Cleanup")
 
         self.client = client
         self.settings = get_settings(client)
         self.s3 = s3_client_factory(self.settings.provider)
+        self.refrozen_retention_days = refrozen_retention_days
 
         self.loggit.info("Deepfreeze Cleanup initialized")
 
@@ -63,7 +68,9 @@ class Cleanup:
         :return: List of index names to delete
         :rtype: list[str]
         """
-        self.loggit.debug("Finding indices to delete from repositories being cleaned up")
+        self.loggit.debug(
+            "Finding indices to delete from repositories being cleaned up"
+        )
 
         # Get all repository names being cleaned up
         cleanup_repo_names = {repo.name for repo in repos_to_cleanup}
@@ -78,7 +85,7 @@ class Cleanup:
                 self.loggit.debug(
                     "Repository %s contains %d indices in its snapshots",
                     repo.name,
-                    len(indices)
+                    len(indices),
                 )
             except Exception as e:
                 self.loggit.warning(
@@ -92,7 +99,7 @@ class Cleanup:
 
         self.loggit.debug(
             "Found %d total indices in repositories being cleaned up",
-            len(indices_in_cleanup_repos)
+            len(indices_in_cleanup_repos),
         )
 
         # Get all repositories in the cluster
@@ -112,9 +119,7 @@ class Cleanup:
         for index in indices_in_cleanup_repos:
             # Check if this index exists in Elasticsearch
             if not self.client.indices.exists(index=index):
-                self.loggit.debug(
-                    "Index %s does not exist in cluster, skipping", index
-                )
+                self.loggit.debug("Index %s does not exist in cluster, skipping", index)
                 continue
 
             # Check if this index has snapshots in other repositories
@@ -126,7 +131,7 @@ class Cleanup:
                         self.loggit.debug(
                             "Index %s has snapshots in repository %s, will not delete",
                             index,
-                            repo_name
+                            repo_name,
                         )
                         has_snapshots_elsewhere = True
                         break
@@ -135,7 +140,7 @@ class Cleanup:
                         "Could not check repository %s for index %s: %s",
                         repo_name,
                         index,
-                        e
+                        e,
                     )
                     continue
 
@@ -144,7 +149,7 @@ class Cleanup:
                 indices_to_delete.append(index)
                 self.loggit.debug(
                     "Index %s will be deleted (only exists in repositories being cleaned up)",
-                    index
+                    index,
                 )
 
         self.loggit.info("Found %d indices to delete", len(indices_to_delete))
@@ -164,10 +169,13 @@ class Cleanup:
         self.loggit.debug("Detecting expired repositories")
 
         from curator.actions.deepfreeze.constants import THAW_STATE_THAWED
+
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
 
         # Get thawed repos for timestamp-based checking
-        thawed_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_THAWED]
+        thawed_repos = [
+            repo for repo in all_repos if repo.thaw_state == THAW_STATE_THAWED
+        ]
 
         # Get mounted repos for S3-based checking (may overlap with thawed_repos)
         mounted_repos = [repo for repo in all_repos if repo.is_mounted]
@@ -175,7 +183,7 @@ class Cleanup:
         self.loggit.debug(
             "Found %d thawed repositories and %d mounted repositories to check",
             len(thawed_repos),
-            len(mounted_repos)
+            len(mounted_repos),
         )
 
         now = datetime.now(timezone.utc)
@@ -196,7 +204,7 @@ class Cleanup:
                     self.loggit.info(
                         "Repository %s has expired based on timestamp (expired at %s)",
                         repo.name,
-                        expires_at.isoformat()
+                        expires_at.isoformat(),
                     )
                     repo.mark_expired()
                     try:
@@ -206,16 +214,14 @@ class Cleanup:
                         checked_repos.add(repo.name)
                     except Exception as e:
                         self.loggit.error(
-                            "Failed to mark repository %s as expired: %s",
-                            repo.name,
-                            e
+                            "Failed to mark repository %s as expired: %s", repo.name, e
                         )
                 else:
                     checked_repos.add(repo.name)
             else:
                 self.loggit.warning(
                     "Repository %s is in thawed state but has no expires_at timestamp",
-                    repo.name
+                    repo.name,
                 )
 
         # METHOD 2: Check mounted repos by querying S3 restore status
@@ -230,18 +236,22 @@ class Cleanup:
                     "Checking S3 restore status for repository %s (bucket: %s, path: %s)",
                     repo.name,
                     repo.bucket,
-                    repo.base_path
+                    repo.base_path,
                 )
 
                 status = check_restore_status(self.s3, repo.bucket, repo.base_path)
 
                 # If all objects are back in Glacier (not restored), mark as expired
-                if status["not_restored"] > 0 and status["restored"] == 0 and status["in_progress"] == 0:
+                if (
+                    status["not_restored"] > 0
+                    and status["restored"] == 0
+                    and status["in_progress"] == 0
+                ):
                     self.loggit.info(
                         "Repository %s has expired based on S3 status: %d/%d objects not restored",
                         repo.name,
                         status["not_restored"],
-                        status["total"]
+                        status["total"],
                     )
                     repo.mark_expired()
                     try:
@@ -251,16 +261,14 @@ class Cleanup:
                         checked_repos.add(repo.name)
                     except Exception as e:
                         self.loggit.error(
-                            "Failed to mark repository %s as expired: %s",
-                            repo.name,
-                            e
+                            "Failed to mark repository %s as expired: %s", repo.name, e
                         )
                 elif status["restored"] > 0 or status["in_progress"] > 0:
                     self.loggit.debug(
                         "Repository %s still has restored objects: %d restored, %d in progress",
                         repo.name,
                         status["restored"],
-                        status["in_progress"]
+                        status["in_progress"],
                     )
                     checked_repos.add(repo.name)
 
@@ -268,7 +276,7 @@ class Cleanup:
                 self.loggit.error(
                     "Failed to check S3 restore status for repository %s: %s",
                     repo.name,
-                    e
+                    e,
                 )
                 continue
 
@@ -303,7 +311,9 @@ class Cleanup:
             self.loggit.debug("No thaw requests found")
             return [], []
 
-        self.loggit.info("Found %d thaw requests to evaluate for cleanup", len(requests))
+        self.loggit.info(
+            "Found %d thaw requests to evaluate for cleanup", len(requests)
+        )
 
         now = datetime.now(timezone.utc)
         deleted = []
@@ -312,7 +322,12 @@ class Cleanup:
         # Get retention settings
         retention_completed = self.settings.thaw_request_retention_days_completed
         retention_failed = self.settings.thaw_request_retention_days_failed
-        retention_refrozen = self.settings.thaw_request_retention_days_refrozen
+        # Use CLI override if provided, otherwise use settings value
+        retention_refrozen = (
+            self.refrozen_retention_days
+            if self.refrozen_retention_days is not None
+            else self.settings.thaw_request_retention_days_refrozen
+        )
 
         for request in requests:
             request_id = request.get("id")
@@ -325,7 +340,9 @@ class Cleanup:
             repos = request.get("repos", [])
 
             if not created_at_str:
-                self.loggit.warning("Thaw request %s missing created_at timestamp, skipping", request_id)
+                self.loggit.warning(
+                    "Thaw request %s missing created_at timestamp, skipping", request_id
+                )
                 continue
 
             try:
@@ -353,11 +370,16 @@ class Cleanup:
                     # Check if all referenced repos are no longer in thawing/thawed state
                     if repos:
                         try:
-                            from curator.actions.deepfreeze.constants import THAW_STATE_THAWING, THAW_STATE_THAWED
+                            from curator.actions.deepfreeze.constants import (
+                                THAW_STATE_THAWING,
+                                THAW_STATE_THAWED,
+                            )
+
                             repo_objects = get_repositories_by_names(self.client, repos)
                             # Check if any repos are still in thawing or thawed state
                             any_active = any(
-                                repo.thaw_state in [THAW_STATE_THAWING, THAW_STATE_THAWED]
+                                repo.thaw_state
+                                in [THAW_STATE_THAWING, THAW_STATE_THAWED]
                                 for repo in repo_objects
                             )
 
@@ -366,7 +388,9 @@ class Cleanup:
                                 reason = "in-progress request with no active repos (all repos have been cleaned up)"
                         except Exception as e:
                             self.loggit.warning(
-                                "Could not check repos for request %s: %s", request_id, e
+                                "Could not check repos for request %s: %s",
+                                request_id,
+                                e,
                             )
                             skipped.append(request_id)
                             continue
@@ -374,6 +398,7 @@ class Cleanup:
                 if should_delete:
                     try:
                         from curator.actions.deepfreeze.constants import STATUS_INDEX
+
                         self.client.delete(index=STATUS_INDEX, id=request_id)
                         self.loggit.info(
                             "Deleted thaw request %s (%s)", request_id, reason
@@ -389,19 +414,17 @@ class Cleanup:
                         "Keeping thaw request %s (status: %s, age: %d days)",
                         request_id,
                         status,
-                        age_days
+                        age_days,
                     )
 
             except Exception as e:
-                self.loggit.error(
-                    "Error processing thaw request %s: %s", request_id, e
-                )
+                self.loggit.error("Error processing thaw request %s: %s", request_id, e)
                 skipped.append(request_id)
 
         self.loggit.info(
             "Thaw request cleanup complete: %d deleted, %d skipped",
             len(deleted),
-            len(skipped)
+            len(skipped),
         )
         return deleted, skipped
 
@@ -416,24 +439,33 @@ class Cleanup:
         self.loggit.debug("Checking for expired thawed repositories")
 
         # First, detect and mark any thawed repositories that have passed their expiration time
-        self.loggit.info("Detecting expired thawed repositories based on expires_at timestamp")
+        self.loggit.info(
+            "Detecting expired thawed repositories based on expires_at timestamp"
+        )
         try:
             newly_expired = self._detect_and_mark_expired_repos()
             if newly_expired > 0:
-                self.loggit.info("Detected and marked %d newly expired repositories", newly_expired)
+                self.loggit.info(
+                    "Detected and marked %d newly expired repositories", newly_expired
+                )
         except Exception as e:
             self.loggit.error("Error detecting expired repositories: %s", e)
 
         # Get all repositories and filter for expired ones
         from curator.actions.deepfreeze.constants import THAW_STATE_EXPIRED
+
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        expired_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_EXPIRED]
+        expired_repos = [
+            repo for repo in all_repos if repo.thaw_state == THAW_STATE_EXPIRED
+        ]
 
         if not expired_repos:
             self.loggit.info("No expired repositories found to clean up")
             return
 
-        self.loggit.info("Found %d expired repositories to clean up", len(expired_repos))
+        self.loggit.info(
+            "Found %d expired repositories to clean up", len(expired_repos)
+        )
 
         # Track repositories that were successfully cleaned up
         repos_to_cleanup = []
@@ -449,14 +481,18 @@ class Cleanup:
                     existing_repos = self.client.snapshot.get_repository(name=repo.name)
                     is_actually_mounted = repo.name in existing_repos
                     if is_actually_mounted:
-                        self.loggit.debug("Repository %s is mounted in Elasticsearch", repo.name)
+                        self.loggit.debug(
+                            "Repository %s is mounted in Elasticsearch", repo.name
+                        )
                     else:
-                        self.loggit.debug("Repository %s is not mounted in Elasticsearch", repo.name)
+                        self.loggit.debug(
+                            "Repository %s is not mounted in Elasticsearch", repo.name
+                        )
                 except Exception as e:
                     self.loggit.warning(
                         "Could not verify mount status for repository %s: %s",
                         repo.name,
-                        e
+                        e,
                     )
                     is_actually_mounted = False
 
@@ -467,16 +503,18 @@ class Cleanup:
                             "Unmounting repository %s (state: %s, expires_at: %s)",
                             repo.name,
                             repo.thaw_state,
-                            repo.expires_at
+                            repo.expires_at,
                         )
                         self.client.snapshot.delete_repository(name=repo.name)
-                        self.loggit.info("Repository %s unmounted successfully", repo.name)
+                        self.loggit.info(
+                            "Repository %s unmounted successfully", repo.name
+                        )
                     except Exception as e:
                         self.loggit.error(
                             "Failed to unmount repository %s: %s (type: %s)",
                             repo.name,
                             str(e),
-                            type(e).__name__
+                            type(e).__name__,
                         )
                         # Don't add to cleanup list if unmount failed
                         continue
@@ -484,7 +522,7 @@ class Cleanup:
                     # In-memory flag says mounted, but ES says not mounted
                     self.loggit.info(
                         "Repository %s marked as mounted but not found in Elasticsearch (likely already unmounted)",
-                        repo.name
+                        repo.name,
                     )
                 else:
                     self.loggit.debug("Repository %s was not mounted", repo.name)
@@ -498,46 +536,59 @@ class Cleanup:
                 repos_to_cleanup.append(repo)
 
             except Exception as e:
-                self.loggit.error(
-                    "Error cleaning up repository %s: %s", repo.name, e
-                )
+                self.loggit.error("Error cleaning up repository %s: %s", repo.name, e)
 
         # Delete indices whose snapshots are only in repositories being cleaned up
         if repos_to_cleanup:
-            self.loggit.info("Checking for indices to delete from cleaned up repositories")
+            self.loggit.info(
+                "Checking for indices to delete from cleaned up repositories"
+            )
             try:
                 indices_to_delete = self._get_indices_to_delete(repos_to_cleanup)
 
                 if indices_to_delete:
                     self.loggit.info(
                         "Deleting %d indices whose snapshots are only in cleaned up repositories",
-                        len(indices_to_delete)
+                        len(indices_to_delete),
                     )
                     for index in indices_to_delete:
                         try:
                             # CRITICAL FIX: Validate index exists and get its status before deletion
                             if not self.client.indices.exists(index=index):
-                                self.loggit.warning("Index %s no longer exists, skipping deletion", index)
+                                self.loggit.warning(
+                                    "Index %s no longer exists, skipping deletion",
+                                    index,
+                                )
                                 continue
 
                             # Get index health before deletion for audit trail
                             try:
-                                health = self.client.cluster.health(index=index, level='indices')
+                                health = self.client.cluster.health(
+                                    index=index, level='indices'
+                                )
                                 index_health = health.get('indices', {}).get(index, {})
                                 status = index_health.get('status', 'unknown')
-                                active_shards = index_health.get('active_shards', 'unknown')
-                                active_primary_shards = index_health.get('active_primary_shards', 'unknown')
+                                active_shards = index_health.get(
+                                    'active_shards', 'unknown'
+                                )
+                                active_primary_shards = index_health.get(
+                                    'active_primary_shards', 'unknown'
+                                )
 
                                 self.loggit.info(
                                     "Preparing to delete index %s (health: %s, primary_shards: %s, total_shards: %s)",
                                     index,
                                     status,
                                     active_primary_shards,
-                                    active_shards
+                                    active_shards,
                                 )
                             except Exception as health_error:
                                 # Log but don't fail deletion if health check fails
-                                self.loggit.debug("Could not get health for index %s: %s", index, health_error)
+                                self.loggit.debug(
+                                    "Could not get health for index %s: %s",
+                                    index,
+                                    health_error,
+                                )
 
                             # Perform deletion
                             self.client.indices.delete(index=index)
@@ -548,7 +599,7 @@ class Cleanup:
                                 "Failed to delete index %s: %s (type: %s)",
                                 index,
                                 str(e),
-                                type(e).__name__
+                                type(e).__name__,
                             )
                 else:
                     self.loggit.info("No indices need to be deleted")
@@ -560,7 +611,11 @@ class Cleanup:
         try:
             deleted, skipped = self._cleanup_old_thaw_requests()
             if deleted:
-                self.loggit.info("Deleted %d old thaw requests (%d skipped)", len(deleted), len(skipped))
+                self.loggit.info(
+                    "Deleted %d old thaw requests (%d skipped)",
+                    len(deleted),
+                    len(skipped),
+                )
         except Exception as e:
             self.loggit.error("Error cleaning up thaw requests: %s", e)
 
@@ -569,7 +624,9 @@ class Cleanup:
         try:
             deleted_policies = self._cleanup_orphaned_thawed_policies()
             if deleted_policies:
-                self.loggit.info("Deleted %d orphaned thawed ILM policies", len(deleted_policies))
+                self.loggit.info(
+                    "Deleted %d orphaned thawed ILM policies", len(deleted_policies)
+                )
         except Exception as e:
             self.loggit.error("Error cleaning up orphaned ILM policies: %s", e)
 
@@ -594,15 +651,19 @@ class Cleanup:
 
             # Filter for thawed policies (ending with -thawed)
             thawed_policies = {
-                name: data for name, data in all_policies.items()
-                if name.endswith("-thawed") and name.startswith(self.settings.repo_name_prefix)
+                name: data
+                for name, data in all_policies.items()
+                if name.endswith("-thawed")
+                and name.startswith(self.settings.repo_name_prefix)
             }
 
             if not thawed_policies:
                 self.loggit.debug("No thawed ILM policies found")
                 return deleted_policies
 
-            self.loggit.debug("Found %d thawed ILM policies to check", len(thawed_policies))
+            self.loggit.debug(
+                "Found %d thawed ILM policies to check", len(thawed_policies)
+            )
 
             for policy_name, policy_data in thawed_policies.items():
                 try:
@@ -615,17 +676,19 @@ class Cleanup:
                         # Policy has no indices or datastreams, safe to delete
                         self.loggit.info(
                             "Deleting orphaned thawed ILM policy %s (no indices assigned)",
-                            policy_name
+                            policy_name,
                         )
                         self.client.ilm.delete_lifecycle(name=policy_name)
                         deleted_policies.append(policy_name)
-                        self.loggit.info("Successfully deleted ILM policy %s", policy_name)
+                        self.loggit.info(
+                            "Successfully deleted ILM policy %s", policy_name
+                        )
                     else:
                         self.loggit.debug(
                             "Keeping ILM policy %s (%d indices, %d datastreams)",
                             policy_name,
                             len(indices),
-                            len(datastreams)
+                            len(datastreams),
                         )
 
                 except Exception as e:
@@ -649,10 +712,15 @@ class Cleanup:
         self.loggit.info("DRY-RUN MODE. No changes will be made.")
 
         # First, show which thawed repositories would be detected as expired
-        self.loggit.info("DRY-RUN: Checking for thawed repositories that have passed expiration time")
+        self.loggit.info(
+            "DRY-RUN: Checking for thawed repositories that have passed expiration time"
+        )
         from curator.actions.deepfreeze.constants import THAW_STATE_THAWED
+
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        thawed_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_THAWED]
+        thawed_repos = [
+            repo for repo in all_repos if repo.thaw_state == THAW_STATE_THAWED
+        ]
 
         if thawed_repos:
             now = datetime.now(timezone.utc)
@@ -672,52 +740,60 @@ class Cleanup:
                         self.loggit.debug(
                             "DRY-RUN: Repository %s not yet expired (expires in %s)",
                             repo.name,
-                            time_remaining
+                            time_remaining,
                         )
                 else:
                     self.loggit.warning(
                         "DRY-RUN: Repository %s is thawed but has no expires_at timestamp",
-                        repo.name
+                        repo.name,
                     )
 
             if would_expire:
                 self.loggit.info(
-                    "DRY-RUN: Would mark %d repositories as expired:",
-                    len(would_expire)
+                    "DRY-RUN: Would mark %d repositories as expired:", len(would_expire)
                 )
                 for name, expired_at, time_ago in would_expire:
                     self.loggit.info(
                         "DRY-RUN:   - %s (expired %s ago at %s)",
                         name,
                         time_ago,
-                        expired_at.isoformat()
+                        expired_at.isoformat(),
                     )
             else:
-                self.loggit.info("DRY-RUN: No thawed repositories have passed expiration time")
+                self.loggit.info(
+                    "DRY-RUN: No thawed repositories have passed expiration time"
+                )
         else:
             self.loggit.info("DRY-RUN: No thawed repositories found to check")
 
         # Get all repositories and filter for expired ones
         from curator.actions.deepfreeze.constants import THAW_STATE_EXPIRED
+
         all_repos = get_matching_repos(self.client, self.settings.repo_name_prefix)
-        expired_repos = [repo for repo in all_repos if repo.thaw_state == THAW_STATE_EXPIRED]
+        expired_repos = [
+            repo for repo in all_repos if repo.thaw_state == THAW_STATE_EXPIRED
+        ]
 
         if not expired_repos:
             self.loggit.info("DRY-RUN: No expired repositories found to clean up")
             return
 
-        self.loggit.info("DRY-RUN: Found %d expired repositories to clean up", len(expired_repos))
+        self.loggit.info(
+            "DRY-RUN: Found %d expired repositories to clean up", len(expired_repos)
+        )
 
         # Track repositories that would be cleaned up
         repos_to_cleanup = []
 
         for repo in expired_repos:
-            action = "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
+            action = (
+                "unmount and reset to frozen" if repo.is_mounted else "reset to frozen"
+            )
             self.loggit.info(
                 "DRY-RUN: Would %s repository %s (state: %s)",
                 action,
                 repo.name,
-                repo.thaw_state
+                repo.thaw_state,
             )
             repos_to_cleanup.append(repo)
 
@@ -732,7 +808,7 @@ class Cleanup:
                 if indices_to_delete:
                     self.loggit.info(
                         "DRY-RUN: Would delete %d indices whose snapshots are only in cleaned up repositories:",
-                        len(indices_to_delete)
+                        len(indices_to_delete),
                     )
                     for index in indices_to_delete:
                         self.loggit.info("DRY-RUN:   - %s", index)
@@ -742,7 +818,9 @@ class Cleanup:
                 self.loggit.error("DRY-RUN: Error finding indices to delete: %s", e)
 
         # Show which thaw requests would be cleaned up
-        self.loggit.info("DRY-RUN: Checking for old thaw requests that would be deleted")
+        self.loggit.info(
+            "DRY-RUN: Checking for old thaw requests that would be deleted"
+        )
         try:
             requests = list_thaw_requests(self.client)
 
@@ -750,9 +828,16 @@ class Cleanup:
                 self.loggit.info("DRY-RUN: No thaw requests found")
             else:
                 now = datetime.now(timezone.utc)
-                retention_completed = self.settings.thaw_request_retention_days_completed
+                retention_completed = (
+                    self.settings.thaw_request_retention_days_completed
+                )
                 retention_failed = self.settings.thaw_request_retention_days_failed
-                retention_refrozen = self.settings.thaw_request_retention_days_refrozen
+                # Use CLI override if provided, otherwise use settings value
+                retention_refrozen = (
+                    self.refrozen_retention_days
+                    if self.refrozen_retention_days is not None
+                    else self.settings.thaw_request_retention_days_refrozen
+                )
 
                 would_delete = []
 
@@ -767,7 +852,10 @@ class Cleanup:
                     repos = request.get("repos", [])
 
                     if not created_at_str:
-                        self.loggit.warning("Thaw request %s missing created_at timestamp, skipping", request_id)
+                        self.loggit.warning(
+                            "Thaw request %s missing created_at timestamp, skipping",
+                            request_id,
+                        )
                         continue
 
                     try:
@@ -793,10 +881,17 @@ class Cleanup:
 
                         elif status == "in_progress" and repos:
                             try:
-                                from curator.actions.deepfreeze.constants import THAW_STATE_THAWING, THAW_STATE_THAWED
-                                repo_objects = get_repositories_by_names(self.client, repos)
+                                from curator.actions.deepfreeze.constants import (
+                                    THAW_STATE_THAWING,
+                                    THAW_STATE_THAWED,
+                                )
+
+                                repo_objects = get_repositories_by_names(
+                                    self.client, repos
+                                )
                                 any_active = any(
-                                    repo.thaw_state in [THAW_STATE_THAWING, THAW_STATE_THAWED]
+                                    repo.thaw_state
+                                    in [THAW_STATE_THAWING, THAW_STATE_THAWED]
                                     for repo in repo_objects
                                 )
 
@@ -805,7 +900,9 @@ class Cleanup:
                                     reason = "in-progress request with no active repos (all repos have been cleaned up)"
                             except Exception as e:
                                 self.loggit.warning(
-                                    "DRY-RUN: Could not check repos for request %s: %s", request_id, e
+                                    "DRY-RUN: Could not check repos for request %s: %s",
+                                    request_id,
+                                    e,
                                 )
 
                         if should_delete:
@@ -813,13 +910,14 @@ class Cleanup:
 
                     except Exception as e:
                         self.loggit.error(
-                            "DRY-RUN: Error processing thaw request %s: %s", request_id, e
+                            "DRY-RUN: Error processing thaw request %s: %s",
+                            request_id,
+                            e,
                         )
 
                 if would_delete:
                     self.loggit.info(
-                        "DRY-RUN: Would delete %d old thaw requests:",
-                        len(would_delete)
+                        "DRY-RUN: Would delete %d old thaw requests:", len(would_delete)
                     )
                     for request_id, reason in would_delete:
                         self.loggit.info("DRY-RUN:   - %s (%s)", request_id, reason)

@@ -78,6 +78,7 @@ def action_specific(action):
             option_defaults.month(),
         ],
         'cleanup': [
+            option_defaults.refrozen_retention_days(),
         ],
         'status': [
             option_defaults.limit(),
