@@ -27,6 +27,7 @@ from curator.actions import (
     Open,
     Refreeze,
     Reindex,
+    RepairMetadata,
     Replicas,
     Restore,
     Rollover,
@@ -59,6 +60,7 @@ CLASS_MAP = {
     "open": Open,
     "refreeze": Refreeze,
     "reindex": Reindex,
+    "repair_metadata": RepairMetadata,
     "replicas": Replicas,
     "restore": Restore,
     "rollover": Rollover,
@@ -146,7 +148,7 @@ class CLIAction:
                     if self.allow_ilm:
                         self.alias[k]["filters"].append({"filtertype": "ilm"})
         # No filters for these actions
-        elif action in ["cleanup", "cluster_routing", "create_index", "refreeze", "rollover", "setup", "rotate", "status", "thaw"]:
+        elif action in ["cleanup", "cluster_routing", "create_index", "refreeze", "repair_metadata", "rollover", "setup", "rotate", "status", "thaw"]:
             self.action_kwargs = {}
             if action == 'rollover':
                 debug.lv5('rollover option_dict = %s', option_dict)
@@ -279,7 +281,7 @@ class CLIAction:
                 action_obj = self.get_alias_obj()
             elif self.action in ["cluster_routing", "create_index", "rollover"]:
                 action_obj = self.action_class(self.client, **self.options)
-            elif self.action in ["cleanup", "refreeze", "setup", "rotate", "status", "thaw"]:
+            elif self.action in ["cleanup", "refreeze", "repair_metadata", "setup", "rotate", "status", "thaw"]:
                 logger.debug(
                     f"Declaring Deepfreeze action object with options: {self.options}"
                 )
