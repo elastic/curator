@@ -74,6 +74,7 @@ from curator.defaults.settings import VERSION_MAX, VERSION_MIN, default_config_f
 from curator.s3client import s3_client_factory
 
 from . import DeepfreezeTestCase, random_suffix, testvars
+from .test_isolation import RepositoryLock, get_available_unlocked_repositories, cleanup_expired_locks
 
 # Configuration
 CONFIG_FILE = os.environ.get("CURATOR_CONFIG", default_config_file())
@@ -97,7 +98,33 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
     Comprehensive integration tests for deepfreeze thaw, refreeze, and cleanup operations.
 
     These tests validate the complete lifecycle against real AWS infrastructure.
+
+    Supports parallel test execution with pytest-xdist using repository locking.
     """
+
+    @classmethod
+    def setUpClass(cls):
+        """Clean up expired locks before starting test suite"""
+        # Load configuration to get client
+        if not os.path.exists(CONFIG_FILE):
+            return
+
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                config = yaml.safe_load(f)
+            builder = Builder(
+                configdict=config,
+                version_max=VERSION_MAX,
+                version_min=VERSION_MIN,
+            )
+            builder.connect()
+
+            # Clean up any expired locks from previous test runs
+            cleanup_expired_locks(builder.client)
+
+        except Exception as e:
+            # Not critical - tests will handle lock conflicts
+            pass
 
     def setUp(self):
         """Set up test environment with cluster from curator.yml"""
@@ -140,6 +167,7 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
         self.bucket_name = f"{testvars.df_bucket_name}-integration-{random_suffix()}"
         self.created_indices = []
         self.thaw_request_ids = []
+        self.repository_locks = []  # Track locks for cleanup
 
         self.logger.info("=" * 80)
         self.logger.info(f"Starting test: {self._testMethodName}")
@@ -149,7 +177,7 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
 
     def tearDown(self):
         """
-        No cleanup needed - tests only work with existing repositories.
+        Release repository locks and perform minimal cleanup.
 
         Tests do NOT create:
         - Indices
@@ -160,11 +188,37 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
         Thaw requests created during tests are intentionally left in place
         for verification and future testing.
         """
-        self.logger.info("Test complete - no cleanup needed (working with existing data)")
+        # Release all repository locks
+        for lock in self.repository_locks:
+            try:
+                lock.release()
+            except Exception as e:
+                self.logger.warning(f"Error releasing lock: {e}")
+
+        self.logger.info("Test complete - released locks, no other cleanup needed")
 
     # ========================================================================================
     # Helper Methods
     # ========================================================================================
+
+    def _acquire_repository_lock(self, repo_name: str, timeout: int = 30) -> bool:
+        """
+        Acquire lock on a repository for exclusive use by this test.
+
+        Used for parallel test execution to prevent conflicts.
+
+        :param repo_name: Name of repository to lock
+        :param timeout: Maximum time to wait for lock (seconds)
+        :return: True if lock acquired, False otherwise
+        """
+        test_id = f"{self._testMethodName}_{self.bucket_name}"
+        lock = RepositoryLock(self.client, repo_name, test_id)
+
+        if lock.acquire(timeout=timeout):
+            self.repository_locks.append(lock)
+            return True
+
+        return False
 
     def _verify_index_searchable(
         self, index_name: str, expected_doc_count: Optional[int] = None
@@ -476,9 +530,10 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
 
     def _get_repos_not_in_active_requests(self) -> List[Dict]:
         """
-        Get repositories that are NOT currently in any active thaw requests.
+        Get repositories that are NOT currently in any active thaw requests or test locks.
 
-        This helps avoid conflicts when creating new thaw requests.
+        This helps avoid conflicts when creating new thaw requests, and enables
+        parallel test execution by filtering out repositories locked by other tests.
 
         :return: List of available frozen repository dictionaries
         :rtype: List[Dict]
@@ -501,12 +556,20 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
             if r['thaw_state'] == 'frozen' and r['name'] not in repos_in_use
         ]
 
-        self.logger.info(
-            f"Found {len(available_repos)} frozen repositories not in active thaw requests "
-            f"(out of {len(all_repos)} total, {len(repos_in_use)} in use)"
+        # Further filter to exclude locked repositories (for parallel test execution)
+        unlocked_repos = get_available_unlocked_repositories(
+            self.client,
+            available_repos,
+            count=len(available_repos),  # Get all available
         )
 
-        return available_repos
+        self.logger.info(
+            f"Found {len(unlocked_repos)} frozen repositories not in active thaw requests "
+            f"(out of {len(all_repos)} total, {len(repos_in_use)} in requests, "
+            f"{len(available_repos) - len(unlocked_repos)} locked by tests)"
+        )
+
+        return unlocked_repos
 
     def _create_test_indices_with_dates(
         self,

@@ -39,6 +39,8 @@ test = [
     "requests",
     "pytest >=7.2.1",
     "pytest-cov",
+    "pytest-xdist",
+    "filelock",
 ]
 doc = ["sphinx", "sphinx_rtd_theme"]
 
