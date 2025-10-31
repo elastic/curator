@@ -322,17 +322,29 @@ class TestDeepfreezeIntegration(DeepfreezeTestCase):
                         repo.thaw_state = "active"
                         repo.persist(self.client)
 
-                        # Re-register repository
-                        self.client.snapshot.create_repository(
-                            name=repo.name,
-                            body={
-                                "type": "s3",
-                                "settings": {
-                                    "bucket": repo.bucket,
-                                    "base_path": repo.base_path,
+                        # Try to re-register repository, but ignore InvalidObjectState errors
+                        # since in FAST_MODE the S3 objects may still be in GLACIER
+                        try:
+                            self.client.snapshot.create_repository(
+                                name=repo.name,
+                                body={
+                                    "type": "s3",
+                                    "settings": {
+                                        "bucket": repo.bucket,
+                                        "base_path": repo.base_path,
+                                    },
                                 },
-                            },
-                        )
+                            )
+                        except Exception as e:
+                            # In FAST_MODE, ignore errors from objects being in GLACIER
+                            if "InvalidObjectState" in str(e) or "not valid for the object's storage class" in str(e):
+                                self.logger.info(
+                                    f"FAST_MODE: Skipping repository registration for {repo.name} "
+                                    f"(objects still in GLACIER, which is expected)"
+                                )
+                            else:
+                                # Re-raise unexpected errors
+                                raise
 
                 self.logger.info("FAST_MODE: Thaw marked as complete")
                 return True
