@@ -927,9 +927,32 @@ class Thaw:
                 )
 
             self.console.print(table)
-            rprint(
-                "[dim]Status: IP=In Progress, C=Completed, R=Refrozen, F=Failed, U=Unknown[/dim]"
+
+            # Count repos in each state
+            status_counts = {
+                "in_progress": 0,
+                "completed": 0,
+                "refrozen": 0,
+                "failed": 0,
+                "unknown": 0,
+            }
+            for req in requests:
+                status = req.get("status", "unknown")
+                if status in status_counts:
+                    status_counts[status] += 1
+                else:
+                    status_counts["unknown"] += 1
+
+            # Build legend with counts
+            legend = (
+                f"[dim]Status: "
+                f"IP=In Progress ({status_counts['in_progress']}), "
+                f"C=Completed ({status_counts['completed']}), "
+                f"R=Refrozen ({status_counts['refrozen']}), "
+                f"F=Failed ({status_counts['failed']}), "
+                f"U=Unknown ({status_counts['unknown']})[/dim]"
             )
+            rprint(legend)
 
     def _display_thaw_status(
         self, request: dict, repos: list, status_cache: dict = None
