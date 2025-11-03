@@ -4,7 +4,7 @@
 
 import logging
 
-from elasticsearch8 import Elasticsearch
+from elasticsearch8 import Elasticsearch, NotFoundError
 from rich import print as rprint
 
 from curator.actions.deepfreeze.constants import STATUS_INDEX, THAW_STATUS_REFROZEN
@@ -207,6 +207,20 @@ class Refreeze:
                         )
                         failed_indices.append(index_name)
 
+        except NotFoundError as e:
+            # Repository has already been unmounted - this is expected during refreeze
+            if "repository_missing_exception" in str(e).lower():
+                self.loggit.info(
+                    "Repository %s has already been unmounted, no indices to delete",
+                    repo_name,
+                )
+            else:
+                self.loggit.warning(
+                    "Repository %s not found: %s",
+                    repo_name,
+                    e,
+                )
+            return 0, []
         except Exception as e:
             self.loggit.error(
                 "Failed to get indices from repository %s: %s",
