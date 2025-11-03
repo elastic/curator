@@ -1661,6 +1661,24 @@ def mount_snapshot_index(
         # Still assign ILM policy if provided and not already mounted
         if ilm_policy:
             try:
+                # First remove any existing ILM policy and execution state
+                # This is critical because mounted snapshots restore the original ILM
+                # execution state, which may reference a policy that no longer exists
+                loggit.debug(
+                    "Removing old ILM policy from %s before assigning new policy",
+                    index_name,
+                )
+                try:
+                    client.ilm.remove_policy(index=index_name)
+                except Exception as remove_err:
+                    # Index might not have an ILM policy, that's okay
+                    loggit.debug(
+                        "Could not remove ILM policy from %s (may not have one): %s",
+                        index_name,
+                        remove_err,
+                    )
+
+                # Now set the new ILM policy with a fresh execution state
                 client.indices.put_settings(
                     index=index_name, body={"index.lifecycle.name": ilm_policy}
                 )
@@ -1688,6 +1706,24 @@ def mount_snapshot_index(
         # Assign ILM policy if provided
         if ilm_policy:
             try:
+                # First remove any existing ILM policy and execution state
+                # This is critical because mounted snapshots restore the original ILM
+                # execution state, which may reference a policy that no longer exists
+                loggit.debug(
+                    "Removing old ILM policy from %s before assigning new policy",
+                    index_name,
+                )
+                try:
+                    client.ilm.remove_policy(index=index_name)
+                except Exception as remove_err:
+                    # Index might not have an ILM policy, that's okay
+                    loggit.debug(
+                        "Could not remove ILM policy from %s (may not have one): %s",
+                        index_name,
+                        remove_err,
+                    )
+
+                # Now set the new ILM policy with a fresh execution state
                 client.indices.put_settings(
                     index=index_name, body={"index.lifecycle.name": ilm_policy}
                 )
