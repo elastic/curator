@@ -468,6 +468,7 @@ def refreeze(
     help="AWS Glacier retrieval tier",
 )
 @click.option(
+    "-k",
     "--check-status",
     "check_status",
     type=str,
@@ -477,6 +478,7 @@ def refreeze(
     help="Check status of thaw request(s). Provide ID for specific request, or no value to check all",
 )
 @click.option(
+    "-l",
     "--list",
     "list_requests",
     is_flag=True,
@@ -536,19 +538,22 @@ def thaw(
       # Check status of a specific request and mount if ready
 
       curator_cli deepfreeze thaw --check-status <thaw-id>
+      curator_cli deepfreeze thaw -k <thaw-id>
 
       # Check status of ALL thaw requests and mount if ready
 
       curator_cli deepfreeze thaw --check-status
+      curator_cli deepfreeze thaw -k
 
       # List active thaw requests (excludes completed by default)
 
       curator_cli deepfreeze thaw --list
+      curator_cli deepfreeze thaw -l
 
       # List all thaw requests (including completed)
 
       curator_cli deepfreeze thaw --list --include-completed
-      curator_cli deepfreeze thaw --list -c
+      curator_cli deepfreeze thaw -l -c
     """
     # Validate mutual exclusivity
     # Note: check_status can be None (not provided), "" (flag without value), or a string ID
@@ -558,13 +563,13 @@ def thaw(
 
     if modes_active == 0:
         click.echo(
-            "Error: Must specify one of: --start-date/--end-date, --check-status, or --list"
+            "Error: Must specify one of: --start-date/--end-date (-s/-e), --check-status (-k), or --list (-l)"
         )
         ctx.exit(1)
 
     if modes_active > 1:
         click.echo(
-            "Error: Cannot use --start-date/--end-date with --check-status or --list"
+            "Error: Cannot use --start-date/--end-date with --check-status (-k) or --list (-l)"
         )
         ctx.exit(1)
 
