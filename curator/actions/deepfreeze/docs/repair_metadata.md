@@ -2,13 +2,14 @@
 
 ## Purpose
 
-The Repair Metadata action is a diagnostic and maintenance tool that detects and fixes discrepancies between repository metadata stored in Elasticsearch and the actual S3 storage state. It ensures that the `thaw_state` field in the `deepfreeze-status` index accurately reflects whether repositories are stored in GLACIER or STANDARD storage class.
+The Repair Metadata action is a diagnostic and maintenance tool that detects and fixes discrepancies between metadata stored in Elasticsearch and the actual S3 storage state. It ensures that both repository metadata and thaw request metadata accurately reflect the current state in S3.
 
 Repair Metadata handles:
-1. **Metadata Verification**: Scans all repositories and compares metadata with actual S3 storage class
-2. **Discrepancy Detection**: Identifies repositories where metadata doesn't match reality
-3. **Automatic Correction**: Updates `thaw_state` to match actual S3 storage state
-4. **Comprehensive Reporting**: Provides detailed reports of all discrepancies and fixes
+1. **Repository Metadata Verification**: Scans all repositories and compares metadata with actual S3 storage class
+2. **Thaw Request Metadata Verification**: Scans all in_progress thaw requests and compares with actual S3 restore status
+3. **Discrepancy Detection**: Identifies metadata that doesn't match S3 reality
+4. **Automatic Correction**: Updates metadata to match actual S3 state
+5. **Comprehensive Reporting**: Provides detailed reports of all discrepancies and fixes
 
 **Key Concept**: Repository metadata can become desynchronized from S3 storage state due to bugs, failed operations, or manual S3 modifications. This action provides a way to detect and correct these inconsistencies automatically.
 
@@ -36,6 +37,35 @@ The bug was fixed in `rotate.py` by calling `repository.reset_to_frozen()` after
 - Clears `thawed_at` and `expires_at` timestamps
 
 However, repositories that were rotated before the fix still have incorrect metadata. The Repair Metadata action provides a way to correct these historical discrepancies.
+
+### The Stale Thaw Request Problem
+
+When thaw requests are created but never checked, their status remains `in_progress` indefinitely, even after the S3 restore has completed or expired. This causes:
+
+**The Problem**:
+- Thaw request created on 2025-11-03 with `status='in_progress'`
+- S3 restore completed after a few hours → objects available
+- After 7 days (default restore duration) → S3 automatically expires the restore
+- Metadata still shows `status='in_progress'` (incorrect/stale)
+- No way to distinguish between:
+  - Actively working thaw (AWS still restoring)
+  - Completed but unchecked thaw (ready to mount)
+  - Expired and ignored thaw (no longer available)
+
+**Impact of Stale Thaw Requests**:
+- Clutter in thaw request list
+- Cannot determine actual system state
+- Resources may be wasted (repositories thawed but not mounted)
+- Confusion about which thaws are still active
+- Old in_progress requests accumulate over time
+
+**The Solution**:
+Repair Metadata now checks S3 Restore headers to determine the actual state:
+- `ongoing-request="true"` → Truly in progress, keep as `in_progress`
+- `ongoing-request="false"` → Restore complete, mark as `completed`
+- **No Restore header** → Restore expired, mark as `refrozen`
+
+This allows distinguishing between actively working thaws and stale metadata.
 
 ## Prerequisites
 
@@ -130,9 +160,66 @@ if expected_frozen != actually_frozen:
   → DISCREPANCY FOUND
 ```
 
-### Repair Phase
+### Thaw Request Scan Phase
 
-For each discrepancy (when NOT in dry-run mode):
+After repository checking, the action scans all thaw requests:
+
+#### 1. Query In-Progress Thaw Requests
+
+- Queries `deepfreeze-status` index for thaw request documents
+- Filters to only `status='in_progress'` requests
+- Completed, failed, and refrozen requests are skipped (terminal states)
+
+**Query**:
+```python
+all_thaw_requests = list_thaw_requests(client)
+in_progress_requests = [req for req in all_thaw_requests if req.get('status') == 'in_progress']
+```
+
+#### 2. Check S3 Restore Status for Each Request
+
+For each in_progress thaw request:
+- Get all repositories listed in the request
+- For each repository, call `check_restore_status()` to check S3 Restore headers
+- Aggregate results to determine overall request state
+
+**Restore Status Checking**:
+```python
+for repo in request_repos:
+    status = check_restore_status(s3, repo.bucket, repo.base_path)
+    # status contains: total, restored, in_progress, not_restored, complete
+```
+
+#### 3. Determine Actual State
+
+Based on S3 Restore headers across all repos in the request:
+
+| S3 Restore Status | Actual State | Meaning |
+|------------------|--------------|---------|
+| All objects have no Restore header | **EXPIRED** | Restore window passed, objects back in Glacier |
+| All objects have `ongoing-request="false"` | **COMPLETED** | Restore done, ready to mount |
+| Any object has `ongoing-request="true"` | **IN_PROGRESS** | AWS still working on restore |
+| Mixed states | **MIXED** | Some repos done, some not (keep as in_progress) |
+| Unable to check | **ERROR** | S3 access issues or missing repos |
+
+#### 4. Identify Stale Metadata
+
+Compare metadata state with actual state:
+
+```python
+if actual_state == 'EXPIRED' and metadata_state == 'in_progress':
+    → STALE: should be 'refrozen'
+
+if actual_state == 'COMPLETED' and metadata_state == 'in_progress':
+    → STALE: should be 'completed'
+
+if actual_state == 'IN_PROGRESS' and metadata_state == 'in_progress':
+    → CORRECT: keep as 'in_progress'
+```
+
+### Repository Repair Phase
+
+For each repository discrepancy (when NOT in dry-run mode):
 
 #### 1. Fetch Repository Object
 
@@ -181,17 +268,67 @@ repo.persist(client)
 - Uses repository name as document ID
 - Atomic update operation
 
+### Thaw Request Repair Phase
+
+For each stale thaw request (when NOT in dry-run mode):
+
+#### 1. Update Request Status
+
+**If actual state is EXPIRED**:
+```python
+update_thaw_request(client, request_id, status='refrozen')
+```
+
+- Marks request as `refrozen` since restore window has passed
+- S3 objects have reverted to Glacier storage
+- Cleanup action can later delete this old request
+
+**If actual state is COMPLETED**:
+```python
+update_thaw_request(client, request_id, status='completed')
+```
+
+- Marks request as `completed` since restore is done
+- **Important**: This does NOT mount repositories
+- User must run `curator_cli deepfreeze thaw --check-status <request-id>` to mount
+- A warning is logged indicating mounting is still needed
+
+**Why Not Mount Automatically?**:
+- Mounting is a complex operation involving:
+  - Mounting repositories in Elasticsearch
+  - Finding and mounting indices within date range
+  - Adding indices back to data streams
+  - Creating per-repo ILM policies
+- Repair Metadata focuses on metadata correctness
+- Use the dedicated thaw --check-status command for full mounting workflow
+
+#### 2. Track Results
+
+```python
+# Count successes and failures
+thaw_fixed_count += 1  # Successfully updated
+thaw_failed_count += 1  # Failed to update (exception)
+```
+
 ### Reporting Phase
 
 #### Dry-Run Mode
 
 **Rich Output** (default):
-- Summary statistics (total, correct, discrepancies, errors)
-- Table showing all discrepancies with:
+- Repository summary statistics (total, correct, discrepancies, errors)
+- Thaw request summary statistics (total in_progress, correct, stale, errors)
+- Table showing all repository discrepancies with:
   - Repository name
   - Current metadata state
   - Actual S3 storage class
   - Mount status
+- Table showing all stale thaw requests with:
+  - Request ID (shortened)
+  - Repositories (first 3, with count if more)
+  - Current metadata state
+  - Actual S3 state
+  - What it should be
+  - Created date
 - Warning message: "DRY-RUN: No changes made"
 
 **Porcelain Output** (`--porcelain`):
@@ -200,31 +337,36 @@ TOTAL_REPOS=58
 CORRECT=10
 DISCREPANCIES=48
 ERRORS=0
-REPOS_TO_FIX:
-  deepfreeze-000004: metadata=active, actual=GLACIER
-  deepfreeze-000005: metadata=active, actual=GLACIER
-  ...
+TOTAL_THAW_REQUESTS=7
+CORRECT_THAW_REQUESTS=0
+STALE_THAW_REQUESTS=7
+THAW_REQUEST_ERRORS=0
+THAW_REQUESTS_TO_FIX:
+  a1b2c3d4...: metadata=in_progress, actual=EXPIRED, should_be=refrozen
+  e5f6g7h8...: metadata=in_progress, actual=EXPIRED, should_be=refrozen
 ```
 
 #### Live Mode
 
 **Rich Output**:
 - Same as dry-run, plus:
-- Results section showing:
+- Repository repair results section showing:
+  - Number fixed
+  - Number failed (if any)
+- Thaw request repair results section showing:
   - Number fixed
   - Number failed (if any)
 
 **Porcelain Output**:
 ```
-TOTAL_REPOS=58
-CORRECT=10
-DISCREPANCIES=48
-ERRORS=0
-REPOS_TO_FIX:
-  ...
+[Repository stats as above...]
+[Thaw request stats as above...]
 FIXED=48
 FAILED=0
+THAW_FIXED=7
+THAW_FAILED=0
 ```
+
 
 ## Options
 
@@ -292,6 +434,51 @@ curator_cli deepfreeze repair-metadata
 #
 # Results:
 #   Fixed: 48
+```
+
+### Detect and Fix Stale Thaw Requests
+
+```bash
+# Scenario: You have 7 thaw requests created on 2025-11-03
+# They were never checked and are now expired
+
+# Step 1: Check for stale thaw requests
+curator_cli --dry-run deepfreeze repair-metadata
+
+# Output:
+# Metadata Repair Report (DRY-RUN)
+#
+# REPOSITORIES:
+#   Total scanned: 58
+#   Correct metadata: 58
+#   Discrepancies: 0
+#
+# THAW REQUESTS:
+#   Total in_progress: 7
+#   Correct metadata: 0
+#   Stale metadata: 7
+#
+# Stale Thaw Requests Found:
+# ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
+# ┃ Request ID ┃ Repositories  ┃ Metadata State ┃ Actual State┃ Should Be ┃ Created  ┃
+# ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━┩
+# │ a1b2c3d4...│ deepfreeze-001│ in_progress    │ EXPIRED     │ refrozen  │ 2025-11-03│
+# │ e5f6g7h8...│ deepfreeze-002│ in_progress    │ EXPIRED     │ refrozen  │ 2025-11-03│
+# │ i9j0k1l2...│ deepfreeze-003│ in_progress    │ EXPIRED     │ refrozen  │ 2025-11-03│
+# ...
+#
+# DRY-RUN: No changes made. Run without --dry-run to apply fixes.
+
+# Step 2: Fix the stale requests
+curator_cli deepfreeze repair-metadata
+
+# Output:
+# [Same tables as above...]
+#
+# Thaw Request Repair Results:
+#   Fixed: 7
+
+# Now all 7 requests are marked as 'refrozen' instead of 'in_progress'
 ```
 
 ### Scripted Verification
