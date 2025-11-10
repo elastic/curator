@@ -1,6 +1,8 @@
 # Deepfreeze Thaw Integration Tests
 
-This document describes the integration tests for deepfreeze thaw operations.
+This document describes the integration tests for deepfreeze thaw operations. Note that these
+tests don't work as yet, and given the long time each takes to run, I'm not sure they actually
+have any value. I'm retaining them in case but honestly do all integration testing manually.
 
 ## Overview
 
@@ -19,7 +21,8 @@ These tests support two modes of operation:
 
 ### Fast Mode (Development/CI)
 
-Fast mode uses mocked operations to complete quickly, suitable for CI/CD pipelines.
+Fast mode uses mocked operations to complete quickly, suitable for CI/CD pipelines. Again,
+the tests aren't reliable yet.
 
 ```bash
 DEEPFREEZE_FAST_MODE=1 pytest tests/integration/test_deepfreeze_thaw.py -v
