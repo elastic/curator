@@ -29,7 +29,7 @@ from curator.actions.deepfreeze.utilities import (
     update_repository_date_range,
     update_template_ilm_policy,
 )
-from curator.exceptions import RepositoryException
+from curator.exceptions import ActionError, RepositoryException
 from curator.s3client import s3_client_factory
 
 
@@ -110,7 +110,9 @@ class Rotate:
 
         # Validate that ILM policies exist for the current repository
         # This must be checked during initialization to fail fast
-        self.loggit.debug("Checking for ILM policies that reference %s", self.latest_repo)
+        self.loggit.debug(
+            "Checking for ILM policies that reference %s", self.latest_repo
+        )
         policies_for_repo = get_policies_for_repo(self.client, self.latest_repo)  # type: ignore
         if not policies_for_repo:
             raise RepositoryException(
@@ -118,12 +120,12 @@ class Rotate:
                 f"Rotation requires existing ILM policies to create versioned copies. "
                 f"Please create ILM policies that use searchable_snapshot actions "
                 f"with snapshot_repository: {self.latest_repo}, or run setup with "
-                f"--create-sample-ilm-policy to create a default policy."
+                f"--ilm_policy_name and --index_template_name to configure a policy."
             )
         self.loggit.info(
             "Found %d ILM policies referencing %s",
             len(policies_for_repo),
-            self.latest_repo
+            self.latest_repo,
         )
 
         self.loggit.info("Deepfreeze initialized")
@@ -146,7 +148,9 @@ class Rotate:
 
         # Update date range for each repository
         for repo in repos:
-            self.loggit.debug("Updating date range for %s (mounted: %s)", repo.name, repo.is_mounted)
+            self.loggit.debug(
+                "Updating date range for %s (mounted: %s)", repo.name, repo.is_mounted
+            )
 
             if dry_run:
                 self.loggit.info("DRY-RUN: Would update date range for %s", repo.name)
@@ -170,6 +174,9 @@ class Rotate:
         are then updated to use the new versioned policies, ensuring new indices use
         the new repository while existing indices keep their old policies.
 
+        After updating, the discovered policy and template names are stored in settings
+        for reference.
+
         :param dry_run: If True, do not actually create policies or update templates
         :type dry_run: bool
 
@@ -191,7 +198,6 @@ class Rotate:
         )
 
         # Find all policies that reference the latest repository
-        # Note: We already validated policies exist during __init__, so this should always succeed
         self.loggit.debug("Searching for policies that reference %s", self.latest_repo)
         policies_to_version = get_policies_for_repo(self.client, self.latest_repo)  # type: ignore
 
@@ -270,6 +276,7 @@ class Rotate:
         # Update index templates to use the new versioned policies
         self.loggit.info("Updating index templates to use new versioned policies")
         templates_updated = 0
+        templates_updated_names = []  # Track template names for storing in settings
 
         # Update composable templates
         try:
@@ -283,6 +290,8 @@ class Rotate:
                                 self.client, template_name, old_policy, new_policy, is_composable=True  # type: ignore
                             ):
                                 templates_updated += 1
+                                if template_name not in templates_updated_names:
+                                    templates_updated_names.append(template_name)
                                 self.loggit.info(
                                     "Updated composable template %s: %s -> %s",
                                     template_name,
@@ -313,6 +322,8 @@ class Rotate:
                                 self.client, template_name, old_policy, new_policy, is_composable=False  # type: ignore
                             ):
                                 templates_updated += 1
+                                if template_name not in templates_updated_names:
+                                    templates_updated_names.append(template_name)
                                 self.loggit.info(
                                     "Updated legacy template %s: %s -> %s",
                                     template_name,
@@ -336,6 +347,23 @@ class Rotate:
             self.loggit.info("Updated %d index templates", templates_updated)
         else:
             self.loggit.warning("No index templates were updated")
+
+        # Update stored settings with the discovered policy and template names
+        if not dry_run and policy_mappings:
+            # Store the new versioned policy names (comma-separated if multiple)
+            new_policy_names = list(policy_mappings.values())
+            self.settings.ilm_policy_name = ",".join(new_policy_names)
+            self.loggit.info(
+                "Updated stored ILM policy name(s): %s", self.settings.ilm_policy_name
+            )
+
+            # Store the template names that were updated (comma-separated if multiple)
+            if templates_updated_names:
+                self.settings.index_template_name = ",".join(templates_updated_names)
+                self.loggit.info(
+                    "Updated stored index template name(s): %s",
+                    self.settings.index_template_name,
+                )
 
         self.loggit.info("Finished ILM policy versioning and template updates")
 
@@ -551,7 +579,9 @@ class Rotate:
         # HIGH PRIORITY FIX: Add validation and logging for bucket/repo creation
         # Create the new bucket and repo, but only if rotate_by is bucket
         if self.settings.rotate_by == "bucket":
-            self.loggit.info("Checking if bucket %s exists before creation", self.new_bucket_name)
+            self.loggit.info(
+                "Checking if bucket %s exists before creation", self.new_bucket_name
+            )
             try:
                 # create_bucket already checks bucket_exists internally
                 self.s3.create_bucket(self.new_bucket_name)
@@ -560,7 +590,7 @@ class Rotate:
                     "Failed to create bucket %s: %s. Check S3 permissions and bucket naming rules.",
                     self.new_bucket_name,
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
                 raise
 
@@ -570,12 +600,14 @@ class Rotate:
             self.new_repo_name,
             self.new_bucket_name,
             self.base_path,
-            self.settings.storage_class
+            self.settings.storage_class,
         )
         try:
             existing_repos = self.client.snapshot.get_repository()
             if self.new_repo_name in existing_repos:
-                error_msg = f"Repository {self.new_repo_name} already exists in Elasticsearch"
+                error_msg = (
+                    f"Repository {self.new_repo_name} already exists in Elasticsearch"
+                )
                 self.loggit.error(error_msg)
                 raise ActionError(error_msg)
 
@@ -593,7 +625,7 @@ class Rotate:
                 "Failed to create repository %s: %s",
                 self.new_repo_name,
                 e,
-                exc_info=True
+                exc_info=True,
             )
             raise
         # Go through mounted repos and make sure the date ranges are up-to-date

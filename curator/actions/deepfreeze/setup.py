@@ -99,7 +99,10 @@ class Setup:
             provider=provider,
             rotate_by=rotate_by,
             style=style,
+            ilm_policy_name=ilm_policy_name,
+            index_template_name=index_template_name,
         )
+        # Keep direct references for convenience
         self.ilm_policy_name = ilm_policy_name
         self.index_template_name = index_template_name
         self.base_path = self.settings.base_path_prefix
@@ -186,7 +189,67 @@ class Setup:
                 }
             )
 
-        # HIGH PRIORITY FIX: Check for S3 repository plugin (only for ES 7.x and below)
+        # Fourth, check if the index template exists
+        self.loggit.debug(
+            "Checking if index template %s exists", self.index_template_name
+        )
+        template_exists = False
+        template_type = None
+
+        # Check composable templates first (ES 7.8+)
+        try:
+            templates = self.client.indices.get_index_template(
+                name=self.index_template_name
+            )
+            if (
+                templates
+                and "index_templates" in templates
+                and len(templates["index_templates"]) > 0
+            ):
+                template_exists = True
+                template_type = "composable"
+                self.loggit.debug(
+                    "Found composable template %s", self.index_template_name
+                )
+        except Exception:
+            pass  # Template not found as composable, try legacy
+
+        # Check legacy templates if not found as composable
+        if not template_exists:
+            try:
+                templates = self.client.indices.get_template(
+                    name=self.index_template_name
+                )
+                if templates and self.index_template_name in templates:
+                    template_exists = True
+                    template_type = "legacy"
+                    self.loggit.debug(
+                        "Found legacy template %s", self.index_template_name
+                    )
+            except Exception:
+                pass  # Template not found
+
+        if not template_exists:
+            errors.append(
+                {
+                    "issue": f"Index template [cyan]{self.index_template_name}[/cyan] does not exist",
+                    "solution": "Create the index template before running setup:\n"
+                    f"  [yellow]PUT _index_template/{self.index_template_name}[/yellow]\n"
+                    "  with appropriate index_patterns, mappings, and settings.\n\n"
+                    "Example:\n"
+                    "  [yellow]curl -X PUT 'http://<host>:9200/_index_template/"
+                    f"{self.index_template_name}' -H 'Content-Type: application/json' -d '[/yellow]\n"
+                    '  [yellow]{"index_patterns": ["your-data-*"], "template": {"settings": {}}}\'[/yellow]',
+                }
+            )
+        else:
+            self.loggit.info(
+                "Index template %s exists (type: %s)",
+                self.index_template_name,
+                template_type,
+            )
+
+        # Fifth, check for S3 repository plugin (only for ES 7.x and below)
         # NOTE: Elasticsearch 8.x+ has built-in S3 repository support, no plugin needed
         self.loggit.debug("Checking S3 repository support")
         try:
