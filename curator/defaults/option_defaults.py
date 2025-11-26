@@ -770,22 +770,21 @@ def warn_if_no_indices():
     }
 
 
-def create_sample_ilm_policy():
-    """
-    Setting to allow creating a sample ILM policy
-    """
-    return {
-        Optional("create_sample_ilm_policy", default=False): Any(
-            bool, All(Any(str), Boolean())
-        )
-    }
-
-
 def ilm_policy_name():
     """
-    Setting to allow setting a custom ILM policy name
+    Name of the ILM policy to create or modify for deepfreeze operations.
+    If the policy exists, it will be updated to use the deepfreeze repository.
+    If it does not exist, a new policy will be created with a reasonable tiering strategy.
     """
-    return {Optional("ilm_policy_name", default="deepfreeze-sample-policy"): Any(str)}
+    return {Required("ilm_policy_name"): Any(str)}
+
+
+def index_template_name():
+    """
+    Name of the index template to attach the ILM policy to.
+    The template will be updated to use the ILM policy.
+    """
+    return {Required("index_template_name"): Any(str)}
 
 
 def year():

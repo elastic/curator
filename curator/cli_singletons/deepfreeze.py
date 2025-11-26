@@ -132,20 +132,21 @@ def deepfreeze():
     # help="How to number (suffix) the rotating repositories",
 )
 @click.option(
-    "-c",
-    "--create_sample_ilm_policy",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="Create a sample ILM policy",
-)
-@click.option(
     "-i",
     "--ilm_policy_name",
     type=str,
-    show_default=True,
-    default="deepfreeze-sample-policy",
-    help="Name of the sample ILM policy",
+    required=True,
+    help="Name of the ILM policy to create/modify. If the policy exists, it will be "
+    "updated to use the deepfreeze repository. If not, a new policy will be created "
+    "with tiering: 7d hot, 30d cold, 365d frozen, then delete.",
+)
+@click.option(
+    "-x",
+    "--index_template_name",
+    type=str,
+    required=True,
+    help="Name of the index template to attach the ILM policy to. "
+    "The template will be updated to use the specified ILM policy.",
 )
 @click.option(
     "-p",
@@ -167,8 +168,8 @@ def setup(
     provider,
     rotate_by,
     style,
-    create_sample_ilm_policy,
     ilm_policy_name,
+    index_template_name,
     porcelain,
 ):
     """
@@ -180,8 +181,23 @@ def setup(
 
     Depending on the S3 provider chosen, some options might not be available, or option
     values may vary.
+
+    \b
+    ILM Policy Configuration (--ilm_policy_name, REQUIRED):
+      - If the policy exists: Updates it to use the deepfreeze repository
+      - If not: Creates a new policy with tiering strategy:
+        * Hot: 7 days (with rollover at 45GB or 7d)
+        * Cold: 30 days
+        * Frozen: 365 days (searchable snapshot to deepfreeze repo)
+        * Delete: after frozen phase (delete_searchable_snapshot=false)
+
+    \b
+    Index Template Configuration (--index_template_name, REQUIRED):
+      - The template will be updated to use the specified ILM policy
+      - Ensures new indices will automatically use the deepfreeze ILM policy
     """
     logging.debug("setup")
+
     manual_options = {
         "year": year,
         "month": month,
@@ -193,8 +209,8 @@ def setup(
         "provider": provider,
         "rotate_by": rotate_by,
         "style": style,
-        "create_sample_ilm_policy": create_sample_ilm_policy,
         "ilm_policy_name": ilm_policy_name,
+        "index_template_name": index_template_name,
         "porcelain": porcelain,
     }
 

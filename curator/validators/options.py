@@ -68,8 +68,8 @@ def action_specific(action):
             option_defaults.provider(),
             option_defaults.rotate_by(),
             option_defaults.style(),
-            option_defaults.create_sample_ilm_policy(),
             option_defaults.ilm_policy_name(),
+            option_defaults.index_template_name(),
             option_defaults.porcelain(),
         ],
         'rotate': [

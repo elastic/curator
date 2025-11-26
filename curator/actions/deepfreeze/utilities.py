@@ -570,23 +570,22 @@ def decode_date(date_in: str) -> datetime:
 
 
 def create_ilm_policy(
-    client: Elasticsearch, policy_name: str, policy_body: str
+    client: Elasticsearch, policy_name: str, policy_body: dict
 ) -> None:
     """
-    Create a sample ILM policy.
+    Create an ILM policy.
 
     :param client: A client connection object
     :type client: Elasticsearch
     :param policy_name: The name of the policy to create
     :type policy_name: str
+    :param policy_body: The policy body dictionary
+    :type policy_body: dict
 
     :return: None
     :rtype: None
 
-    :raises Exception: If the policy cannot be created
-    :raises Exception: If the policy already exists
-    :raises Exception: If the policy cannot be retrieved
-    :raises Exception: If the policy is not empty
+    :raises ActionError: If the policy cannot be created
     """
     loggit = logging.getLogger("curator.actions.deepfreeze")
     loggit.info("Creating ILM policy %s", policy_name)
@@ -595,6 +594,287 @@ def create_ilm_policy(
     except Exception as e:
         loggit.error(e)
         raise ActionError(e)
+
+
+def get_ilm_policy(client: Elasticsearch, policy_name: str) -> dict | None:
+    """
+    Get an ILM policy by name.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param policy_name: The name of the policy to retrieve
+    :type policy_name: str
+
+    :returns: The policy dictionary if found, None otherwise
+    :rtype: dict | None
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.debug("Getting ILM policy %s", policy_name)
+    try:
+        policies = client.ilm.get_lifecycle(name=policy_name)
+        if policy_name in policies:
+            return policies[policy_name]
+        return None
+    except NotFoundError:
+        loggit.debug("ILM policy %s not found", policy_name)
+        return None
+    except Exception as e:
+        loggit.error("Error getting ILM policy %s: %s", policy_name, e)
+        return None
+
+
+def create_or_update_ilm_policy(
+    client: Elasticsearch, policy_name: str, repo_name: str
+) -> dict:
+    """
+    Create a new ILM policy or update an existing one to use the deepfreeze repository.
+
+    If the policy does not exist, creates a new policy with a reasonable tiering strategy:
+    - Hot: 7 days (with rollover at 45GB or 7d)
+    - Cold: 30 days
+    - Frozen: 365 days (searchable snapshot to deepfreeze repo)
+    - Delete: after frozen phase (delete_searchable_snapshot=false)
+
+    If the policy exists, updates any searchable_snapshot actions to use the new repository.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param policy_name: The name of the policy to create or update
+    :type policy_name: str
+    :param repo_name: The repository name to use in the frozen phase
+    :type repo_name: str
+
+    :returns: Dictionary with 'action' ('created' or 'updated') and 'policy_body'
+    :rtype: dict
+
+    :raises ActionError: If the policy cannot be created or updated
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+
+    # Define the default policy with reasonable tiering strategy
+    default_policy_body = {
+        "policy": {
+            "phases": {
+                "hot": {
+                    "min_age": "0ms",
+                    "actions": {"rollover": {"max_size": "45gb", "max_age": "7d"}},
+                },
+                "cold": {
+                    "min_age": "30d",
+                    "actions": {"set_priority": {"priority": 0}},
+                },
+                "frozen": {
+                    "min_age": "365d",
+                    "actions": {
+                        "searchable_snapshot": {"snapshot_repository": repo_name}
+                    },
+                },
+                "delete": {
+                    "min_age": "0d",  # Relative to frozen phase completion
+                    "actions": {"delete": {"delete_searchable_snapshot": False}},
+                },
+            }
+        }
+    }
+
+    existing_policy = get_ilm_policy(client, policy_name)
+
+    if existing_policy is None:
+        # Create new policy
+        loggit.info(
+            "Creating new ILM policy %s with default tiering strategy", policy_name
+        )
+        create_ilm_policy(client, policy_name, default_policy_body)
+        return {"action": "created", "policy_body": default_policy_body}
+    else:
+        # Update existing policy to use the new repository
+        loggit.info(
+            "Updating existing ILM policy %s to use repository %s",
+            policy_name,
+            repo_name,
+        )
+
+        # Deep copy the existing policy to modify it
+        import copy
+
+        updated_policy = copy.deepcopy(existing_policy)
+        policy_phases = updated_policy.get("policy", {}).get("phases", {})
+
+        # Update any searchable_snapshot actions to use the new repository
+        modified = False
+        for phase_name, phase_config in policy_phases.items():
+            actions = phase_config.get("actions", {})
+            if "searchable_snapshot" in actions:
+                old_repo = actions["searchable_snapshot"].get(
+                    "snapshot_repository", "N/A"
+                )
+                actions["searchable_snapshot"]["snapshot_repository"] = repo_name
+                loggit.info(
+                    "Updated %s phase: snapshot_repository %s -> %s",
+                    phase_name,
+                    old_repo,
+                    repo_name,
+                )
+                modified = True
+
+        # Also ensure delete phase has delete_searchable_snapshot=false
+        if "delete" in policy_phases:
+            delete_actions = policy_phases["delete"].get("actions", {})
+            if "delete" in delete_actions:
+                if (
+                    delete_actions["delete"].get("delete_searchable_snapshot")
+                    is not False
+                ):
+                    delete_actions["delete"]["delete_searchable_snapshot"] = False
+                    loggit.info(
+                        "Updated delete phase: delete_searchable_snapshot -> false"
+                    )
+                    modified = True
+
+        if modified:
+            # Re-structure for the API call
+            policy_body = {"policy": updated_policy.get("policy", {})}
+            create_ilm_policy(client, policy_name, policy_body)
+            return {"action": "updated", "policy_body": policy_body}
+        else:
+            loggit.info(
+                "ILM policy %s has no searchable_snapshot actions to update",
+                policy_name,
+            )
+            return {
+                "action": "unchanged",
+                "policy_body": {"policy": updated_policy.get("policy", {})},
+            }
+
+
+def update_index_template_ilm_policy(
+    client: Elasticsearch, template_name: str, ilm_policy_name: str
+) -> dict:
+    """
+    Update an index template to use a specific ILM policy.
+
+    Supports both composable templates (ES 7.8+) and legacy templates.
+
+    :param client: A client connection object
+    :type client: Elasticsearch
+    :param template_name: The name of the template to update
+    :type template_name: str
+    :param ilm_policy_name: The name of the ILM policy to assign
+    :type ilm_policy_name: str
+
+    :returns: Dictionary with 'action' ('updated' or 'not_found') and details
+    :rtype: dict
+
+    :raises ActionError: If the template cannot be updated
+    """
+    loggit = logging.getLogger("curator.actions.deepfreeze")
+    loggit.info(
+        "Updating index template %s to use ILM policy %s",
+        template_name,
+        ilm_policy_name,
+    )
+
+    # First try composable templates (ES 7.8+)
+    try:
+        templates = client.indices.get_index_template(name=template_name)
+        if (
+            templates
+            and "index_templates" in templates
+            and len(templates["index_templates"]) > 0
+        ):
+            template_data = templates["index_templates"][0]["index_template"]
+            loggit.debug("Found composable template %s", template_name)
+
+            # Ensure template structure exists
+            if "template" not in template_data:
+                template_data["template"] = {}
+            if "settings" not in template_data["template"]:
+                template_data["template"]["settings"] = {}
+            if "index" not in template_data["template"]["settings"]:
+                template_data["template"]["settings"]["index"] = {}
+            if "lifecycle" not in template_data["template"]["settings"]["index"]:
+                template_data["template"]["settings"]["index"]["lifecycle"] = {}
+
+            # Get old policy name for logging
+            old_policy = template_data["template"]["settings"]["index"][
+                "lifecycle"
+            ].get("name", "none")
+
+            # Set the new ILM policy
+            template_data["template"]["settings"]["index"]["lifecycle"][
+                "name"
+            ] = ilm_policy_name
+
+            # Put the updated template
+            client.indices.put_index_template(name=template_name, body=template_data)
+            loggit.info(
+                "Updated composable template %s: ILM policy %s -> %s",
+                template_name,
+                old_policy,
+                ilm_policy_name,
+            )
+            return {
+                "action": "updated",
+                "template_type": "composable",
+                "old_policy": old_policy,
+                "new_policy": ilm_policy_name,
+            }
+    except NotFoundError:
+        loggit.debug(
+            "Composable template %s not found, trying legacy template", template_name
+        )
+    except Exception as e:
+        loggit.debug("Error checking composable template %s: %s", template_name, e)
+
+    # Try legacy templates
+    try:
+        templates = client.indices.get_template(name=template_name)
+        if templates and template_name in templates:
+            template_data = templates[template_name]
+            loggit.debug("Found legacy template %s", template_name)
+
+            # Ensure template structure exists
+            if "settings" not in template_data:
+                template_data["settings"] = {}
+            if "index" not in template_data["settings"]:
+                template_data["settings"]["index"] = {}
+            if "lifecycle" not in template_data["settings"]["index"]:
+                template_data["settings"]["index"]["lifecycle"] = {}
+
+            # Get old policy name for logging
+            old_policy = template_data["settings"]["index"]["lifecycle"].get(
+                "name", "none"
+            )
+
+            # Set the new ILM policy
+            template_data["settings"]["index"]["lifecycle"]["name"] = ilm_policy_name
+
+            # Put the updated template
+            client.indices.put_template(name=template_name, body=template_data)
+            loggit.info(
+                "Updated legacy template %s: ILM policy %s -> %s",
+                template_name,
+                old_policy,
+                ilm_policy_name,
+            )
+            return {
+                "action": "updated",
+                "template_type": "legacy",
+                "old_policy": old_policy,
+                "new_policy": ilm_policy_name,
+            }
+    except NotFoundError:
+        loggit.warning(
+            "Template %s not found (checked both composable and legacy)", template_name
+        )
+        return {
+            "action": "not_found",
+            "template_type": None,
+            "error": f"Template {template_name} not found",
+        }
+    except Exception as e:
+        loggit.error("Error updating legacy template %s: %s", template_name, e)
+        raise ActionError(f"Failed to update template {template_name}: {e}")
 
 
 def create_thawed_ilm_policy(client: Elasticsearch, repo_name: str) -> str:
