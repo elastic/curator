@@ -246,12 +246,20 @@ def setup(
     default=6,
     help="How many repositories should remain mounted?",
 )
+@click.option(
+    "-p",
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Machine-readable output (no formatting)",
+)
 @click.pass_context
 def rotate(
     ctx,
     year,
     month,
     keep,
+    porcelain,
 ):
     """
     Deepfreeze rotation (add a new repo and age oldest off)
@@ -260,6 +268,7 @@ def rotate(
         "year": year,
         "month": month,
         "keep": keep,
+        "porcelain": porcelain,
     }
     action = CLIAction(
         ctx.info_name,
@@ -365,16 +374,25 @@ def status(
     default=None,
     help="Override retention period for refrozen thaw requests (default: from config, typically 35 days)",
 )
+@click.option(
+    "-p",
+    "--porcelain",
+    is_flag=True,
+    default=False,
+    help="Machine-readable output (no formatting)",
+)
 @click.pass_context
 def cleanup(
     ctx,
     refrozen_retention_days,
+    porcelain,
 ):
     """
     Clean up expired thawed repositories
     """
     manual_options = {
         "refrozen_retention_days": refrozen_retention_days,
+        "porcelain": porcelain,
     }
     action = CLIAction(
         ctx.info_name,

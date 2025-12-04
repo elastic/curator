@@ -1,21 +1,34 @@
-"""Deepfreeze actions module"""
+"""
+Deepfreeze actions module
 
-from .constants import PROVIDERS, SETTINGS_ID, STATUS_INDEX
-from .exceptions import (
+This module re-exports from the deepfreeze-core package.
+The canonical implementation lives in the 'deepfreeze_core' package.
+"""
+
+# Re-export everything from the deepfreeze-core package
+from deepfreeze_core import (
+    # Constants
+    PROVIDERS,
+    SETTINGS_ID,
+    STATUS_INDEX,
+    # Exceptions
     ActionException,
     DeepfreezeException,
     MissingIndexError,
     MissingSettingsError,
-)
-from .cleanup import Cleanup
-from .helpers import Deepfreeze, Repository, Settings
-from .refreeze import Refreeze
-from .repair_metadata import RepairMetadata
-from .rotate import Rotate
-from .setup import Setup
-from .status import Status
-from .thaw import Thaw
-from .utilities import (
+    # Actions
+    Cleanup,
+    Refreeze,
+    RepairMetadata,
+    Rotate,
+    Setup,
+    Status,
+    Thaw,
+    # Helpers
+    Deepfreeze,
+    Repository,
+    Settings,
+    # Utilities
     check_restore_status,
     create_repo,
     decode_date,

@@ -30,6 +30,7 @@ keywords = [
 ]
 dependencies = [
     "boto3",
+    "deepfreeze-core @ git+https://github.com/elastic/deepfreeze.git@v1.0.0#subdirectory=packages/deepfreeze-core",
     "es_client==8.19.5",
     "rich"
 ]
