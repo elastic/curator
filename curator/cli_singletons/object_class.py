@@ -4,30 +4,39 @@
 import typing as t
 import logging
 import sys
-from voluptuous import Schema
+
 from es_client.builder import Builder
 from es_client.exceptions import FailedValidation
 from es_client.helpers.schemacheck import SchemaCheck
 from es_client.helpers.utils import prune_nones
+from voluptuous import Schema
+
 from curator import IndexList, SnapshotList
 from curator.debug import debug
 from curator.actions import (
     Alias,
     Allocation,
+    Cleanup,
     Close,
     ClusterRouting,
     CreateIndex,
     DeleteIndices,
+    DeleteSnapshots,
     ForceMerge,
     IndexSettings,
     Open,
+    Refreeze,
     Reindex,
+    RepairMetadata,
     Replicas,
+    Restore,
     Rollover,
+    Rotate,
+    Setup,
     Shrink,
     Snapshot,
-    DeleteSnapshots,
-    Restore,
+    Status,
+    Thaw,
 )
 from curator.defaults.settings import VERSION_MAX, VERSION_MIN, snapshot_actions
 from curator.exceptions import ConfigurationError, NoIndices, NoSnapshots
@@ -38,29 +47,36 @@ from curator.validators.filter_functions import validfilters
 logger = logging.getLogger(__name__)
 
 CLASS_MAP = {
-    'alias': Alias,
-    'allocation': Allocation,
-    'close': Close,
-    'cluster_routing': ClusterRouting,
-    'create_index': CreateIndex,
-    'delete_indices': DeleteIndices,
-    'delete_snapshots': DeleteSnapshots,
-    'forcemerge': ForceMerge,
-    'index_settings': IndexSettings,
-    'open': Open,
-    'reindex': Reindex,
-    'replicas': Replicas,
-    'restore': Restore,
-    'rollover': Rollover,
-    'shrink': Shrink,
-    'snapshot': Snapshot,
+    "alias": Alias,
+    "allocation": Allocation,
+    "cleanup": Cleanup,
+    "close": Close,
+    "cluster_routing": ClusterRouting,
+    "create_index": CreateIndex,
+    "delete_indices": DeleteIndices,
+    "delete_snapshots": DeleteSnapshots,
+    "forcemerge": ForceMerge,
+    "index_settings": IndexSettings,
+    "open": Open,
+    "refreeze": Refreeze,
+    "reindex": Reindex,
+    "repair_metadata": RepairMetadata,
+    "replicas": Replicas,
+    "restore": Restore,
+    "rollover": Rollover,
+    "shrink": Shrink,
+    "snapshot": Snapshot,
+    "rotate": Rotate,
+    "setup": Setup,
+    "status": Status,
+    "thaw": Thaw,
 }
 
 EXCLUDED_OPTIONS = [
-    'ignore_empty_list',
-    'timeout_override',
-    'continue_if_exception',
-    'disable_action',
+    "ignore_empty_list",
+    "timeout_override",
+    "continue_if_exception",
+    "disable_action",
 ]
 
 
@@ -109,30 +125,30 @@ class CLIAction:
         self.include_system = self.options.pop('include_system', False)
 
         # Extract allow_ilm_indices so it can be handled separately.
-        if 'allow_ilm_indices' in self.options:
-            self.allow_ilm = self.options.pop('allow_ilm_indices')
+        if "allow_ilm_indices" in self.options:
+            self.allow_ilm = self.options.pop("allow_ilm_indices")
         else:
             self.allow_ilm = False
         if action == 'alias':
             debug.lv5('ACTION = ALIAS')
             self.alias = {
-                'name': option_dict['name'],
-                'extra_settings': option_dict['extra_settings'],
-                'wini': (
-                    kwargs['warn_if_no_indices']
-                    if 'warn_if_no_indices' in kwargs
+                "name": option_dict["name"],
+                "extra_settings": option_dict["extra_settings"],
+                "wini": (
+                    kwargs["warn_if_no_indices"]
+                    if "warn_if_no_indices" in kwargs
                     else False
                 ),
             }
-            for k in ['add', 'remove']:
+            for k in ["add", "remove"]:
                 if k in kwargs:
                     self.alias[k] = {}
-                    self.check_filters(kwargs[k], loc='alias singleton', key=k)
-                    self.alias[k]['filters'] = self.filters
+                    self.check_filters(kwargs[k], loc="alias singleton", key=k)
+                    self.alias[k]["filters"] = self.filters
                     if self.allow_ilm:
-                        self.alias[k]['filters'].append({'filtertype': 'ilm'})
+                        self.alias[k]["filters"].append({"filtertype": "ilm"})
         # No filters for these actions
-        elif action in ['cluster_routing', 'create_index', 'rollover']:
+        elif action in ["cleanup", "cluster_routing", "create_index", "refreeze", "repair_metadata", "rollover", "setup", "rotate", "status", "thaw"]:
             self.action_kwargs = {}
             if action == 'rollover':
                 debug.lv5('rollover option_dict = %s', option_dict)
@@ -146,7 +162,7 @@ class CLIAction:
         # pylint: disable=broad-except
         except Exception as exc:
             raise ConfigurationError(
-                f'Unable to connect to Elasticsearch as configured: {exc}'
+                f"Unable to connect to Elasticsearch as configured: {exc}"
             ) from exc
         # If we're here, we'll see the output from GET http(s)://hostname.tld:PORT
         debug.lv5('Connection result: %s', builder.client.info())
@@ -168,24 +184,23 @@ class CLIAction:
             debug.lv5('Validating provided options: %s', option_dict)
             # Kludgy work-around to needing 'repository' in options for these actions
             # but only to pass the schema check.  It's removed again below.
-            if self.action in ['delete_snapshots', 'restore']:
-                option_dict['repository'] = self.repository
+            if self.action in ["delete_snapshots", "restore"]:
+                option_dict["repository"] = self.repository
             _ = SchemaCheck(
                 prune_nones(option_dict),
                 options.get_schema(self.action),
-                'options',
+                "options",
                 f'{self.action} singleton action "options"',
             ).result()
             self.options = self.prune_excluded(_)
-            # Remove this after the schema check, as the action class won't need
-            # it as an arg
-            if self.action in ['delete_snapshots', 'restore']:
-                del self.options['repository']
+            # Remove this after the schema check, as the action class won't need it as an arg
+            if self.action in ["delete_snapshots", "restore"]:
+                del self.options["repository"]
         except FailedValidation as exc:
             logger.critical('Unable to parse options: %s', exc)
             sys.exit(1)
 
-    def check_filters(self, filter_dict, loc='singleton', key='filters'):
+    def check_filters(self, filter_dict, loc="singleton", key="filters"):
         """Validate provided filters"""
         try:
             debug.lv5('Validating provided filters: %s', filter_dict)
@@ -210,10 +225,10 @@ class CLIAction:
         ]:
             self.filters.append({'filtertype': 'ilm', 'exclude': True})
         try:
-            self.list_object.iterate_filters({'filters': self.filters})
+            self.list_object.iterate_filters({"filters": self.filters})
             self.list_object.empty_list_check()
         except (NoIndices, NoSnapshots) as exc:
-            otype = 'index' if isinstance(exc, NoIndices) else 'snapshot'
+            otype = "index" if isinstance(exc, NoIndices) else "snapshot"
             if self.ignore:
                 logger.info('Singleton action not performed: empty %s list', otype)
                 sys.exit(0)
@@ -237,13 +252,13 @@ class CLIAction:
     def get_alias_obj(self):
         """Get the Alias object"""
         action_obj = Alias(
-            name=self.alias['name'], extra_settings=self.alias['extra_settings']
+            name=self.alias["name"], extra_settings=self.alias["extra_settings"]
         )
-        for k in ['remove', 'add']:
+        for k in ["remove", "add"]:
             if k in self.alias:
                 msg = (
                     f"{'Add' if k == 'add' else 'Remov'}ing matching indices "
-                    f"{'to' if k == 'add' else 'from'} alias \"{self.alias['name']}\""
+                    f'{"to" if k == "add" else "from"} alias "{self.alias["name"]}"'
                 )
                 debug.lv4(msg)
                 self.alias[k]['ilo'] = IndexList(
@@ -255,17 +270,23 @@ class CLIAction:
                     {'filters': self.alias[k]['filters']}
                 )
                 fltr = getattr(action_obj, k)
-                fltr(self.alias[k]['ilo'], warn_if_no_indices=self.alias['wini'])
+                fltr(self.alias[k]["ilo"], warn_if_no_indices=self.alias["wini"])
         return action_obj
 
     def do_singleton_action(self, dry_run=False):
         """Execute the (ostensibly) completely ready to run action"""
         debug.lv3('Doing the singleton "%s" action here.', self.action)
         try:
-            if self.action == 'alias':
+            if self.action == "alias":
                 action_obj = self.get_alias_obj()
-            elif self.action in ['cluster_routing', 'create_index', 'rollover']:
+            elif self.action in ["cluster_routing", "create_index", "rollover"]:
                 action_obj = self.action_class(self.client, **self.options)
+            elif self.action in ["cleanup", "refreeze", "repair_metadata", "setup", "rotate", "status", "thaw"]:
+                logger.debug(
+                    f"Declaring Deepfreeze action object with options: {self.options}"
+                )
+                action_obj = self.action_class(self.client, **self.options)
+                logger.debug("Deepfreeze action object declared")
             else:
                 self.get_list_object()
                 self.do_filters()

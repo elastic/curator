@@ -29,7 +29,10 @@ keywords = [
     'index-expiry'
 ]
 dependencies = [
-    "es_client==8.19.5"
+    "boto3",
+    "deepfreeze-core @ git+https://github.com/elastic/deepfreeze.git@v1.0.0#subdirectory=packages/deepfreeze-core",
+    "es_client==8.19.5",
+    "rich"
 ]
 
 [project.optional-dependencies]
@@ -37,6 +40,8 @@ test = [
     "requests",
     "pytest >=7.2.1",
     "pytest-cov",
+    "pytest-xdist",
+    "filelock",
 ]
 doc = ["sphinx", "sphinx_rtd_theme"]
 

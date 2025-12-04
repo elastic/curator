@@ -4,7 +4,7 @@ import sys
 import logging
 import click
 from es_client.defaults import OPTION_DEFAULTS
-from es_client.helpers.config import (
+from es_client.config import (
     cli_opts,
     context_settings,
     generate_configdict,
@@ -12,8 +12,8 @@ from es_client.helpers.config import (
     get_config,
     options_from_dict,
 )
-from es_client.helpers.logging import configure_logging
-from es_client.helpers.utils import option_wrapper, prune_nones
+from es_client.logging import configure_logging
+from es_client.utils import option_wrapper, prune_nones
 from curator.exceptions import ClientException
 from curator.classdef import ActionsFile
 from curator.defaults.settings import (

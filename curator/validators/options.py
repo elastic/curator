@@ -1,6 +1,7 @@
 """Set up voluptuous Schema defaults for various actions"""
 
 from voluptuous import Schema
+
 from curator.defaults import option_defaults
 
 
@@ -18,12 +19,12 @@ def action_specific(action):
     :rtype: list
     """
     options = {
-        'alias': [
+        "alias": [
             option_defaults.name(action),
             option_defaults.warn_if_no_indices(),
             option_defaults.extra_settings(),
         ],
-        'allocation': [
+        "allocation": [
             option_defaults.search_pattern(),
             option_defaults.key(),
             option_defaults.value(),
@@ -32,12 +33,12 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'close': [
+        "close": [
             option_defaults.search_pattern(),
             option_defaults.delete_aliases(),
             option_defaults.skip_flush(),
         ],
-        'cluster_routing': [
+        "cluster_routing": [
             option_defaults.routing_type(),
             option_defaults.cluster_routing_setting(),
             option_defaults.cluster_routing_value(),
@@ -45,40 +46,90 @@ def action_specific(action):
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'cold2frozen': [
+        "cold2frozen": [
             option_defaults.search_pattern(),
             option_defaults.c2f_index_settings(),
             option_defaults.c2f_ignore_index_settings(),
-            option_defaults.wait_for_completion('cold2frozen'),
+            option_defaults.wait_for_completion("cold2frozen"),
         ],
-        'create_index': [
+        "create_index": [
             option_defaults.name(action),
             option_defaults.ignore_existing(),
             option_defaults.extra_settings(),
         ],
+        'setup': [
+            option_defaults.year(),
+            option_defaults.month(),
+            option_defaults.repo_name_prefix(),
+            option_defaults.bucket_name_prefix(),
+            option_defaults.base_path_prefix(),
+            option_defaults.canned_acl(),
+            option_defaults.storage_class(),
+            option_defaults.provider(),
+            option_defaults.rotate_by(),
+            option_defaults.style(),
+            option_defaults.ilm_policy_name(),
+            option_defaults.index_template_name(),
+            option_defaults.porcelain(),
+        ],
+        'rotate': [
+            option_defaults.keep(),
+            option_defaults.year(),
+            option_defaults.month(),
+        ],
+        'cleanup': [
+            option_defaults.refrozen_retention_days(),
+        ],
+        'status': [
+            option_defaults.limit(),
+            option_defaults.show_repos(),
+            option_defaults.show_thawed(),
+            option_defaults.show_buckets(),
+            option_defaults.show_ilm(),
+            option_defaults.show_config(),
+            option_defaults.porcelain(),
+        ],
+        'thaw': [
+            option_defaults.start_date(),
+            option_defaults.end_date(),
+            option_defaults.sync(),
+            option_defaults.duration(),
+            option_defaults.retrieval_tier(),
+            option_defaults.check_status(),
+            option_defaults.list_requests(),
+            option_defaults.include_completed(),
+            option_defaults.porcelain(),
+        ],
+        'refreeze': [
+            option_defaults.thaw_request_id(),
+            option_defaults.porcelain(),
+        ],
+        'repair_metadata': [
+            option_defaults.porcelain(),
+        ],
         'delete_indices': [
             option_defaults.search_pattern(),
         ],
-        'delete_snapshots': [
+        "delete_snapshots": [
             option_defaults.repository(),
             option_defaults.retry_interval(),
             option_defaults.retry_count(),
         ],
-        'forcemerge': [
+        "forcemerge": [
             option_defaults.search_pattern(),
             option_defaults.delay(),
             option_defaults.max_num_segments(),
         ],
-        'index_settings': [
+        "index_settings": [
             option_defaults.search_pattern(),
             option_defaults.index_settings(),
             option_defaults.ignore_unavailable(),
             option_defaults.preserve_existing(),
         ],
-        'open': [
+        "open": [
             option_defaults.search_pattern(),
         ],
-        'reindex': [
+        "reindex": [
             option_defaults.request_body(),
             option_defaults.refresh(),
             option_defaults.requests_per_second(),
@@ -95,21 +146,21 @@ def action_specific(action):
             option_defaults.migration_prefix(),
             option_defaults.migration_suffix(),
         ],
-        'replicas': [
+        "replicas": [
             option_defaults.search_pattern(),
             option_defaults.count(),
             option_defaults.wait_for_completion(action),
             option_defaults.wait_interval(action),
             option_defaults.max_wait(action),
         ],
-        'rollover': [
+        "rollover": [
             option_defaults.name(action),
             option_defaults.new_index(),
             option_defaults.conditions(),
             option_defaults.extra_settings(),
             option_defaults.wait_for_active_shards(action),
         ],
-        'restore': [
+        "restore": [
             option_defaults.repository(),
             option_defaults.name(action),
             option_defaults.indices(),
@@ -125,7 +176,7 @@ def action_specific(action):
             option_defaults.max_wait(action),
             option_defaults.skip_repo_fs_check(),
         ],
-        'snapshot': [
+        "snapshot": [
             option_defaults.search_pattern(),
             option_defaults.repository(),
             option_defaults.name(action),
@@ -137,7 +188,7 @@ def action_specific(action):
             option_defaults.max_wait(action),
             option_defaults.skip_repo_fs_check(),
         ],
-        'shrink': [
+        "shrink": [
             option_defaults.search_pattern(),
             option_defaults.shrink_node(),
             option_defaults.node_filters(),

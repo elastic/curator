@@ -2,8 +2,8 @@
 
 import logging
 from es_client.exceptions import FailedValidation
-from es_client.helpers.schemacheck import password_filter
-from es_client.helpers.utils import get_yaml
+from es_client.schemacheck import password_filter
+from es_client.utils import get_yaml
 from curator import IndexList, SnapshotList
 from curator.debug import debug
 from curator.actions import CLASS_MAP

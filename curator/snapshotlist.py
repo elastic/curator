@@ -2,7 +2,7 @@
 
 import re
 import logging
-from es_client.helpers.schemacheck import SchemaCheck
+from es_client.schemacheck import SchemaCheck
 from curator.debug import debug, begin_end
 from curator.exceptions import (
     ConfigurationError,

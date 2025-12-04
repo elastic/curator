@@ -176,3 +176,15 @@ cython_debug/
 #.idea/
 
 .vscode
+
+# pyenv version
+.python-version
+
+# vim backup files
+*~
+repo_time_tester.py
+reset.sh
+seed_data_to_ds.py
+docker_test/scripts/license.json
+.claude
+agent-os

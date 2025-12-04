@@ -1,7 +1,11 @@
 """CLI module for curator_cli"""
 
+import warnings
 import click
 from es_client.defaults import SHOW_EVERYTHING
+
+# Suppress urllib3 InsecureRequestWarning when verify_certs is disabled
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 from es_client.helpers.config import (
     cli_opts,
     context_settings,
@@ -23,6 +27,7 @@ from curator.cli_singletons import (
     alias,
     allocation,
     close,
+    deepfreeze,
     delete_indices,
     delete_snapshots,
     forcemerge,
@@ -103,6 +108,7 @@ curator_cli.add_command(allocation)
 curator_cli.add_command(close)
 curator_cli.add_command(delete_indices)
 curator_cli.add_command(delete_snapshots)
+curator_cli.add_command(deepfreeze)
 curator_cli.add_command(forcemerge)
 curator_cli.add_command(open_indices)
 curator_cli.add_command(replicas)

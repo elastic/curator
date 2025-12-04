@@ -5,7 +5,7 @@ The kind that don't fit in testers, getters, date_ops, or converters
 
 import re
 import logging
-from es_client.helpers.utils import ensure_list
+from es_client.utils import ensure_list
 from curator.debug import debug, begin_end
 from curator.exceptions import FailedExecution
 
