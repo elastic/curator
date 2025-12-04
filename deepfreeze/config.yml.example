@@ -1,0 +1,58 @@
+# Deepfreeze Configuration File
+# Copy this file to ~/.deepfreeze/config.yml and update with your settings
+#
+# Usage:
+#   mkdir -p ~/.deepfreeze
+#   cp config.yml.example ~/.deepfreeze/config.yml
+#   # Edit ~/.deepfreeze/config.yml with your settings
+
+# Elasticsearch connection settings
+elasticsearch:
+  # Option 1: Direct connection with username/password
+  hosts:
+    - https://localhost:9200
+  username: elastic
+  password: changeme
+
+  # Option 2: API Key authentication (comment out username/password above)
+  # api_key: "base64-encoded-api-key"
+
+  # Option 3: Elastic Cloud (comment out hosts above)
+  # cloud_id: "deployment-name:base64string"
+
+  # SSL/TLS settings (optional)
+  # ca_certs: /path/to/ca.crt
+  # client_cert: /path/to/client.crt
+  # client_key: /path/to/client.key
+  # verify_certs: true
+
+  # Connection timeout in seconds (optional)
+  # request_timeout: 30
+
+# Logging configuration (optional)
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  loglevel: INFO
+
+  # Log to file (optional, logs to console by default)
+  # logfile: /var/log/deepfreeze.log
+
+  # Log format: default, json, logstash, or custom format string
+  # logformat: default
+
+# Environment variable overrides:
+# All settings can be overridden with environment variables:
+#
+#   DEEPFREEZE_ES_HOSTS=https://localhost:9200
+#   DEEPFREEZE_ES_USERNAME=elastic
+#   DEEPFREEZE_ES_PASSWORD=changeme
+#   DEEPFREEZE_ES_API_KEY=base64-key
+#   DEEPFREEZE_ES_CLOUD_ID=deployment:base64
+#   DEEPFREEZE_ES_CA_CERTS=/path/to/ca.crt
+#   DEEPFREEZE_ES_CLIENT_CERT=/path/to/client.crt
+#   DEEPFREEZE_ES_CLIENT_KEY=/path/to/client.key
+#   DEEPFREEZE_ES_VERIFY_CERTS=true
+#   DEEPFREEZE_ES_TIMEOUT=30
+#   DEEPFREEZE_LOG_LEVEL=INFO
+#   DEEPFREEZE_LOG_FILE=/var/log/deepfreeze.log
+#   DEEPFREEZE_LOG_FORMAT=json
