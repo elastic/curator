@@ -1,6 +1,6 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:b6afd42430b15f2d2a4c5a02b919e98a525b785b1aaff16747d2f623364e39b6
 ARG PYVER=3.12.9
-ARG ALPTAG=3.21
+ARG ALPTAG=3.21@sha256:5405e8f36ce1878720f71217d664aa3dea32e5e5df11acbf07fc78ef5661465b
 FROM python:${PYVER}-alpine${ALPTAG} AS builder
 
 # Add the community repo for access to patchelf binary package
