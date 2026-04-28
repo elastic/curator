@@ -6,7 +6,7 @@ mapped_pages:
 # name [option_name]
 
 ::::{note}
-This setting is used by the [alias](/reference/alias.md), [create_index](/reference/create_index.md) and [snapshot](/reference/snapshot.md), actions.
+This setting is used by the [alias](/reference/alias.md), [create_index](/reference/create_index.md), [rollover](/reference/rollover.md) and [snapshot](/reference/snapshot.md), actions.
 ::::
 
 
