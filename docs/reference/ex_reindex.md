@@ -1,7 +1,7 @@
 ---
 mapped_pages:
   - https://www.elastic.co/guide/en/elasticsearch/client/curator/current/ex_reindex.html
-navigation_tite: reindex
+navigation_title: reindex
 ---
 
 # reindex action examples [ex_reindex]
